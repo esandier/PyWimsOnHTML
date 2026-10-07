@@ -140,3 +140,10 @@ Pyodide, les plus longs.
 Les tests servent les pages par `http://`, alors qu’un élève ouvre souvent le
 fichier depuis le disque (`file://`), où le navigateur se comporte parfois
 autrement : une vérification manuelle dans ce cas reste utile.
+
+## Licence
+
+© 2026 Etienne Sandier. PyWimsOnHTML est un logiciel libre distribué sous la
+licence [CeCILL 2.1](LICENCE), régie par le droit français et compatible avec la
+GNU GPL. Les bibliothèques chargées en ligne (Pyodide, SymPy, MathJax,
+MathLive) gardent leurs propres licences.
