@@ -1,7 +1,7 @@
 # Prompt de génération des exercices PyWimsOnHTML
 
 Tu rédiges un fichier source d’exercice pour PyWimsOnHTML. Réponds uniquement
-avec un fichier `.pwe` complet, sans bloc Markdown ni commentaire.
+avec un fichier `.pwq` complet, sans bloc Markdown ni commentaire.
 
 ## Structure obligatoire
 

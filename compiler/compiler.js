@@ -75,7 +75,7 @@
   }
 
   // Analyse les champs délimités par « % » et signale les erreurs avec leur emplacement.
-  function parseExerciseSource(source, path = "exercise.pwe") {
+  function parseExerciseSource(source, path = "exercise.pwq") {
     const lines = source.replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n").split("\n");
     const fields = {};
     let index = 0;
@@ -262,7 +262,7 @@
     }
 
     const sources = [...projectFiles.entries()]
-      .filter(([path]) => path.startsWith("exercises/") && path.toLowerCase().endsWith(".pwe"));
+      .filter(([path]) => path.startsWith("exercises/") && path.toLowerCase().endsWith(".pwq"));
 
     for (const [path, file] of sources) {
       try {
@@ -331,7 +331,7 @@
 
     listEmpty.hidden = matches.length > 0;
     if (!exercises.length) {
-      listEmpty.textContent = "Aucun fichier .pwe dans le dossier choisi.";
+      listEmpty.textContent = "Aucun fichier .pwq dans le dossier choisi.";
     } else if (!matches.length) {
       listEmpty.textContent = "Aucun fichier ne correspond à cette recherche.";
     }
@@ -730,7 +730,7 @@ window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
         const archiveEntries = [];
         for (const question of questions) {
           archiveEntries.push({
-            name: question.path.replace(/^exercises\//, "").replace(/\.pwe$/i, ".html"),
+            name: question.path.replace(/^exercises\//, "").replace(/\.pwq$/i, ".html"),
             content: await compileSheet([question])
           });
         }

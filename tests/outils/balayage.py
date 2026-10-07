@@ -20,7 +20,7 @@ def load_pywims():
     return module
 
 
-# Lecture simplifiée du format .pwe ; le compilateur reste la référence pour sa validation.
+# Lecture simplifiée du format .pwq ; le compilateur reste la référence pour sa validation.
 def parse(text):
     lines = text.replace("\r\n", "\n").split("\n")
     fields, index = {}, 1
@@ -48,7 +48,7 @@ def main():
     pywims = load_pywims()
     draws = int(sys.argv[1]) if len(sys.argv) > 1 else 200
     failures = 0
-    for path in sorted((ROOT / "exercises").glob("*.pwe")):
+    for path in sorted((ROOT / "exercises").glob("*.pwq")):
         fields = parse(path.read_text(encoding="utf-8"))
         for seed in range(draws):
             try:

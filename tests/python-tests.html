@@ -36,11 +36,11 @@
     }
 
     const exerciseFiles = [
-      "addition-fractions.pwe",
-      "dérivée-polynôme.pwe",
-      "matrice-triangulaire.pwe",
-      "pgcd.pwe",
-      "produit-matrices.pwe"
+      "addition-fractions.pwq",
+      "dérivée-polynôme.pwq",
+      "matrice-triangulaire.pwq",
+      "pgcd.pwq",
+      "produit-matrices.pwq"
     ];
 
     (async () => {
@@ -207,7 +207,7 @@ json.dumps({
             throw new Error(`${file} : tirages incomplets ou en double (${draws.length})`);
           }
         }
-        const triangular = await PyWimsCompiler.computeDraws(exerciseFields["matrice-triangulaire.pwe"], { count: 3 });
+        const triangular = await PyWimsCompiler.computeDraws(exerciseFields["matrice-triangulaire.pwq"], { count: 3 });
         const cells = triangular[0].solutions.matrice;
         if (cells[0][0] !== null || cells.at(-1)[0] !== "0" || typeof triangular[0].explication !== "string") {
           throw new Error(`Solution libre ou explication inattendue : ${JSON.stringify(triangular[0])}`);
@@ -224,14 +224,14 @@ json.dumps({
           if (JSON.stringify(JSON.parse(host.querySelector("pre[data-draws]").textContent)) !== JSON.stringify(draws)) {
             throw new Error(`${file} : les tirages relus diffèrent.`);
           }
-          sizes.push(`${file.replace(".pwe", "")} ${draws.length} tirages, ${(html.length / 1024).toFixed(1)} Ko`);
+          sizes.push(`${file.replace(".pwq", "")} ${draws.length} tirages, ${(html.length / 1024).toFixed(1)} Ko`);
         }
         document.getElementById("progress").dataset.sizes = sizes.join(" ; ");
         console.log(`Taille des tirages : ${sizes.join(" ; ")}`);
       });
 
       await test("les tirages sont reproductibles et les doublons sont fusionnés", async () => {
-        const fields = exerciseFields["pgcd.pwe"];
+        const fields = exerciseFields["pgcd.pwq"];
         const first = JSON.stringify(await PyWimsCompiler.computeDraws(fields, { count: 5 }));
         const second = JSON.stringify(await PyWimsCompiler.computeDraws(fields, { count: 5 }));
         if (first !== second) throw new Error("Deux compilations donnent des tirages différents.");

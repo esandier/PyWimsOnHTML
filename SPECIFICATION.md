@@ -17,7 +17,10 @@ illustre l’apparence et le comportement attendus.
 6. Hors périmètre : le secret des réponses et la notation, qui exigeraient un
    serveur. Le pourcentage affiché mesure la progression de l’entraînement.
 
-## 2. Format `.pwe`
+## 2. Format `.pwq`
+
+L’extension signifie « PyWims question » : un fichier décrit une question,
+et une activité en réunit plusieurs.
 
 ### 2.1 Champs
 
@@ -294,11 +297,11 @@ de la page pour recommencer.
   `from sympy import *`, les fonctions de `random` utilisées et les outils
   `pywims`).
 - **Manuelle** : `solution=` sur chaque balise, réécriture des retours qui
-  donnent la réponse, suppression de l’indice de `pgcd.pwe`.
-  `matrice-triangulaire.pwe` utilise `LIBRE` au-dessus de la diagonale, avec
+  donnent la réponse, suppression de l’indice de `pgcd.pwq`.
+  `matrice-triangulaire.pwq` utilise `LIBRE` au-dessus de la diagonale, avec
   une `explication_solution`.
 - `PROMPT.md` est mis à jour avec le nouveau format.
-- L’export des exercices de la base Django PyWims vers des fichiers `.pwe` est
+- L’export des exercices de la base Django PyWims vers des fichiers `.pwq` est
   un sous-projet distinct, traité plus tard.
 
 ## 8. Tests

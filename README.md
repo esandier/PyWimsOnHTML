@@ -1,6 +1,6 @@
 # PyWimsOnHTML
 
-PyWimsOnHTML compile des exercices PyWims (fichiers `.pwe`) en fichiers HTML
+PyWimsOnHTML compile des exercices PyWims (fichiers `.pwq`) en fichiers HTML
 interactifs et autonomes. Le compilateur est une page web statique ; le fichier
 généré fonctionne sans serveur et charge Pyodide, SymPy, MathJax et, si besoin,
 MathLive depuis Internet. Les élèves l’utilisent souvent sur téléphone.
@@ -12,7 +12,7 @@ qui fait référence ; le format des exercices est détaillé dans
 ## Structure du projet
 
 - `compiler/` — interface du compilateur (`index.html`) et compilateur (`compiler.js`)
-- `exercises/` — fichiers d’exercice `.pwe`
+- `exercises/` — fichiers d’exercice `.pwq`
 - `layouts/` — mise en page HTML commune aux questions seules et aux activités
 - `widgets/` — champs de saisie : texte, MathLive, matrices fixes et redimensionnables
 - `css/` — charte de l’organisation (`brand.css`) et styles des exercices (`exercise.css`)
@@ -87,7 +87,7 @@ MathJax reconnaît `$...$`, `$$...$$`, `\(...\)` et `\[...\]`.
 
 ## Format des exercices
 
-Un fichier `.pwe` contient six champs, tous obligatoires : `title`, `keywords`,
+Un fichier `.pwq` contient six champs, tous obligatoires : `title`, `keywords`,
 `layout` (`STD`), `avant` (tirage et calcul des solutions), `enonce` (modèle de
 l’énoncé, avec `{{variable}}` et des balises de saisie) et `apres` (correction).
 Chaque balise de saisie désigne sa solution (`solution=variable`). L’exercice
@@ -98,14 +98,14 @@ variable `feedback`, et `avant` la variable `explication_solution`.
 Le guide complet, avec un exemple, est [`PROMPT.md`](PROMPT.md). Exemples du
 dépôt :
 
-- [`pgcd.pwe`](exercises/pgcd.pwe) — champ texte ;
-- [`addition-fractions.pwe`](exercises/addition-fractions.pwe) — fraction
+- [`pgcd.pwq`](exercises/pgcd.pwq) — champ texte ;
+- [`addition-fractions.pwq`](exercises/addition-fractions.pwq) — fraction
   irréductible et dénominateur positif ;
-- [`dérivée-polynôme.pwe`](exercises/dérivée-polynôme.pwe) — saisie MathLive et
+- [`dérivée-polynôme.pwq`](exercises/dérivée-polynôme.pwq) — saisie MathLive et
   correction symbolique ;
-- [`matrice-triangulaire.pwe`](exercises/matrice-triangulaire.pwe) — matrice de
+- [`matrice-triangulaire.pwq`](exercises/matrice-triangulaire.pwq) — matrice de
   taille fixe, valeurs libres (`LIBRE`) et explication de la solution ;
-- [`produit-matrices.pwe`](exercises/produit-matrices.pwe) — matrice
+- [`produit-matrices.pwq`](exercises/produit-matrices.pwq) — matrice
   redimensionnable.
 
 Les matrices redimensionnables commencent à 2 × 2 ; la poignée ↘ ajoute ou

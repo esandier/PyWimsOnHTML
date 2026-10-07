@@ -271,13 +271,13 @@
         throw new Error("Le contenu de l’exercice n’est pas lisible, préservé et échappé.");
       }
     });
-    pendingTests.push(fetch("../exercises/pgcd.pwe")
+    pendingTests.push(fetch("../exercises/pgcd.pwq")
       .then(response => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.text();
       })
       .then(text => {
-        const fields = PyWimsCompiler.parseExerciseSource(text, "pgcd.pwe");
+        const fields = PyWimsCompiler.parseExerciseSource(text, "pgcd.pwq");
         test("analyse l’exercice PGCD réel", () => {
           if (fields.title !== "PGCD" ||
               fields.keywords !== "arithmétique, PGCD, nombres entiers" ||
@@ -293,13 +293,13 @@
         item.style.color = "red";
         results.append(item);
       }));
-    pendingTests.push(fetch("../exercises/addition-fractions.pwe")
+    pendingTests.push(fetch("../exercises/addition-fractions.pwq")
       .then(response => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.text();
       })
       .then(text => {
-        const fields = PyWimsCompiler.parseExerciseSource(text, "addition-fractions.pwe");
+        const fields = PyWimsCompiler.parseExerciseSource(text, "addition-fractions.pwq");
         test("analyse le nouvel exercice d’addition de fractions", () => {
           if (fields.title !== "Addition de fractions" ||
               fields.keywords !== "fractions, addition, dénominateur commun, fraction irréductible" ||
@@ -318,13 +318,13 @@
         item.style.color = "red";
         results.append(item);
       }));
-    pendingTests.push(fetch("../exercises/matrice-triangulaire.pwe")
+    pendingTests.push(fetch("../exercises/matrice-triangulaire.pwq")
       .then(response => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.text();
       })
       .then(text => {
-        const fields = PyWimsCompiler.parseExerciseSource(text, "matrice-triangulaire.pwe");
+        const fields = PyWimsCompiler.parseExerciseSource(text, "matrice-triangulaire.pwq");
         test("analyse l’exercice réel de matrice triangulaire", () => {
           if (fields.title !== "Matrice triangulaire supérieure" ||
               fields.layout !== "STD" ||
@@ -438,8 +438,8 @@
           fetch("../widgets/input-matrix.js").then(response => response.text()),
         fetch("../widgets/input-math.js").then(response => response.text()),
         fetch("../runtime/python.js").then(response => response.text()),
-        fetch("../exercises/dérivée-polynôme.pwe").then(response => response.text()),
-        fetch("../exercises/produit-matrices.pwe").then(response => response.text())
+        fetch("../exercises/dérivée-polynôme.pwq").then(response => response.text()),
+        fetch("../exercises/produit-matrices.pwq").then(response => response.text())
         ])
           .then(([compilerPage, compilerScript, layout, brandCss, exerciseCss, runner, inputWidget, matrixWidget, mathWidget, pythonRuntime, derivativeExercise, matrixProductExercise]) => {
           // Les contrôles suivants couvrent l’interface, le runtime et les exercices fournis.
@@ -518,7 +518,7 @@
           // Le module pywims, l’isolement des questions et les valeurs affichées sont testés avec le
           // vrai Pyodide dans python-tests.html.
           test("le nouvel exercice génère un polynôme et corrige sa dérivée symboliquement", () => {
-            const fields = PyWimsCompiler.parseExerciseSource(derivativeExercise, "dérivée-polynôme.pwe");
+            const fields = PyWimsCompiler.parseExerciseSource(derivativeExercise, "dérivée-polynôme.pwq");
             if (fields.title !== "Dérivée d’un polynôme" ||
                 PyWimsTemplate.validateTemplate(fields.enonce).length ||
                 !fields.avant.includes("derivee = diff(fonction, x)") ||
@@ -530,7 +530,7 @@
             }
           });
           test("l’exercice de produit de matrices génère et corrige un produit rectangulaire", () => {
-            const fields = PyWimsCompiler.parseExerciseSource(matrixProductExercise, "produit-matrices.pwe");
+            const fields = PyWimsCompiler.parseExerciseSource(matrixProductExercise, "produit-matrices.pwq");
             if (fields.title !== "Produit de matrices" ||
                 PyWimsTemplate.validateTemplate(fields.enonce).length ||
               !fields.avant.includes("A = Matrix(m, n") ||
