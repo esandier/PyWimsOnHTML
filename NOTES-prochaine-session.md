@@ -33,9 +33,15 @@ Façon de travailler :
 - interface, commentaires et exercices en français ;
 - commits en français, à la fin d'un chantier.
 
-Travail de cette session, en deux chantiers (SPECIFICATION.md, § 11). Pour chacun :
-analyse le code concerné, propose une conception, pose-moi les questions ouvertes, puis
-attends mon accord.
+Chantiers restants avant la version 1 (SPECIFICATION.md, § 12) : graphiques matplotlib,
+glisser-déposer (input_drag / input_drop), figures interactives GeoGebra et/ou JSXGraph,
+banque de questions. Le compilateur hébergé (§ 11) viendra après la version 1.
+Le compilateur vérifie déjà la cohérence de chaque tirage (§ 3) : tout nouveau type de
+champ doit savoir y saisir sa solution comme un élève.
+
+Travail de cette session : commencer par les deux chantiers ci-dessous (je préciserai
+l'ordre). Pour chacun : analyse le code concerné, propose une conception, pose-moi les
+questions ouvertes, puis attends mon accord.
 
 1) Graphiques matplotlib dans les énoncés.
    Les tirages sont précalculés à la compilation : la figure peut y être produite en

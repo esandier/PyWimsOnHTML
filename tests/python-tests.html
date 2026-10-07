@@ -289,7 +289,8 @@ json.dumps({
         const draws = await PyWimsCompiler.computeDraws({
           avant: "from sympy import Rational\nchoix = ['$2$', Rational(1, 2), 'pair', 'Aucun de ces nombres']\nbonnes = [2, 0]",
           enonce: "Lesquels ? {% input_checkbox 'r' choices=choix solution=bonnes fixed_last=1 %}",
-          apres: "ok_answer['r'] = r == bonnes"
+          // « bonnes » n’est pas croissante, alors que la saisie l’est : on compare les listes triées.
+          apres: "ok_answer['r'] = r == sorted(bonnes)"
         }, { count: 20 });
         const [draw] = draws;
         if (JSON.stringify(draw.choices.r) !== JSON.stringify(["$2$", "\\(\\frac{1}{2}\\)", "pair", "Aucun de ces nombres"]) ||
@@ -348,7 +349,19 @@ json.dumps({
             ["« avant », ligne 2 : une chaîne contient un caractère de contrôle (\\f)", "r'…'"]],
           [{ avant: "a = 1", enonce: "{% input_text 'r' solution=a %}",
              apres: "ok_answer['r'] = True\nfeedback = f'{a} $\\times$ 2'" },
-            ["« apres », ligne 2", "(\\t)"]]
+            ["« apres », ligne 2", "(\\t)"]],
+          // Cohérence : la solution saisie comme par un élève doit être jugée juste par « apres ».
+          [{ avant: "a = 1", enonce: "{% input_text 'r' solution=a %}",
+             apres: "ok_answer['r'] = r == '2'\nfeedback = 'Ce n’est pas 2.'" },
+            ["Graine 0 : la solution du champ « r » est jugée fausse par « apres ».", "Retour obtenu : « Ce n’est pas 2. »"]],
+          [{ avant: "a = 1", enonce: "{% input_text 'r' solution=a %}", apres: "ok_answer['r'] = True\nx = 1 / 0" },
+            ["Graine 0 : « apres » lève une erreur quand on saisit la solution, ligne 2", "ZeroDivisionError"]],
+          [{ avant: "M = [[1, 2], [3, 4]]", enonce: "{% input_matrix 'm' size=2 solution=M %}",
+             apres: "ok_answer['m[0][0]'] = ok_answer['m[1][1]'] = True" },
+            ["la solution du champ « m » (cases [0][1], [1][0]) est jugée fausse par « apres »"]],
+          [{ avant: "c = ['a', 'b', 'c']\ns = [2, 0]", enonce: "{% input_checkbox 'r' choices=c solution=s %}",
+             apres: "ok_answer['r'] = r == s" },
+            ["la solution du champ « r » est jugée fausse par « apres »"]]
         ];
         for (const [fields, fragments] of cases) {
           let message = "";

@@ -433,6 +433,60 @@
     return errors;
   }
 
+  // Contrôle de cohérence d’un tirage (SPECIFICATION.md, § 3) : la solution de chaque champ est
+  // saisie comme le ferait un élève, puis « apres » doit la juger juste. Sans ce contrôle, le bouton
+  // « Solution » pourrait montrer une réponse que la correction refuse (fraction non simplifiée,
+  // indices dans un autre ordre…), ou « apres » planter pour un tirage rare. La session est celle
+  // du tirage, où « avant » vient d’être exécuté ; elle est jetée ensuite. Renvoie les messages.
+  async function coherenceErrors(session, tags, draw, apres) {
+    // Une valeur LIBRE accepte n’importe quelle saisie : « 1 » en tient lieu, comme dans balayage.py.
+    const typed = value => value ?? "1";
+    for (const tag of tags) {
+      const { name, type, attributes } = tag;
+      const solution = draw.solutions[name];
+      if (PyWimsTemplate.choiceTypes.has(type)) {
+        await session.setChoice(name, solution);
+      } else if (type === "input_text") {
+        await session.set(name, typed(solution));
+      } else if (type === "input_math") {
+        // MathLive transmet une expression en texte (« x^2 + 1 »), et non le LaTeX affiché par la
+        // solution : on saisit donc la forme texte, la plus proche de ce que reçoit « apres ».
+        await session.set(name, typed(await session.run(`__import__("pywims")._solution_text(${attributes.solution})`)));
+      } else {
+        await session.setMatrix(name, solution.map(row => row.map(typed)));
+      }
+    }
+    await session.resetAnswers();
+    try {
+      await session.run(apres);
+    } catch (error) {
+      return [`« apres » lève une erreur quand on saisit la solution, ${pythonErrorSummary(error.message)}`];
+    }
+    const errors = [];
+    for (const tag of tags) {
+      const solution = draw.solutions[tag.name];
+      const matrix = ["input_matrix", "input_vmatrix"].includes(tag.type);
+      const keys = matrix
+        ? solution.flatMap((row, i) => row.map((_, j) => `${tag.name}[${i}][${j}]`))
+        : [tag.name];
+      const wrong = [];
+      for (const key of keys) {
+        if (!await session.getBoolean(`bool(ok_answer.get(${JSON.stringify(key)}, False))`)) {
+          wrong.push(key);
+        }
+      }
+      if (wrong.length) {
+        const cells = matrix ? ` (case${wrong.length > 1 ? "s" : ""} ${wrong.map(key => key.slice(tag.name.length)).join(", ")})` : "";
+        errors.push(`la solution du champ « ${tag.name} »${cells} est jugée fausse par « apres ».`);
+      }
+    }
+    // Le retour de l’auteur aide souvent à comprendre pourquoi la solution est refusée.
+    if (errors.length && await session.getBoolean("'feedback' in globals()")) {
+      errors.push(`Retour obtenu : « ${await session.getTemplateValue("feedback")} ».`);
+    }
+    return errors;
+  }
+
   // Vérifie que les derniers choix fixés laissent au moins un choix à mélanger.
   function choiceErrors(tags, draw) {
     const errors = [];
@@ -515,6 +569,11 @@
         const errors = [...draw.errors, ...matrixShapeErrors(tags, draw), ...choiceErrors(tags, draw)];
         if (errors.length) {
           throw new Error(`Graine ${seed} : ${errors.join(" ")}`);
+        }
+        // Les solutions ont la forme attendue : on peut les saisir et vérifier la correction.
+        const incoherences = await coherenceErrors(session, tags, draw, fields.apres);
+        if (incoherences.length) {
+          throw new Error(`Graine ${seed} : ${incoherences.join(" ")}`);
         }
         const orders = Object.fromEntries(choiceTags.map(tag => [
           tag.name,

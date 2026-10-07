@@ -110,6 +110,9 @@ Le compilateur refuse l’exercice, avec un message précis, si :
   tabulation), qu’il faut écrire en chaîne brute `r'…'` (le champ et la ligne
   sont indiqués) ;
 - `avant` lève une exception pour l’un des tirages (la graine est indiquée) ;
+- l’exercice est incohérent pour l’un des tirages : la solution, saisie comme
+  par un élève, est jugée fausse par `apres`, ou `apres` lève une exception
+  (§ 3, « Cohérence ») ;
 - une question à choix ne respecte pas les règles du § 10.6.
 
 ### 2.5 Exemple
@@ -173,6 +176,22 @@ Le retour explique l’erreur sans donner la réponse : c’est le rôle du bout
     chaque dimension de matrice (des chaînes, comme aujourd’hui) ;
   - `solutions` : la valeur convertie de chaque champ (§ 2.3) ;
   - `explication` : le texte de `explication_solution`, s’il est défini.
+- **Cohérence.** Pour chaque tirage, dans le même espace de noms, le
+  compilateur saisit la solution de chaque champ comme le ferait un élève,
+  exécute `apres` et exige `ok_answer` vrai pour chaque champ (et chaque case
+  d’une matrice). Sinon la compilation est refusée avec la graine, le champ et
+  le `feedback` obtenu, par exemple « Graine 7 : la solution du champ « r » est
+  jugée fausse par « apres » ». Ainsi le bouton « Solution » ne montre jamais
+  une réponse que la correction refuse, et `apres` ne plante pour aucun tirage.
+  Saisie utilisée :
+  - `input_text`, case de matrice : le texte de la solution (§ 2.3) ;
+  - `input_math` : la solution écrite comme pour `input_text` (`x^2 + 1`),
+    proche de ce que MathLive transmet ;
+  - valeur `LIBRE` : `1`, une valeur quelconque ;
+  - `input_vmatrix` : une grille aux dimensions de la solution ;
+  - champ à choix : l’indice ou la liste des indices de la solution.
+  Ce contrôle reprend, pour chaque auteur et sans Python installé, celui que
+  `tests/outils/balayage.py` fait sur 200 tirages des exemples du dépôt.
 - Les tirages identiques (même `context` et mêmes `solutions`) sont fusionnés.
   Une question sans aléatoire n’a donc qu’un tirage.
 - Les tirages sont intégrés au fichier généré en JSON, dans un bloc de texte
@@ -181,8 +200,8 @@ Le retour explique l’erreur sans donner la réponse : c’est le rôle du bout
 - Versions figées : MathJax **3.2.2**, MathLive **0.111.0**. Le widget MathLive
   passe à l’attribut `math-virtual-keyboard-policy`.
 - La compilation est refusée si le module `pywims` chargé par la page du
-  compilateur diffère de celui de `runtime/python.js` dans le dossier du projet
-  (page restée en cache) : les tirages ne seraient pas reproductibles.
+  compilateur diffère de celui de `runtime/python.js` publié avec elle
+  (§ 11.1 ; page restée en cache) : les tirages ne seraient pas reproductibles.
 - **Aperçu.** La page réelle de l’exercice s’affiche dans un cadre isolé
   (`sandbox="allow-scripts"`), sans Python et avec des boutons inactifs :
   d’abord un tirage provisoire où chaque variable porte son nom, puis un tirage
@@ -506,10 +525,76 @@ En plus du § 2.4, le compilateur refuse l’exercice si, pour l’un des tirage
 4. **Documentation** : `PROMPT.md` (format et conversion AMC), README, un
    exercice d’exemple converti depuis AMC.
 
-## 11. Points ouverts
+## 11. Compilateur hébergé
+
+Le compilateur est une page publiée en ligne : on n’y choisit plus que le
+dossier des exercices, ce qui est plus naturel que de désigner aussi le dossier
+du projet. Prévu après la version 1 : seule l’étape 1 (cohérence) est faite.
+
+### 11.1 Publication
+
+- La page est publiée par GitHub Pages depuis la branche `master` du dépôt
+  public, par exemple à l’adresse
+  `https://esandier.github.io/PyWimsOnHTML/compiler/`. C’est gratuit pour un
+  dépôt public ; l’activation se fait une fois dans les réglages du dépôt.
+- Chaque push sur `master` met à jour le compilateur en ligne.
+- Les fichiers du projet utiles à l’assemblage (`layouts/`, `runtime/`,
+  `widgets/`, `css/`) sont lus par la page à côté d’elle (même origine), et
+  non plus dans un dossier choisi par l’utilisateur.
+- Le contrôle du § 3 (module `pywims` de la page identique à celui de
+  `runtime/python.js`) reste : il compare la version chargée à celle lue en
+  ligne, pour détecter une page restée en cache.
+- Pour le développement, la page s’ouvre aussi par un serveur local
+  (`python -m http.server` à la racine du projet), comme les tests. Ouverte
+  directement depuis le disque (`file://`), elle ne peut plus lire ses
+  fichiers et le dit.
+- Les exercices ne sont jamais envoyés : la page les lit sur l’ordinateur.
+
+### 11.2 Dossier des exercices
+
+- Un seul dossier d’exercices à la fois, n’importe où sur le disque. Les
+  fichiers `.pwq` de ses sous-dossiers sont lus aussi.
+- **Chrome et Edge** : le dossier est choisi une fois et mémorisé (accès
+  conservé par le navigateur, dans IndexedDB). À la visite suivante, un bouton
+  « Rouvrir « nom du dossier » » suffit : le navigateur demande seulement de
+  confirmer l’accès. Un bouton « Relire » prend en compte les fichiers modifiés,
+  ajoutés ou supprimés, sans choisir de nouveau le dossier.
+- **Firefox et Safari** : ces navigateurs ne permettent pas à une page de
+  rouvrir un dossier d’une visite à l’autre. Le dossier se choisit à chaque
+  visite ; le nom du dernier dossier est rappelé pour aider à le retrouver.
+  Pour prendre en compte un fichier modifié, on choisit de nouveau le dossier.
+- La page détecte ce que le navigateur permet ; aucun message d’erreur ne
+  signale l’absence de mémorisation.
+
+### 11.3 Liste des exercices
+
+- Chaque exercice est désigné par son **titre** ; le chemin du fichier, relatif
+  au dossier, est écrit dessous en petit.
+- Les exercices sont regroupés par sous-dossier, puis triés par titre dans
+  l’ordre naturel (« (2) » avant « (10) »).
+- Un fichier illisible est listé sous son nom de fichier, avec l’erreur.
+- La recherche porte, comme aujourd’hui, sur le titre, les mots-clés et le
+  chemin.
+
+### 11.4 Étapes
+
+1. **Cohérence** (§ 3) : la solution de chaque tirage est vérifiée par
+   `apres` à la compilation et dans l’aperçu.
+2. **Fichiers du projet lus en ligne** : plus de choix du dossier du projet ;
+   le dossier choisi ne contient que des exercices. Publication sur GitHub
+   Pages, README mis à jour.
+3. **Dossier mémorisé** : accès conservé sur Chrome et Edge, nom rappelé sur
+   Firefox et Safari, bouton « Relire ».
+4. **Liste par titre**, regroupée par sous-dossier.
+
+## 12. Points ouverts
 
 - **Banque de questions** (comme `\element` et `\restituegroupe` d’AMC) : une
   question de l’activité serait un groupe de fichiers `.pwq`, chaque tirage
   appartenant à l’un d’eux. Chantier ultérieur.
 - **Graphiques matplotlib** dans les énoncés, produits en SVG à la
   compilation. Chantier ultérieur.
+- **Glisser-déposer** (balises PyWims `input_drag` / `input_drop`). Chantier
+  ultérieur.
+- **Figures interactives** avec GeoGebra et/ou JSXGraph. Chantier ultérieur.
+- **Compilateur hébergé** (§ 11) : après la version 1.

@@ -104,7 +104,8 @@ français, séparés par des virgules.
 - Dans `apres`, le champ contient l’indice choisi (`input_radio`) ou la liste
   croissante des indices cochés (`input_checkbox`, `[]` si rien n’est coché),
   dans l’ordre de `choices`. Un choix multiple se corrige en tout ou rien :
-  `ok_answer['nom'] = nom == bonnes`. Le `feedback` peut expliquer l’erreur
+  `ok_answer['nom'] = nom == sorted(bonnes)` (la saisie est triée ; `sorted`
+  est inutile si `bonnes` l’est déjà). Le `feedback` peut expliquer l’erreur
   selon les choix cochés, sans donner la réponse.
 - `bareme='…'` (facultatif) donne une note indicative selon la syntaxe d’AMC,
   par exemple `bareme='b=1,m=-0.5,p=0'` ou `bareme='mz=1'`. Directives admises :
@@ -122,6 +123,10 @@ français, séparés par des virgules.
   `solution_matrice = Matrix(n, n, lambda i, j: 0 if i > j else LIBRE)`.
 - Tu peux définir dans `avant` une variable `explication_solution` (texte,
   formules TeX admises), affichée avec la solution pour l’éclairer.
+- La solution doit être jugée juste par `apres` : pour chaque tirage, le
+  compilateur la saisit comme le ferait un élève (texte de la solution, `1`
+  pour une valeur `LIBRE`, indices pour une question à choix), exécute `apres`
+  et refuse l’exercice si un champ est jugé faux ou si `apres` plante.
 
 ## Retour à l’élève
 
