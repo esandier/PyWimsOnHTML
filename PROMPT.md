@@ -44,6 +44,14 @@ français, séparés par des virgules.
   - `py_wims(saisie)` convertit une saisie simple (nombre, fraction) en objet
     SymPy, ou renvoie `None`.
   - `is_nombre(valeur)` indique si une valeur est un nombre.
+- Toute chaîne Python qui contient une formule TeX s’écrit en **chaîne brute**,
+  préfixée par `r` : `feedback = r'Simplifiez $\frac{6}{8}$ par $2$.'`, et non
+  `'… $\frac{6}{8}$ …'`. Dans une chaîne ordinaire, Python transforme `\f`
+  (de `\frac`), `\t` (de `\times`, `\text`), `\r` (de `\right`)… en caractères
+  invisibles, et la formule s’affiche en erreur. C’est vrai pour `feedback`,
+  `explication_solution`, les choix et toute autre chaîne ; pour une chaîne
+  formatée, écris `rf'…'`. Le compilateur refuse une chaîne qui contient un
+  tel caractère.
 - Dans `apres`, affecte `True` ou `False` à `ok_answer['nom_du_champ']` pour
   chaque champ. Pour une matrice, ajoute une entrée par case, nommée exactement
   `ok_answer["nom_du_champ[{}][{}]".format(i, j)]`.
@@ -78,9 +86,9 @@ français, séparés par des virgules.
 ## Questions à choix
 
 - `choices=` désigne une liste de `avant`, d’au moins deux choix, dans ton
-  ordre. Un choix est un texte simple, où les formules TeX sont admises
-  (`"$\\frac{1}{2}$"`, ou `r"$\frac{1}{2}$"`), ou un objet SymPy, affiché comme
-  une formule. Le HTML n’est pas interprété dans un choix.
+  ordre. Un choix est un texte simple, où les formules TeX sont admises, en
+  chaîne brute (`r"$\frac{1}{2}$"`), ou un objet SymPy, affiché comme une
+  formule. Le HTML n’est pas interprété dans un choix.
 - `solution=` désigne l’indice du bon choix (`input_radio`) ou la liste des
   indices des bons choix (`input_checkbox`), éventuellement vide. Les indices
   commencent à 0, dans l’ordre de `choices`.

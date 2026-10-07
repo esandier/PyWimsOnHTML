@@ -104,6 +104,11 @@ Le compilateur refuse l’exercice, avec un message précis, si :
 - la solution n’a pas la forme attendue par le champ (dimensions de matrice) ;
 - un nom de champ est déjà défini par `avant`, ou réservé (`ok_answer`,
   `feedback`, noms du module `pywims`, mots-clés Python) ;
+- une chaîne de `avant` ou de `apres` contient un caractère de contrôle autre
+  que le retour à la ligne : c’est presque toujours une formule TeX écrite dans
+  une chaîne ordinaire (`'\frac'` contient un saut de page, `'\times'` une
+  tabulation), qu’il faut écrire en chaîne brute `r'…'` (le champ et la ligne
+  sont indiqués) ;
 - `avant` lève une exception pour l’un des tirages (la graine est indiquée) ;
 - une question à choix ne respecte pas les règles du § 10.6.
 

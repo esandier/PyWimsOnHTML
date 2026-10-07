@@ -194,6 +194,38 @@ def _collect_draw(namespace, spec):
     }, ensure_ascii=False)
 
 
+_CONTROL_NAMES = {"\t": r"\t", "\r": r"\r", "\f": r"\f", "\b": r"\b", "\a": r"\a", "\v": r"\v"}
+
+
+def _string_errors(source, field):
+    r"""Chaînes du code de l’auteur qui contiennent un caractère de contrôle (sauf le retour à la ligne).
+
+    Dans une chaîne ordinaire, Python lit « \frac » comme un saut de page suivi de « rac », et
+    « \times » comme une tabulation suivie de « imes » : la formule TeX arrive abîmée à MathJax
+    (« Math input error »), sans aucune erreur Python. Un tel caractère n’a presque jamais sa place
+    dans un exercice ; on le signale donc à la compilation, avec la ligne, pour qu’une chaîne brute
+    r'…' soit utilisée. Renvoie la liste des messages, en JSON.
+    """
+    import ast
+    import json
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        # L’erreur de syntaxe est signalée à l’exécution de « avant », avec sa ligne.
+        return json.dumps([])
+    errors = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            found = sorted({char for char in node.value if ord(char) < 32 and char != "\n"})
+            if found:
+                names = ", ".join(_CONTROL_NAMES.get(char, "\\x{:02x}".format(ord(char))) for char in found)
+                errors.append(
+                    "« {} », ligne {} : une chaîne contient un caractère de contrôle ({}), sans doute une "
+                    "commande TeX (\\frac, \\times…) dans une chaîne ordinaire ; écrivez-la en chaîne "
+                    "brute, r'…'.".format(field, node.lineno, names))
+    return json.dumps(errors, ensure_ascii=False)
+
+
 def py_wims(value):
     """Interprète une saisie de l’élève comme expression SymPy, ou renvoie None."""
     import sympy
@@ -462,6 +494,20 @@ if importlib.util.find_spec("numpy") is not None:
     });
   }
 
+  // Messages sur les chaînes abîmées d’un champ Python (voir _string_errors) ; utilisé par le
+  // compilateur avant de calculer les tirages. Le code est analysé, jamais exécuté.
+  async function sourceErrors(code, field) {
+    await ensurePyodide();
+    return enqueuePythonOperation(() => {
+      const check = pyodide.runPython('__import__("pywims")._string_errors');
+      try {
+        return JSON.parse(check(code, field));
+      } finally {
+        check.destroy();
+      }
+    });
+  }
+
   // Libère l’espace de noms d’une question ; un nouvel appel à initialize en recrée un vierge.
   function dispose(sessionId = "default") {
     const globals = sessions.get(sessionId);
@@ -626,6 +672,7 @@ if importlib.util.find_spec("numpy") is not None:
     run,
     runSeeded,
     collectDraw,
+    sourceErrors,
     dispose,
     set,
     setMatrix,

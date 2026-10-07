@@ -342,7 +342,13 @@ json.dumps({
           [{ avant: "c = ['a', 'b']\ns = [True]", enonce: "{% input_checkbox 'r' choices=c solution=s %}" },
             ["True n’est pas un indice de choix"]],
           [{ avant: "c = ['a', 'b']\ns = []", enonce: "{% input_checkbox 'r' choices=c solution=s fixed_last=2 %}" },
-            ["fixed_last=2 doit être inférieur au nombre de choix (2) du champ « r »"]]
+            ["fixed_last=2 doit être inférieur au nombre de choix (2) du champ « r »"]],
+          // Formule TeX dans une chaîne ordinaire : « \frac » contient un saut de page, « \times » une tabulation.
+          [{ avant: "a = 1\nt = '$\\frac{1}{2}$'", enonce: "{% input_text 'r' solution=a %}" },
+            ["« avant », ligne 2 : une chaîne contient un caractère de contrôle (\\f)", "r'…'"]],
+          [{ avant: "a = 1", enonce: "{% input_text 'r' solution=a %}",
+             apres: "ok_answer['r'] = True\nfeedback = f'{a} $\\times$ 2'" },
+            ["« apres », ligne 2", "(\\t)"]]
         ];
         for (const [fields, fragments] of cases) {
           let message = "";
@@ -356,6 +362,12 @@ json.dumps({
             throw new Error(`Pour ${JSON.stringify(fields.avant)}, message « ${message} » sans : ${missing.join(" / ")}`);
           }
         }
+        // Les mêmes formules en chaînes brutes, et un retour à la ligne, sont acceptés.
+        await PyWimsCompiler.computeDraws({
+          avant: "a = 1\nt = r'$\\frac{1}{2}$'",
+          enonce: "{% input_text 'r' solution=a %}",
+          apres: "ok_answer['r'] = True\nfeedback = rf'{a} $\\times$ 2' + '\\n'"
+        }, { count: 1 });
       });
 
       // Exercices réellement compilés puis ouverts : Python reproduit le tirage et juge la solution juste.

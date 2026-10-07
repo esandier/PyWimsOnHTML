@@ -3,3 +3,5 @@ __pycache__/
 *.html.download
 .DS_Store
 Thumbs.db
+# Réglages personnels de VS Code (interpréteur Python choisi, etc.).
+.vscode/

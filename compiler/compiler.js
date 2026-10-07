@@ -490,6 +490,15 @@
         name: tag.name, type: tag.type, solution: tag.attributes.solution, choices: tag.attributes.choices
       }))
     };
+    // Une formule TeX dans une chaîne ordinaire passe sans erreur Python mais s’affiche abîmée :
+    // on la refuse avant tout tirage, pour les deux champs Python.
+    const stringErrors = [
+      ...await PyWimsPython.sourceErrors(fields.avant, "avant"),
+      ...await PyWimsPython.sourceErrors(fields.apres, "apres")
+    ];
+    if (stringErrors.length) {
+      throw new Error(stringErrors.join(" "));
+    }
     const draws = [];
     const seen = new Set();
     for (let seed = 0; seed < count; seed += 1) {
