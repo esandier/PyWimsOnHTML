@@ -1,0 +1,56 @@
+%
+% title
+%
+Matrice triangulaire supérieure
+%
+% keywords
+%
+matrices, matrice triangulaire, zéros, algèbre linéaire
+%
+% layout
+%
+STD
+%
+% avant
+%
+from random import randint
+from sympy import Matrix
+from pywims import py_wims, LIBRE
+
+# Choisit une petite dimension pour générer une nouvelle matrice à chaque essai.
+size = randint(2,4)
+
+# Plusieurs matrices conviennent : seuls les zéros sous la diagonale sont imposés.
+solution_matrice = Matrix(size, size, lambda i, j: 0 if i > j else LIBRE)
+explication_solution = (
+    "Les cases notées ∗ peuvent contenir n’importe quel nombre : "
+    "seules les cases situées sous la diagonale principale doivent être nulles."
+)
+%
+% enonce
+%
+Complétez cette matrice carrée de taille ${{ size }} \times {{ size }}$ pour
+qu’elle soit triangulaire supérieure. Toutes les cases situées sous la
+diagonale principale doivent contenir zéro ; les autres cases peuvent
+contenir n’importe quel nombre.
+
+<div style="text-align:center">
+  {% input_matrix 'matrice' size=size solution=solution_matrice input_style='width:2em' %}
+</div>
+%
+% apres
+%
+# Vérifie chaque case : toute valeur est numérique, et celles sous la diagonale sont nulles.
+feedback = "Bravo, cette matrice est triangulaire supérieure !"
+for i in range(size):
+    for j in range(size):
+        valeur = py_wims(matrice[i][j])
+        correcte = (
+            valeur is not None
+            and getattr(valeur, "is_number", False)
+            and (i <= j or valeur == 0)
+        )
+        ok_answer["matrice[{}][{}]".format(i, j)] = correcte
+        if not correcte:
+            feedback = "Chaque case doit contenir un nombre et celles sous la diagonale doivent être égales à zéro."
+%

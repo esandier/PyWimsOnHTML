@@ -1,0 +1,118 @@
+<!doctype html>
+<!-- Mise en page commune aux feuilles d’exercices (activités) et aux questions seules. -->
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>@@TITLE@@</title>
+  <!-- @@CSS@@ reçoit les styles génériques et la charte de marque choisie. -->
+  <style>
+@@CSS@@
+  </style>
+  <!-- MathJax compose les formules TeX des énoncés et des retours, en SVG (tracé vectoriel, comme
+       dans la maquette). -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [["$", "$"], ["\\(", "\\)"]],
+        displayMath: [["$$", "$$"], ["\\[", "\\]"]],
+        processEscapes: true
+      },
+      startup: { typeset: false }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js"></script>
+  <!-- Charge MathLive uniquement si une question contient un champ mathématique. -->
+  <script>@@MATHLIVE_LOADER@@</script>
+</head>
+<!-- data-sheet : « single » pour une question seule, « activity » pour une feuille de plusieurs questions. -->
+<body data-sheet="@@SHEET_KIND@@">
+  <!-- En-tête : titre, progression (activité seulement), aide et logo. Il reste visible au défilement d’une activité. -->
+  <div class="pw-top">
+    <!-- Le logo de marque est décoratif ; son image et son style sont définis dans brand.css. -->
+    <header class="pw-header">
+      <h1 id="exercise-title">@@TITLE@@</h1>
+      <div class="pw-header-tools">
+        <button class="pw-completion" id="pw-completion" type="button" aria-describedby="pw-completion-tip" aria-expanded="false">
+          <span class="pw-completion-value" id="pw-completion-value">0 %</span>
+          <span class="pw-completion-label" id="pw-completion-label"></span>
+        </button>
+        <button class="pw-help-button" id="pw-help-button" type="button" aria-haspopup="dialog" aria-label="Aide : comment répondre aux questions">?</button>
+      </div>
+      <span class="pw-brand-logo" aria-hidden="true"></span>
+    </header>
+    <div class="pw-progress" aria-hidden="true"><div class="pw-progress-fill" id="pw-progress-fill"></div></div>
+    <!-- Bulle du pourcentage : au survol, au focus clavier ou au toucher. -->
+    <p class="pw-completion-tip" id="pw-completion-tip" role="tooltip">
+      Part des questions que vous avez réussies vous-même. Une question complétée avec « Solution » ne compte pas ;
+      une réussite reste acquise après un nouvel énoncé.
+    </p>
+  </div>
+  <!-- Une section par question ; chacune contient ses données, et runner.js y place le modèle ci-dessous. -->
+  <main class="pw-sheet">
+@@QUESTIONS@@
+  </main>
+  <!-- Aide contextuelle de l’élève : cycle de vie d’une question et, dans une activité, sens du pourcentage. -->
+  <dialog class="pw-help" id="pw-help" aria-labelledby="pw-help-title">
+    <h2 id="pw-help-title">Comment répondre ?</h2>
+    <ol class="pw-help-steps">
+      <li><span class="pw-help-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg></span>
+        <span>Saisissez votre réponse, puis <strong>Vérifier ma réponse</strong>. Les champs justes passent au vert,
+        les champs faux au rouge, et un commentaire s’affiche.</span></li>
+      <li><span class="pw-help-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg></span>
+        <span><strong>Corriger ma réponse</strong> rouvre les champs faux, avec votre saisie. Les champs justes restent acquis.</span></li>
+      <li><span class="pw-help-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg></span>
+        <span><strong>Solution</strong> remplit les champs avec la réponse attendue et, quand elle existe, affiche une explication.</span></li>
+      <li><span class="pw-help-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 3v5h5"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 21v-5h-5"/></svg></span>
+        <span><strong>Nouvel énoncé</strong> propose la même question avec d’autres valeurs, pour vous entraîner encore.</span></li>
+    </ol>
+    <p class="pw-help-note">Sur un petit écran, les boutons n’affichent que leur icône.</p>
+    <section class="pw-help-activity">
+      <h3>Le pourcentage</h3>
+      <p>Il indique la part des questions que vous avez réussies vous-même : une question est réussie dès qu’une
+        de vos vérifications est entièrement juste, et son numéro devient ✓.</p>
+      <ul>
+        <li>Une question complétée avec « Solution » n’est pas comptée.</li>
+        <li>Une réussite reste acquise, même si vous demandez ensuite un nouvel énoncé.</li>
+        <li>Toutes les questions ont le même poids.</li>
+      </ul>
+    </section>
+    <form method="dialog"><button class="pw-help-close" type="submit">Fermer</button></form>
+  </dialog>
+  <!-- Modèle d’une question : les éléments sont repérés par data-role, sans identifiant global. -->
+  <template id="pw-question-template">
+    <div class="pw-q-badge" data-role="badge" aria-hidden="true"></div>
+    <div class="pw-q-head">
+      <h2 class="pw-q-title" data-role="title"></h2>
+      <!-- Barre d’outils : les boutons gardent leur place ; un bouton absent reste invisible. -->
+      <div class="validation-enonce pw-actions">
+        <button class="pw-act is-primary" data-role="check" type="button" disabled data-action="check" aria-label="Vérifier ma réponse">
+          <svg class="pw-icon-check" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg>
+          <svg class="pw-icon-fix" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>
+          <!-- Les deux libellés occupent la même case : le bouton garde la largeur du plus long. -->
+          <span class="pw-act-label pw-swap"><span data-label="check">Vérifier ma réponse</span><span data-label="fix">Corriger ma réponse</span></span>
+        </button>
+        <button class="pw-act" data-role="solution" type="button" aria-label="Solution">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>
+          <span class="pw-act-label">Solution</span>
+        </button>
+        <button class="pw-act" data-role="new-draw" type="button" aria-label="Nouvel énoncé">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 3v5h5"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 21v-5h-5"/></svg>
+          <span class="pw-act-label">Nouvel énoncé</span>
+        </button>
+      </div>
+    </div>
+    <div class="form-enonce" data-role="prompt"></div>
+    <div class="pw-status" data-role="status" role="status" aria-live="polite" hidden></div>
+    <!-- Emplacement du retour : colonne de droite sur grand écran, sous l’énoncé sur téléphone. -->
+    <div class="pw-q-slot" data-role="slot">
+      <div class="feedback pw-feedback" data-role="feedback" aria-live="polite"></div>
+    </div>
+  </template>
+  <!-- La grammaire des balises précède les widgets, qui utilisent son échappement. -->
+  <script>@@TEMPLATE@@</script>
+  <script>@@WIDGETS@@</script>
+  <script>@@PYTHON_RUNTIME@@</script>
+  <script>@@RUNNER@@</script>
+</body>
+</html>

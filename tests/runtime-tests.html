@@ -1,0 +1,345 @@
+<!doctype html>
+<!-- Tests du cycle de vie d’une question dans un exercice réellement assemblé, avec un Python simulé :
+     affichage immédiat, vérifier, corriger, solution, nouvel énoncé. Quelques secondes. -->
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Tests du runtime PyWimsOnHTML</title>
+</head>
+<body>
+  <h1>Tests du runtime</h1>
+  <ol id="results"></ol>
+  <script src="../runtime/template.js"></script>
+  <script src="../compiler/compiler.js"></script>
+  <script>
+    const results = document.getElementById("results");
+    async function test(name, callback) {
+      const item = document.createElement("li");
+      try {
+        await callback();
+        item.textContent = `RÉUSSI : ${name}`;
+      } catch (error) {
+        item.textContent = `ÉCHEC : ${name} — ${error.message}`;
+        item.style.color = "red";
+      }
+      results.append(item);
+    }
+
+    // Imitation de PyWimsPython, une session par question : « apres » compare chaque saisie à la réponse
+    // attendue du tirage. Une saisie « sans retour » fait omettre la variable feedback ; mismatch simule
+    // un tirage non reproduit. Le journal de chaque session est dans pythonLogs[identifiant].
+    const fakePython = options => `
+window.PyWimsPython = (() => {
+  const options = ${JSON.stringify(options)};
+  const logs = window.pythonLogs = {};
+  const pause = () => new Promise(resolve => setTimeout(resolve, options.delay || 0));
+  function createSession(id) {
+    const exercise = options.questions?.[id] ?? options;
+    const values = {};
+    const log = logs[id] = [];
+    let seed = null;
+    let ok = {};
+    let feedback = null;
+    return {
+      initialize: async () => { log.push("initialize"); },
+      dispose: async () => { log.push("dispose"); },
+      runSeeded: async (code, nextSeed) => { await pause(); seed = nextSeed; log.push("seed " + nextSeed); },
+      getTemplateValue: async name => name === "feedback" ? feedback
+        : exercise.mismatch ? "autre valeur" : exercise.contexts[seed][name],
+      set: async (name, value) => { values[name] = value; },
+      setMatrix: async (name, value) => { values[name] = value; },
+      resetAnswers: async () => { ok = {}; feedback = null; },
+      run: async () => {
+        log.push("apres");
+        const expected = exercise.answers[seed];
+        let allOk = true;
+        for (const [name, answer] of Object.entries(expected)) {
+          if (Array.isArray(answer)) {
+            answer.forEach((row, i) => row.forEach((cell, j) => {
+              const given = (values[name]?.[i]?.[j] ?? "").trim();
+              ok[name + "[" + i + "][" + j + "]"] = cell === null ? given !== "" : given === cell;
+              allOk &&= ok[name + "[" + i + "][" + j + "]"];
+            }));
+          } else {
+            ok[name] = values[name] === answer;
+            allOk &&= ok[name];
+          }
+        }
+        if (!Object.values(values).includes("sans retour")) {
+          feedback = allOk ? "Bravo, retour de l’auteur." : "Non : retour de l’auteur avec $x^2$.";
+        }
+      },
+      getBoolean: async expression => {
+        if (expression === "'feedback' in globals()") return feedback !== null;
+        return Boolean(ok[JSON.parse(expression.match(/ok_answer\\.get\\((.*), False\\)/)[1])]);
+      }
+    };
+  }
+  return { createSession };
+})();`;
+
+    // Charge dans un cadre une feuille assemblée par le compilateur, avec le Python simulé.
+    // questions : [{ fields, draws }] ; une seule question donne une question seule.
+    async function openSheet(questions, options, title = "Feuille") {
+      const resources = {};
+      for (const key of PyWimsCompiler.neededResources(questions.map(question => question.fields))) {
+        resources[key] = await (await fetch(`../${PyWimsCompiler.resourcePaths[key]}`)).text();
+      }
+      resources.python = fakePython(options);
+      const frame = document.createElement("iframe");
+      frame.style.cssText = "width:900px;height:700px";
+      frame.srcdoc = questions.length === 1
+        ? PyWimsCompiler.assembleExercise(questions[0].fields, questions[0].draws, resources)
+        : PyWimsCompiler.assembleActivity(title, questions, resources);
+      document.body.append(frame);
+      await new Promise(resolve => frame.addEventListener("load", resolve, { once: true }));
+      const page = frame.contentDocument;
+      // role("check", 2) : élément de rôle « check » de la question 2.
+      const role = (name, question = 1) => page.querySelector(`#q${question} [data-role="${name}"]`);
+      const $ = selector => page.querySelector(selector);
+      const seeds = (question = 1) => (frame.contentWindow.pythonLogs?.[`q${question}`] ?? [])
+        .filter(entry => entry.startsWith("seed")).map(entry => Number(entry.split(" ")[1]));
+      return { frame, page, $, role, seeds, window: frame.contentWindow };
+    }
+
+    const openExercise = (fields, draws, options) => openSheet([{ fields, draws }], options);
+
+    async function waitFor(predicate, description, timeout = 8000) {
+      const end = Date.now() + timeout;
+      while (Date.now() < end) {
+        if (predicate()) return;
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+      throw new Error(`Délai dépassé : ${description}`);
+    }
+
+    // Un bouton absent reste à sa place, invisible et inactif.
+    const absent = button => button.classList.contains("is-absent") && button.disabled;
+
+    function type(input, value) {
+      input.value = value;
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+
+    const textExercise = {
+      title: "Addition",
+      layout: "STD",
+      avant: "a = 2",
+      enonce: "Combien font {{ a }} plus {{ a }} ? {% input_text 'r' solution=s %}",
+      apres: "ok_answer['r'] = r == str(2 * a)"
+    };
+    const textDraws = [
+      { seed: 0, context: { a: "2" }, dimensions: {}, solutions: { r: "4" }, explication: "Car $2 + 2 = 4$." },
+      { seed: 1, context: { a: "3" }, dimensions: {}, solutions: { r: "6" }, explication: null }
+    ];
+    const textOptions = {
+      contexts: { 0: { a: "2" }, 1: { a: "3" } },
+      answers: { 0: { r: "4" }, 1: { r: "6" } }
+    };
+
+    (async () => {
+      await test("l’énoncé s’affiche avant que Python soit prêt", async () => {
+        const { $, role, seeds, frame } = await openExercise(textExercise, textDraws, { ...textOptions, delay: 3000 });
+        await waitFor(() => $("#q1-form_txt_r"), "affichage du champ", 1500);
+        if (!/Combien font [23] plus [23]/.test(role("prompt").textContent) || seeds().length) {
+          throw new Error("L’énoncé n’est pas affiché tout de suite à partir du tirage.");
+        }
+        frame.remove();
+      });
+
+      await test("vérifier, corriger, puis réussir sur le même tirage", async () => {
+        const { $, role, seeds, frame } = await openExercise(textExercise, textDraws, textOptions);
+        const field = $("#q1-form_txt_r");
+        const check = role("check");
+        const feedback = role("feedback");
+        if (!check.disabled || absent(role("solution")) || absent(role("new-draw"))) {
+          throw new Error("État initial des boutons inattendu.");
+        }
+        const barPosition = () => JSON.stringify(role("new-draw").getBoundingClientRect());
+        const initialPosition = barPosition();
+        type(field, "5");
+        if (check.disabled || check.getAttribute("aria-label") !== "Vérifier ma réponse") throw new Error("Vérifier reste grisé après la saisie.");
+        check.click();
+        // Le champ se réduit puis se réagrandit ; le retour n’apparaît qu’une fois l’animation terminée.
+        await waitFor(() => field.getAnimations().length > 0, "animation du champ", 3000);
+        await waitFor(() => feedback.classList.contains("is-visible"), "retour d’erreur");
+        if (field.getAnimations().length) throw new Error("Le retour apparaît avant la fin de l’animation du champ.");
+        if (barPosition() !== initialPosition) throw new Error("La barre d’outils a bougé pendant la vérification.");
+        if (!field.classList.contains("is-incorrect") || !field.disabled ||
+            !feedback.classList.contains("is-incorrect") ||
+            !feedback.textContent.includes("retour de l’auteur") ||
+            check.getAttribute("aria-label") !== "Corriger ma réponse" || absent(role("solution")) ||
+            $("#q1").dataset.state !== "checked" || $("#q1").dataset.result !== "ko") {
+          throw new Error("L’état après une réponse fausse est incorrect.");
+        }
+        check.click();
+        if (field.disabled || field.value !== "5" || field.classList.contains("is-incorrect") ||
+            feedback.textContent || check.getAttribute("aria-label") !== "Vérifier ma réponse" ||
+            $("#q1").dataset.state !== "open") {
+          throw new Error("« Corriger ma réponse » ne rouvre pas le champ avec la saisie.");
+        }
+        type(field, textOptions.answers[seeds().at(-1)].r);
+        check.click();
+        await waitFor(() => feedback.classList.contains("is-correct"), "retour juste");
+        if (!field.classList.contains("is-correct") || !absent(check) || !absent(role("solution")) || absent(role("new-draw"))) {
+          throw new Error("Après une réponse juste, seul « Nouvel énoncé » doit rester.");
+        }
+        frame.remove();
+      });
+
+      await test("sans variable feedback, un retour par défaut s’affiche", async () => {
+        const { $, role, frame } = await openExercise(textExercise, textDraws, textOptions);
+        type($("#q1-form_txt_r"), "sans retour");
+        role("check").click();
+        await waitFor(() => role("feedback").classList.contains("is-visible"), "retour par défaut")
+          .catch(error => { throw new Error(`${error.message} ; état : ${role("status").textContent}`); });
+        if (role("feedback").textContent !== "Certaines réponses sont incorrectes.") {
+          throw new Error(`Retour inattendu : ${role("feedback").textContent}`);
+        }
+        frame.remove();
+      });
+
+      await test("la solution remplit le champ et affiche l’explication", async () => {
+        const { $, role, frame } = await openExercise(textExercise, [textDraws[0]], textOptions);
+        role("solution").click();
+        await waitFor(() => role("feedback").classList.contains("is-visible"), "explication");
+        const field = $("#q1-form_txt_r");
+        if (field.value !== "4" || !field.classList.contains("is-correct") || !field.disabled ||
+            !role("feedback").classList.contains("is-explanation") ||
+            !role("feedback").textContent.includes("Car") ||
+            !absent(role("check")) || !absent(role("solution")) || absent(role("new-draw"))) {
+          throw new Error("La solution n’est pas affichée comme prévu.");
+        }
+        frame.remove();
+      });
+
+      await test("un nouvel énoncé change de tirage sans recharger la page", async () => {
+        const { $, role, seeds, window: frameWindow, frame } = await openExercise(textExercise, textDraws, textOptions);
+        frameWindow.marker = "même page";
+        const before = role("prompt").textContent;
+        role("solution").click();
+        await waitFor(() => absent(role("solution")) && !role("new-draw").disabled, "fin de l’affichage de la solution");
+        role("new-draw").click();
+        await waitFor(() => seeds().length === 2, "nouvelle préparation Python");
+        // L’énoncé est remplacé après un court fondu ; les boutons redeviennent actifs à la fin.
+        await waitFor(() => !role("new-draw").disabled && role("prompt").textContent !== before, "nouvel énoncé affiché");
+        const field = $("#q1-form_txt_r");
+        if (frameWindow.marker !== "même page" || field.value || field.disabled ||
+            field.classList.contains("is-correct") || absent(role("check")) || role("feedback").textContent) {
+          throw new Error("Le nouvel énoncé n’a pas remplacé le tirage et réinitialisé la question.");
+        }
+        frame.remove();
+      });
+
+      await test("une valeur libre de la solution s’affiche « ∗ » sans couleur de correction", async () => {
+        const fields = {
+          title: "Triangulaire",
+          layout: "STD",
+          avant: "M = 0",
+          enonce: "{% input_matrix 'm' size=2 solution=M %}",
+          apres: "pass"
+        };
+        const draws = [{ seed: 0, context: {}, dimensions: {}, solutions: { m: [[null, "1"], ["0", null]] }, explication: null }];
+        const { $, role, frame } = await openExercise(fields, draws, { contexts: { 0: {} }, answers: { 0: { m: [[null, "1"], ["0", null]] } } });
+        const cell = (i, j) => $(`[id='q1-form_txt_m[${i}][${j}]']`);
+        // Vérification d’abord : les cases libres et [0][1] sont justes, [1][0] est fausse.
+        for (const [i, j, value] of [[0, 0, "5"], [0, 1, "1"], [1, 0, "7"], [1, 1, "9"]]) type(cell(i, j), value);
+        role("check").click();
+        await waitFor(() => role("feedback").classList.contains("is-visible"), "retour de la vérification");
+        if (!cell(0, 0).classList.contains("is-correct") || !cell(1, 0).classList.contains("is-incorrect")) {
+          throw new Error("La vérification de la matrice ne colore pas les cases comme prévu.");
+        }
+        // La solution remplace toutes les cases, même celles qui étaient justes.
+        role("solution").click();
+        await waitFor(() => $("#q1").dataset.state === "solution", "solution de la matrice");
+        if (cell(0, 0).value !== "∗" || !cell(0, 0).classList.contains("is-free") || cell(0, 0).classList.contains("is-correct") ||
+            cell(1, 1).value !== "∗" || !cell(1, 1).classList.contains("is-free") ||
+            cell(1, 0).value !== "0" || !cell(1, 0).classList.contains("is-correct") || cell(0, 1).value !== "1") {
+          throw new Error("Les cases libres ou fixées de la solution sont incorrectes.");
+        }
+        frame.remove();
+      });
+
+      await test("un tirage que Python ne reproduit pas est signalé", async () => {
+        const { role, frame } = await openExercise(textExercise, textDraws, { ...textOptions, mismatch: true });
+        await waitFor(() => role("status").classList.contains("is-error"), "message d’erreur");
+        if (!role("status").textContent.includes("n’a pas pu être reproduit")) {
+          throw new Error(`Message inattendu : ${role("status").textContent}`);
+        }
+        frame.remove();
+      });
+
+      await test("une feuille de deux questions les garde indépendantes, même avec des champs de même nom", async () => {
+        const otherExercise = { ...textExercise, title: "Double", enonce: "Le double de {{ a }} ? {% input_text 'r' solution=s %}" };
+        const otherDraws = [{ seed: 5, context: { a: "7" }, dimensions: {}, solutions: { r: "14" }, explication: null }];
+        const options = {
+          questions: {
+            q1: textOptions,
+            q2: { contexts: { 5: { a: "7" } }, answers: { 5: { r: "14" } } }
+          }
+        };
+        const { page, $, role, seeds, window: frameWindow, frame } = await openSheet(
+          [{ fields: textExercise, draws: textDraws }, { fields: otherExercise, draws: otherDraws }], options, "Révisions");
+        await waitFor(() => $("#q1-form_txt_r") && $("#q2-form_txt_r"), "affichage des deux questions");
+        if (page.body.dataset.sheet !== "activity" || $("#exercise-title").textContent !== "Révisions" ||
+            role("title", 1).textContent !== "Question 1 : Addition" || role("title", 2).textContent !== "Question 2 : Double" ||
+            role("badge", 1).textContent !== "1" || page.querySelectorAll("iframe").length ||
+            $("#pw-completion-value").textContent !== "0 %" || $("#pw-completion-label").textContent !== "0 / 2 réussie" ||
+            !role("prompt", 2).textContent.includes("Le double de 7")) {
+          throw new Error("La feuille n’affiche pas ses deux questions dans un seul document.");
+        }
+        type($("#q2-form_txt_r"), "14");
+        if (!role("check", 1).disabled || role("check", 2).disabled) {
+          throw new Error("Une saisie dans la question 2 a modifié les boutons de la question 1.");
+        }
+        role("check", 2).click();
+        await waitFor(() => role("feedback", 2).classList.contains("is-correct"), "retour de la question 2");
+        if (role("feedback", 1).textContent || $("#q1-form_txt_r").classList.contains("is-correct") ||
+            !$("#q2-form_txt_r").classList.contains("is-correct") ||
+            $("#q1").dataset.state !== "open" || seeds(2).join() !== "5" ||
+            frameWindow.pythonLogs.q1.includes("apres") || !frameWindow.pythonLogs.q2.includes("apres")) {
+          throw new Error("La vérification de la question 2 a touché la question 1 ou sa session Python.");
+        }
+        // Progression : la question 2 réussie compte pour moitié ; une solution affichée ne compte pas.
+        await waitFor(() => $("#pw-completion-value").textContent === "50 %", "pourcentage à 50 %");
+        if (role("badge", 2).textContent !== "✓" || !role("badge", 2).classList.contains("is-done") ||
+            role("badge", 1).textContent !== "1" || $("#pw-completion-label").textContent !== "1 / 2 réussie" ||
+            $("#pw-progress-fill").style.width !== "50%") {
+          throw new Error("La réussite de la question 2 n’est pas reportée sur son numéro et la progression.");
+        }
+        role("solution", 1).click();
+        await waitFor(() => $("#q1").dataset.state === "solution", "solution de la question 1");
+        role("new-draw", 2).click();
+        await waitFor(() => !role("new-draw", 2).disabled && $("#q2").dataset.state === "open", "nouvel énoncé de la question 2");
+        await new Promise(resolve => setTimeout(resolve, 900));
+        if ($("#pw-completion-value").textContent !== "50 %" || role("badge", 2).textContent !== "✓" || page.querySelector(".pw-toast")) {
+          throw new Error("La solution a compté comme une réussite, ou le nouvel énoncé a effacé la réussite.");
+        }
+        // Aide : le bouton « ? » ouvre la fenêtre, qui explique aussi le pourcentage.
+        $("#pw-help-button").click();
+        if (!$("#pw-help").open || getComputedStyle($(".pw-help-activity")).display === "none") {
+          throw new Error("L’aide de l’activité ne s’ouvre pas ou n’explique pas le pourcentage.");
+        }
+        $("#pw-help").close();
+        frame.remove();
+      });
+
+      await test("une question seule n’a ni numéro ni progression, mais garde l’aide", async () => {
+        const { $, role, frame } = await openExercise(textExercise, textDraws, textOptions);
+        const hidden = element => getComputedStyle(element).display === "none";
+        if (!hidden($("#pw-completion")) || !hidden($(".pw-progress")) || !hidden(role("badge")) ||
+            !hidden(role("title")) || hidden($("#pw-help-button"))) {
+          throw new Error("La question seule affiche une progression ou n’a pas d’aide.");
+        }
+        $("#pw-help-button").click();
+        if (!$("#pw-help").open || !hidden($(".pw-help-activity"))) {
+          throw new Error("L’aide de la question seule parle du pourcentage.");
+        }
+        frame.remove();
+      });
+
+      document.body.dataset.done = "true";
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,742 @@
+<!doctype html>
+<!-- Banc de tests navigateur autonome du parseur, des widgets et de la génération HTML. -->
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Tests du compilateur PyWimsOnHTML</title>
+</head>
+<body>
+  <h1>Tests du compilateur</h1>
+  <!-- Chaque vérification ajoute ici son résultat sans bloquer les tests suivants. -->
+  <ol id="results"></ol>
+  <script src="../runtime/template.js"></script>
+  <script src="../compiler/compiler.js"></script>
+  <script src="../widgets/input-matrix.js"></script>
+  <script src="../widgets/input-math.js"></script>
+  <script src="../widgets/input-text.js"></script>
+  <script>
+    const results = document.getElementById("results");
+    // Exécute un contrôle isolément afin qu’un échec ne masque pas les autres résultats.
+    function test(name, callback) {
+      const item = document.createElement("li");
+      try {
+        callback();
+        item.textContent = `RÉUSSI : ${name}`;
+      } catch (error) {
+        item.textContent = `ÉCHEC : ${name} — ${error.message}`;
+        item.style.color = "red";
+      }
+      results.append(item);
+    }
+    // Petit exercice source partagé par les tests du format et des champs facultatifs.
+    const source = `%\n% title\n%\nEssai\n%\n% keywords\n%\nmathématiques, PGCD\n%\n% layout\n%\nSTD\n%\n% avant\n%\nx = 3\n%\n% enonce\n%\nBonjour {{x}} {% input_text 'reponse' solution=x style='width:5em' %}\n%\n% apres\n%\nok_answer['reponse'] = reponse == '3'\nfeedback = 'Fini'\n%`;
+    test("analyse le format des champs", () => {
+      const fields = PyWimsCompiler.parseExerciseSource(source);
+      if (fields.title !== "Essai" || fields.keywords !== "mathématiques, PGCD") throw new Error("Les valeurs des champs sont différentes.");
+    });
+    // Grammaire unique des balises (runtime/template.js).
+    const expectTagError = (source, fragment) => {
+      try {
+        PyWimsTemplate.parseTag(source);
+      } catch (error) {
+        if (!error.message.includes(fragment)) {
+          throw new Error(`Message inattendu pour « ${source} » : ${error.message}`);
+        }
+        return;
+      }
+      throw new Error(`Balise invalide acceptée : ${source}`);
+    };
+    test("chaque balise de saisie exige un attribut solution et un nom non réservé", () => {
+      for (const source of [
+        "input_text 'resultat' solution=somme style='width:7em'",
+        "input_math 'derivee' solution=derivee",
+        "input_matrix 'matrice' rows=m cols=p solution=produit",
+        "input_vmatrix 'matrice' max_rows=5 solution=produit"
+      ]) {
+        const tag = PyWimsTemplate.parseTag(source);
+        if (!tag.attributes.solution || !/^(somme|derivee|produit)$/.test(tag.attributes.solution)) {
+          throw new Error(`Solution non reconnue dans : ${source}`);
+        }
+      }
+      expectTagError("input_text 'x' solution='12'", "doit être un nom de variable");
+      expectTagError("input_math 'derivee'", "Le champ « derivee » doit indiquer sa solution");
+      expectTagError("input_text 'feedback' solution=s", "Le nom de champ « feedback » est réservé");
+      expectTagError("input_text 'lambda' solution=s", "Le nom de champ « lambda » est réservé");
+    });
+    test("les balises invalides produisent un message précis", () => {
+      expectTagError("input_select 'choix'", "Balise de modèle non prise en charge");
+      expectTagError("input_text 'x' couleur='rouge'", "Attribut « couleur » inconnu pour input_text");
+      expectTagError("input_vmatrix 'm' max_rows=n", "doit être un entier");
+      expectTagError("input_text 'x' style='a' style='b'", "Attribut « style » répété");
+      expectTagError("input_text 'x' style=", "Syntaxe d’attribut invalide");
+      const errors = PyWimsTemplate.validateTemplate(
+        "{% input_text 'ok' solution=s %} {% input_select 'a' %} {% input_math 'b' taille=2 %}"
+      );
+      if (errors.length !== 2) {
+        throw new Error(`Toutes les balises invalides doivent être signalées : ${errors.join(" ; ")}`);
+      }
+    });
+    test("le rendu du modèle remplace balises et variables en échappant les valeurs", () => {
+      const html = PyWimsTemplate.renderTemplate(
+        "Calcul {{ x }} : {% input_text 'r' solution=s style='width:3em' %}",
+        { x: "<b>&</b>" },
+        tag => `[${tag.type}:${tag.name}:${tag.attributes.style}]`
+      );
+      if (html !== "Calcul &lt;b&gt;&amp;&lt;/b&gt; : [input_text:r:width:3em]" ||
+          PyWimsTemplate.escapeHtml(`"'`) !== "&quot;&#39;") {
+        throw new Error(`Rendu inattendu : ${html}`);
+      }
+      let rejected = false;
+      try {
+        PyWimsTemplate.renderTemplate("{{ inconnue }}", {}, () => "");
+      } catch (error) {
+        rejected = error.message.includes("Variable d’exercice inconnue : inconnue");
+      }
+      if (!rejected) throw new Error("Une variable absente du contexte a été acceptée.");
+    });
+    test("les widgets partagés restent disponibles quel que soit leur ordre de chargement", () => {
+      if (typeof PyWimsWidgets.inputText !== "function" ||
+          typeof PyWimsWidgets.inputMath !== "function" ||
+          typeof PyWimsWidgets.inputMatrix !== "function" ||
+          typeof PyWimsWidgets.enableVariableMatrixResize !== "function") {
+        throw new Error("Le chargement d’un widget a remplacé les fonctions déjà enregistrées.");
+      }
+    });
+    // Ressources minimales pour assembler une feuille : la mise en page réelle, des scripts vides.
+    const sheetResources = layout => ({
+      layout, brandCss: "", exerciseCss: "", template: "", textWidget: "", mathWidget: "",
+      matrixWidget: "", python: "", runner: ""
+    });
+    const sheetQuestion = (title, enonce) => ({
+      fields: { title, keywords: "", layout: "STD", avant: "a = 1", enonce, apres: "ok_answer['r'] = True" },
+      draws: [{ seed: 0, context: {}, dimensions: {}, solutions: { r: "1" }, explication: null }]
+    });
+    function testSheetAssembly(layout) {
+      test("une activité est un seul document avec une section par question", () => {
+        const html = PyWimsCompiler.assembleActivity("Activité & révision", [
+          sheetQuestion("Question <1>", "Un {% input_text 'r' solution=a %}"),
+          sheetQuestion("Question 2", "Deux {% input_text 'r' solution=a %}")
+        ], sheetResources(layout));
+        const page = new DOMParser().parseFromString(html, "text/html");
+        const sections = [...page.querySelectorAll("main .pw-question")];
+        const field = (section, name) => section.querySelector(`.pw-question-data[hidden] pre[data-field="${name}"]`)?.textContent;
+        if (page.title !== "Activité & révision" || page.body.dataset.sheet !== "activity" ||
+            page.querySelector("iframe") ||
+            sections.map(section => section.id).join() !== "q1,q2" ||
+            field(sections[0], "title") !== "Question <1>" ||
+            field(sections[1], "enonce") !== "Deux {% input_text 'r' solution=a %}" ||
+            JSON.parse(sections[0].querySelector("pre[data-draws]").textContent)[0].solutions.r !== "1" ||
+            !page.getElementById("pw-question-template")) {
+          throw new Error("L’activité n’assemble pas ses questions dans un seul document.");
+        }
+        for (const [title, questions] of [["", [sheetQuestion("A", "x"), sheetQuestion("B", "y")]], ["Seule", [sheetQuestion("A", "x")]]]) {
+          let rejected = false;
+          try {
+            PyWimsCompiler.assembleActivity(title, questions, sheetResources(layout));
+          } catch {
+            rejected = true;
+          }
+          if (!rejected) throw new Error("Une activité sans titre ou d’une seule question a été acceptée.");
+        }
+        const single = new DOMParser().parseFromString(
+          PyWimsCompiler.assembleExercise(sheetQuestion("Seule", "x").fields, sheetQuestion("Seule", "x").draws, sheetResources(layout)),
+          "text/html");
+        if (single.body.dataset.sheet !== "single" || single.querySelectorAll(".pw-question").length !== 1 ||
+            single.getElementById("exercise-title").textContent !== "Seule") {
+          throw new Error("Une question seule n’est pas une feuille d’une question.");
+        }
+      });
+    }
+    test("l’archive des pages séparées est un fichier ZIP", () => {
+      const archive = PyWimsCompiler.createZip([{ name: "question.html", content: "<html></html>" }]);
+      if (archive.type !== "application/zip" || archive.size < 100) {
+        throw new Error("L’archive des pages séparées est vide ou mal typée.");
+      }
+    });
+    // Contrôles asynchrones : la page signale leur fin par data-done sur <body> (outil tests/outils).
+    const pendingTests = [];
+    pendingTests.push(PyWimsCompiler.createZip([
+      { name: "question 1.html", content: "hello" },
+      { name: "révision/question 2.html", content: "bonjour" }
+    ]).arrayBuffer().then(buffer => {
+      const bytes = new Uint8Array(buffer);
+      const view = new DataView(buffer);
+      const endOffset = bytes.length - 22;
+      const centralOffset = view.getUint32(endOffset + 16, true);
+      const firstNameLength = view.getUint16(26, true);
+      const firstContentOffset = 30 + firstNameLength;
+      const centralName = new TextDecoder().decode(
+        bytes.slice(centralOffset + 46, centralOffset + 46 + view.getUint16(centralOffset + 28, true))
+      );
+      if (view.getUint32(0, true) !== 0x04034b50 ||
+          view.getUint32(14, true) !== 0x3610a686 ||
+          new TextDecoder().decode(bytes.slice(firstContentOffset, firstContentOffset + 5)) !== "hello" ||
+          view.getUint32(centralOffset, true) !== 0x02014b50 ||
+          view.getUint16(endOffset + 10, true) !== 2 ||
+          centralName !== "question 1.html" ||
+          view.getUint32(endOffset, true) !== 0x06054b50) {
+        throw new Error("La structure ZIP, le CRC ou les noms UTF-8 sont incorrects.");
+      }
+      const item = document.createElement("li");
+      item.textContent = "RÉUSSI : l’archive ZIP contient des entrées valides avec CRC et noms UTF-8";
+      results.append(item);
+    }).catch(error => {
+      const item = document.createElement("li");
+      item.textContent = `ÉCHEC : validation détaillée de l’archive ZIP — ${error.message}`;
+      item.style.color = "red";
+      results.append(item);
+    }));
+    test("rejette les champs en double", () => {
+      let rejected = false;
+      try {
+        PyWimsCompiler.parseExerciseSource(source.replace("%\n% keywords", "%\n% title"));
+      } catch {
+        rejected = true;
+      }
+      if (!rejected) throw new Error("Le titre en double a été accepté.");
+    });
+    test("rejette un champ obligatoire absent ou vide", () => {
+      for (const [variant, name] of [
+        [source.replace(/%\n% apres\n%\n[^%]*/, ""), "apres"],
+        [source.replace("x = 3", "  "), "avant"]
+      ]) {
+        let rejected = false;
+        try {
+          PyWimsCompiler.parseExerciseSource(variant);
+        } catch (error) {
+          rejected = error.message.includes(`le champ obligatoire « ${name} » est absent ou vide`);
+        }
+        if (!rejected) throw new Error(`L’absence du champ « ${name} » n’a pas été signalée.`);
+      }
+    });
+    test("indique comment mettre à jour un champ de l’ancien format", () => {
+      for (const [old, hint] of [
+        ["libraries", "importez les bibliothèques en tête de « avant »"],
+        ["ggb_commands", "n’est plus pris en charge"],
+        ["reponse", "définissez la variable « feedback » dans « apres »"],
+        ["feedback", "définissez la variable « feedback » dans « apres »"]
+      ]) {
+        let message = "";
+        try {
+          PyWimsCompiler.parseExerciseSource(source.replace("%\n% apres", `%\n% ${old}`));
+        } catch (error) {
+          message = error.message;
+        }
+        if (!message.includes(hint)) throw new Error(`Message inattendu pour « ${old} » : ${message}`);
+      }
+    });
+    test("les tirages sont intégrés en texte échappé et relus à l’identique", () => {
+      const draws = [{
+        seed: 3,
+        context: { f: "\\displaystyle \\frac{3}{4}", piege: "</pre><scr" + "ipt>bad()</scr" + "ipt> & \"'" },
+        dimensions: { n: 2 },
+        solutions: { m: [[null, "1/2"], ["0", null]] },
+        explication: "Les cases ∗ sont libres : $x^2$."
+      }];
+      const host = document.createElement("div");
+      host.innerHTML = PyWimsCompiler.renderDrawData(draws);
+      const block = host.querySelector("pre[data-draws]");
+      if (host.querySelector("script") || !block ||
+          JSON.stringify(JSON.parse(block.textContent)) !== JSON.stringify(draws)) {
+        throw new Error("Les tirages ne sont pas échappés ou ne se relisent pas à l’identique.");
+      }
+    });
+    test("rejette un champ inconnu", () => {
+      let rejected = false;
+      try {
+        PyWimsCompiler.parseExerciseSource(source.replace("%\n% keywords", "%\n% made_up"));
+      } catch (error) {
+        rejected = error.message.includes('champ inconnu « made_up »');
+      }
+      if (!rejected) throw new Error("Le champ inconnu n’a pas été signalé.");
+    });
+    test("affiche les champs de l’exercice sous forme de texte HTML lisible et échappé", () => {
+      const fields = {
+        avant: "x = randint(1, 10)\nprint('</pre><scr" + "ipt>bad</scr" + "ipt>')",
+        enonce: "Calcule {{x}}"
+      };
+      const host = document.createElement("div");
+      host.innerHTML = PyWimsCompiler.renderExerciseData(fields);
+      const rendered = Object.fromEntries(
+        [...host.querySelectorAll("[data-field]")].map(field => [
+          field.dataset.field,
+          field.textContent
+        ])
+      );
+      if (!host.innerHTML.includes("randint(1, 10)") ||
+          !host.innerHTML.includes("Calcule {{x}}") ||
+          rendered.avant !== fields.avant ||
+          rendered.enonce !== fields.enonce ||
+          host.querySelector("script")) {
+        throw new Error("Le contenu de l’exercice n’est pas lisible, préservé et échappé.");
+      }
+    });
+    pendingTests.push(fetch("../exercises/pgcd.pwe")
+      .then(response => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.text();
+      })
+      .then(text => {
+        const fields = PyWimsCompiler.parseExerciseSource(text, "pgcd.pwe");
+        test("analyse l’exercice PGCD réel", () => {
+          if (fields.title !== "PGCD" ||
+              fields.keywords !== "arithmétique, PGCD, nombres entiers" ||
+              fields.layout !== "STD" ||
+              !fields.apres.includes("ok_answer")) {
+            throw new Error("Les champs de l’exercice PGCD sont inattendus.");
+          }
+        });
+      })
+      .catch(error => {
+        const item = document.createElement("li");
+        item.textContent = `ÉCHEC : analyse de l’exercice réel — ${error.message}`;
+        item.style.color = "red";
+        results.append(item);
+      }));
+    pendingTests.push(fetch("../exercises/addition-fractions.pwe")
+      .then(response => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.text();
+      })
+      .then(text => {
+        const fields = PyWimsCompiler.parseExerciseSource(text, "addition-fractions.pwe");
+        test("analyse le nouvel exercice d’addition de fractions", () => {
+          if (fields.title !== "Addition de fractions" ||
+              fields.keywords !== "fractions, addition, dénominateur commun, fraction irréductible" ||
+              fields.layout !== "STD" ||
+              PyWimsTemplate.validateTemplate(fields.enonce).length ||
+              !fields.enonce.includes("{% input_text 'resultat' solution=somme") ||
+              !fields.apres.includes("irréductible") ||
+              !fields.apres.includes("py_wims(resultat)")) {
+            throw new Error("Les champs de l’exercice d’addition de fractions sont inattendus.");
+          }
+        });
+      })
+      .catch(error => {
+        const item = document.createElement("li");
+        item.textContent = `ÉCHEC : analyse de l’exercice d’addition de fractions — ${error.message}`;
+        item.style.color = "red";
+        results.append(item);
+      }));
+    pendingTests.push(fetch("../exercises/matrice-triangulaire.pwe")
+      .then(response => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.text();
+      })
+      .then(text => {
+        const fields = PyWimsCompiler.parseExerciseSource(text, "matrice-triangulaire.pwe");
+        test("analyse l’exercice réel de matrice triangulaire", () => {
+          if (fields.title !== "Matrice triangulaire supérieure" ||
+              fields.layout !== "STD" ||
+              PyWimsTemplate.validateTemplate(fields.enonce).length ||
+              !fields.avant.includes("LIBRE") ||
+              !fields.avant.includes("explication_solution") ||
+              !fields.enonce.includes("{% input_matrix 'matrice' size=size solution=solution_matrice") ||
+              !fields.apres.includes('ok_answer["matrice[{}][{}]".format(i, j)]') ||
+              !fields.apres.includes('getattr(valeur, "is_number", False)')) {
+            throw new Error("Les champs de l’exercice matriciel sont inattendus.");
+          }
+        });
+      })
+      .catch(error => {
+        const item = document.createElement("li");
+        item.textContent = `ÉCHEC : analyse de l’exercice matriciel — ${error.message}`;
+        item.style.color = "red";
+        results.append(item);
+      }));
+    test("le composant crée une matrice carrée accessible avec ses délimiteurs", () => {
+      const host = document.createElement("div");
+      host.innerHTML = PyWimsWidgets.inputMatrix("matrice", 2, 2, { inputStyle: "width:1.5em" });
+      const cells = [...host.querySelectorAll("[data-matrix-name]")];
+      if (cells.length !== 4 ||
+          cells[0].id !== "form_txt_matrice[0][0]" ||
+          cells[3].id !== "form_txt_matrice[1][1]" ||
+          cells[2].getAttribute("aria-label") !== "matrice ligne 2 colonne 1" ||
+          !cells.every(cell => cell.getAttribute("style") === "width:1.5em") ||
+          host.querySelectorAll(".pw-matrix-delimiter").length !== 2 ||
+          !host.querySelector(".pw-matrix-delimiter-left") ||
+          !host.querySelector(".pw-matrix-delimiter-right")) {
+        throw new Error("La matrice, ses coordonnées ou ses champs accessibles sont incorrects.");
+      }
+    });
+    test("le composant crée une matrice rectangulaire", () => {
+      const host = document.createElement("div");
+      host.innerHTML = PyWimsWidgets.inputMatrix("produit", 2, 3);
+      const cells = [...host.querySelectorAll("[data-matrix-name]")];
+      if (cells.length !== 6 ||
+          host.querySelector("table").getAttribute("aria-label") !== "Matrice 2 par 3" ||
+          host.querySelectorAll("tbody tr:first-child > td").length !== 3 ||
+          host.querySelectorAll("tbody tr:nth-child(2) > td").length !== 3 ||
+          cells[5].id !== "form_txt_produit[1][2]") {
+        throw new Error("Les dimensions, cellules HTML ou coordonnées de la matrice rectangulaire sont incorrectes.");
+      }
+    });
+    test("le composant crée une matrice redimensionnable limitée aux dimensions demandées", () => {
+      const host = document.createElement("div");
+      host.innerHTML = PyWimsWidgets.inputVMatrix("produit", 5, 4, {
+        cellWidth: "4em",
+        inputStyle: "width:3em"
+      });
+      const viewport = host.querySelector(".pw-vmatrix-viewport");
+      const cells = [...host.querySelectorAll("input[data-vmatrix-name]")];
+      if (cells.length !== 20 ||
+          viewport.dataset.maxRows !== "5" ||
+          viewport.dataset.maxColumns !== "4" ||
+          viewport.getAttribute("aria-label") !== "Matrice redimensionnable produit" ||
+          cells[19].id !== "form_txt_produit[4][3]" ||
+          !viewport.getAttribute("style").includes("--pw-vmatrix-cell-width:4em") ||
+          !host.querySelector(".pw-matrix-delimiter-left") ||
+          !host.querySelector(".pw-matrix-delimiter-right")) {
+        throw new Error("La matrice redimensionnable, ses limites ou ses délimiteurs sont incorrects.");
+      }
+    });
+    test("le champ MathLive produit une saisie mathématique accessible", () => {
+      const host = document.createElement("div");
+      host.innerHTML = PyWimsWidgets.inputMath("derivee");
+      const field = host.querySelector("math-field");
+      if (!field ||
+          field.id !== "form_txt_derivee" ||
+          field.getAttribute("aria-label") !== "derivee" ||
+          field.getAttribute("math-virtual-keyboard-policy") !== "auto") {
+        throw new Error("Le champ de saisie mathématique ou son accessibilité est incorrect.");
+      }
+    });
+    test("les widgets préfixent leurs identifiants et portent le nom du champ", () => {
+      const host = document.createElement("div");
+      host.innerHTML = PyWimsWidgets.inputText("r", { idPrefix: "q2-" }) +
+        PyWimsWidgets.inputMath("d", { idPrefix: "q2-" }) +
+        PyWimsWidgets.inputMatrix("m", 1, 1, { idPrefix: "q2-" }) +
+        PyWimsWidgets.inputVMatrix("v", 1, 1, { idPrefix: "q2-" });
+      const ids = [...host.querySelectorAll("[data-name], [data-matrix-name]")].map(input => input.id);
+      if (ids.join() !== "q2-form_txt_r,q2-form_txt_d,q2-form_txt_m[0][0],q2-form_txt_v[0][0]" ||
+          host.querySelector("[data-name='d']")?.tagName !== "MATH-FIELD") {
+        throw new Error(`Identifiants inattendus : ${ids.join()}`);
+      }
+      let rejected = false;
+      try {
+        PyWimsWidgets.inputText("r", { idPrefix: "q2\"><b" });
+      } catch {
+        rejected = true;
+      }
+      if (!rejected) throw new Error("Un préfixe d’identifiant invalide a été accepté.");
+    });
+    test("le nom du fichier conserve les accents du titre", () => {
+      if (PyWimsCompiler.createExerciseFilename("Dérivée d’un polynôme") !==
+          "Dérivée-d-un-polynôme.html") {
+        throw new Error("Le nom de fichier a perdu les lettres accentuées.");
+      }
+    });
+    // Charge les ressources du projet pour vérifier leurs contrats et leur intégration.
+    pendingTests.push(Promise.all([
+      fetch("../compiler/index.html").then(response => response.text()),
+      fetch("../compiler/compiler.js").then(response => response.text()),
+      fetch("../layouts/standard.html").then(response => response.text()),
+        fetch("../css/brand.css").then(response => response.text()),
+        fetch("../css/exercise.css").then(response => response.text()),
+        fetch("../runtime/runner.js").then(response => response.text()),
+        fetch("../widgets/input-text.js").then(response => response.text()),
+          fetch("../widgets/input-matrix.js").then(response => response.text()),
+        fetch("../widgets/input-math.js").then(response => response.text()),
+        fetch("../runtime/python.js").then(response => response.text()),
+        fetch("../exercises/dérivée-polynôme.pwe").then(response => response.text()),
+        fetch("../exercises/produit-matrices.pwe").then(response => response.text())
+        ])
+          .then(([compilerPage, compilerScript, layout, brandCss, exerciseCss, runner, inputWidget, matrixWidget, mathWidget, pythonRuntime, derivativeExercise, matrixProductExercise]) => {
+          // Les contrôles suivants couvrent l’interface, le runtime et les exercices fournis.
+          test("la page du compilateur propose deux panneaux et une prévisualisation", () => {
+            if (!compilerPage.includes('id="folder-name"') ||
+                !compilerPage.includes('id="choose-folder" type="button">Ouvrir un dossier</button>') ||
+                !compilerScript.includes('chooseFolderButton.textContent = "Dossier ouvert :"') ||
+                !compilerPage.includes('id="exercise-list"') ||
+                !compilerPage.includes('id="exercise-search"') ||
+                !compilerPage.includes('id="preview-frame"') ||
+                !compilerPage.includes('id="selection-count"') ||
+                !compilerPage.includes('id="output-mode"') ||
+                !compilerPage.includes('id="activity-title"') ||
+                !compilerPage.includes('id="compile-exercise" type="button" disabled>Compiler</button>') ||
+                !compilerPage.includes("#project-folder { display: none; }") ||
+                !/#exercise-list\s*\{[^}]*overflow-y:\s*auto/s.test(compilerPage)) {
+              throw new Error("La page ne contient pas les panneaux, filtres, aperçu ou défilement attendus.");
+            }
+          });
+          test("les messages sont dans la barre de titre et les panneaux défilent indépendamment", () => {
+            if (!/<header class="titlebar">[\s\S]*?id="project-status"[\s\S]*?id="messages"[\s\S]*?<\/header>/.test(compilerPage) ||
+                !/#exercise-list\s*\{[^}]*overflow-y:\s*auto/s.test(compilerPage) ||
+            !/\.panel-preview\s*\{[^}]*overflow:\s*hidden/s.test(compilerPage) ||
+            !/#preview-frame\s*\{[^}]*flex:\s*1 1 auto/s.test(compilerPage) ||
+            !/\.panel-exercises\s*\{[^}]*overflow:\s*auto/s.test(compilerPage) ||
+            !/body\s*\{[^}]*height:\s*100dvh[^}]*overflow:\s*hidden/s.test(compilerPage) ||
+                !compilerPage.includes("@media (max-width: 720px)")) {
+              throw new Error("Les messages ne sont pas dans l’en-tête ou la page défile au lieu des panneaux.");
+            }
+          });
+          test("l’aperçu est isolé et son tirage provisoire affiche chaque variable sous son nom", () => {
+            const frame = new DOMParser().parseFromString(compilerPage, "text/html").getElementById("preview-frame");
+            const draw = PyWimsCompiler.previewPlaceholderDraw({
+              enonce: "Soit {{ f }} et {% input_matrix 'm' rows=n cols=2 solution=s %} {% input_text 'r' solution=s %}"
+            });
+            // Sans « allow-same-origin », le HTML de l’énoncé ne peut pas agir sur le compilateur.
+            if (frame?.getAttribute("sandbox") !== "allow-scripts" ||
+                JSON.stringify(draw.context) !== JSON.stringify({ f: "f", n: "n" }) ||
+                draw.dimensions.n !== 2 || Object.keys(draw.solutions).length) {
+              throw new Error(`Cadre ou tirage provisoire inattendu : ${JSON.stringify(draw)}`);
+            }
+          });
+          test("les messages transitoires s’effacent en fondu", () => {
+            if (!compilerPage.includes(".transient-message.is-fading { opacity: 0;") ||
+                !compilerPage.includes("transition: opacity 700ms ease") ||
+                !compilerPage.includes('id="project-status" class="header-message muted transient-message"') ||
+                !compilerPage.includes('id="messages" class="header-message transient-message"')) {
+              throw new Error("Les styles ou les zones de message transitoire sont absents.");
+            }
+          });
+          test("la mise en page standard active les délimiteurs TeX avec dollars", () => {
+            if (!layout.includes('inlineMath: [["$", "$"]') ||
+                !layout.includes('displayMath: [["$$", "$$"]')) {
+              throw new Error("Les délimiteurs MathJax sont absents.");
+            }
+          });
+          test("les bibliothèques en ligne sont figées sur une version exacte", () => {
+            const urls = [layout, compilerScript, pythonRuntime]
+              .flatMap(source => source.match(/https:\/\/(?:cdn\.jsdelivr\.net|unpkg\.com)\/[^"'\s)]+/g) || []);
+            const unpinned = urls.filter(url => !/(?:@|\/v)\d+\.\d+\.\d+(?:\/|$)/.test(url));
+            if (urls.length < 4 || unpinned.length) {
+              throw new Error(`Bibliothèques sans version exacte : ${unpinned.join(", ") || "aucune URL trouvée"}`);
+            }
+          });
+          test("le compilateur prend en charge le champ MathLive et son chargement", () => {
+            if (!compilerScript.includes("input_math") ||
+                !compilerScript.includes("widgets/input-math.js") ||
+                !compilerScript.includes("MATHLIVE_LOADER") ||
+                !mathWidget.includes("function inputMath") ||
+                !layout.includes("@@MATHLIVE_LOADER@@") ||
+                !runner.includes('input.getValue("ascii-math")') ||
+                !runner.includes('await customElements.whenDefined("math-field")')) {
+              throw new Error("Le composant MathLive n’est pas entièrement relié au compilateur et au runtime.");
+            }
+          });
+          // Le module pywims, l’isolement des questions et les valeurs affichées sont testés avec le
+          // vrai Pyodide dans python-tests.html.
+          test("le nouvel exercice génère un polynôme et corrige sa dérivée symboliquement", () => {
+            const fields = PyWimsCompiler.parseExerciseSource(derivativeExercise, "dérivée-polynôme.pwe");
+            if (fields.title !== "Dérivée d’un polynôme" ||
+                PyWimsTemplate.validateTemplate(fields.enonce).length ||
+                !fields.avant.includes("derivee = diff(fonction, x)") ||
+                !fields.enonce.includes("{% input_math 'derivee_eleve' solution=derivee %}") ||
+                !fields.avant.includes("from pywims import math_expression") ||
+                !fields.apres.includes("math_expression(derivee_eleve)") ||
+                !fields.apres.includes("simplify(reponse_eleve - derivee) == 0")) {
+              throw new Error("L’exercice de dérivation ne génère pas ou ne corrige pas la réponse attendue.");
+            }
+          });
+          test("l’exercice de produit de matrices génère et corrige un produit rectangulaire", () => {
+            const fields = PyWimsCompiler.parseExerciseSource(matrixProductExercise, "produit-matrices.pwe");
+            if (fields.title !== "Produit de matrices" ||
+                PyWimsTemplate.validateTemplate(fields.enonce).length ||
+              !fields.avant.includes("A = Matrix(m, n") ||
+              !fields.avant.includes("B = Matrix(n, p") ||
+              !fields.avant.includes("produit = A * B") ||
+              !fields.enonce.includes("input_vmatrix 'matrice' max_rows=5 max_cols=5") ||
+              !fields.enonce.includes("solution=produit") ||
+              !fields.apres.includes("nombre_lignes != m") ||
+              !fields.apres.includes("nombre_colonnes != p") ||
+              !fields.apres.includes("simplify(valeur - produit[i, j]) == 0")) {
+              throw new Error("L’exercice ne génère pas ou ne corrige pas le produit de matrices attendu.");
+            }
+    });
+    test("le compilateur et le runtime reconnaissent input_vmatrix", () => {
+            const tag = PyWimsTemplate.parseTag(
+              "input_vmatrix 'matrice' max_rows=5 max_cols=4 cell_width='4em' input_style='width:2em' solution=p"
+            );
+            if (tag.type !== "input_vmatrix" ||
+                tag.name !== "matrice" ||
+                tag.attributes.max_rows !== 5 ||
+                tag.attributes.max_cols !== 4 ||
+                tag.attributes.cell_width !== "4em" ||
+                tag.attributes.input_style !== "width:2em" ||
+                !PyWimsTemplate.tagTypes("Saisie : {% input_vmatrix 'm' solution=s %}").has("input_vmatrix") ||
+                !matrixWidget.includes("function inputVMatrix") ||
+                !matrixWidget.includes("data-vmatrix-name") ||
+                !matrixWidget.includes("function enableVariableMatrixResize") ||
+                !matrixWidget.includes("setPointerCapture") ||
+                !matrixWidget.includes("ArrowRight") ||
+                !matrixWidget.includes("viewport.dataset.visibleColumns") ||
+              !runner.includes("viewport.dataset.visibleColumns") ||
+              !runner.includes("viewport.dataset.visibleRows") ||
+              !runner.includes("PyWimsWidgets.enableVariableMatrixResize(promptElement)") ||
+              !exerciseCss.includes(".pw-vmatrix-viewport") ||
+              !exerciseCss.includes("overflow: clip") ||
+              !exerciseCss.includes(".pw-vmatrix-resize")) {
+              throw new Error("La balise redimensionnable n’est pas validée, rendue et collectée par le runtime.");
+            }
+      });
+      test("la poignée ne redimensionne que par cases entières et répond aux flèches", () => {
+            const styles = document.createElement("style");
+            styles.textContent = exerciseCss;
+            document.head.append(styles);
+            const host = document.createElement("div");
+            host.innerHTML = PyWimsWidgets.inputVMatrix("clavier", 4, 4, {
+              cellWidth: "4em",
+              cellHeight: "2em"
+            });
+            document.body.append(host);
+            PyWimsWidgets.enableVariableMatrixResize(host);
+            const viewport = host.querySelector(".pw-vmatrix-viewport");
+            const handle = host.querySelector(".pw-vmatrix-resize");
+            const grid = host.querySelector(".pw-vmatrix-grid");
+            const cell = host.querySelector(".pw-vmatrix-cell").getBoundingClientRect();
+            const gap = Number.parseFloat(getComputedStyle(grid).columnGap);
+            handle.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+            handle.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
+            const bounds = viewport.getBoundingClientRect();
+            // La marge intérieure (où reste visible le contour de focus) entoure les cases visibles.
+            const padding = Number.parseFloat(getComputedStyle(viewport).paddingLeft);
+            const visibleInputs = [...viewport.querySelectorAll("input[data-vmatrix-name]")]
+              .filter(input => {
+                const inputBounds = input.getBoundingClientRect();
+                return inputBounds.left >= bounds.left - 0.5 &&
+                  inputBounds.right <= bounds.right + 0.5 &&
+                  inputBounds.top >= bounds.top - 0.5 &&
+                  inputBounds.bottom <= bounds.bottom + 0.5;
+              });
+            if (viewport.dataset.visibleColumns !== "3" ||
+                viewport.dataset.visibleRows !== "3" ||
+                Math.abs(bounds.width - 2 * padding - (3 * cell.width + 2 * gap)) > 0.5 ||
+                Math.abs(bounds.height - 2 * padding - (3 * cell.height + 2 * gap)) > 0.5 ||
+                Math.abs(padding - gap) > 0.5 ||
+                visibleInputs.length !== 9 ||
+                getComputedStyle(viewport).overflowX !== "clip" ||
+                getComputedStyle(viewport).overflowY !== "clip") {
+              throw new Error(`Taille ${viewport.dataset.visibleRows} × ${viewport.dataset.visibleColumns}, ${visibleInputs.length} cases visibles, débordement ${getComputedStyle(viewport).overflowX}/${getComputedStyle(viewport).overflowY}.`);
+            }
+            host.remove();
+            styles.remove();
+          });
+          testSheetAssembly(layout);
+          test("les données de l’exercice sont intégrées comme texte et non comme JSON dans un script", () => {
+            if (!layout.includes("@@QUESTIONS@@") ||
+                !compilerScript.includes('<div class="pw-question-data" hidden>') ||
+                layout.includes('type="application/json"')) {
+              throw new Error("La source de l’exercice n’est pas intégrée comme bloc de texte lisible.");
+            }
+          });
+          test("le thème standard expose les variables graphiques de l’organisation", () => {
+            if (!brandCss.includes("--pw-brand-primary") ||
+                !brandCss.includes("--pw-body-font") ||
+                !brandCss.includes("@import url(")) {
+              throw new Error("Les variables graphiques ou l’import de la police par défaut sont absents.");
+            }
+          });
+          test("la mise en page affiche le logo UPEC à droite du titre", () => {
+            if (!/<header class="pw-header">[\s\S]*?<h1[^>]*>[\s\S]*?<\/h1>[\s\S]*?<span class="pw-brand-logo" aria-hidden="true"><\/span>[\s\S]*?<\/header>/.test(layout) ||
+                !brandCss.includes(".pw-brand-logo {") ||
+                !brandCss.includes('url("https://www.u-pec.fr/uas/web/LOGO/2017_11_27_Logotype-UPEC_rvb.svg")') ||
+                !brandCss.includes(".pw-brand-logo::after {") ||
+                !brandCss.includes("background: #fff") ||
+                !brandCss.includes("clip-path: polygon(0 62.3%, 0 100%, 100% 37.7%, 100% 0)") ||
+                !brandCss.includes("height: 100%") ||
+                !brandCss.includes("gap: 0.75rem") ||
+                !brandCss.includes("padding: 0 0 0 20px") ||
+                !brandCss.includes("overflow: clip") ||
+                !/@media \(max-width: 640px\)[\s\S]*?\.pw-header\s*\{\s*height: 2\.75rem/.test(brandCss) ||
+                !brandCss.includes(".pw-header #exercise-title") ||
+                !brandCss.includes("text-overflow: ellipsis") ||
+                !brandCss.includes("transform: scale(1.15)") ||
+                !brandCss.includes("transform-origin: top left") ||
+                !brandCss.includes("center / 100% 100% no-repeat") ||
+                /\.pw-header\s*\{[^}]*padding\s*:/s.test(exerciseCss)) {
+              throw new Error("Le logo UPEC recoloré ou son style plein bandeau est absent.");
+            }
+          });
+          test("les styles standards sont ciblés et conservent l’animation du retour", () => {
+            if (exerciseCss.includes(".dev_exos") ||
+                !exerciseCss.includes("@keyframes growIn")) {
+              throw new Error("Des styles historiques inutiles subsistent ou l’animation du retour est absente.");
+            }
+          });
+          test("les crochets matriciels utilisent des angles droits", () => {
+            if (!exerciseCss.includes(".pw-matrix-delimiter {") ||
+                !exerciseCss.includes("border-top: 2px solid var(--pw-input-border)") ||
+                !exerciseCss.includes("border-bottom: 2px solid var(--pw-input-border)") ||
+                !exerciseCss.includes(".pw-matrix-delimiter-left {") ||
+                !exerciseCss.includes("border-left: 2px solid var(--pw-input-border)") ||
+                !exerciseCss.includes(".pw-matrix-delimiter-right {") ||
+                !exerciseCss.includes("border-right: 2px solid var(--pw-input-border)")) {
+              throw new Error("Les délimiteurs de matrice ne forment pas des crochets droits.");
+            }
+          });
+          test("les matrices gardent le même espacement horizontal et vertical", () => {
+            if (!/\.pw-matrix\s*\{[^}]*border-spacing:\s*0\.2em/s.test(exerciseCss) ||
+                !/\.pw-vmatrix-grid\s*\{[^}]*gap:\s*0\.2em/s.test(exerciseCss)) {
+              throw new Error("L’espacement horizontal et vertical diffère entre les cases matricielles.");
+            }
+          });
+          // L’ordre des animations (champ, puis retour) est vérifié en situation dans runtime-tests.html.
+          test("le retour conserve son animation et sa variante sans mouvement", () => {
+            if (!exerciseCss.includes("animation: growIn 2.5s forwards") ||
+                !exerciseCss.includes("animation: feedbackFadeIn 1s")) {
+              throw new Error("L’animation du retour ou sa variante pour les mouvements réduits est absente.");
+            }
+          });
+          test("le composant de réponse réserve sa largeur pendant l’animation du retour", () => {
+            if (!inputWidget.includes("class=\"input pw-input phantom\"") ||
+                !exerciseCss.includes(".phantom {")) {
+              throw new Error("Le composant de réponse ne possède pas de champ fantôme préservant la mise en page.");
+            }
+          });
+          test("le runtime gère les dimensions matricielles carrées et rectangulaires", () => {
+            const square = PyWimsTemplate.parseTag("input_matrix 'a' size=3 solution=s");
+            const rectangular = PyWimsTemplate.parseTag("input_matrix 'b' rows=m cols=2 input_style='width:2em' solution=s");
+            const variables = PyWimsTemplate.templateVariables(
+              "{{ A }} {% input_matrix 'a' size=n solution=s %} {% input_matrix 'b' rows=m cols=p solution=s %} {% input_matrix 'c' size=2 solution=s %}"
+            );
+            if (square.attributes.size !== 3 ||
+                rectangular.attributes.rows !== "m" ||
+                rectangular.attributes.cols !== 2 ||
+                [...variables].sort().join(",") !== "A,m,n,p" ||
+                !runner.includes("python.setMatrix(name, matrix)")) {
+              throw new Error("Les dimensions littérales ou nommées des matrices sont mal analysées.");
+            }
+            for (const invalid of [
+              "input_matrix 'a' solution=s",
+              "input_matrix 'a' rows=2 solution=s",
+              "input_matrix 'a' size=2 rows=2 cols=2 solution=s"
+            ]) {
+              let rejected = false;
+              try {
+                PyWimsTemplate.parseTag(invalid);
+              } catch (error) {
+                rejected = error.message.includes("exige soit size, soit rows et cols");
+              }
+              if (!rejected) throw new Error(`Dimensions incohérentes acceptées : ${invalid}`);
+            }
+          });
+          // Modèle d’une question, tel que runner.js le recopie dans chaque section.
+          const questionTemplate = new DOMParser().parseFromString(layout, "text/html")
+            .getElementById("pw-question-template")?.content;
+          test("un élément de statut vide ne crée pas de bandeau de validation", () => {
+            const status = questionTemplate?.querySelector('[data-role="status"]');
+            if (!status || !status.hidden || status.getAttribute("role") !== "status" ||
+                status.closest(".validation-enonce") || status.classList.contains("validation-enonce")) {
+              throw new Error("L’élément de statut vide est absent ou stylé comme un bandeau de validation.");
+            }
+          });
+          test("la mise en page porte le titre et le modèle de question a les trois actions", () => {
+            if (!layout.includes('<h1 id="exercise-title">@@TITLE@@</h1>') ||
+                ["check", "solution", "new-draw", "prompt", "feedback", "title"]
+                  .some(role => !questionTemplate?.querySelector(`[data-role="${role}"]`)) ||
+                questionTemplate.querySelector("[id]")) {
+              throw new Error("Le titre, un élément du modèle de question manque, ou le modèle porte un identifiant fixe.");
+            }
+          });
+        })
+      .catch(error => {
+        const item = document.createElement("li");
+        item.textContent = `ÉCHEC : vérification des ressources de mise en page — ${error.message}`;
+        item.style.color = "red";
+        results.append(item);
+      }));
+    Promise.allSettled(pendingTests).then(() => { document.body.dataset.done = "true"; });
+  </script>
+</body>
+</html>

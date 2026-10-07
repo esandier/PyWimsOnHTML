@@ -1,0 +1,380 @@
+<!doctype html>
+<!-- Tests du runtime Python avec le vrai Pyodide : module pywims, espaces de noms et exercices du dépôt.
+     Ils téléchargent Pyodide et SymPy : compter une à deux minutes. -->
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Tests du runtime Python PyWimsOnHTML</title>
+</head>
+<body>
+  <h1>Tests du runtime Python</h1>
+  <p id="progress">Chargement de Pyodide…</p>
+  <ol id="results"></ol>
+  <script src="../runtime/template.js"></script>
+  <script src="../compiler/compiler.js"></script>
+  <script src="../runtime/python.js"></script>
+  <script>
+    const results = document.getElementById("results");
+    // Exécute un contrôle asynchrone ; un échec n’interrompt pas les suivants.
+    async function test(name, callback) {
+      const item = document.createElement("li");
+      try {
+        await callback();
+        item.textContent = `RÉUSSI : ${name}`;
+      } catch (error) {
+        item.textContent = `ÉCHEC : ${name} — ${error.message}`;
+        item.style.color = "red";
+      }
+      results.append(item);
+    }
+
+    // Évalue une condition Python dans une session et échoue avec le message donné si elle est fausse.
+    async function expectPython(session, condition, message) {
+      if (!await session.getBoolean(condition)) {
+        throw new Error(`${message} (${condition})`);
+      }
+    }
+
+    const exerciseFiles = [
+      "addition-fractions.pwe",
+      "dérivée-polynôme.pwe",
+      "matrice-triangulaire.pwe",
+      "pgcd.pwe",
+      "produit-matrices.pwe"
+    ];
+
+    (async () => {
+      await test("le compilateur repère une version de runtime/python.js différente de celle de sa page", async () => {
+        const source = (await (await fetch("../runtime/python.js", { cache: "no-store" })).text()).replace(/\r\n?/g, "\n");
+        if (!PyWimsCompiler.pythonRuntimeMatches(source) ||
+            !PyWimsCompiler.pythonRuntimeMatches(source.replace(/\n/g, "\r\n")) ||
+            PyWimsCompiler.pythonRuntimeMatches(source.replace('mat_delim="["', 'mat_delim="("'))) {
+          throw new Error("La comparaison du module pywims chargé et du fichier du projet est incorrecte.");
+        }
+      });
+
+      await test("le module pywims analyse les saisies sans exécuter de code", async () => {
+        const session = PyWimsPython.createSession("module");
+        await session.initialize("from pywims import py_wims, is_nombre, math_expression\nfrom sympy import *");
+        await session.run("from pywims import py_wims, is_nombre, math_expression\nfrom sympy import *\nx = symbols('x')");
+        await expectPython(session, "math_expression('3x^2+2x') == 3*x**2 + 2*x", "Produit implicite et puissance mal lus");
+        await expectPython(session, "math_expression('sqrt(4)+e') == 2 + E", "Fonctions ou constantes mal lues");
+        await expectPython(session, "math_expression(\"__import__('os')\") is None", "Une saisie dangereuse a été acceptée");
+        await expectPython(session, "math_expression('3+') is None", "Une expression incomplète a été acceptée");
+        await expectPython(session, "simplify(py_wims('1/2') - Rational(1, 2)) == 0", "py_wims ne lit pas une fraction");
+        await expectPython(session, "py_wims('(') is None", "py_wims accepte une saisie invalide");
+        await expectPython(session, "is_nombre(Rational(1, 2)) and is_nombre(3) and not is_nombre(x)", "is_nombre se trompe");
+      });
+
+      await test("l’espace de noms de l’auteur est vierge et ne perturbe pas pywims", async () => {
+        const session = PyWimsPython.createSession("isolation");
+        await session.initialize("from pywims import math_expression");
+        await expectPython(session, "'randint' not in globals() and 'Rational' not in globals() and 'py_wims' not in globals()",
+          "Des noms sont importés à la place de l’auteur");
+        await session.run("from pywims import math_expression\nE = 3\nRational = None\nSymbol = None");
+        await expectPython(session, "str(math_expression('e + x')) == 'x + E'", "Une variable de l’auteur a modifié l’analyse");
+        await session.getTemplateValue("E");
+        await expectPython(session, "'pywims' not in globals()", "Le module a été ajouté à l’espace de noms de l’auteur");
+      });
+
+      await test("deux questions partagent Pyodide sans partager leurs variables", async () => {
+        const first = PyWimsPython.createSession("question-a");
+        const second = PyWimsPython.createSession("question-b");
+        await Promise.all([first.initialize("x = 1"), second.initialize("x = 2")]);
+        await first.run("x = 1\nok_answer['x'] = True");
+        await second.run("x = 2");
+        await expectPython(first, "x == 1 and ok_answer == {'x': True}", "La première question a été modifiée");
+        await expectPython(second, "x == 2 and ok_answer == {}", "La seconde question voit les variables de la première");
+      });
+
+      await test("les valeurs affichées sont converties en LaTeX ou en texte", async () => {
+        const session = PyWimsPython.createSession("affichage");
+        await session.initialize("import sympy");
+        await session.run("import sympy\nn = 3\nnom = 'Ada'\nM = sympy.Matrix([[1, 2], [3, 4]])\nf = sympy.Rational(3, 4)");
+        const values = await Promise.all(["n", "nom", "M", "f"].map(name => session.getTemplateValue(name)));
+        if (values[0] !== "3" || values[1] !== "Ada" ||
+            !values[2].startsWith("\\displaystyle \\left[\\begin{matrix}1 & 2") ||
+            values[3] !== "\\displaystyle \\frac{3}{4}") {
+          throw new Error(`Valeurs inattendues : ${JSON.stringify(values)}`);
+        }
+        let rejected = false;
+        try {
+          await session.getTemplateValue("absente");
+        } catch (error) {
+          rejected = error.message.includes("Variable d’exercice inconnue : absente");
+        }
+        if (!rejected) throw new Error("Une variable absente n’est pas signalée clairement.");
+      });
+
+      await test("les solutions sont converties en saisie d’élève, avec LIBRE pour les valeurs quelconques", async () => {
+        const session = PyWimsPython.createSession("solutions");
+        await session.initialize("from sympy import *\nfrom pywims import LIBRE");
+        await session.run("from sympy import *\nfrom pywims import LIBRE\nx = symbols('x')");
+        const converted = JSON.parse(await session.run(`
+import json
+_pw = __import__("pywims")
+json.dumps({
+  "fraction": _pw._solution_text(Rational(19, 12)),
+  "expression": _pw._solution_text(x**2 + 2*x),
+  "entier": _pw._solution_text(7),
+  "libre": _pw._solution_text(LIBRE),
+  "latex": _pw._solution_latex(3*x**2 - 1),
+  "cases": _pw._solution_cells(Matrix(2, 2, lambda i, j: 0 if i > j else LIBRE)),
+  "liste": _pw._solution_cells([[1, x], [Rational(1, 2), 0]])
+})`));
+        const expected = {
+          fraction: "19/12",
+          expression: "x^2 + 2*x",
+          entier: "7",
+          libre: null,
+          latex: "3 x^{2} - 1",
+          cases: [[null, null], ["0", null]],
+          liste: [["1", "x"], ["1/2", "0"]]
+        };
+        if (JSON.stringify(converted) !== JSON.stringify(expected)) {
+          throw new Error(`Conversion inattendue : ${JSON.stringify(converted)}`);
+        }
+      });
+
+      for (const file of exerciseFiles) {
+        await test(`l’exercice ${file} s’exécute et fournit les variables de son énoncé`, async () => {
+          const response = await fetch(`../exercises/${file}`);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const fields = PyWimsCompiler.parseExerciseSource(await response.text(), file);
+          const session = PyWimsPython.createSession(file.replace(/\W/g, "_"));
+          await session.initialize(`${fields.avant}\n${fields.apres}`);
+          await session.run(fields.avant);
+          const names = [...PyWimsTemplate.templateVariables(fields.enonce)];
+          const values = await Promise.all(names.map(name => session.getTemplateValue(name)));
+          if (values.some(value => typeof value !== "string" || !value.trim())) {
+            throw new Error(`Valeurs vides : ${JSON.stringify(Object.fromEntries(names.map((n, i) => [n, values[i]])))}`);
+          }
+          // Chaque champ désigne une variable de « avant » que le module sait convertir.
+          for (const tag of PyWimsTemplate.parseTags(fields.enonce)) {
+            const variable = tag.attributes.solution;
+            const converter = tag.type === "input_math" ? "_solution_latex"
+              : tag.type === "input_text" ? "_solution_text" : "_solution_cells";
+            const converted = await session.run(
+              `__import__("json").dumps(__import__("pywims").${converter}(${variable}))`
+            );
+            if (!converted || converted === "null") {
+              throw new Error(`Solution « ${variable} » du champ « ${tag.name} » inutilisable : ${converted}`);
+            }
+          }
+
+          // Saisit la solution comme un élève (texte ASCII, « 1 » pour une case libre), puis corrige.
+          for (const tag of PyWimsTemplate.parseTags(fields.enonce)) {
+            const variable = tag.attributes.solution;
+            if (tag.type === "input_text" || tag.type === "input_math") {
+              await session.set(tag.name, await session.run(`__import__("pywims")._solution_text(${variable})`));
+            } else {
+              const cells = JSON.parse(await session.run(
+                `__import__("json").dumps(__import__("pywims")._solution_cells(${variable}))`
+              ));
+              await session.setMatrix(tag.name, cells.map(row => row.map(cell => cell ?? "1")));
+            }
+          }
+          await session.resetAnswers();
+          await session.run(fields.apres);
+          const verdict = JSON.parse(await session.run(
+            `__import__("json").dumps({"ok": {k: bool(v) for k, v in ok_answer.items()}, "feedback": str(feedback)})`
+          ));
+          if (!Object.keys(verdict.ok).length || !Object.values(verdict.ok).every(Boolean)) {
+            throw new Error(`La solution n’est pas jugée juste : ${JSON.stringify(verdict)}`);
+          }
+          if (!verdict.feedback.startsWith("Bravo")) {
+            throw new Error(`Retour inattendu pour la solution : ${verdict.feedback}`);
+          }
+        });
+      }
+
+      // Tirages calculés par le compilateur (étape 4a).
+      const exerciseFields = {};
+      for (const file of exerciseFiles) {
+        const response = await fetch(`../exercises/${file}`);
+        exerciseFields[file] = PyWimsCompiler.parseExerciseSource(await response.text(), file);
+      }
+
+      await test("le compilateur calcule des tirages complets et distincts pour chaque exercice", async () => {
+        for (const [file, fields] of Object.entries(exerciseFields)) {
+          const draws = await PyWimsCompiler.computeDraws(fields, { count: 10 });
+          const variables = [...PyWimsTemplate.templateVariables(fields.enonce)].sort().join(",");
+          const names = PyWimsTemplate.parseTags(fields.enonce).map(tag => tag.name).sort().join(",");
+          const keys = new Set(draws.map(draw => JSON.stringify([draw.context, draw.solutions])));
+          if (!draws.length || keys.size !== draws.length ||
+              draws.some(draw => Object.keys(draw.context).sort().join(",") !== variables ||
+                Object.keys(draw.solutions).sort().join(",") !== names)) {
+            throw new Error(`${file} : tirages incomplets ou en double (${draws.length})`);
+          }
+        }
+        const triangular = await PyWimsCompiler.computeDraws(exerciseFields["matrice-triangulaire.pwe"], { count: 3 });
+        const cells = triangular[0].solutions.matrice;
+        if (cells[0][0] !== null || cells.at(-1)[0] !== "0" || typeof triangular[0].explication !== "string") {
+          throw new Error(`Solution libre ou explication inattendue : ${JSON.stringify(triangular[0])}`);
+        }
+      });
+
+      await test("les 20 tirages de chaque exercice s’intègrent au fichier et se relisent à l’identique", async () => {
+        const sizes = [];
+        for (const [file, fields] of Object.entries(exerciseFields)) {
+          const draws = await PyWimsCompiler.computeDraws(fields);
+          const html = PyWimsCompiler.renderDrawData(draws);
+          const host = document.createElement("div");
+          host.innerHTML = html;
+          if (JSON.stringify(JSON.parse(host.querySelector("pre[data-draws]").textContent)) !== JSON.stringify(draws)) {
+            throw new Error(`${file} : les tirages relus diffèrent.`);
+          }
+          sizes.push(`${file.replace(".pwe", "")} ${draws.length} tirages, ${(html.length / 1024).toFixed(1)} Ko`);
+        }
+        document.getElementById("progress").dataset.sizes = sizes.join(" ; ");
+        console.log(`Taille des tirages : ${sizes.join(" ; ")}`);
+      });
+
+      await test("les tirages sont reproductibles et les doublons sont fusionnés", async () => {
+        const fields = exerciseFields["pgcd.pwe"];
+        const first = JSON.stringify(await PyWimsCompiler.computeDraws(fields, { count: 5 }));
+        const second = JSON.stringify(await PyWimsCompiler.computeDraws(fields, { count: 5 }));
+        if (first !== second) throw new Error("Deux compilations donnent des tirages différents.");
+        const fixed = await PyWimsCompiler.computeDraws({
+          avant: "valeur = 4",
+          enonce: "Combien vaut {{ valeur }} ? {% input_text 'r' solution=valeur %}",
+          apres: "ok_answer['r'] = r == '4'"
+        }, { count: 5 });
+        if (fixed.length !== 1 || fixed[0].solutions.r !== "4") {
+          throw new Error(`Un exercice sans hasard devrait donner un seul tirage : ${JSON.stringify(fixed)}`);
+        }
+      });
+
+      await test("les erreurs de l’auteur sont signalées avec leur graine et leur cause", async () => {
+        const cases = [
+          [{ avant: "a = 1\nb = 1 / 0", enonce: "{% input_text 'r' solution=a %}" },
+            ["graine 0", "ligne 2", "ZeroDivisionError"]],
+          [{ avant: "a = 1", enonce: "{% input_text 'r' solution=absente %}" },
+            ["La solution « absente » du champ « r » n’est pas définie par « avant »."]],
+          [{ avant: "r = 1", enonce: "{% input_text 'r' solution=r %}" },
+            ["Le champ « r » porte le nom d’une variable de « avant »"]],
+          [{ avant: "from sympy import eye\nM = eye(3)", enonce: "{% input_matrix 'm' size=2 solution=M %}" },
+            ["est une matrice 3 × 3, alors que le champ est 2 × 2"]],
+          [{ avant: "from sympy import eye\nM = eye(2)", enonce: "{% input_text 'r' solution=M %}" },
+            ["doit être une valeur simple, pas une matrice"]],
+          [{ avant: "n = 1.5\nM = [[1]]", enonce: "{% input_matrix 'm' size=n solution=M %}" },
+            ["La dimension « n » doit être un entier"]],
+          [{ avant: "a = 1", enonce: "{{ inconnue }} {% input_text 'r' solution=a %}" },
+            ["La variable « inconnue » de l’énoncé n’est pas définie"]],
+          [{ avant: "a = 1\nexplication_solution = 3", enonce: "{% input_text 'r' solution=a %}" },
+            ["« explication_solution » doit être un texte"]]
+        ];
+        for (const [fields, fragments] of cases) {
+          let message = "";
+          try {
+            await PyWimsCompiler.computeDraws({ apres: "ok_answer['r'] = True", ...fields }, { count: 1 });
+          } catch (error) {
+            message = error.message;
+          }
+          const missing = fragments.filter(fragment => !message.includes(fragment));
+          if (missing.length) {
+            throw new Error(`Pour ${JSON.stringify(fields.avant)}, message « ${message} » sans : ${missing.join(" / ")}`);
+          }
+        }
+      });
+
+      // Exercices réellement compilés puis ouverts : Python reproduit le tirage et juge la solution juste.
+      const resourceTexts = {};
+      for (const [key, path] of Object.entries(PyWimsCompiler.resourcePaths)) {
+        resourceTexts[key] = await (await fetch(`../${path}`)).text();
+      }
+
+      // Ouvre une feuille compilée dans un cadre. Un seul tirage par question : le tirage affiché est connu.
+      async function openCompiledSheet(questions, title = null) {
+        const resources = Object.fromEntries(
+          PyWimsCompiler.neededResources(questions.map(question => question.fields)).map(key => [key, resourceTexts[key]])
+        );
+        const frame = document.createElement("iframe");
+        frame.style.cssText = "width:900px;height:700px";
+        frame.srcdoc = title === null
+          ? PyWimsCompiler.assembleExercise(questions[0].fields, questions[0].draws, resources)
+          : PyWimsCompiler.assembleActivity(title, questions, resources);
+        document.body.append(frame);
+        await new Promise(resolve => frame.addEventListener("load", resolve, { once: true }));
+        return frame;
+      }
+
+      // Saisit la solution du tirage affiché de la question n, comme le ferait un élève, puis la vérifie.
+      async function solveQuestion(frame, n, fields, shown) {
+        const page = frame.contentDocument;
+        const frameWindow = frame.contentWindow;
+        const section = page.getElementById(`q${n}`);
+        const role = name => section.querySelector(`[data-role="${name}"]`);
+        const waitFor = async (predicate, description, timeout) => {
+          const end = Date.now() + timeout;
+          while (Date.now() < end) {
+            if (role("status").classList.contains("is-error")) {
+              throw new Error(`question ${n} : ${role("status").textContent}`);
+            }
+            if (predicate()) return;
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+          throw new Error(`Délai dépassé (question ${n}) : ${description}`);
+        };
+        const inputs = () => [...section.querySelectorAll("[data-name], [data-matrix-name]")];
+        await waitFor(() => inputs().length, "affichage de l’énoncé", 5000);
+        if (PyWimsTemplate.tagTypes(fields.enonce).has("input_math")) {
+          await frameWindow.customElements.whenDefined("math-field");
+        }
+        for (const viewport of section.querySelectorAll(".pw-vmatrix-viewport")) {
+          const cells = shown.solutions[viewport.dataset.vmatrixName];
+          frameWindow.PyWimsWidgets.resizeVariableMatrix(viewport, cells.length, cells[0].length);
+        }
+        for (const input of inputs()) {
+          if (!input.id.startsWith(`q${n}-form_txt_`)) {
+            throw new Error(`Identifiant non préfixé : ${input.id}`);
+          }
+          const { name, matrixName, matrixRow, matrixColumn } = input.dataset;
+          const solution = matrixName === undefined
+            ? shown.solutions[name]
+            : shown.solutions[matrixName][Number(matrixRow)]?.[Number(matrixColumn)];
+          if (solution !== undefined) input.value = solution ?? "1";
+        }
+        role("prompt").dispatchEvent(new Event("input"));
+        role("check").click();
+        await waitFor(() => role("feedback").classList.contains("is-visible"), "retour de la correction", 120000);
+        if (!role("feedback").classList.contains("is-correct")) {
+          throw new Error(`question ${n}, solution jugée fausse : ${role("feedback").textContent}`);
+        }
+      }
+
+      const compiledQuestions = [];
+      for (const [file, fields] of Object.entries(exerciseFields)) {
+        await test(`l’exercice compilé ${file} affiche un tirage et accepte sa solution`, async () => {
+          const draws = (await PyWimsCompiler.computeDraws(fields, { count: 4 })).slice(-1);
+          compiledQuestions.push({ fields, draws });
+          const frame = await openCompiledSheet([{ fields, draws }]);
+          try {
+            await solveQuestion(frame, 1, fields, draws[0]);
+          } finally {
+            frame.remove();
+          }
+        });
+      }
+
+      await test("une activité réunit tous les exercices dans un seul document et les corrige chacun", async () => {
+        const frame = await openCompiledSheet(compiledQuestions, "Toutes les questions");
+        try {
+          if (frame.contentDocument.querySelectorAll(".pw-question").length !== compiledQuestions.length ||
+              frame.contentDocument.querySelector("iframe")) {
+            throw new Error("L’activité ne contient pas une section par question, sans cadre.");
+          }
+          for (const [index, { fields, draws }] of compiledQuestions.entries()) {
+            await solveQuestion(frame, index + 1, fields, draws[0]);
+          }
+        } finally {
+          frame.remove();
+        }
+      });
+
+      document.getElementById("progress").textContent = "Tests terminés.";
+      document.body.dataset.done = "true";
+    })();
+  </script>
+</body>
+</html>

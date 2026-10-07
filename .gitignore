@@ -1,0 +1,5 @@
+dist/
+__pycache__/
+*.html.download
+.DS_Store
+Thumbs.db

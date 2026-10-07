@@ -1,0 +1,67 @@
+%
+% title
+%
+Addition de fractions
+%
+% keywords
+%
+fractions, addition, dénominateur commun, fraction irréductible
+%
+% layout
+%
+STD
+%
+% avant
+%
+from random import choice
+from sympy import *
+from pywims import py_wims
+
+# Choisit deux fractions irréductibles, numérateurs et dénominateurs entre 2 et 5.
+fractions_irreductibles = [(a, b) for a in range(2, 6) for b in range(2, 6) if gcd(a, b) == 1]
+n, m = choice(fractions_irreductibles)
+p, q = choice(fractions_irreductibles)
+somme = Rational(n, m) + Rational(p, q)
+
+# Détaille la réduction au même dénominateur pour expliquer la solution.
+def fraction_tex(numerateur, denominateur):
+    return r"\frac{%d}{%d}" % (numerateur, denominateur)
+
+commun = ilcm(m, q)
+total = n * (commun // m) + p * (commun // q)
+explication_solution = (
+    "On réduit au même dénominateur $" + str(commun) + r"$ : $\displaystyle "
+    + fraction_tex(n, m) + " + " + fraction_tex(p, q) + " = "
+    + fraction_tex(n * (commun // m), commun) + " + " + fraction_tex(p * (commun // q), commun)
+    + " = " + fraction_tex(total, commun)
+    + ("" if somme.q == commun else " = " + latex(somme))
+    + "$."
+)
+%
+% enonce
+%
+Additionnez ces fractions et donnez le résultat sous forme d’une fraction
+irréductible, avec un dénominateur positif :
+<br>
+$\displaystyle \frac{{{n}}}{{{m}}} + \frac{{{p}}}{{{q}}} =$ {% input_text 'resultat' solution=somme style='width:7em' %}
+%
+% apres
+%
+# Interprète la réponse, puis vérifie la valeur avant la forme irréductible.
+reponse = py_wims(resultat)
+ok_answer['resultat'] = False
+
+if reponse is None:
+    feedback = "Saisissez une fraction d’entiers, par exemple 7/12."
+else:
+    numerateur, denominateur = fraction(reponse)
+    if not (numerateur.is_Integer and denominateur.is_Integer and denominateur != 0):
+        feedback = "Saisissez une fraction d’entiers, par exemple 7/12."
+    elif simplify(reponse - somme) != 0:
+        feedback = "Ce n’est pas la bonne somme : réduisez d’abord les deux fractions au même dénominateur."
+    elif denominateur < 0 or gcd(numerateur, denominateur) != 1:
+        feedback = "La valeur est juste, mais la fraction n’est pas irréductible avec un dénominateur positif : simplifiez-la."
+    else:
+        ok_answer['resultat'] = True
+        feedback = "Bravo, c’est exact !"
+%

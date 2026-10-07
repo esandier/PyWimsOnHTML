@@ -1,0 +1,62 @@
+%
+% title
+%
+Dérivée d’un polynôme
+%
+% keywords
+%
+dérivée, fonction polynomiale, calcul différentiel
+%
+% layout
+%
+STD
+%
+% avant
+%
+from random import choice, randint
+from sympy import *
+from pywims import math_expression
+
+# Le terme cubique non nul garantit que l’exercice demande bien une dérivée
+# d’un polynôme de degré trois, tandis que les autres coefficients varient.
+x = symbols("x")
+a = choice([-4, -3, -2, -1, 1, 2, 3, 4])
+b = randint(-5, 5)
+c = randint(-5, 5)
+d = randint(-5, 5)
+fonction = expand(a*x**3 + b*x**2 + c*x + d)
+derivee = diff(fonction, x)
+
+# Applique la règle de dérivation à chaque terme pour expliquer la solution.
+termes = sorted(Add.make_args(fonction), key=lambda terme: -degree(terme, x))
+explication_solution = (
+    r"On dérive terme à terme avec $(x^n)' = n\,x^{n-1}$ : "
+    + " ; ".join("$(" + latex(terme) + ")' = " + latex(diff(terme, x)) + "$" for terme in termes)
+    + "."
+)
+%
+% enonce
+%
+Soit la fonction polynomiale
+$f(x) = {{ fonction}}$.
+Donnez sa dérivée $f'(x)$ :
+{% input_math 'derivee_eleve' solution=derivee %}
+%
+% apres
+%
+# L’expression ASCII issue de MathLive est analysée par la fonction sécurisée
+# du runtime, puis comparée à la dérivée exacte sans imposer une forme unique.
+reponse_eleve = math_expression(derivee_eleve)
+correcte = reponse_eleve is not None and simplify(reponse_eleve - derivee) == 0
+ok_answer["derivee_eleve"] = correcte
+
+if correcte:
+    feedback = "Bravo, cette dérivée est correcte !"
+elif reponse_eleve is None:
+    feedback = "Expression non reconnue : vérifiez votre saisie."
+elif simplify(reponse_eleve - fonction) == 0:
+    feedback = "Vous avez recopié la fonction au lieu de la dériver."
+else:
+    # Rappelle la règle sans donner la réponse, que le bouton « Solution » fournit.
+    feedback = r"Ce n’est pas la bonne dérivée. Dérivez terme à terme avec $(x^n)' = n\,x^{n-1}$ ; la dérivée d’une constante est nulle."
+%
