@@ -1,0 +1,43 @@
+%
+% title
+%
+Reconnaître des nombres premiers
+%
+% keywords
+%
+arithmétique, nombres premiers, QCM
+%
+% layout
+%
+STD
+%
+% avant
+%
+from random import sample
+from sympy import isprime
+
+# Quatre entiers distincts ; « Aucun de ces nombres » reste le dernier choix (fixed_last=1).
+nombres = sample(range(2, 50), 4)
+choix = [f"${n}$" for n in nombres] + ["Aucun de ces nombres"]
+bonnes = [i for i, n in enumerate(nombres) if isprime(n)]
+if not bonnes:
+    bonnes = [4]
+explication_solution = "Un nombre premier a exactement deux diviseurs : $1$ et lui-même."
+%
+% enonce
+%
+Parmi les nombres suivants, lesquels sont <b>premiers</b> ?
+{% input_checkbox 'reponse' choices=choix solution=bonnes columns=5 fixed_last=1 bareme='b=1,m=-0.5,p=0' %}
+%
+% apres
+%
+ok_answer['reponse'] = reponse == bonnes
+if ok_answer['reponse']:
+    feedback = 'Bravo, c’est exact !'
+elif 4 in reponse and len(reponse) > 1:
+    feedback = '« Aucun de ces nombres » contredit les autres cases cochées.'
+elif any(i < 4 and not isprime(nombres[i]) for i in reponse):
+    feedback = 'Au moins un nombre coché a un diviseur autre que $1$ et lui-même.'
+else:
+    feedback = 'Il manque au moins un nombre premier.'
+%

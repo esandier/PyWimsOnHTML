@@ -39,6 +39,7 @@
       "addition-fractions.pwq",
       "dérivée-polynôme.pwq",
       "matrice-triangulaire.pwq",
+      "nombres-premiers.pwq",
       "pgcd.pwq",
       "produit-matrices.pwq"
     ];
@@ -136,6 +137,32 @@ json.dumps({
         }
       });
 
+      await test("la saisie d’un champ à choix arrive en Python comme un entier, None ou une vraie liste", async () => {
+        const session = PyWimsPython.createSession("choix");
+        await session.initialize("from sympy import Rational");
+        await session.run("from sympy import Rational\nchoix = ['$2$', Rational(1, 2)]");
+        await session.setChoice("unique", 1);
+        await session.setChoice("aucun", null);
+        await session.setChoice("multiple", [0, 1]);
+        await session.setChoice("vide", []);
+        await expectPython(session,
+          "unique == 1 and aucun is None and type(multiple) is list and multiple == [0, 1] and vide == []",
+          "Saisie mal transmise");
+        const texts = await session.getChoiceTexts("choix");
+        if (JSON.stringify(texts) !== JSON.stringify(["$2$", "\\(\\frac{1}{2}\\)"])) {
+          throw new Error(`Textes des choix inattendus : ${JSON.stringify(texts)}`);
+        }
+        for (const value of [-1, 1.5, "1", [0, "1"]]) {
+          let rejected = false;
+          try {
+            await session.setChoice("x", value);
+          } catch {
+            rejected = true;
+          }
+          if (!rejected) throw new Error(`Saisie invalide acceptée : ${JSON.stringify(value)}`);
+        }
+      });
+
       for (const file of exerciseFiles) {
         await test(`l’exercice ${file} s’exécute et fournit les variables de son énoncé`, async () => {
           const response = await fetch(`../exercises/${file}`);
@@ -149,14 +176,22 @@ json.dumps({
           if (values.some(value => typeof value !== "string" || !value.trim())) {
             throw new Error(`Valeurs vides : ${JSON.stringify(Object.fromEntries(names.map((n, i) => [n, values[i]])))}`);
           }
-          // Chaque champ désigne une variable de « avant » que le module sait convertir.
-          for (const tag of PyWimsTemplate.parseTags(fields.enonce)) {
+          // Solution d’un champ convertie par le module, en expression Python (texte JSON) ; pour un
+          // champ à choix, indice ou liste d’indices, contrôlés avec le nombre de choix.
+          const solutionJson = tag => {
             const variable = tag.attributes.solution;
             const converter = tag.type === "input_math" ? "_solution_latex"
               : tag.type === "input_text" ? "_solution_text" : "_solution_cells";
-            const converted = await session.run(
-              `__import__("json").dumps(__import__("pywims").${converter}(${variable}))`
-            );
+            const call = PyWimsTemplate.choiceTypes.has(tag.type)
+              ? `_choice_solution(${variable}, ${tag.type === "input_checkbox" ? "True" : "False"}, ` +
+                `len(__import__("pywims")._choice_texts(${tag.attributes.choices})))`
+              : `${converter}(${variable})`;
+            return `__import__("json").dumps(__import__("pywims").${call})`;
+          };
+          // Chaque champ désigne une variable de « avant » que le module sait convertir.
+          for (const tag of PyWimsTemplate.parseTags(fields.enonce)) {
+            const variable = tag.attributes.solution;
+            const converted = await session.run(solutionJson(tag));
             if (!converted || converted === "null") {
               throw new Error(`Solution « ${variable} » du champ « ${tag.name} » inutilisable : ${converted}`);
             }
@@ -165,7 +200,9 @@ json.dumps({
           // Saisit la solution comme un élève (texte ASCII, « 1 » pour une case libre), puis corrige.
           for (const tag of PyWimsTemplate.parseTags(fields.enonce)) {
             const variable = tag.attributes.solution;
-            if (tag.type === "input_text" || tag.type === "input_math") {
+            if (PyWimsTemplate.choiceTypes.has(tag.type)) {
+              await session.setChoice(tag.name, JSON.parse(await session.run(solutionJson(tag))));
+            } else if (tag.type === "input_text" || tag.type === "input_math") {
               await session.set(tag.name, await session.run(`__import__("pywims")._solution_text(${variable})`));
             } else {
               const cells = JSON.parse(await session.run(
@@ -200,7 +237,10 @@ json.dumps({
           const draws = await PyWimsCompiler.computeDraws(fields, { count: 10 });
           const variables = [...PyWimsTemplate.templateVariables(fields.enonce)].sort().join(",");
           const names = PyWimsTemplate.parseTags(fields.enonce).map(tag => tag.name).sort().join(",");
-          const keys = new Set(draws.map(draw => JSON.stringify([draw.context, draw.solutions])));
+          // Mêmes éléments que la fusion du compilateur : deux tirages d’un QCM peuvent avoir le même
+          // énoncé et la même solution, et ne différer que par leurs choix ou leur ordre.
+          const keys = new Set(draws.map(draw =>
+            JSON.stringify([draw.context, draw.solutions, draw.choices, draw.orders, draw.explication])));
           if (!draws.length || keys.size !== draws.length ||
               draws.some(draw => Object.keys(draw.context).sort().join(",") !== variables ||
                 Object.keys(draw.solutions).sort().join(",") !== names)) {
@@ -245,6 +285,30 @@ json.dumps({
         }
       });
 
+      await test("un champ à choix enregistre ses choix, sa solution et un ordre mélangé par tirage", async () => {
+        const draws = await PyWimsCompiler.computeDraws({
+          avant: "from sympy import Rational\nchoix = ['$2$', Rational(1, 2), 'pair', 'Aucun de ces nombres']\nbonnes = [2, 0]",
+          enonce: "Lesquels ? {% input_checkbox 'r' choices=choix solution=bonnes fixed_last=1 %}",
+          apres: "ok_answer['r'] = r == bonnes"
+        }, { count: 20 });
+        const [draw] = draws;
+        if (JSON.stringify(draw.choices.r) !== JSON.stringify(["$2$", "\\(\\frac{1}{2}\\)", "pair", "Aucun de ces nombres"]) ||
+            draw.solutions.r.join() !== "0,2" ||
+            draws.some(other => other.orders.r.at(-1) !== 3 || [...other.orders.r].sort().join() !== "0,1,2,3")) {
+          throw new Error(`Tirage inattendu : ${JSON.stringify(draw)}`);
+        }
+        // Sans hasard dans « avant », seuls les ordres distinguent les tirages : 3! = 6 au plus.
+        if (draws.length < 2 || draws.length > 6) {
+          throw new Error(`Les ordres mélangés devraient donner de 2 à 6 tirages : ${draws.length}`);
+        }
+        const [radio] = await PyWimsCompiler.computeDraws({
+          avant: "from sympy import Integer\nchoix = ['oui', 'non']\nbonne = Integer(1)",
+          enonce: "{% input_radio 'r' choices=choix solution=bonne %}",
+          apres: "ok_answer['r'] = r == bonne"
+        }, { count: 1 });
+        if (radio.solutions.r !== 1) throw new Error(`Solution d’un choix unique inattendue : ${JSON.stringify(radio)}`);
+      });
+
       await test("les erreurs de l’auteur sont signalées avec leur graine et leur cause", async () => {
         const cases = [
           [{ avant: "a = 1\nb = 1 / 0", enonce: "{% input_text 'r' solution=a %}" },
@@ -262,7 +326,23 @@ json.dumps({
           [{ avant: "a = 1", enonce: "{{ inconnue }} {% input_text 'r' solution=a %}" },
             ["La variable « inconnue » de l’énoncé n’est pas définie"]],
           [{ avant: "a = 1\nexplication_solution = 3", enonce: "{% input_text 'r' solution=a %}" },
-            ["« explication_solution » doit être un texte"]]
+            ["« explication_solution » doit être un texte"]],
+          [{ avant: "s = 0", enonce: "{% input_radio 'r' choices=absents solution=s %}" },
+            ["Les choix « absents » du champ « r » ne sont pas définis par « avant »."]],
+          [{ avant: "c = 'ab'\ns = 0", enonce: "{% input_radio 'r' choices=c solution=s %}" },
+            ["Les choix « c » du champ « r » : ce doit être une liste d’au moins deux choix."]],
+          [{ avant: "c = ['a', 'b']\ns = 2", enonce: "{% input_radio 'r' choices=c solution=s %}" },
+            ["La solution « s » du champ « r » : 2 n’est pas un indice de choix (de 0 à 1)."]],
+          [{ avant: "c = ['a', 'b']\ns = [0]", enonce: "{% input_radio 'r' choices=c solution=s %}" },
+            ["ce doit être l’indice du bon choix, pas une liste"]],
+          [{ avant: "c = ['a', 'b']\ns = 0", enonce: "{% input_checkbox 'r' choices=c solution=s %}" },
+            ["ce doit être la liste des indices des bons choix"]],
+          [{ avant: "c = ['a', 'b']\ns = [1, 1]", enonce: "{% input_checkbox 'r' choices=c solution=s %}" },
+            ["un indice de choix est répété"]],
+          [{ avant: "c = ['a', 'b']\ns = [True]", enonce: "{% input_checkbox 'r' choices=c solution=s %}" },
+            ["True n’est pas un indice de choix"]],
+          [{ avant: "c = ['a', 'b']\ns = []", enonce: "{% input_checkbox 'r' choices=c solution=s fixed_last=2 %}" },
+            ["fixed_last=2 doit être inférieur au nombre de choix (2) du champ « r »"]]
         ];
         for (const [fields, fragments] of cases) {
           let message = "";
@@ -325,7 +405,13 @@ json.dumps({
           const cells = shown.solutions[viewport.dataset.vmatrixName];
           frameWindow.PyWimsWidgets.resizeVariableMatrix(viewport, cells.length, cells[0].length);
         }
-        for (const input of inputs()) {
+        // Champ à choix : l’élève coche les bons choix.
+        for (const group of section.querySelectorAll(".pw-choices")) {
+          const solution = shown.solutions[group.dataset.name];
+          const good = new Set(Array.isArray(solution) ? solution : [solution]);
+          for (const box of group.querySelectorAll("input")) box.checked = good.has(Number(box.value));
+        }
+        for (const input of inputs().filter(input => !input.matches(".pw-choices"))) {
           if (!input.id.startsWith(`q${n}-form_txt_`)) {
             throw new Error(`Identifiant non préfixé : ${input.id}`);
           }
@@ -356,6 +442,29 @@ json.dumps({
           }
         });
       }
+
+      await test("un QCM compilé affiche ses choix mélangés, rejoue le tirage et accepte sa solution", async () => {
+        const fields = {
+          title: "Nombres premiers",
+          layout: "STD",
+          avant: "from random import sample\nfrom sympy import isprime\nnombres = sample(range(2, 30), 4)\n" +
+            "choix = [f'${k}$' for k in nombres]\nbonnes = [i for i, k in enumerate(nombres) if isprime(k)]",
+          enonce: "Lesquels sont premiers ? {% input_checkbox 'reponse' choices=choix solution=bonnes columns=2 %}",
+          apres: "ok_answer['reponse'] = reponse == bonnes\nfeedback = 'Bravo !' if ok_answer['reponse'] else 'Non.'"
+        };
+        const draws = (await PyWimsCompiler.computeDraws(fields, { count: 4 })).slice(-1);
+        compiledQuestions.push({ fields, draws });
+        const frame = await openCompiledSheet([{ fields, draws }]);
+        try {
+          const shown = [...frame.contentDocument.querySelectorAll(".pw-choice")].map(label => Number(label.dataset.choiceIndex));
+          if (shown.join() !== draws[0].orders.reponse.join()) {
+            throw new Error(`Ordre affiché ${shown}, attendu ${draws[0].orders.reponse}`);
+          }
+          await solveQuestion(frame, 1, fields, draws[0]);
+        } finally {
+          frame.remove();
+        }
+      });
 
       await test("une activité réunit tous les exercices dans un seul document et les corrige chacun", async () => {
         const frame = await openCompiledSheet(compiledQuestions, "Toutes les questions");

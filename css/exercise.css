@@ -145,12 +145,55 @@ body {
   display: block;
 }
 
-/* Une question seule n’a pas de progression. */
+/* Note indicative de l’activité, à côté du pourcentage et dans le même style. */
+.pw-score-total {
+  display: grid;
+  justify-items: end;
+  padding: 0.2rem 0.4rem;
+  font-family: var(--pw-heading-font);
+  line-height: 1.05;
+}
+
+/* Une question seule n’a pas de progression ni de note d’activité. L’aide ne parle de la note que
+   si une question est notée (data-scored, posé par runner.js). */
 [data-sheet="single"] .pw-completion,
 [data-sheet="single"] .pw-progress,
 [data-sheet="single"] .pw-completion-tip,
-[data-sheet="single"] .pw-help-activity {
+[data-sheet="single"] .pw-help-activity,
+[data-sheet="single"] .pw-help-score-activity,
+body:not([data-scored]) .pw-help-score {
   display: none;
+}
+
+/* Note d’une question notée : coin inférieur droit de la carte, dans une marge réservée dès
+   l’affichage (data-scored). Son apparition ne déplace donc rien ; vide, elle reste invisible. */
+.pw-question {
+  position: relative;
+}
+
+/* Sélecteur assez précis pour l’emporter sur les marges de la carte, y compris sur téléphone. */
+.pw-sheet .pw-question[data-scored] {
+  padding-bottom: 2.4rem;
+}
+
+.pw-q-score {
+  position: absolute;
+  right: 1rem;
+  bottom: 0.55rem;
+  padding: 0.15rem 0.65rem;
+  border-radius: 999px;
+  color: var(--pw-brand-navy);
+  background: color-mix(in srgb, var(--pw-brand-navy) 8%, #fff);
+  font: 600 0.9rem var(--pw-heading-font);
+  font-variant-numeric: tabular-nums;
+}
+
+.pw-q-score:empty {
+  visibility: hidden;
+}
+
+[data-sheet="single"] .pw-q-score {
+  right: 2em;
 }
 
 /* Zone d’énoncé et barre des actions de réponse. */
@@ -469,6 +512,12 @@ body {
     padding: 0.7rem;
   }
 
+  /* Choix plus serrés sur téléphone : chaque pixel rendu au texte évite de perdre une colonne. */
+  .pw-choice {
+    gap: 0.45em;
+    padding: 0.35em 0.5em;
+  }
+
   .pw-q-badge {
     width: 1.9rem;
     height: 1.9rem;
@@ -491,6 +540,7 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   [data-sheet="activity"] .pw-q-slot,
+  .pw-choice,
   .pw-progress-fill {
     transition: none;
   }
@@ -730,6 +780,104 @@ body {
   cursor: nwse-resize;
   line-height: 1;
   touch-action: none;
+}
+
+/* Champs à choix : une ligne entière cliquable par choix, assez haute pour le doigt (44 px,
+   taille tactile minimale recommandée).
+   Grille de --pw-choice-columns colonnes de même largeur, pour que les choix restent alignés.
+   La largeur minimale d’une colonne est le plus grand de :
+   - 8em, pour qu’un écran étroit perde des colonnes au lieu d’écraser les choix ;
+   - la part d’une colonne parmi n (écarts déduits), pour qu’« auto-fill » ne crée jamais plus de
+     n colonnes sur grand écran.
+   Avec une colonne, ce minimum vaut toute la largeur : les choix sont empilés. Ce calcul ne connaît
+   pas la largeur des textes ; runner.js (fitChoiceColumns) retire ensuite des colonnes tant qu’un
+   choix ne tient pas. */
+.pw-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(max(8em, calc((100% - (var(--pw-choice-columns, 1) - 1) * 0.5rem) / var(--pw-choice-columns, 1))), 1fr));
+  gap: 0.5rem;
+  min-width: 0;
+  margin: 0.75em 0;
+  padding: 0;
+  border: 0;
+}
+
+.pw-choice {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 0.6em;
+  padding: 0.35em 0.7em;
+  border: 2px solid var(--pw-input-border);
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.pw-choice input {
+  flex: 0 0 auto;
+  width: 1.15em;
+  height: 1.15em;
+  margin: 0;
+  accent-color: var(--pw-brand-navy);
+  cursor: inherit;
+}
+
+/* Un mot ou une formule n’est jamais coupé. « overflow-wrap: normal » annule le
+   « overflow-wrap: anywhere » de l’énoncé, qui coupait les mots n’importe où (« dérivabl/e ») ;
+   il garde aussi le débordement mesurable par runner.js, qui retire alors des colonnes.
+   « overflow-x: auto » ne sert qu’en dernier recours, sur une seule colonne : une formule plus
+   large que l’écran défile dans son choix au lieu de passer sous l’icône du verdict. */
+.pw-choice-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-wrap: normal;
+}
+
+/* Choix coché, sans verdict. Le « :not(…) » est nécessaire : « :has(input:checked) » est plus
+   spécifique que « .is-correct » et l’emporterait sur les couleurs de correction. */
+.pw-choice:not(.is-correct, .is-incorrect):has(input:checked) {
+  border-color: var(--pw-brand-navy);
+  background: color-mix(in srgb, var(--pw-brand-navy) 6%, #fff);
+}
+
+.pw-choice:has(input:focus-visible) {
+  outline: 3px solid color-mix(in srgb, var(--pw-brand-navy) 40%, transparent);
+  outline-offset: 2px;
+}
+
+.pw-choice:has(input:disabled) {
+  cursor: default;
+}
+
+/* Verdict d’un choix coché : la couleur est doublée d’une icône, pour les élèves qui distinguent
+   mal le vert du rouge. Sa place est toujours réservée : l’icône apparaît sans déplacer le texte. */
+.pw-choice-mark {
+  flex: 0 0 1.2em;
+  font-weight: 700;
+  text-align: center;
+}
+
+.pw-choice.is-correct {
+  border-color: var(--pw-correct-text);
+  background: var(--pw-correct-background);
+}
+
+.pw-choice.is-correct .pw-choice-mark::after {
+  color: var(--pw-correct-text);
+  content: "✓";
+}
+
+.pw-choice.is-incorrect {
+  border-color: var(--pw-incorrect-text);
+  background: var(--pw-incorrect-background);
+}
+
+.pw-choice.is-incorrect .pw-choice-mark::after {
+  color: var(--pw-incorrect-text);
+  content: "✗";
 }
 
 /* Champ fantôme qui conserve les dimensions du champ texte pendant l’animation. */

@@ -157,21 +157,28 @@
   // Ajout au <head> de l’aperçu : les boutons y sont inactifs.
   const previewHead = `<style>.pw-actions { pointer-events: none; opacity: 0.45; }</style>`;
 
-  // Tirage provisoire, sans Python : chaque variable de l’énoncé est affichée sous son nom et
-  // chaque dimension de matrice nommée vaut 2.
+  // Tirage provisoire, sans Python : chaque variable de l’énoncé est affichée sous son nom,
+  // chaque dimension de matrice nommée vaut 2, et un champ à choix montre deux choix nommés
+  // d’après leur liste (« choix[0] », « choix[1] »).
   function previewPlaceholderDraw(fields) {
     const dimensions = {};
+    const choices = {};
+    const orders = {};
     for (const tag of PyWimsTemplate.parseTags(fields.enonce)) {
       for (const key of ["size", "rows", "cols"]) {
         if (typeof tag.attributes[key] === "string") {
           dimensions[tag.attributes[key]] = 2;
         }
       }
+      if (PyWimsTemplate.choiceTypes.has(tag.type)) {
+        choices[tag.name] = [0, 1].map(index => `${tag.attributes.choices}[${index}]`);
+        orders[tag.name] = [0, 1];
+      }
     }
     const context = Object.fromEntries(
       [...PyWimsTemplate.templateVariables(fields.enonce)].map(name => [name, name])
     );
-    return { seed: 0, context, dimensions, solutions: {}, explication: null };
+    return { seed: 0, context, dimensions, solutions: {}, choices, orders, explication: null };
   }
 
   function showPreviewNotice(text, className = "muted") {
@@ -426,18 +433,62 @@
     return errors;
   }
 
+  // Vérifie que les derniers choix fixés laissent au moins un choix à mélanger.
+  function choiceErrors(tags, draw) {
+    const errors = [];
+    for (const tag of tags) {
+      const texts = draw.choices?.[tag.name];
+      const fixedLast = tag.attributes.fixed_last ?? 0;
+      if (Array.isArray(texts) && fixedLast >= texts.length) {
+        errors.push(`fixed_last=${fixedLast} doit être inférieur au nombre de choix (${texts.length}) du champ « ${tag.name} ».`);
+      }
+    }
+    return errors;
+  }
+
+  // Ordre d’affichage des choix d’un tirage : mélange de Fisher-Yates par un générateur déterministe
+  // (mulberry32), initialisé par la graine et le nom du champ. Le « random » de l’auteur n’est pas
+  // touché, donc le tirage rejoué par le navigateur reste identique ; deux champs d’une même question
+  // ne sont pas mélangés de la même façon. Les fixedLast derniers choix restent à la fin, dans l’ordre.
+  function choiceOrder(count, fixedLast, seed, name) {
+    let state = seed >>> 0;
+    for (const character of name) {
+      state = Math.imul(state ^ character.codePointAt(0), 0x9e3779b1) >>> 0;
+    }
+    const random = () => {
+      state = (state + 0x6d2b79f5) >>> 0;
+      let t = state;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    const order = Array.from({ length: count - fixedLast }, (_, index) => index);
+    for (let i = order.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(random() * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]];
+    }
+    for (let index = count - fixedLast; index < count; index += 1) {
+      order.push(index);
+    }
+    return order;
+  }
+
   // Exécute « avant » pour plusieurs graines et garde les tirages distincts. Chaque tirage
-  // contient les valeurs de l’énoncé, les solutions converties et l’explication éventuelle.
+  // contient les valeurs de l’énoncé, les solutions converties, les choix et leur ordre
+  // d’affichage, et l’explication éventuelle.
   // La première erreur de l’auteur interrompt le calcul, avec la graine en cause.
   async function computeDraws(fields, { count = drawCount, onProgress } = {}) {
     const tags = PyWimsTemplate.parseTags(fields.enonce);
+    const choiceTags = tags.filter(tag => PyWimsTemplate.choiceTypes.has(tag.type));
     const spec = {
       variables: [...PyWimsTemplate.templateVariables(fields.enonce)],
       dimensions: [...new Set(tags
         .filter(tag => tag.type === "input_matrix")
         .flatMap(tag => ["size", "rows", "cols"].map(key => tag.attributes[key]))
         .filter(value => typeof value === "string"))],
-      fields: tags.map(tag => ({ name: tag.name, type: tag.type, solution: tag.attributes.solution }))
+      fields: tags.map(tag => ({
+        name: tag.name, type: tag.type, solution: tag.attributes.solution, choices: tag.attributes.choices
+      }))
     };
     const draws = [];
     const seen = new Set();
@@ -452,11 +503,16 @@
           throw new Error(`Erreur dans « avant » pour la graine ${seed}, ${pythonErrorSummary(error.message)}`);
         }
         const draw = await session.collectDraw(spec);
-        const errors = [...draw.errors, ...matrixShapeErrors(tags, draw)];
+        const errors = [...draw.errors, ...matrixShapeErrors(tags, draw), ...choiceErrors(tags, draw)];
         if (errors.length) {
           throw new Error(`Graine ${seed} : ${errors.join(" ")}`);
         }
-        const key = JSON.stringify([draw.context, draw.solutions, draw.explication]);
+        const orders = Object.fromEntries(choiceTags.map(tag => [
+          tag.name,
+          choiceOrder(draw.choices[tag.name].length, tag.attributes.fixed_last ?? 0, seed, tag.name)
+        ]));
+        // L’ordre fait partie du tirage : deux tirages qui ne diffèrent que par lui restent distincts.
+        const key = JSON.stringify([draw.context, draw.solutions, draw.choices, orders, draw.explication]);
         if (!seen.has(key)) {
           seen.add(key);
           draws.push({
@@ -464,6 +520,8 @@
             context: draw.context,
             dimensions: draw.dimensions,
             solutions: draw.solutions,
+            choices: draw.choices,
+            orders,
             explication: draw.explication
           });
         }
@@ -489,6 +547,7 @@
     textWidget: "widgets/input-text.js",
     mathWidget: "widgets/input-math.js",
     matrixWidget: "widgets/input-matrix.js",
+    choiceWidget: "widgets/input-choice.js",
     runner: "runtime/runner.js",
     python: "runtime/python.js"
   };
@@ -499,7 +558,8 @@
       .flatMap(fields => [...PyWimsTemplate.tagTypes(fields.enonce)]));
     return Object.keys(resourcePaths).filter(key =>
       (key !== "mathWidget" || tagTypes.has("input_math")) &&
-      (key !== "matrixWidget" || tagTypes.has("input_matrix") || tagTypes.has("input_vmatrix"))
+      (key !== "matrixWidget" || tagTypes.has("input_matrix") || tagTypes.has("input_vmatrix")) &&
+      (key !== "choiceWidget" || tagTypes.has("input_radio") || tagTypes.has("input_checkbox"))
     );
   }
 
@@ -546,7 +606,8 @@ ${renderDrawData(draws)}
       SHEET_KIND: kind,
       CSS: `${resources.brandCss}\n${resources.exerciseCss}`,
       TEMPLATE: resources.template,
-      WIDGETS: [resources.textWidget, resources.mathWidget, resources.matrixWidget].filter(Boolean).join("\n"),
+      WIDGETS: [resources.textWidget, resources.mathWidget, resources.matrixWidget, resources.choiceWidget]
+        .filter(Boolean).join("\n"),
       MATHLIVE_LOADER: usesMathWidget
         ? `// Charge le clavier mathématique uniquement pour les exercices qui en ont besoin.
 window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
@@ -757,6 +818,7 @@ window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
   window.PyWimsCompiler = Object.freeze({
     parseExerciseSource,
     previewPlaceholderDraw,
+    choiceOrder,
     computeDraws,
     pythonRuntimeMatches,
     renderDrawData,

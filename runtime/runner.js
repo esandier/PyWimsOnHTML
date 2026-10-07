@@ -32,8 +32,56 @@
     input.value = value;
   }
 
+  // Note écrite à la française (« 2,5 ») et arrondie au centième ; « + 0 » évite d’afficher « -0 ».
+  const formatScore = value => (Math.round(value * 100) / 100 + 0).toLocaleString("fr-FR");
+
+  // Un champ à choix est un groupe (fieldset) : il compte comme un seul champ de la question.
+  const isChoiceGroup = field => field.matches(".pw-choices");
+  const choiceInputs = group => [...group.querySelectorAll("input")];
+  const choiceIndex = element => Number(element.closest(".pw-choice").dataset.choiceIndex);
+
+  // Indices cochés, dans l’ordre de l’auteur : le mélange de l’affichage est invisible pour « apres ».
+  function checkedIndices(group) {
+    return choiceInputs(group).filter(input => input.checked).map(choiceIndex).sort((a, b) => a - b);
+  }
+
+  // Un champ rempli active « Vérifier ». Ne rien cocher est une réponse possible à un choix multiple.
+  function isFilled(field) {
+    if (isChoiceGroup(field)) {
+      return field.dataset.multiple === "true" || choiceInputs(field).some(input => input.checked);
+    }
+    return fieldValue(field).trim() !== "";
+  }
+
+  // Retire des colonnes à un groupe de choix tant qu’un choix déborde de sa colonne.
+  //
+  // Pourquoi : sur téléphone, columns=2 ou plus donne des colonnes d’environ 130 px. Une formule
+  // (« 2x sin x + x² cos x ») ou un long mot n’y tient pas, et aucune solution purement CSS ne
+  // convient, car la grille ne connaît pas la largeur du contenu :
+  //   - faire défiler le choix masque une partie de la réponse : « 2x sin x » se lit alors comme
+  //     un autre choix, ce qui est inacceptable dans un QCM ;
+  //   - couper les mots n’importe où (« dérivabl/e ») est illisible, et la césure française
+  //     (hyphens: auto) n’est pas appliquée par tous les navigateurs, dont Edge sous Windows ;
+  //   - une formule composée par MathJax (SVG) ne se coupe jamais.
+  // On mesure donc après composition : un choix déborde si sa largeur de contenu dépasse sa largeur
+  // visible (exige « overflow-wrap: normal » dans exercise.css). Des choix courts gardent leurs
+  // colonnes, même sur téléphone. On repart du nombre voulu par l’auteur à chaque appel, car la
+  // fenêtre a pu s’élargir depuis (rotation du téléphone).
+  function fitChoiceColumns(root) {
+    for (const group of root.querySelectorAll(".pw-choices")) {
+      for (let columns = Number(group.dataset.columns); columns >= 1; columns -= 1) {
+        group.style.setProperty("--pw-choice-columns", String(columns));
+        const overflowing = [...group.querySelectorAll(".pw-choice-text")]
+          .some(text => text.scrollWidth > text.clientWidth + 1);
+        if (!overflowing) break;
+      }
+    }
+  }
+
   function lock(input, locked) {
-    if (input.matches("math-field")) {
+    if (isChoiceGroup(input)) {
+      choiceInputs(input).forEach(choice => { choice.disabled = locked; });
+    } else if (input.matches("math-field")) {
       input.readOnly = locked;
     } else {
       input.disabled = locked;
@@ -83,8 +131,9 @@
   //   open     : saisie ; checked : retour affiché (result « ok » ou « ko ») ;
   //   solution : champs remplis par la solution.
   class Question {
-    // onSuccess est appelé à la première vérification entièrement juste de l’élève.
-    constructor(section, index, { onSuccess } = {}) {
+    // onSuccess est appelé à la première vérification entièrement juste de l’élève, onScoreChange
+    // à chaque changement de la note d’une question notée.
+    constructor(section, index, { onSuccess, onScoreChange } = {}) {
       const dataElement = section.querySelector(".pw-question-data");
       this.exercise = Object.fromEntries(
         [...dataElement.querySelectorAll("[data-field]")].map(field => [field.dataset.field, field.textContent])
@@ -96,6 +145,8 @@
       this.idPrefix = `${section.id}-`;
       this.python = PyWimsPython.createSession(section.id);
       this.tagTypes = PyWimsTemplate.tagTypes(this.exercise.enonce);
+      this.choiceTags = PyWimsTemplate.parseTags(this.exercise.enonce)
+        .filter(tag => PyWimsTemplate.choiceTypes.has(tag.type));
       this.pythonCode = `${this.exercise.avant}\n${this.exercise.apres}`;
 
       section.append(questionTemplate.content.cloneNode(true));
@@ -106,6 +157,7 @@
       this.statusElement = element("status");
       this.slotElement = element("slot");
       this.feedbackElement = element("feedback");
+      this.scoreElement = element("score");
       this.checkButton = element("check");
       this.solutionButton = element("solution");
       this.newDrawButton = element("new-draw");
@@ -119,6 +171,18 @@
       // Réussie : une vérification de l’élève entièrement juste ; elle le reste ensuite.
       this.succeeded = false;
       this.onSuccess = onSuccess;
+      // Barème : seul un champ à choix, seul dans sa question, peut en avoir un (contrôlé à la
+      // compilation). La note est celle de la dernière vérification du tirage affiché, 0 sinon ;
+      // son maximum dépend du tirage (nombre de choix, solution).
+      this.scoredTag = this.choiceTags.find(tag => Object.hasOwn(tag.attributes, "bareme")) ?? null;
+      this.scoring = this.scoredTag && PyWimsTemplate.parseScoring(this.scoredTag.attributes.bareme);
+      this.score = 0;
+      this.scoreMax = 0;
+      this.onScoreChange = onScoreChange;
+      if (this.scoring) {
+        section.dataset.scored = "true";
+        this.scoreElement.hidden = false;
+      }
       this.draw = null;
       this.state = "open";
       this.result = null;
@@ -154,9 +218,10 @@
       }
     }
 
-    // Construit le widget d’une balise ; les dimensions nommées viennent du tirage.
-    renderWidget(tag, dimensions) {
+    // Construit le widget d’une balise ; dimensions nommées, choix et ordre viennent du tirage.
+    renderWidget(tag, draw) {
       const { attributes } = tag;
+      const { dimensions } = draw;
       const idPrefix = this.idPrefix;
       const dimension = value => {
         if (typeof value === "number") {
@@ -192,6 +257,15 @@
               idPrefix
             }
           );
+        case "input_radio":
+        case "input_checkbox":
+          return PyWimsWidgets.inputChoice(tag.name, {
+            multiple: tag.type === "input_checkbox",
+            texts: draw.choices?.[tag.name],
+            order: draw.orders?.[tag.name],
+            columns: attributes.columns ?? 1,
+            idPrefix
+          });
         default:
           throw new Error(`Balise de modèle non prise en charge : ${tag.type}`);
       }
@@ -247,7 +321,7 @@
       this.checkButton.setAttribute("aria-label", action === "check" ? "Vérifier ma réponse" : "Corriger ma réponse");
       setButton(this.checkButton, {
         absent: !(this.state === "open" || failed),
-        disabled: this.busy || (this.state === "open" && !this.openFields().some(input => fieldValue(input).trim()))
+        disabled: this.busy || (this.state === "open" && !this.openFields().some(isFilled))
       });
       setButton(this.solutionButton, { absent: !(this.state === "open" || failed), disabled: this.busy });
       setButton(this.newDrawButton, { disabled: this.busy });
@@ -288,6 +362,34 @@
       this.slotElement.style.setProperty("--fb-h", shown ? `${this.feedbackElement.offsetHeight}px` : "0px");
     }
 
+    // Note et maximum que donnerait le barème pour ces indices cochés, sur le tirage affiché.
+    scoreFor(checked) {
+      const { name, type } = this.scoredTag;
+      const solution = this.draw.solutions[name];
+      return PyWimsTemplate.scoreChoice(this.scoring, {
+        multiple: type === "input_checkbox",
+        count: this.draw.choices[name].length,
+        checked,
+        solution: Array.isArray(solution) ? solution : [solution]
+      });
+    }
+
+    // Affiche la note d’une vérification avec un léger rebond, ou l’efface (null : la note vaut 0).
+    // La feuille met alors à jour sa note indicative.
+    setScore(score) {
+      this.score = score ?? 0;
+      this.scoreElement.textContent = score === null
+        ? ""
+        : `Note : ${formatScore(score)} / ${formatScore(this.scoreMax)}`;
+      if (score !== null && !reduceMotion) {
+        this.scoreElement.animate(
+          [{ transform: "scale(0.6)", opacity: 0 }, { transform: "scale(1.08)", opacity: 1, offset: 0.7 }, { transform: "scale(1)" }],
+          { duration: 450, easing: "ease-out" }
+        );
+      }
+      this.onScoreChange?.(this);
+    }
+
     // Première vérification entièrement juste : le numéro devient ✓ avec un rebond, et la feuille est prévenue.
     markSucceeded() {
       if (this.succeeded) {
@@ -325,6 +427,13 @@
             throw new Error(`Le tirage n’a pas pu être reproduit (« ${name} » diffère) : la vérification est indisponible.`);
           }
         }
+        // Les textes des choix sont affichés : ils sont contrôlés comme les valeurs de l’énoncé.
+        for (const tag of this.choiceTags) {
+          const texts = await python.getChoiceTexts(tag.attributes.choices);
+          if (JSON.stringify(texts) !== JSON.stringify(selected.choices?.[tag.name])) {
+            throw new Error(`Le tirage n’a pas pu être reproduit (« ${tag.attributes.choices} » diffère) : la vérification est indisponible.`);
+          }
+        }
       });
       this.pythonReady.then(
         () => {
@@ -348,7 +457,7 @@
       promptElement.innerHTML = PyWimsTemplate.renderTemplate(
         this.exercise.enonce,
         selected.context,
-        tag => this.renderWidget(tag, selected.dimensions)
+        tag => this.renderWidget(tag, selected)
       );
       if (this.tagTypes.has("input_vmatrix")) {
         PyWimsWidgets.enableVariableMatrixResize(promptElement);
@@ -358,11 +467,18 @@
       }
       this.hideFeedback();
       this.setState("open");
+      // Nouveau tirage : la note revient à 0 et son maximum suit le tirage.
+      if (this.scoring) {
+        this.scoreMax = this.scoreFor([]).max;
+        this.setScore(null);
+      }
       try {
         await typeset(promptElement);
       } catch (error) {
         this.reportError(error);
       }
+      // Les largeurs des choix ne sont connues qu’une fois les formules composées.
+      fitChoiceColumns(promptElement);
       const height = promptElement.getBoundingClientRect().height;
       promptElement.style.minHeight = `${Math.max(height, Number.parseFloat(promptElement.style.minHeight) || 0)}px`;
     }
@@ -382,6 +498,11 @@
         const matrices = new Map();
         for (const input of inputs) {
           const { matrixName, matrixRow, matrixColumn, vmatrixName } = input.dataset;
+          if (isChoiceGroup(input)) {
+            const indices = checkedIndices(input);
+            await python.setChoice(input.dataset.name, input.dataset.multiple === "true" ? indices : indices[0] ?? null);
+            continue;
+          }
           if (matrixName === undefined) {
             await python.set(input.dataset.name, fieldValue(input));
             continue;
@@ -417,13 +538,22 @@
         this.hideStatus();
 
         const verdicts = new Map(inputs.map((input, index) => [input, answerResults[index]]));
-        await animateFields(inputs.filter(input => !input.classList.contains("is-correct")), input => {
-          input.classList.add(verdicts.get(input) ? "is-correct" : "is-incorrect");
-          lock(input, true);
-        });
+        const toColor = inputs.filter(input => !input.classList.contains("is-correct"));
+        await Promise.all([
+          animateFields(toColor.filter(input => !isChoiceGroup(input)), input => {
+            input.classList.add(verdicts.get(input) ? "is-correct" : "is-incorrect");
+            lock(input, true);
+          }),
+          ...toColor.filter(isChoiceGroup).map(group => this.colorChoices(group, verdicts.get(group)))
+        ]);
         this.setState("checked", allCorrect ? "ok" : "ko");
         if (allCorrect) {
           this.markSucceeded();
+        }
+        // Chaque vérification donne une nouvelle note, calculée sur les choix cochés.
+        if (this.scoring) {
+          const group = inputs.find(input => isChoiceGroup(input) && input.dataset.name === this.scoredTag.name);
+          this.setScore(this.scoreFor(checkedIndices(group)).score);
         }
         await this.showFeedback(feedback, allCorrect ? "is-correct" : "is-incorrect");
       } catch (error) {
@@ -434,12 +564,49 @@
       }
     }
 
+    // Indices des bons choix d’un groupe, d’après la solution du tirage.
+    choiceSolution(group) {
+      const solution = this.draw.solutions[group.dataset.name];
+      return new Set(Array.isArray(solution) ? solution : [solution]);
+    }
+
+    // Vérification d’un groupe de choix : le groupe prend le verdict de « apres » (réussi ou non),
+    // et seuls les choix cochés se colorent, d’après la solution du tirage. Un choix déjà vert
+    // (coché juste lors d’une vérification précédente) ne s’anime pas de nouveau.
+    colorChoices(group, correct) {
+      group.classList.add(correct ? "is-correct" : "is-incorrect");
+      lock(group, true);
+      const solution = this.choiceSolution(group);
+      const labels = choiceInputs(group)
+        .filter(input => input.checked)
+        .map(input => input.closest(".pw-choice"))
+        .filter(label => !label.classList.contains("is-correct"));
+      return animateFields(labels, label => {
+        label.classList.add(solution.has(choiceIndex(label)) ? "is-correct" : "is-incorrect");
+      });
+    }
+
     // Retour à la saisie sur le même tirage : les champs justes restent verts et figés.
     correct() {
       for (const input of this.fields()) {
-        if (input.classList.contains("is-incorrect")) {
-          input.classList.remove("is-incorrect");
+        if (!input.classList.contains("is-incorrect")) {
+          continue;
+        }
+        input.classList.remove("is-incorrect");
+        if (!isChoiceGroup(input)) {
           lock(input, false);
+          continue;
+        }
+        // Choix multiple : un bon choix coché reste vert et figé ; les autres choix, cochés ou non,
+        // redeviennent modifiables. Choix unique : tout se rouvre, car choisir une autre réponse
+        // décoche forcément la précédente.
+        const multiple = input.dataset.multiple === "true";
+        for (const choice of choiceInputs(input)) {
+          const label = choice.closest(".pw-choice");
+          const kept = multiple && label.classList.contains("is-correct");
+          label.classList.remove("is-incorrect");
+          if (!kept) label.classList.remove("is-correct");
+          choice.disabled = kept;
         }
       }
       this.hideFeedback();
@@ -456,6 +623,25 @@
       return this.draw.solutions[matrixName]?.[Number(matrixRow)]?.[Number(matrixColumn)] ?? null;
     }
 
+    // Solution d’un groupe de choix : les bons choix sont cochés et verts (ils s’animent l’un après
+    // l’autre), les autres décochés et neutres ; le groupe est figé.
+    showChoiceSolution(group) {
+      const solution = this.choiceSolution(group);
+      group.classList.remove("is-incorrect");
+      group.classList.add("is-correct");
+      lock(group, true);
+      const labels = [...group.querySelectorAll(".pw-choice")];
+      for (const label of labels.filter(label => !solution.has(choiceIndex(label)))) {
+        label.classList.remove("is-correct", "is-incorrect");
+        label.querySelector("input").checked = false;
+      }
+      return animateFields(labels.filter(label => solution.has(choiceIndex(label))), label => {
+        label.classList.remove("is-incorrect");
+        label.classList.add("is-correct");
+        label.querySelector("input").checked = true;
+      });
+    }
+
     // Remplit tous les champs avec la solution, y compris ceux déjà justes : l’élève voit la solution
     // complète, par exemple « ∗ » sur chaque valeur libre.
     async showSolution() {
@@ -470,18 +656,22 @@
             PyWimsWidgets.resizeVariableMatrix(viewport, cells.length, cells[0].length);
           }
         }
-        await animateFields(this.fields(), input => {
-          const solution = this.solutionFor(input);
-          input.classList.remove("is-incorrect", "is-correct");
-          if (solution === null) {
-            setFieldValue(input, input.matches("math-field") ? "\\ast" : freeValue);
-            input.classList.add("is-free");
-          } else {
-            setFieldValue(input, solution);
-            input.classList.add("is-correct");
-          }
-          lock(input, true);
-        });
+        const fields = this.fields();
+        await Promise.all([
+          animateFields(fields.filter(input => !isChoiceGroup(input)), input => {
+            const solution = this.solutionFor(input);
+            input.classList.remove("is-incorrect", "is-correct");
+            if (solution === null) {
+              setFieldValue(input, input.matches("math-field") ? "\\ast" : freeValue);
+              input.classList.add("is-free");
+            } else {
+              setFieldValue(input, solution);
+              input.classList.add("is-correct");
+            }
+            lock(input, true);
+          }),
+          ...fields.filter(isChoiceGroup).map(group => this.showChoiceSolution(group))
+        ]);
         this.setState("solution");
         if (this.draw.explication) {
           await this.showFeedback(this.draw.explication, "is-explanation");
@@ -611,16 +801,47 @@
   });
   document.addEventListener("click", () => toggleCompletionTip(false));
 
-  // Chaque section de la feuille devient une question indépendante ; seule une activité a une progression.
+  // Note indicative de l’activité : somme des dernières notes des questions notées, sur la somme de
+  // leurs maxima. Elle n’apparaît que si une question au moins a un barème.
+  const scoreTotal = document.getElementById("pw-score-total");
+  const scoreTotalValue = document.getElementById("pw-score-total-value");
+  const scoreTotalLabel = document.getElementById("pw-score-total-label");
+
+  function updateScoreTotal(questions) {
+    const scored = questions.filter(question => question.scoring);
+    if (!scored.length) {
+      return;
+    }
+    const sum = scored.reduce((total, question) => total + question.score, 0);
+    const max = scored.reduce((total, question) => total + question.scoreMax, 0);
+    scoreTotalValue.textContent = `${formatScore(sum)} / ${formatScore(max)}`;
+    scoreTotalLabel.textContent = scored.length === questions.length
+      ? "note indicative"
+      : `sur ${scored.length} question${scored.length > 1 ? "s" : ""} notée${scored.length > 1 ? "s" : ""}`;
+    scoreTotal.title = `Note indicative : ${scoreTotalValue.textContent}, ${scored.length === questions.length
+      ? "toutes les questions sont notées" : scoreTotalLabel.textContent}`;
+    scoreTotal.hidden = false;
+  }
+
+  // Chaque section de la feuille devient une question indépendante ; seule une activité a une
+  // progression et une note indicative.
   const questions = [...document.querySelectorAll(".pw-question")].map(
     (section, index) => new Question(section, index, {
-      onSuccess: singleQuestion ? null : () => updateProgress(questions)
+      onSuccess: singleQuestion ? null : () => updateProgress(questions),
+      onScoreChange: singleQuestion ? null : () => updateScoreTotal(questions)
     })
   );
+  if (questions.some(question => question.scoring)) {
+    document.body.dataset.scored = "true";
+  }
   if (!singleQuestion) {
     updateProgress(questions);
+    updateScoreTotal(questions);
   }
-  addEventListener("resize", () => questions.forEach(question => question.layoutFeedback()));
+  addEventListener("resize", () => questions.forEach(question => {
+    fitChoiceColumns(question.promptElement);
+    question.layoutFeedback();
+  }));
   for (const question of questions) {
     question.start();
   }

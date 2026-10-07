@@ -14,7 +14,8 @@ qui fait référence ; le format des exercices est détaillé dans
 - `compiler/` — interface du compilateur (`index.html`) et compilateur (`compiler.js`)
 - `exercises/` — fichiers d’exercice `.pwq`
 - `layouts/` — mise en page HTML commune aux questions seules et aux activités
-- `widgets/` — champs de saisie : texte, MathLive, matrices fixes et redimensionnables
+- `widgets/` — champs de saisie : texte, MathLive, matrices fixes et redimensionnables, choix
+  unique ou multiple
 - `css/` — charte de l’organisation (`brand.css`) et styles des exercices (`exercise.css`)
 - `runtime/` — code intégré au fichier généré : grammaire des balises
   (`template.js`), Python et module `pywims` (`python.js`), cycle de vie des
@@ -70,9 +71,17 @@ ceux que rejoue le fichier généré.
   le pourcentage de questions réussies (une vérification entièrement juste ; une
   solution affichée ne compte pas) et une barre de progression ; le numéro d’une
   question réussie devient ✓, et des confettis saluent les 100 %.
+- **Questions à choix.** Les choix sont mélangés à chaque tirage. La
+  vérification colore seulement les choix cochés (vert ou rouge, avec ✓ ou ✗) ;
+  sur téléphone, les colonnes se réduisent tant qu’un choix ne tient pas.
+- **Note indicative.** Une question à choix qui a un barème (syntaxe d’AMC)
+  affiche, à chaque vérification, la note que la réponse obtiendrait, en bas à
+  droite de sa carte. Une activité additionne ces notes dans sa barre de titre ;
+  un nouvel énoncé remet la note de sa question à 0. C’est un repère pour
+  l’entraînement : le pourcentage, lui, ne compte que les réussites complètes.
 - **Aide de l’élève.** Le bouton **?** de l’en-tête explique les quatre boutons
-  et, dans une activité, le sens du pourcentage ; une bulle le rappelle au
-  survol ou au toucher du pourcentage.
+  et, dans une activité, le sens du pourcentage et de la note ; une bulle
+  rappelle le sens du pourcentage au survol ou au toucher.
 - **Téléphone.** Les boutons n’affichent que leur icône ; dans une activité, le
   retour passe sous l’énoncé et la carte s’agrandit en douceur.
 
@@ -95,6 +104,13 @@ importe lui-même ses bibliothèques, ainsi que les outils du module `pywims`
 (`py_wims`, `is_nombre`, `math_expression`, `LIBRE`). `apres` peut définir la
 variable `feedback`, et `avant` la variable `explication_solution`.
 
+Les questions à choix unique (`input_radio`) ou multiple (`input_checkbox`)
+prennent leurs choix dans une liste de `avant` (`choices=`) et leur solution
+dans un indice ou une liste d’indices ; un barème facultatif (`bareme=`) suit la
+syntaxe d’AMC. Plutôt que d’analyser le LaTeX d’AMC, le projet confie la
+conversion d’une question AMC à un LLM : `PROMPT.md` contient la table de
+correspondance et un exemple complet.
+
 Le guide complet, avec un exemple, est [`PROMPT.md`](PROMPT.md). Exemples du
 dépôt :
 
@@ -106,7 +122,9 @@ dépôt :
 - [`matrice-triangulaire.pwq`](exercises/matrice-triangulaire.pwq) — matrice de
   taille fixe, valeurs libres (`LIBRE`) et explication de la solution ;
 - [`produit-matrices.pwq`](exercises/produit-matrices.pwq) — matrice
-  redimensionnable.
+  redimensionnable ;
+- [`nombres-premiers.pwq`](exercises/nombres-premiers.pwq) — choix multiple
+  converti depuis AMC, avec « Aucun de ces nombres » et un barème.
 
 Les matrices redimensionnables commencent à 2 × 2 ; la poignée ↘ ajoute ou
 retire des lignes et des colonnes jusqu’aux limites déclarées, à la souris ou

@@ -41,7 +41,8 @@ def parse(text):
 def input_tags(enonce):
     for tag in re.findall(r"{%\s*(.*?)\s*%}", enonce, re.S):
         kind, name = re.match(r"(\w+)\s+['\"](\w+)['\"]", tag).groups()
-        yield kind, name, re.search(r"solution=(\w+)", tag).group(1)
+        choices = re.search(r"choices=(\w+)", tag)
+        yield kind, name, re.search(r"solution=(\w+)", tag).group(1), choices and choices.group(1)
 
 
 def main():
@@ -56,9 +57,13 @@ def main():
                 namespace = {}
                 exec(fields["avant"], namespace)
                 answers = {}
-                for kind, name, variable in input_tags(fields["enonce"]):
+                for kind, name, variable, choices in input_tags(fields["enonce"]):
                     value = namespace[variable]
-                    if kind in ("input_text", "input_math"):
+                    if kind in ("input_radio", "input_checkbox"):
+                        # L’élève coche les bons choix : « apres » reçoit leurs indices.
+                        count = len(pywims._choice_texts(namespace[choices]))
+                        answers[name] = pywims._choice_solution(value, kind == "input_checkbox", count)
+                    elif kind in ("input_text", "input_math"):
                         answers[name] = pywims._solution_text(value)
                     else:
                         # Une case libre reçoit une valeur quelconque, ici 1.

@@ -14,6 +14,7 @@
   <script src="../widgets/input-matrix.js"></script>
   <script src="../widgets/input-math.js"></script>
   <script src="../widgets/input-text.js"></script>
+  <script src="../widgets/input-choice.js"></script>
   <script>
     const results = document.getElementById("results");
     // Exécute un contrôle isolément afin qu’un échec ne masque pas les autres résultats.
@@ -76,6 +77,112 @@
         throw new Error(`Toutes les balises invalides doivent être signalées : ${errors.join(" ; ")}`);
       }
     });
+    test("les champs à choix exigent leurs choix et vérifient colonnes et barème", () => {
+      const radio = PyWimsTemplate.parseTag("input_radio 'r' choices=choix solution=bonne columns=2 fixed_last=1 bareme='b=2, m=-0.5'");
+      if (radio.attributes.choices !== "choix" || radio.attributes.columns !== 2 || radio.attributes.fixed_last !== 1 ||
+          !PyWimsTemplate.choiceTypes.has("input_checkbox")) {
+        throw new Error(`Attributs mal lus : ${JSON.stringify(radio.attributes)}`);
+      }
+      expectTagError("input_checkbox 'r' solution=bonnes", "doit indiquer ses choix");
+      expectTagError("input_radio 'r' choices=c solution=s columns=7", "« columns » doit être compris entre 1 et 6");
+      expectTagError("input_radio 'r' choices=c solution=s bareme='b=1,formula=NBC'", "« formula » d’AMC n’est pas prise en charge");
+      expectTagError("input_radio 'r' choices=c solution=s bareme='set.X=1'", "« set.X » d’AMC n’est pas prise en charge");
+      expectTagError("input_radio 'r' choices=c solution=s bareme='z=1'", "Directive de barème inconnue « z »");
+      expectTagError("input_radio 'r' choices=c solution=s bareme='b=un'", "« b » doit être un nombre");
+      expectTagError("input_radio 'r' choices=c solution=s bareme='-2'", "barème propre à une réponse");
+      expectTagError("input_radio 'r' choices=c solution=s bareme='b=1,b=2'", "« b » répétée");
+    });
+    test("le barème suit la syntaxe d’AMC et n’est admis que pour un champ seul", () => {
+      const scoring = PyWimsTemplate.parseScoring("b=2,m=-0.5, v=0,e=-1,mz=3,haut=4,MAX=5,p=0,P=6,d=.5");
+      if (JSON.stringify(scoring) !== JSON.stringify({ b: 2, m: -0.5, v: 0, e: -1, mz: 3, haut: 4, MAX: 5, p: 0, P: 6, d: 0.5 })) {
+        throw new Error(`Barème mal lu : ${JSON.stringify(scoring)}`);
+      }
+      const alone = PyWimsTemplate.validateTemplate("{% input_checkbox 'r' choices=c solution=s bareme='mz=1' %}");
+      const shared = PyWimsTemplate.validateTemplate(
+        "{% input_checkbox 'r' choices=c solution=s bareme='mz=1' %} {% input_text 't' solution=a %}"
+      );
+      if (alone.length || shared.length !== 1 || !shared[0].includes("seul champ de la question")) {
+        throw new Error(`Règle du champ seul mal appliquée : ${JSON.stringify([alone, shared])}`);
+      }
+    });
+    test("la note suit le barème d’AMC, y compris les exemples de sa documentation", () => {
+      const note = (bareme, multiple, checked, solution, count = 4) =>
+        PyWimsTemplate.scoreChoice(PyWimsTemplate.parseScoring(bareme), { multiple, count, checked, solution });
+      const cases = [
+        // Documentation d’AMC : Ami et Autre sont justes ; la copie coche Ami et Otarie.
+        [note("b=2,m=-0.5", true, [0, 3], [0, 2]), { score: 3, max: 8 }],
+        // Choix unique de la documentation : bonne réponse 2, mauvaise -0,5.
+        [note("b=2,m=-0.5", false, [0], [0], 3), { score: 2, max: 2 }],
+        [note("b=2,m=-0.5", false, [1], [0], 3), { score: -0.5, max: 2 }],
+        [note("mz=3", true, [0, 2], [0, 2]), { score: 3, max: 3 }],
+        [note("mz=3", true, [0], [0, 2]), { score: 0, max: 3 }],
+        // haut=4 : 4 pour une réponse parfaite, un point de moins par case mal traitée, plancher 0.
+        [note("haut=4", true, [0], [0, 2]), { score: 3, max: 4 }],
+        [note("haut=2", true, [1, 3], [0, 2]), { score: 0, max: 2 }],
+        // v : rien n’est coché alors que la solution n’est pas vide ; sinon ne rien cocher peut être parfait.
+        [note("b=1,v=-1", true, [], [0, 2]), { score: -1, max: 4 }],
+        [note("b=1,m=-1", true, [], []), { score: 4, max: 4 }],
+        [note("b=1,m=-1,p=0", true, [1, 3], [0, 2]), { score: 0, max: 4 }],
+        [note("b=1,P=3", true, [0, 2], [0, 2]), { score: 3, max: 3 }],
+        [note("b=1,d=1,MAX=5", true, [0, 2], [0, 2]), { score: 5, max: 5 }]
+      ];
+      for (const [[actual, expected], index] of cases.map((pair, index) => [pair, index])) {
+        if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+          throw new Error(`Cas ${index + 1} : ${JSON.stringify(actual)} au lieu de ${JSON.stringify(expected)}`);
+        }
+      }
+    });
+    test("l’ordre des choix est un mélange reproductible qui garde les derniers choix fixés", () => {
+      const first = PyWimsCompiler.choiceOrder(6, 2, 7, "reponse");
+      const permutation = [...first].sort((a, b) => a - b).join();
+      const orders = new Set(Array.from({ length: 20 }, (_, seed) => PyWimsCompiler.choiceOrder(6, 2, seed, "reponse").join()));
+      if (JSON.stringify(first) !== JSON.stringify(PyWimsCompiler.choiceOrder(6, 2, 7, "reponse")) ||
+          permutation !== "0,1,2,3,4,5" || first.slice(-2).join() !== "4,5" ||
+          orders.size < 10 ||
+          PyWimsCompiler.choiceOrder(6, 0, 7, "reponse").join() === PyWimsCompiler.choiceOrder(6, 0, 7, "autre").join()) {
+        throw new Error(`Ordre inattendu : ${first} (${orders.size} ordres distincts sur 20 graines)`);
+      }
+    });
+    test("l’aperçu provisoire d’un champ à choix nomme ses choix d’après leur liste", () => {
+      const draw = PyWimsCompiler.previewPlaceholderDraw({ enonce: "{% input_radio 'r' choices=choix solution=s %}" });
+      if (draw.choices.r.join() !== "choix[0],choix[1]" || draw.orders.r.join() !== "0,1") {
+        throw new Error(`Tirage provisoire inattendu : ${JSON.stringify(draw)}`);
+      }
+    });
+    test("un champ à choix affiche ses choix dans l’ordre du tirage, échappés et à l’abri du modèle", () => {
+      const html = PyWimsTemplate.renderTemplate(
+        "{{ a }} {% input_checkbox 'r' choices=c solution=s %}",
+        { a: "A" },
+        tag => PyWimsWidgets.inputChoice(tag.name, {
+          multiple: true, texts: ["<b>", "{{ a }}", "$x^{2}$"], order: [2, 0, 1], columns: 2, idPrefix: "q3-"
+        })
+      );
+      const host = document.createElement("div");
+      host.innerHTML = html;
+      const inputs = [...host.querySelectorAll(".pw-choice input")];
+      const texts = [...host.querySelectorAll(".pw-choice-text")].map(text => text.textContent);
+      if (inputs.map(input => input.value).join() !== "2,0,1" ||
+          inputs.some(input => input.type !== "checkbox" || input.name !== "q3-r") ||
+          inputs[0].id !== "q3-form_choice_r_2" ||
+          JSON.stringify(texts) !== JSON.stringify(["$x^{2}$", "<b>", "{{ a }}"]) ||
+          host.querySelector("b") || host.querySelector(".pw-choices").dataset.name !== "r" ||
+          !host.querySelector(".pw-choices").getAttribute("style").includes("--pw-choice-columns:2")) {
+        throw new Error(`Rendu inattendu : ${html}`);
+      }
+      const radio = PyWimsWidgets.inputChoice("q", { texts: ["a", "b"], order: [1, 0] });
+      if (!radio.includes('type="radio"') || !radio.includes('data-multiple="false"')) {
+        throw new Error("Un choix unique doit utiliser des boutons radio.");
+      }
+      for (const options of [{ texts: ["a"], order: [0] }, { texts: ["a", "b"], order: [0, 0] }, { texts: ["a", "b"], order: [0, 1], columns: 7 }]) {
+        let rejected = false;
+        try {
+          PyWimsWidgets.inputChoice("q", options);
+        } catch {
+          rejected = true;
+        }
+        if (!rejected) throw new Error(`Choix invalides acceptés : ${JSON.stringify(options)}`);
+      }
+    });
     test("le rendu du modèle remplace balises et variables en échappant les valeurs", () => {
       const html = PyWimsTemplate.renderTemplate(
         "Calcul {{ x }} : {% input_text 'r' solution=s style='width:3em' %}",
@@ -105,7 +212,7 @@
     // Ressources minimales pour assembler une feuille : la mise en page réelle, des scripts vides.
     const sheetResources = layout => ({
       layout, brandCss: "", exerciseCss: "", template: "", textWidget: "", mathWidget: "",
-      matrixWidget: "", python: "", runner: ""
+      matrixWidget: "", choiceWidget: "", python: "", runner: ""
     });
     const sheetQuestion = (title, enonce) => ({
       fields: { title, keywords: "", layout: "STD", avant: "a = 1", enonce, apres: "ok_answer['r'] = True" },

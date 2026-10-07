@@ -26,7 +26,7 @@
     }
 
     // Imitation de PyWimsPython, une session par question : « apres » compare chaque saisie à la réponse
-    // attendue du tirage. Une saisie « sans retour » fait omettre la variable feedback ; mismatch simule
+    // attendue du tirage ({ choice: … } pour un champ à choix, comparé à l’indice ou à la liste reçue). Une saisie « sans retour » fait omettre la variable feedback ; mismatch simule
     // un tirage non reproduit. Le journal de chaque session est dans pythonLogs[identifiant].
     const fakePython = options => `
 window.PyWimsPython = (() => {
@@ -48,13 +48,18 @@ window.PyWimsPython = (() => {
         : exercise.mismatch ? "autre valeur" : exercise.contexts[seed][name],
       set: async (name, value) => { values[name] = value; },
       setMatrix: async (name, value) => { values[name] = value; },
+      setChoice: async (name, value) => { values[name] = value; log.push("choix " + name + " " + JSON.stringify(value)); },
+      getChoiceTexts: async variable => exercise.mismatch ? ["autre"] : exercise.choices[seed][variable],
       resetAnswers: async () => { ok = {}; feedback = null; },
       run: async () => {
         log.push("apres");
         const expected = exercise.answers[seed];
         let allOk = true;
         for (const [name, answer] of Object.entries(expected)) {
-          if (Array.isArray(answer)) {
+          if (answer && typeof answer === "object" && "choice" in answer) {
+            ok[name] = JSON.stringify(values[name]) === JSON.stringify(answer.choice);
+            allOk &&= ok[name];
+          } else if (Array.isArray(answer)) {
             answer.forEach((row, i) => row.forEach((cell, j) => {
               const given = (values[name]?.[i]?.[j] ?? "").trim();
               ok[name + "[" + i + "][" + j + "]"] = cell === null ? given !== "" : given === cell;
@@ -256,6 +261,205 @@ window.PyWimsPython = (() => {
             cell(1, 1).value !== "∗" || !cell(1, 1).classList.contains("is-free") ||
             cell(1, 0).value !== "0" || !cell(1, 0).classList.contains("is-correct") || cell(0, 1).value !== "1") {
           throw new Error("Les cases libres ou fixées de la solution sont incorrectes.");
+        }
+        frame.remove();
+      });
+
+      // Choix multiple : solution [0, 2], affichée dans l’ordre 2, 0, 3, 1.
+      const choiceExercise = {
+        title: "Nombres premiers",
+        layout: "STD",
+        avant: "choix = ['2', '4', '5', '9']",
+        enonce: "Lesquels sont premiers ? {% input_checkbox 'r' choices=choix solution=bonnes columns=2 %}",
+        apres: "ok_answer['r'] = r == bonnes"
+      };
+      const choiceDraws = [{
+        seed: 0, context: {}, dimensions: {}, solutions: { r: [0, 2] },
+        choices: { r: ["$2$", "$4$", "$5$", "$9$"] }, orders: { r: [2, 0, 3, 1] }, explication: null
+      }];
+      const choiceOptions = {
+        contexts: { 0: {} },
+        choices: { 0: { choix: ["$2$", "$4$", "$5$", "$9$"] } },
+        answers: { 0: { r: { choice: [0, 2] } } }
+      };
+      const choiceLabel = ($, index) => $(`#q1 .pw-choice[data-choice-index="${index}"]`);
+      const choiceBox = ($, index) => choiceLabel($, index).querySelector("input");
+      const click = element => element.click();
+
+      await test("un choix multiple colore seulement les choix cochés, puis Corriger garde les bons", async () => {
+        const { $, role, frame, window: frameWindow } = await openExercise(choiceExercise, choiceDraws, choiceOptions);
+        await waitFor(() => $("#q1 .pw-choices"), "affichage des choix");
+        const order = [...$("#q1").querySelectorAll(".pw-choice")].map(label => label.dataset.choiceIndex).join();
+        if (order !== "2,0,3,1" || role("check").disabled) {
+          throw new Error(`Ordre ${order}, ou « Vérifier » grisé alors que ne rien cocher est une réponse.`);
+        }
+        const barPosition = () => JSON.stringify(role("new-draw").getBoundingClientRect());
+        const initialPosition = barPosition();
+        click(choiceBox($, 0));
+        click(choiceBox($, 1));
+        role("check").click();
+        await waitFor(() => role("feedback").classList.contains("is-visible"), "retour de la vérification");
+        const classes = index => choiceLabel($, index).className;
+        if (!classes(0).includes("is-correct") || !classes(1).includes("is-incorrect") ||
+            /is-(in)?correct/.test(classes(2)) || /is-(in)?correct/.test(classes(3)) ||
+            [0, 1, 2, 3].some(index => !choiceBox($, index).disabled) ||
+            !frameWindow.pythonLogs.q1.includes("choix r [0,1]") || $("#q1").dataset.result !== "ko") {
+          throw new Error("La vérification ne colore pas seulement les choix cochés, d’après la solution.");
+        }
+        if (barPosition() !== initialPosition) throw new Error("La barre d’outils a bougé pendant la vérification.");
+        role("check").click();
+        if (!choiceBox($, 0).checked || !choiceBox($, 0).disabled || !classes(0).includes("is-correct") ||
+            !choiceBox($, 1).checked || choiceBox($, 1).disabled || classes(1).includes("is-incorrect") ||
+            choiceBox($, 2).disabled || choiceBox($, 3).disabled) {
+          throw new Error("« Corriger » doit garder le bon choix coché et figé, et rouvrir les autres.");
+        }
+        click(choiceBox($, 1));
+        click(choiceBox($, 2));
+        role("check").click();
+        await waitFor(() => role("feedback").classList.contains("is-correct"), "retour juste");
+        if (!classes(2).includes("is-correct") || !frameWindow.pythonLogs.q1.includes("choix r [0,2]")) {
+          throw new Error("La seconde vérification n’a pas transmis ou coloré les bons choix.");
+        }
+        frame.remove();
+      });
+
+      await test("la solution d’un choix multiple coche les bons choix et décoche les autres", async () => {
+        const { $, role, frame } = await openExercise(choiceExercise, choiceDraws, choiceOptions);
+        await waitFor(() => $("#q1 .pw-choices"), "affichage des choix");
+        click(choiceBox($, 3));
+        role("solution").click();
+        await waitFor(() => $("#q1").dataset.state === "solution", "solution");
+        const state = index => [choiceBox($, index).checked, choiceLabel($, index).classList.contains("is-correct"), choiceBox($, index).disabled];
+        if (JSON.stringify([0, 1, 2, 3].map(state)) !==
+            JSON.stringify([[true, true, true], [false, false, true], [true, true, true], [false, false, true]])) {
+          throw new Error(`Solution inattendue : ${JSON.stringify([0, 1, 2, 3].map(state))}`);
+        }
+        frame.remove();
+      });
+
+      await test("un choix unique attend une réponse, puis se rouvre entièrement après une erreur", async () => {
+        const radioExercise = { ...choiceExercise, enonce: "Le plus petit ? {% input_radio 'r' choices=choix solution=bonne %}" };
+        const radioDraws = [{ ...choiceDraws[0], solutions: { r: 0 } }];
+        const { $, role, frame, window: frameWindow } = await openExercise(radioExercise, radioDraws,
+          { ...choiceOptions, answers: { 0: { r: { choice: 0 } } } });
+        await waitFor(() => $("#q1 .pw-choices"), "affichage des choix");
+        if (!role("check").disabled || choiceBox($, 0).type !== "radio") {
+          throw new Error("« Vérifier » doit rester grisé tant qu’aucun choix n’est fait.");
+        }
+        click(choiceBox($, 3));
+        if (role("check").disabled) throw new Error("« Vérifier » reste grisé après un choix.");
+        role("check").click();
+        await waitFor(() => role("feedback").classList.contains("is-visible"), "retour de la vérification");
+        if (!choiceLabel($, 3).classList.contains("is-incorrect") || !frameWindow.pythonLogs.q1.includes("choix r 3")) {
+          throw new Error("Le choix faux n’est pas signalé, ou l’indice n’est pas transmis.");
+        }
+        role("check").click();
+        if ([0, 1, 2, 3].some(index => choiceBox($, index).disabled) || !choiceBox($, 3).checked ||
+            choiceLabel($, 3).classList.contains("is-incorrect")) {
+          throw new Error("« Corriger » doit rouvrir tous les choix d’un choix unique, avec la saisie.");
+        }
+        frame.remove();
+      });
+
+      await test("un groupe de choix perd des colonnes tant qu’un choix déborde, jamais au-delà", async () => {
+        const draws = [{ ...choiceDraws[0], choices: { r: ["$2$", "x".repeat(80), "$5$", "$9$"] } }];
+        const exercise = { ...choiceExercise, enonce: choiceExercise.enonce.replace("columns=2", "columns=4") };
+        const { $, frame } = await openExercise(exercise, draws,
+          { ...choiceOptions, choices: { 0: { choix: draws[0].choices.r } } });
+        await waitFor(() => $("#q1 .pw-choices")?.style.getPropertyValue("--pw-choice-columns") === "1", "retrait des colonnes");
+        const short = await openExercise(exercise, choiceDraws, choiceOptions);
+        // Les colonnes s’ajustent après la composition des formules par MathJax.
+        await waitFor(() => short.$("#q1 .pw-choices mjx-container"), "composition des choix courts");
+        await new Promise(resolve => setTimeout(resolve, 200));
+        if (short.$("#q1 .pw-choices").style.getPropertyValue("--pw-choice-columns") !== "4") {
+          throw new Error("Des choix courts ont perdu des colonnes.");
+        }
+        frame.remove();
+        short.frame.remove();
+      });
+
+      await test("une question notée affiche sa note, et l’activité une note indicative", async () => {
+        const scoredExercise = { ...choiceExercise, enonce: choiceExercise.enonce.replace("columns=2", "bareme='b=2,m=-0.5'") };
+        const scoredDraws = [choiceDraws[0], { ...choiceDraws[0], seed: 1, orders: { r: [0, 1, 2, 3] } }];
+        const seedOptions = {
+          contexts: { 0: {}, 1: {} },
+          choices: { 0: choiceOptions.choices[0], 1: choiceOptions.choices[0] },
+          answers: { 0: choiceOptions.answers[0], 1: choiceOptions.answers[0] }
+        };
+        const { page, $, role, frame } = await openSheet(
+          [{ fields: scoredExercise, draws: scoredDraws }, { fields: textExercise, draws: textDraws }],
+          { questions: { q1: seedOptions, q2: textOptions } }, "Révisions notées");
+        await waitFor(() => $("#q1 .pw-choices") && !$("#pw-score-total").hidden, "affichage de la note indicative");
+        const total = () => `${$("#pw-score-total-value").textContent} | ${$("#pw-score-total-label").textContent}`;
+        if (total() !== "0 / 8 | sur 1 question notée" || role("score", 1).textContent || role("score", 1).hidden ||
+            !role("score", 2).hidden || $("#q1").dataset.scored !== "true" || page.body.dataset.scored !== "true") {
+          throw new Error(`État initial inattendu : ${total()}`);
+        }
+        const box = index => $(`#q1 .pw-choice[data-choice-index="${index}"] input`);
+        box(0).click();
+        box(3).click();
+        role("check").click();
+        await waitFor(() => role("score").textContent, "note de la vérification");
+        if (role("score").textContent !== "Note : 3 / 8" || total() !== "3 / 8 | sur 1 question notée") {
+          throw new Error(`Note inattendue : ${role("score").textContent} ; ${total()}`);
+        }
+        role("check").click();
+        box(3).click();
+        box(2).click();
+        role("check").click();
+        await waitFor(() => role("score").textContent === "Note : 8 / 8", "nouvelle note");
+        if (total() !== "8 / 8 | sur 1 question notée") throw new Error(`Total inattendu : ${total()}`);
+        role("new-draw").click();
+        await waitFor(() => !role("new-draw").disabled && $("#q1").dataset.state === "open" && !role("score").textContent,
+          "remise à zéro après un nouvel énoncé");
+        if (total() !== "0 / 8 | sur 1 question notée") throw new Error(`Total après un nouvel énoncé : ${total()}`);
+        box(1).click();
+        role("check").click();
+        await waitFor(() => role("score").textContent, "note après erreur");
+        role("solution").click();
+        await waitFor(() => $("#q1").dataset.state === "solution", "solution");
+        // Choix 1 seul coché : trois cases mal traitées (−0,5 chacune), une bien traitée (2).
+        if (role("score").textContent !== "Note : 0,5 / 8" || total() !== "0,5 / 8 | sur 1 question notée") {
+          throw new Error(`La solution a changé la note : ${role("score").textContent} ; ${total()}`);
+        }
+        $("#pw-help-button").click();
+        if (getComputedStyle($(".pw-help-score")).display === "none" ||
+            getComputedStyle($(".pw-help-score-activity")).display === "none") {
+          throw new Error("L’aide n’explique pas la note.");
+        }
+        $("#pw-help").close();
+        frame.remove();
+      });
+
+      await test("une question seule notée affiche sa note, sans note d’activité ; sans barème, rien", async () => {
+        const scoredExercise = { ...choiceExercise, enonce: choiceExercise.enonce.replace("columns=2", "bareme='mz=1'") };
+        const single = await openExercise(scoredExercise, choiceDraws, choiceOptions);
+        await waitFor(() => single.$("#q1 .pw-choices"), "affichage des choix");
+        single.$('#q1 .pw-choice[data-choice-index="0"] input').click();
+        single.$('#q1 .pw-choice[data-choice-index="2"] input').click();
+        single.role("check").click();
+        await waitFor(() => single.role("score").textContent, "note");
+        if (single.role("score").textContent !== "Note : 1 / 1" || !single.$("#pw-score-total").hidden ||
+            getComputedStyle(single.$(".pw-help-score")).display === "none" ||
+            getComputedStyle(single.$(".pw-help-score-activity")).display !== "none") {
+          throw new Error(`Question seule notée inattendue : ${single.role("score").textContent}`);
+        }
+        single.frame.remove();
+        const plain = await openExercise(choiceExercise, choiceDraws, choiceOptions);
+        await waitFor(() => plain.$("#q1 .pw-choices"), "affichage des choix");
+        if (!plain.role("score").hidden || plain.page.body.dataset.scored ||
+            getComputedStyle(plain.$(".pw-help-score")).display !== "none") {
+          throw new Error("Une question sans barème montre une note.");
+        }
+        plain.frame.remove();
+      });
+
+      await test("des choix que Python ne reproduit pas sont signalés", async () => {
+        const { role, frame } = await openExercise(choiceExercise, choiceDraws,
+          { ...choiceOptions, choices: { 0: { choix: ["$2$", "$4$", "$5$", "$8$"] } } });
+        await waitFor(() => role("status").classList.contains("is-error"), "message d’erreur");
+        if (!role("status").textContent.includes("« choix » diffère")) {
+          throw new Error(`Message inattendu : ${role("status").textContent}`);
         }
         frame.remove();
       });

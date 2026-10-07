@@ -68,6 +68,53 @@ def _solution_cells(value):
     return [[_solution_text(cell) for cell in row] for row in value]
 
 
+def _choice_texts(value):
+    """Textes des choix d’un champ à choix : un texte reste tel quel, un objet SymPy devient une formule."""
+    if isinstance(value, (str, bytes)) or not isinstance(value, (list, tuple)) or len(value) < 2:
+        raise TypeError("ce doit être une liste d’au moins deux choix.")
+    sympy = _sys.modules.get("sympy")
+    texts = []
+    for choice in value:
+        if sympy is not None and isinstance(choice, sympy.Basic):
+            # Formule en ligne : les choix restent compacts, côte à côte sur téléphone.
+            texts.append(r"\(" + sympy.latex(choice) + r"\)")
+        else:
+            texts.append(str(choice))
+    return texts
+
+
+def _choice_index(value, count):
+    """Indice d’un choix, entre 0 et count - 1 ; un entier SymPy est admis, un booléen non.
+
+    En Python, True vaut 1 : sans ce refus, « solution = [x > 0] » passerait pour l’indice 1 (ou 0
+    pour False) et désignerait silencieusement un choix, au lieu de signaler l’erreur de l’auteur.
+    """
+    try:
+        if isinstance(value, bool):
+            raise TypeError
+        index = int(value)
+    except (TypeError, ValueError):
+        raise TypeError("{!r} n’est pas un indice de choix.".format(value)) from None
+    if index != value or not 0 <= index < count:
+        raise TypeError("{!r} n’est pas un indice de choix (de 0 à {}).".format(value, count - 1))
+    return index
+
+
+def _choice_solution(value, multiple, count):
+    """Solution d’un champ à choix : un indice (choix unique), ou la liste croissante des indices
+    des bons choix (choix multiple), vide si aucun choix n’est bon."""
+    if not multiple:
+        if isinstance(value, (list, tuple, set)):
+            raise TypeError("ce doit être l’indice du bon choix, pas une liste.")
+        return _choice_index(value, count)
+    if isinstance(value, (str, bytes)) or not isinstance(value, (list, tuple, set)):
+        raise TypeError("ce doit être la liste des indices des bons choix.")
+    indices = [_choice_index(item, count) for item in value]
+    if len(set(indices)) != len(indices):
+        raise TypeError("un indice de choix est répété.")
+    return sorted(indices)
+
+
 def _is_matrix(value):
     sympy = _sys.modules.get("sympy")
     if sympy is not None:
@@ -80,7 +127,8 @@ def _is_matrix(value):
 def _collect_draw(namespace, spec):
     """Données d’un tirage pour le compilateur, avec la liste des erreurs de l’auteur.
 
-    spec (JSON) : {"variables": [...], "dimensions": [...], "fields": [{"name", "type", "solution"}]}
+    spec (JSON) : {"variables": [...], "dimensions": [...],
+                   "fields": [{"name", "type", "solution", "choices" (champs à choix)}]}
     """
     import json
     spec = json.loads(spec)
@@ -101,6 +149,7 @@ def _collect_draw(namespace, spec):
         except (TypeError, ValueError):
             errors.append("La dimension « {} » doit être un entier défini par « avant ».".format(name))
     solutions = {}
+    choices = {}
     for field in spec["fields"]:
         name, kind, variable = field["name"], field["type"], field["solution"]
         if name in namespace:
@@ -109,7 +158,21 @@ def _collect_draw(namespace, spec):
             errors.append("La solution « {} » du champ « {} » n’est pas définie par « avant ».".format(variable, name))
             continue
         value = namespace[variable]
-        if kind in ("input_text", "input_math"):
+        if kind in ("input_radio", "input_checkbox"):
+            source = field["choices"]
+            if source not in namespace:
+                errors.append("Les choix « {} » du champ « {} » ne sont pas définis par « avant ».".format(source, name))
+                continue
+            try:
+                choices[name] = _choice_texts(namespace[source])
+            except TypeError as error:
+                errors.append("Les choix « {} » du champ « {} » : {}".format(source, name, error))
+                continue
+            try:
+                solutions[name] = _choice_solution(value, kind == "input_checkbox", len(choices[name]))
+            except TypeError as error:
+                errors.append("La solution « {} » du champ « {} » : {}".format(variable, name, error))
+        elif kind in ("input_text", "input_math"):
             if _is_matrix(value):
                 errors.append("La solution « {} » du champ « {} » doit être une valeur simple, pas une matrice.".format(variable, name))
             elif kind == "input_text":
@@ -127,7 +190,7 @@ def _collect_draw(namespace, spec):
         explication = None
     return json.dumps({
         "context": context, "dimensions": dimensions, "solutions": solutions,
-        "explication": explication, "errors": errors,
+        "choices": choices, "explication": explication, "errors": errors,
     }, ensure_ascii=False)
 
 
@@ -448,6 +511,53 @@ if importlib.util.find_spec("numpy") is not None:
     });
   }
 
+  // Transfère la saisie d’un champ à choix : un indice (choix unique), None si rien n’est choisi, ou
+  // la liste des indices cochés (choix multiple). La liste est convertie en vraie liste Python :
+  // l’auteur peut la comparer directement, par exemple « reponse == bonnes ».
+  function setChoice(name, value, sessionId = "default") {
+    const globals = sessions.get(sessionId);
+    if (!pyodide || !globals) {
+      throw new Error("L’environnement Python n’est pas prêt.");
+    }
+    const isIndex = item => Number.isInteger(item) && item >= 0 && item < 1000;
+    if (!/^[A-Za-z_]\w*$/.test(name) ||
+        !(value === null || isIndex(value) || (Array.isArray(value) && value.length <= 1000 && value.every(isIndex)))) {
+      throw new Error("La saisie du champ à choix est invalide.");
+    }
+    return enqueuePythonOperation(() => {
+      // Pyodide convertit le null de JavaScript en « jsnull », pas en None : on affecte None en Python.
+      if (value === null) {
+        return pyodide.runPythonAsync(`${name} = None`, { globals });
+      }
+      if (!Array.isArray(value)) {
+        return globals.set(name, value);
+      }
+      const pythonValue = pyodide.toPy(value);
+      try {
+        globals.set(name, pythonValue);
+      } finally {
+        pythonValue.destroy();
+      }
+    });
+  }
+
+  // Textes des choix d’une liste de « avant », convertis comme à la compilation : le navigateur
+  // vérifie ainsi que le tirage rejoué affiche les mêmes choix.
+  function getChoiceTexts(name, sessionId = "default") {
+    if (!sessions.has(sessionId) || !/^[A-Za-z_]\w*$/.test(name)) {
+      throw new Error(`Liste de choix non prise en charge : ${name}`);
+    }
+    const globals = sessions.get(sessionId);
+    return enqueuePythonOperation(() => {
+      if (!globals.has(name)) {
+        throw new Error(`Liste de choix inconnue : ${name}`);
+      }
+      return JSON.parse(pyodide.runPython(
+        `__import__("json").dumps(__import__("pywims")._choice_texts(${name}), ensure_ascii=False)`, { globals }
+      ));
+    });
+  }
+
   // Réinitialise les résultats de correction avant chaque vérification.
   function resetAnswers(sessionId = "default") {
     const globals = sessions.get(sessionId);
@@ -498,6 +608,8 @@ if importlib.util.find_spec("numpy") is not None:
       dispose: () => dispose(sessionId),
       set: (name, value) => set(name, value, sessionId),
       setMatrix: (name, values) => setMatrix(name, values, sessionId),
+      setChoice: (name, value) => setChoice(name, value, sessionId),
+      getChoiceTexts: name => getChoiceTexts(name, sessionId),
       resetAnswers: () => resetAnswers(sessionId),
       getTemplateValue: name => getTemplateValue(name, sessionId),
       getBoolean: expression => getBoolean(expression, sessionId)
@@ -517,6 +629,8 @@ if importlib.util.find_spec("numpy") is not None:
     dispose,
     set,
     setMatrix,
+    setChoice,
+    getChoiceTexts,
     resetAnswers,
     getTemplateValue,
     getBoolean,

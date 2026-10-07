@@ -33,6 +33,11 @@
     <header class="pw-header">
       <h1 id="exercise-title">@@TITLE@@</h1>
       <div class="pw-header-tools">
+        <!-- Note indicative de l’activité : affichée seulement si une question a un barème. -->
+        <div class="pw-score-total" id="pw-score-total" role="status" aria-live="polite" hidden>
+          <span class="pw-completion-value" id="pw-score-total-value"></span>
+          <span class="pw-completion-label" id="pw-score-total-label"></span>
+        </div>
         <button class="pw-completion" id="pw-completion" type="button" aria-describedby="pw-completion-tip" aria-expanded="false">
           <span class="pw-completion-value" id="pw-completion-value">0 %</span>
           <span class="pw-completion-label" id="pw-completion-label"></span>
@@ -77,6 +82,16 @@
         <li>Toutes les questions ont le même poids.</li>
       </ul>
     </section>
+    <section class="pw-help-score">
+      <h3>La note</h3>
+      <p>Une question notée affiche, en bas à droite, la note que votre réponse obtiendrait à l’examen selon
+        son barème. Elle change à chaque vérification : c’est une indication pour vous entraîner, pas une
+        évaluation.</p>
+      <ul class="pw-help-score-activity">
+        <li>La note de l’en-tête additionne la dernière note de chaque question notée.</li>
+        <li>Un nouvel énoncé remet la note de sa question à 0 ; afficher la solution ne la change pas.</li>
+      </ul>
+    </section>
     <form method="dialog"><button class="pw-help-close" type="submit">Fermer</button></form>
   </dialog>
   <!-- Modèle d’une question : les éléments sont repérés par data-role, sans identifiant global. -->
@@ -108,6 +123,8 @@
     <div class="pw-q-slot" data-role="slot">
       <div class="feedback pw-feedback" data-role="feedback" aria-live="polite"></div>
     </div>
+    <!-- Note de la question (si elle a un barème), dans le coin inférieur droit de la carte. -->
+    <div class="pw-q-score" data-role="score" aria-live="polite" hidden></div>
   </template>
   <!-- La grammaire des balises précède les widgets, qui utilisent son échappement. -->
   <script>@@TEMPLATE@@</script>

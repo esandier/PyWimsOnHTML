@@ -71,7 +71,11 @@ définie par `avant` :
 {% input_math 'derivee_eleve' solution=derivee %}
 {% input_matrix 'matrice' rows=m cols=p solution=produit input_style='width:2em' %}
 {% input_vmatrix 'matrice' max_rows=5 max_cols=5 solution=produit %}
+{% input_radio 'reponse' choices=choix solution=bonne %}
+{% input_checkbox 'reponses' choices=choix solution=bonnes columns=2 %}
 ```
+
+Les questions à choix (`input_radio`, `input_checkbox`) sont décrites au § 10.
 
 La valeur de la solution est convertie selon le type de champ :
 
@@ -100,7 +104,8 @@ Le compilateur refuse l’exercice, avec un message précis, si :
 - la solution n’a pas la forme attendue par le champ (dimensions de matrice) ;
 - un nom de champ est déjà défini par `avant`, ou réservé (`ok_answer`,
   `feedback`, noms du module `pywims`, mots-clés Python) ;
-- `avant` lève une exception pour l’un des tirages (la graine est indiquée).
+- `avant` lève une exception pour l’un des tirages (la graine est indiquée) ;
+- une question à choix ne respecte pas les règles du § 10.6.
 
 ### 2.5 Exemple
 
@@ -329,6 +334,177 @@ Chaque étape laisse le projet fonctionnel et se teste avant la suivante.
    mode ZIP adapté.
 7. **Finitions** : animations, README et `PROMPT.md`.
 
-## 10. Points ouverts
+## 10. Questions à choix
 
-Aucun pour l’instant.
+Les questions à choix unique ou multiple suivent le modèle des autres champs :
+les choix et la solution sont calculés par `avant`, la correction est écrite
+dans `apres`. Le compilateur n’analyse pas le LaTeX d’AMC : la conversion d’une
+question AMC en fichier `.pwq` est confiée à un LLM, guidé par `PROMPT.md`
+(§ 10.8).
+
+### 10.1 Balises
+
+```
+{% input_radio 'reponse' choices=choix solution=bonne %}
+{% input_checkbox 'reponses' choices=choix solution=bonnes columns=2 fixed_last=1 bareme='b=1,m=-0.5' %}
+```
+
+| Attribut | Statut | Rôle |
+|---|---|---|
+| `choices` | obligatoire | variable de `avant` : liste des choix, dans l’ordre de l’auteur |
+| `solution` | obligatoire | `input_radio` : indice du bon choix ; `input_checkbox` : liste des indices des bons choix, vide si aucun choix n’est bon |
+| `columns` | facultatif | nombre de colonnes sur grand écran, de 1 (par défaut) à 6 |
+| `fixed_last` | facultatif | nombre de derniers choix qui restent à la fin, non mélangés (par défaut 0) |
+| `bareme` | facultatif | barème à la manière d’AMC (§ 10.5) |
+
+Les indices commencent à 0, dans l’ordre de la liste `choices`.
+
+Un choix est un texte (formules TeX admises), échappé comme une valeur
+`{{variable}}`, ou un objet SymPy, affiché comme une formule. L’énoncé de la
+question s’écrit dans `enonce`, avant la balise, comme pour les autres champs.
+
+Aucun choix n’est ajouté automatiquement. Le concepteur qui veut un choix
+« Aucune de ces réponses » l’écrit lui-même en dernier, avec `fixed_last=1` ;
+c’est un choix comme les autres, qui n’exclut pas les autres cases.
+
+### 10.2 Tirages
+
+- Pour chaque tirage, le compilateur enregistre les textes des choix et leur
+  ordre d’affichage. L’ordre est mélangé avec la graine du tirage, sans
+  utiliser le `random` de l’auteur ; les `fixed_last` derniers choix restent à
+  la fin, dans leur ordre.
+- Les textes des choix font partie des valeurs affichées : le navigateur les
+  recalcule et les compare comme le `context` (§ 5.1).
+- Deux tirages qui ne diffèrent que par l’ordre des choix restent distincts :
+  « Nouvel énoncé » mélange alors les choix d’une question sans aléatoire.
+
+### 10.3 Correction
+
+- `apres` reçoit sous le nom du champ l’indice choisi (`input_radio`) ou la
+  liste croissante des indices cochés (`input_checkbox`, `[]` si rien n’est
+  coché), dans l’ordre de l’auteur : le mélange est invisible pour lui.
+- `apres` décide de la réussite par `ok_answer['nom']`, comme pour les autres
+  champs. Un choix multiple est juste en tout ou rien.
+- `explication_solution` joue le rôle de `\explain` d’AMC.
+
+### 10.4 Cycle de vie
+
+- **Saisie.** Un groupe radio compte comme rempli dès qu’un choix est fait ;
+  un groupe de cases à cocher compte toujours comme rempli, car ne rien cocher
+  est une réponse possible.
+- **Vérifier ma réponse.** Seuls les choix cochés se colorent : en vert s’ils
+  appartiennent à la solution du tirage, en rouge sinon. Les choix non cochés
+  restent neutres, même s’ils sont justes. La couleur est doublée d’une icône
+  (✓ ou ✗) pour ne pas reposer sur la seule couleur.
+- **Corriger ma réponse.** Si `ok_answer` est vrai, le groupe reste figé. Sinon,
+  les choix verts restent cochés et figés ; les choix rouges perdent leur
+  couleur et restent cochés ; eux et les choix non cochés redeviennent
+  modifiables.
+- **Solution.** Les bons choix sont cochés et verts, les autres décochés et
+  neutres ; le groupe est figé.
+- Rien ne bouge : seules les couleurs, les icônes et l’état des cases changent.
+  Les choix colorés s’animent l’un après l’autre, comme les cases d’une matrice.
+
+### 10.5 Barème et note
+
+Il n’y a pas de barème par défaut (pas d’équivalent de `\baremeDefautS` ou
+`\baremeDefautM`) : sans attribut `bareme`, aucune note n’est affichée. Le
+barème reprend la syntaxe et le sens des directives d’AMC
+([documentation](https://www.auto-multiple-choice.net/fr/doc/scoring/)). Une
+directive absente d’un barème donné prend la valeur indiquée :
+
+| Directive | Si absente | Rôle |
+|---|---|---|
+| `b` | 1 | bonne réponse (`input_radio`) ; case bien traitée, c’est-à-dire bonne cochée ou mauvaise non cochée (`input_checkbox`) |
+| `m` | 0 | mauvaise réponse ; case mal traitée |
+| `d` | 0 | décalage ajouté au score |
+| `p` | — | plancher |
+| `P` | — | plafond |
+| `mz` | — | « maximum ou zéro » : `mz` si toutes les cases sont bien traitées, 0 sinon |
+| `haut` | — | `haut=n` se réécrit en `d=n−N,p=0`, N étant le nombre de choix de l’auteur |
+| `MAX` | — | note maximale affichée, si elle diffère du score d’une réponse parfaite |
+| `v` | 0 | aucune case cochée (`input_checkbox`), alors que la solution n’est pas vide |
+| `e` | — | accepté sans effet : une saisie incohérente est impossible ici |
+
+- Score : `v` si rien n’est coché alors que la solution n’est pas vide ;
+  sinon `mz` s’il est donné ; sinon `b` ou `m` (choix unique) ou la somme des
+  cases (choix multiple), plus `d`. Le plancher puis le plafond s’appliquent
+  ensuite. Si la solution est vide, ne rien cocher est la réponse parfaite.
+- Le maximum est `MAX`, ou le score d’une réponse parfaite.
+- Les autres directives d’AMC (`formula`, `set.…`, `default.…`, `requires.…`,
+  `auto`, barème propre à une réponse, `SUF`, `allowempty`) sont refusées à la
+  compilation.
+- Un barème n’est admis que si le champ à choix est le seul champ de la
+  question.
+- Chaque vérification affiche une nouvelle note dans le coin inférieur droit
+  de la question, par exemple « Note : 2,5 / 7 ». C’est une indication pour
+  l’entraînement, pas une évaluation.
+
+### 10.6 Contrôles à la compilation
+
+En plus du § 2.4, le compilateur refuse l’exercice si, pour l’un des tirages :
+- `choices` n’est pas une liste d’au moins deux choix ;
+- `solution` n’est pas un indice valide (`input_radio`) ou une liste
+  d’indices valides et distincts (`input_checkbox`) ;
+- `fixed_last` est supérieur ou égal au nombre de choix, ou `columns` sort de
+  1 à 6 ;
+- le barème contient une directive inconnue ou refusée, ou une valeur non
+  numérique, ou la question contient d’autres champs.
+
+### 10.7 Activité et affichage
+
+- La réussite d’une question reste en tout ou rien et seule compte dans le
+  pourcentage (§ 5.3).
+- Si au moins une question a un barème, la barre de titre de l’activité
+  affiche aussi une **note indicative**, à côté du pourcentage : la somme des
+  notes des questions notées sur la somme de leurs maxima, avec « sur k questions notées » si certaines n’ont pas de barème. La
+  note d’une question est celle de sa dernière vérification ; elle vaut 0
+  avant toute vérification et revient à 0 après « Nouvel énoncé », mais pas
+  après « Solution ». L’aide (§ 5.6) l’explique.
+- Chaque choix est une ligne entière cliquable d’au moins 44 px de haut, dans
+  un `fieldset`. Avec `columns=n`, les choix forment une grille de n colonnes
+  de même largeur ; sur écran étroit, le nombre de colonnes diminue pour que
+  chaque choix garde une largeur minimale (environ 8 em), puis tant qu’un
+  choix ne tient pas dans sa colonne : un mot ou une formule n’est jamais
+  coupé ni masqué, ce qui changerait le sens du choix. Des choix courts
+  restent ainsi côte à côte sur téléphone.
+
+### 10.8 Conversion depuis AMC
+
+`PROMPT.md` reçoit une section « Convertir une question AMC » :
+- `question` → `input_radio`, `questionmult` → `input_checkbox` ;
+- `\bonne` et `\mauvaise` → la liste `choices` et les indices de `solution` ;
+- la case « Aucune de ces réponses » ajoutée par l’option `completemulti`
+  d’AMC → un dernier choix écrit explicitement, avec `fixed_last`, qui fait
+  partie de la solution quand aucun autre choix n’est bon ;
+- `\lastchoices` → `fixed_last`, `reponseshoriz` → `columns`, `\explain` →
+  `explication_solution`, `\bareme{…}` → `bareme='…'` ; un barème par défaut
+  (`\baremeDefautS`, `\baremeDefautM`) est recopié dans chaque question
+  concernée ;
+- calculs (`\FPeval`, macros) → Python dans `avant` ;
+- transposition du texte (`\textbf` → `<b>`, `\og…\fg` → « … », formules
+  conservées) ;
+- une question AMC par fichier `.pwq` ;
+- tout ce qui ne se transpose pas (image, question ouverte, barème refusé…)
+  est signalé, pas approximé ;
+- un exemple complet, du source AMC au fichier `.pwq`.
+
+### 10.9 Étapes
+
+1. **Format et tirages** : balises dans `template.js`, conversion et contrôles
+   dans `pywims`, choix, ordre et solutions dans les tirages ; prise en charge
+   par `balayage.py`.
+2. **Widget et cycle de vie** : rendu, colonnes, vérification, correction,
+   solution, animations.
+3. **Barème** : calcul de la note, affichage sous le retour, note indicative
+   de l’activité, aide.
+4. **Documentation** : `PROMPT.md` (format et conversion AMC), README, un
+   exercice d’exemple converti depuis AMC.
+
+## 11. Points ouverts
+
+- **Banque de questions** (comme `\element` et `\restituegroupe` d’AMC) : une
+  question de l’activité serait un groupe de fichiers `.pwq`, chaque tirage
+  appartenant à l’un d’eux. Chantier ultérieur.
+- **Graphiques matplotlib** dans les énoncés, produits en SVG à la
+  compilation. Chantier ultérieur.
