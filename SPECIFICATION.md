@@ -197,6 +197,12 @@ Le retour explique l’erreur sans donner la réponse : c’est le rôle du bout
 - Les tirages sont intégrés au fichier généré en JSON, dans un bloc de texte
   échappé, comme les autres champs. Pas de compression, pas de minification :
   le Python doit garder son indentation.
+- Les scripts et styles du projet sont intégrés tels quels dans des balises
+  `<script>` et `<style>`. L’assemblage refuse un fichier qui contient
+  `</script` (ou `</style` pour une feuille de style) : le navigateur y
+  fermerait la balise et la page serait cassée sans message. On refuse au lieu
+  d’échapper, car `<\/script` modifierait le texte du module `pywims`, écrit
+  dans une chaîne brute de `runtime/python.js`.
 - Versions figées : MathJax **3.2.2**, MathLive **0.111.0**. Le widget MathLive
   passe à l’attribut `math-virtual-keyboard-policy`.
 - La compilation est refusée si le module `pywims` chargé par la page du

@@ -664,6 +664,23 @@ ${renderDrawData(draws)}
     return assembleSheet({ title, kind: "activity", questions }, resources);
   }
 
+  // Emplacements de la mise en page qui reçoivent du code tel quel, avec la balise qui l’entoure.
+  const inlinedPlaceholders = {
+    CSS: "style", TEMPLATE: "script", WIDGETS: "script", MATHLIVE_LOADER: "script",
+    PYTHON_RUNTIME: "script", RUNNER: "script"
+  };
+
+  // Refuse un code qui fermerait sa balise : « </script » au milieu d’un script termine la balise
+  // pour le navigateur, et la page générée serait cassée sans aucun message. On n’échappe pas en
+  // « <\/script » : dans le String.raw de runtime/python.js, cela changerait le module pywims.
+  function checkInlined(name, code) {
+    const element = inlinedPlaceholders[name];
+    if (element && new RegExp(`</${element}`, "i").test(code)) {
+      throw new Error(`Le code intégré en @@${name}@@ contient « </${element} », qui fermerait la balise <${element}> de la page générée : coupez la chaîne, par exemple '</' + '${element}'.`);
+    }
+    return code;
+  }
+
   // Assemble le HTML autonome à partir des textes des fichiers du projet, sans accès au disque.
   // Pyodide, MathJax et MathLive sont chargés une seule fois, quel que soit le nombre de questions.
   function assembleSheet({ title, kind, questions }, resources) {
@@ -694,7 +711,7 @@ window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
       if (!Object.hasOwn(replacements, name)) {
         throw new Error(`Emplacement réservé inconnu dans la mise en page : ${name}`);
       }
-      return replacements[name];
+      return checkInlined(name, replacements[name]);
     });
   }
 

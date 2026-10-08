@@ -253,6 +253,29 @@
           throw new Error("Une question seule n’est pas une feuille d’une question.");
         }
       });
+      test("l’assemblage refuse un script ou un style qui fermerait sa balise", () => {
+        // Les chaînes sont coupées : écrites d’un seul tenant, elles fermeraient le script de cette page.
+        const close = element => "</" + element;
+        for (const [key, code, fragment] of [
+          ["runner", `const fin = '${close("SCRIPT")}>';`, "@@RUNNER@@"],
+          ["python", `x = '${close("script")}'`, "@@PYTHON_RUNTIME@@"],
+          ["exerciseCss", `/* ${close("style")}> */`, "@@CSS@@"]
+        ]) {
+          let message = "";
+          try {
+            PyWimsCompiler.assembleExercise(sheetQuestion("A", "x").fields, sheetQuestion("A", "x").draws,
+              { ...sheetResources(layout), [key]: code });
+          } catch (error) {
+            message = error.message;
+          }
+          if (!message.includes(fragment)) {
+            throw new Error(`« ${code} » (${key}) a été intégré sans erreur.`);
+          }
+        }
+        // Une chaîne coupée, elle, est acceptée.
+        PyWimsCompiler.assembleExercise(sheetQuestion("A", "x").fields, sheetQuestion("A", "x").draws,
+          { ...sheetResources(layout), runner: "const fin = '</' + 'script>';" });
+      });
     }
     test("l’archive des pages séparées est un fichier ZIP", () => {
       const archive = PyWimsCompiler.createZip([{ name: "question.html", content: "<html></html>" }]);
