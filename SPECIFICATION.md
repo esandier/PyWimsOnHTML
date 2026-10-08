@@ -31,10 +31,11 @@ et une activité en réunit plusieurs.
 
 | Champ | Statut | Rôle |
 |---|---|---|
-| `title`, `keywords`, `layout` | obligatoire | inchangés |
+| `title`, `keywords`, `layout` | obligatoire | titre, mots-clés (séparés par des virgules), mise en page (`STD`) |
 | `avant` | obligatoire | tirage et calcul des solutions |
 | `enonce` | obligatoire | modèle de l’énoncé |
 | `apres` | facultatif | correction ; sans lui, chaque champ est corrigé par comparaison avec sa solution (§ 2.6) |
+| `tirages` | facultatif | nombre de tirages calculés à la compilation, entier de 1 à 200 ; 20 par défaut (§ 3) |
 
 Le retour destiné à l’élève est la variable `feedback` de `apres` (§ 2.2).
 Les paquets Pyodide sont déduits des `import` du code. Un champ inconnu est
@@ -284,7 +285,10 @@ sans `apres` : la comparaison y est sans ambiguïté.
 
 - Le compilateur charge Pyodide (version **0.27.7**, la même que le fichier
   généré, pour que le rendu LaTeX soit identique).
-- Pour chaque question, il exécute **20 tirages**. Chaque tirage part d’un
+- Pour chaque question, il exécute **20 tirages**, ou le nombre du champ
+  `tirages` : moins pour un exercice peu varié (inutile de calculer 20 fois les
+  mêmes valeurs), plus pour qu’un élève qui s’entraîne longtemps revoie moins
+  souvent le même énoncé, au prix d’un fichier plus lourd. Chaque tirage part d’un
   espace de noms neuf, initialisé avec une graine (`random.seed`, et
   `numpy.random.seed` si NumPy est importé), puis exécute `avant`.
 - **Hachage fixe.** Pyodide est lancé avec `PYTHONHASHSEED=0`, à la compilation

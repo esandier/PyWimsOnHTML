@@ -17,7 +17,9 @@ contenu du champ
 Ajoute chaque champ après une ligne délimiteur contenant uniquement `%`.
 Les champs sont, dans cet ordre : `title`, `keywords`, `layout`, `avant`,
 `enonce` et `apres`. Ils sont obligatoires et non vides, sauf `apres`, qui est
-facultatif (voir « Correction : avec ou sans `apres` »).
+facultatif (voir « Correction : avec ou sans `apres` »). Un dernier champ
+facultatif, `tirages`, fixe le nombre de tirages calculés (entier de 1 à 200,
+20 par défaut) : n’en mets un que si on te le demande.
 N’insère pas de ligne contenant uniquement `%` dans le contenu d’un champ.
 
 Tout le contenu destiné à l’élève doit être en français, y compris le titre,

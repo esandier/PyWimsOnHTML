@@ -48,7 +48,8 @@ Coche une ou plusieurs questions, puis **Compiler** :
   réunit sous un titre à indiquer, soit des **pages séparées**, une question
   par fichier, réunies dans une archive ZIP.
 
-La compilation calcule 20 tirages par question (graines 0 à 19) et les intègre
+La compilation calcule 20 tirages par question (graines 0 à 19), ou le nombre
+du champ `tirages`, et les intègre
 au fichier ; les tirages identiques sont fusionnés. Elle s’arrête au premier
 problème, avec la graine en cause : erreur dans `avant`, variable de l’énoncé
 non définie, solution absente ou de mauvaises dimensions, etc. Une exécution
@@ -122,7 +123,8 @@ MathJax reconnaît `$...$`, `$$...$$`, `\(...\)` et `\[...\]`.
 Un fichier `.pwq` contient les champs `title`, `keywords`, `layout` (`STD`),
 `avant` (tirage et calcul des solutions), `enonce` (modèle de l’énoncé, avec
 `{{variable}}` et des balises de saisie) et, facultativement, `apres`
-(correction). Chaque balise de saisie désigne sa solution
+(correction) et `tirages` (nombre de tirages calculés, de 1 à 200 ; 20 par
+défaut). Chaque balise de saisie désigne sa solution
 (`solution=variable`). L’exercice importe lui-même ses bibliothèques, ainsi que
 les outils du module `pywims` (`py_wims`, `is_nombre`, `math_expression`,
 `decimal_fr`, `LIBRE`). `apres` peut définir la variable `feedback`, et `avant`

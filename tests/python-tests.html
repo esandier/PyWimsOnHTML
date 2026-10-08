@@ -328,6 +328,11 @@ json.dumps({
         if (fixed.length !== 1 || fixed[0].solutions.r !== "4") {
           throw new Error(`Un exercice sans hasard devrait donner un seul tirage : ${JSON.stringify(fixed)}`);
         }
+        // Le champ « tirages » fixe le nombre de graines essayées : ici 3 (graines 0 à 2).
+        const three = await PyWimsCompiler.computeDraws({ ...fields, tirages: "3" });
+        if (!three.length || three.length > 3 || three.some(draw => draw.seed > 2)) {
+          throw new Error(`Le champ « tirages » n’est pas respecté : graines ${three.map(draw => draw.seed)}`);
+        }
       });
 
       await test("decimal_fr écrit un nombre arrondi à la française, sans zéros finaux", async () => {

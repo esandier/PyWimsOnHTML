@@ -207,7 +207,9 @@
   // d’affichage, et l’explication éventuelle.
   // La première erreur de l’auteur interrompt le calcul, avec la graine en cause.
   // timeoutMs : durée maximale de chaque exécution de « avant » et de « apres » ; les tests la réduisent.
-  async function computeDraws(fields, { count = drawCount, onProgress, timeoutMs = drawTimeoutMs } = {}) {
+  // count : nombre de tirages imposé (aperçu, tests) ; sinon le champ « tirages », ou 20.
+  async function computeDraws(fields, { count: requested, onProgress, timeoutMs = drawTimeoutMs } = {}) {
+    const count = requested ?? (fields.tirages === undefined ? drawCount : Number(fields.tirages));
     const tags = PyWimsTemplate.parseTags(fields.enonce);
     const choiceTags = tags.filter(tag => PyWimsTemplate.choiceTypes.has(tag.type));
     const spec = {

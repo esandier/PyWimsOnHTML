@@ -5,7 +5,7 @@
   // « apres » est facultatif : sans lui, la correction par défaut compare chaque saisie à sa
   // solution (SPECIFICATION.md, § 2.6).
   const requiredFields = ["title", "keywords", "layout", "avant", "enonce"];
-  const knownFields = new Set([...requiredFields, "apres"]);
+  const knownFields = new Set([...requiredFields, "apres", "tirages"]);
   // Analyse les champs délimités par « % » et signale les erreurs avec leur emplacement.
   function parseExerciseSource(source, path = "exercise.pwq") {
     const lines = source.replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n").split("\n");
@@ -61,6 +61,15 @@
       if (!fields[required]?.trim()) {
         throw new Error(`${path} : le champ obligatoire « ${required} » est absent ou vide.`);
       }
+    }
+    // Nombre de tirages, facultatif : un entier de 1 à 200 (au-delà, le fichier s’alourdit et la
+    // compilation s’allonge sans profit pour l’élève).
+    if (fields.tirages !== undefined) {
+      const count = fields.tirages.trim();
+      if (!/^\d+$/.test(count) || Number(count) < 1 || Number(count) > 200) {
+        throw new Error(`${path} : le champ « tirages » doit être un entier de 1 à 200, et non « ${count} ».`);
+      }
+      fields.tirages = count;
     }
     // Un « apres » vide équivaut à son absence : la question se corrige alors sans Python.
     if (fields.apres !== undefined && !fields.apres.trim()) {

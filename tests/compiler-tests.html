@@ -356,6 +356,24 @@
         if (!rejected) throw new Error(`L’absence du champ « ${name} » n’a pas été signalée.`);
       }
     });
+    test("le champ facultatif « tirages » est un entier de 1 à 200", () => {
+      const withCount = count => source.replace("%\n% apres", `%\n% tirages\n%\n${count}\n%\n% apres`);
+      if (PyWimsCompiler.parseExerciseSource(withCount(" 5 ")).tirages !== "5" ||
+          Object.hasOwn(PyWimsCompiler.parseExerciseSource(source), "tirages")) {
+        throw new Error("Le champ « tirages » est mal lu.");
+      }
+      for (const count of ["0", "201", "2.5", "vingt"]) {
+        let message = "";
+        try {
+          PyWimsCompiler.parseExerciseSource(withCount(count));
+        } catch (error) {
+          message = error.message;
+        }
+        if (!message.includes("le champ « tirages » doit être un entier de 1 à 200")) {
+          throw new Error(`« ${count} » accepté, ou message inattendu : ${message}`);
+        }
+      }
+    });
     test("« apres » est facultatif ; vide, il équivaut à son absence", () => {
       const absent = PyWimsCompiler.parseExerciseSource(source.replace(/%\n% apres\n%\n[^%]*/, ""));
       const empty = PyWimsCompiler.parseExerciseSource(source.replace(/(% apres\n%\n)[^%]*/, "$1  \n"));
