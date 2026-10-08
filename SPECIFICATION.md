@@ -823,3 +823,9 @@ Ces règles s’appliquent déjà au compilateur local.
 - **Clavier choisi par l’auteur** pour une case ou un champ (pavé numérique
   quand toutes les réponses sont des nombres positifs).
 - **Autres écritures des nombres** (notation scientifique pour la physique).
+- **Ordre des questions d’une activité**, choisi dans le compilateur ; il suit
+  aujourd’hui l’ordre des titres.
+- **Charte choisie** : sélectionner sa feuille `brand.css` favorite au lieu de
+  celle du dossier.
+- **`py_wims` sur l’analyseur de `math_expression`** (filtre et `parse_expr`) :
+  son comportement changerait, car il n’évalue pas la saisie aujourd’hui.
