@@ -293,7 +293,9 @@ sans `apres` : la comparaison y est sans ambiguïté.
   contrôle de cohérence, est limitée à **30 s** (comptées comme au § 5.1).
   Au-delà, la compilation s’arrête : « « avant » n’a pas terminé en 30 s pour
   la graine 7 (boucle sans fin ?) ». Le compilateur garde la main et reste
-  utilisable.
+  utilisable. Le premier import des bibliothèques de l’exercice (SymPy :
+  quelques secondes, bien plus sur un navigateur lent) n’est pas compté : il
+  est fait au chargement des paquets, avant toute exécution limitée.
 - **Reproductibilité.** Chaque graine est exécutée deux fois, dans deux espaces
   de noms neufs ; les deux tirages (`context`, `solutions`, choix,
   explication) doivent être identiques. Sinon la compilation est refusée :

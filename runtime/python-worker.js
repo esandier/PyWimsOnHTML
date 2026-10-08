@@ -80,6 +80,19 @@ async function ensurePackages(code) {
       if (errors.length) {
         throw new Error(`Échec du chargement des bibliothèques Python : ${errors.join(" ")}`);
       }
+      // Premier import de chaque bibliothèque, ici, hors de toute limite de temps : celui de SymPy
+      // dure quelques secondes, et bien plus quand le navigateur exécute WebAssembly lentement
+      // (Edge en « sécurité renforcée » : plus de 30 s mesurées). Fait dans « avant », il était
+      // compté comme le calcul de l’exercice et faisait refuser la compilation (SPECIFICATION.md,
+      // § 3). Ensuite, l’import de l’exercice retrouve le module déjà chargé. Un module introuvable
+      // est laissé à « avant », qui en donnera l’erreur avec sa ligne.
+      for (const name of imports) {
+        try {
+          pyodide.pyimport(name).destroy?.();
+        } catch {
+          // L’erreur sera signalée par l’exécution de l’exercice.
+        }
+      }
     })
   );
   packageLoadQueue = loading.catch(() => {});

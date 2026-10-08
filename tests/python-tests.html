@@ -86,6 +86,16 @@
         await restored.dispose();
       });
 
+      // Le premier import de SymPy (plusieurs secondes, plus de 30 s sur un navigateur lent) ne doit
+      // pas compter dans le temps limité de « avant » : il est fait à l’initialisation.
+      await test("les bibliothèques de l’exercice sont importées à l’initialisation, hors du temps limité", async () => {
+        const session = PyWimsPython.createSession("import-initial");
+        await session.initialize("from sympy import Rational\nimport fractions");
+        await expectPython(session, "all(m in __import__('sys').modules for m in ('sympy', 'fractions'))",
+          "SymPy n’est pas importé avant l’exécution de « avant »");
+        await session.dispose();
+      });
+
       await test("un script du Worker modifié relance le moteur, le même script ne le relance pas", async () => {
         const before = PyWimsPython.epoch();
         PyWimsPython.setWorkerSource(workerSource);
