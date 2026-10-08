@@ -43,6 +43,10 @@
           <span class="pw-completion-value" id="pw-completion-value">0 %</span>
           <span class="pw-completion-label" id="pw-completion-label"></span>
         </button>
+        <!-- Réinitialiser la feuille (activité seulement) : efface la mémoire de la progression, après confirmation. -->
+        <button class="pw-help-button pw-restart-button" id="pw-restart" type="button" title="Réinitialiser la feuille" aria-label="Réinitialiser la feuille">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 3.5v4h4"/></svg>
+        </button>
         <button class="pw-help-button" id="pw-help-button" type="button" aria-haspopup="dialog" aria-label="Aide : comment répondre aux questions">?</button>
       </div>
       <span class="pw-brand-logo" aria-hidden="true"></span>
@@ -82,9 +86,9 @@
         <li>Une réussite reste acquise, même si vous demandez ensuite un nouvel énoncé.</li>
         <li>Toutes les questions ont le même poids.</li>
       </ul>
-      <!-- Mémoire de la progression : gardée sur l’appareil, effacée par « Recommencer la feuille ». -->
-      <p class="pw-help-memory">Vos réussites sont gardées sur cet appareil : en revenant à cette feuille, vous les retrouvez.</p>
-      <button class="pw-help-restart" id="pw-restart" type="button">Recommencer la feuille</button>
+      <!-- Mémoire de la progression : gardée sur l’appareil, effacée par le bouton ↺ de l’en-tête. -->
+      <p class="pw-help-memory">Vos réussites sont gardées sur cet appareil : en revenant à cette feuille, vous
+        les retrouvez. Le bouton ↺ de l’en-tête réinitialise la feuille.</p>
     </section>
     <section class="pw-help-score">
       <h3>La note</h3>

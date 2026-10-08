@@ -946,7 +946,7 @@
     }
   }
 
-  // « Recommencer la feuille », dans l’aide : efface la mémoire, après confirmation, puis recharge
+  // Bouton ↺ « Réinitialiser la feuille », dans l’en-tête : efface la mémoire, après confirmation, puis recharge
   // la feuille pour repartir de questions vierges.
   document.getElementById("pw-restart")?.addEventListener("click", () => {
     if (!confirm("Effacer vos réussites et recommencer la feuille ?")) return;

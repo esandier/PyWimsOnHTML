@@ -429,8 +429,11 @@ sans `apres` : la comparaison y est sans ambiguïté.
   - Une progression retrouvée à 100 % ne relance pas les confettis.
   - Le stockage peut être indisponible (navigation privée, réglages) : la
     feuille fonctionne alors normalement, sans mémoire.
-  - **Recommencer.** L’aide d’une activité propose « Recommencer la feuille » :
-    après confirmation, la mémoire est effacée et la feuille rechargée.
+  - **Réinitialiser.** Dans l’en-tête d’une activité, juste avant le bouton
+    d’aide et dans le même style, un bouton ↺ (« Réinitialiser la feuille »
+    au survol et pour les lecteurs d’écran) efface la mémoire, après
+    confirmation, et recharge la feuille. La confirmation reste nécessaire :
+    l’effacement est sans retour, et un toucher par erreur est vite arrivé.
   - Une question seule n’a pas de mémoire.
 
 ### 5.4 Mise en page et stabilité
@@ -465,7 +468,7 @@ sans `apres` : la comparaison y est sans ambiguïté.
   réussies par l’élève lui-même, une solution affichée ne compte pas, une
   réussite reste acquise après un nouvel énoncé, même poids pour chaque
   question. Elle précise que les réussites sont gardées sur cet appareil, et
-  propose « Recommencer la feuille » (§ 5.3).
+  que le bouton ↺ de l’en-tête réinitialise la feuille (§ 5.3).
 - Le même texte, abrégé, apparaît en bulle au survol, au focus ou au toucher du
   pourcentage.
 

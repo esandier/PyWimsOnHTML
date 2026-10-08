@@ -97,6 +97,18 @@ body {
   cursor: pointer;
 }
 
+/* Bouton ↺ « Réinitialiser la feuille » : même rond que le bouton d’aide, avec un pictogramme tracé
+   comme ceux des boutons des questions. */
+.pw-restart-button svg {
+  width: 60%;
+  height: 60%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .pw-help-button:hover,
 .pw-completion:hover {
   background: color-mix(in srgb, #fff 18%, transparent);
@@ -154,9 +166,10 @@ body {
   line-height: 1.05;
 }
 
-/* Une question seule n’a pas de progression ni de note d’activité. L’aide ne parle de la note que
-   si une question est notée (data-scored, posé par runner.js). */
+/* Une question seule n’a pas de progression ni de note d’activité, donc rien à réinitialiser. L’aide
+   ne parle de la note que si une question est notée (data-scored, posé par runner.js). */
 [data-sheet="single"] .pw-completion,
+[data-sheet="single"] .pw-restart-button,
 [data-sheet="single"] .pw-progress,
 [data-sheet="single"] .pw-completion-tip,
 [data-sheet="single"] .pw-help-activity,
@@ -640,20 +653,9 @@ body:not([data-scored]) .pw-help-score {
   cursor: pointer;
 }
 
-/* « Recommencer la feuille » : bouton secondaire, en contour, pour ne pas concurrencer « Fermer »,
-   l’action habituelle ; il efface la progression après une confirmation. */
+/* Phrase de l’aide sur la mémoire de la progression, sous la liste du pourcentage. */
 .pw-help-memory {
   margin-top: 0.6rem;
-}
-
-.pw-help-restart {
-  padding: 0.35rem 0.9rem;
-  border: 1px solid var(--pw-brand-navy);
-  border-radius: 6px;
-  color: var(--pw-brand-navy);
-  background: transparent;
-  font: 600 0.9rem var(--pw-body-font);
-  cursor: pointer;
 }
 
 /* Fin de la feuille : message bref et confettis aux couleurs de la charte. */

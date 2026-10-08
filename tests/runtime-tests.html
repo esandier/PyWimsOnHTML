@@ -651,7 +651,7 @@ window.PyWimsPython = (() => {
 
       // Mémoire de la progression (SPECIFICATION.md, § 5.3). Un titre unique donne une empreinte neuve
       // à chaque exécution : une mémoire laissée par un essai précédent ne fausse pas le test.
-      await test("une activité retrouve ses réussites à la réouverture, et « Recommencer » les efface", async () => {
+      await test("une activité retrouve ses réussites à la réouverture, et le bouton ↺ les efface", async () => {
         const title = `Mémoire ${Date.now()}`;
         const sheet = [
           { fields: { ...choiceWithoutApres, title: "Première" }, draws: choiceDraws },
@@ -681,7 +681,12 @@ window.PyWimsPython = (() => {
           throw new Error("La réussite retrouvée n’est pas affichée comme prévu.");
         }
 
-        // Recommencer : après confirmation, la mémoire est effacée et la feuille rechargée.
+        // Bouton ↺ de l’en-tête : après confirmation, la mémoire est effacée et la feuille rechargée.
+        const restart = again.$("#pw-restart");
+        if (restart.closest(".pw-header-tools") === null || getComputedStyle(restart).display === "none" ||
+            restart.getAttribute("title") !== "Réinitialiser la feuille") {
+          throw new Error("Le bouton ↺ n’est pas visible dans l’en-tête, avec son aide « Réinitialiser la feuille ».");
+        }
         again.window.confirm = () => true;
         const reloaded = new Promise(resolve => again.frame.addEventListener("load", resolve, { once: true }));
         again.$("#pw-restart").click();
@@ -689,15 +694,15 @@ window.PyWimsPython = (() => {
         const page = again.frame.contentDocument;
         await waitFor(() => page.querySelector("#q2 [data-role='badge']")?.textContent === "2", "feuille rechargée");
         if (localStorage.getItem(key) !== null || page.getElementById("pw-completion-value").textContent !== "0 %") {
-          throw new Error("« Recommencer » n’a pas effacé la progression.");
+          throw new Error("Le bouton ↺ n’a pas effacé la progression.");
         }
         again.frame.remove();
       });
 
       await test("une question seule n’a pas de mémoire de progression", async () => {
         const { page, frame } = await openExercise(choiceWithoutApres, choiceDraws, {});
-        // Sans empreinte, rien n’est gardé ; le bouton « Recommencer » est dans la partie de l’aide propre
-        // aux activités, que le test « une question seule n’a ni numéro… » vérifie masquée.
+        // Sans empreinte, rien n’est gardé ; le bouton ↺ est masqué (test « une question seule n’a ni
+        // numéro… »).
         if (page.body.dataset.sheetId !== undefined) {
           throw new Error("Une question seule porte une empreinte de feuille.");
         }
@@ -708,8 +713,8 @@ window.PyWimsPython = (() => {
         const { $, role, frame } = await openExercise(textExercise, textDraws, textOptions);
         const hidden = element => getComputedStyle(element).display === "none";
         if (!hidden($("#pw-completion")) || !hidden($(".pw-progress")) || !hidden(role("badge")) ||
-            !hidden(role("title")) || hidden($("#pw-help-button"))) {
-          throw new Error("La question seule affiche une progression ou n’a pas d’aide.");
+            !hidden(role("title")) || !hidden($("#pw-restart")) || hidden($("#pw-help-button"))) {
+          throw new Error("La question seule affiche une progression ou le bouton ↺, ou n’a pas d’aide.");
         }
         $("#pw-help-button").click();
         if (!$("#pw-help").open || !hidden($(".pw-help-activity"))) {
