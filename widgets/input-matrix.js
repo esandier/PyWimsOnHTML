@@ -13,7 +13,7 @@ window.PyWimsWidgets = (() => {
         const cellClass = resizable
           ? "pw-matrix-cell pw-vmatrix-cell"
           : "pw-input-wrapper pw-matrix-cell";
-        return `<span class="${cellClass}"><input class="input pw-input absolute" type="text" inputmode="decimal" autocomplete="off" id="${id}" data-matrix-name="${name}" data-matrix-row="${row}" data-matrix-column="${column}"${resizable ? ` data-vmatrix-name="${name}"` : ""}${style} aria-label="${escapeHtml(cellName)}"><input class="input pw-input phantom" type="text" disabled aria-hidden="true" tabindex="-1"${style}></span>`;
+        return `<span class="${cellClass}"><input class="input pw-input absolute" type="text" ${PyWimsTemplate.rawInputAttributes} id="${id}" data-matrix-name="${name}" data-matrix-row="${row}" data-matrix-column="${column}"${resizable ? ` data-vmatrix-name="${name}"` : ""}${style} aria-label="${escapeHtml(cellName)}"><input class="input pw-input phantom" type="text" disabled aria-hidden="true" tabindex="-1"${style}></span>`;
       })
     );
   }

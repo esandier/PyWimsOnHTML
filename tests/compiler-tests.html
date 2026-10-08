@@ -608,6 +608,20 @@
       }
       if (!rejected) throw new Error("Un préfixe d’identifiant invalide a été accepté.");
     });
+    test("un champ texte ou une case de matrice reçoit la saisie telle quelle, avec le clavier complet", () => {
+      const host = document.createElement("div");
+      host.innerHTML = PyWimsWidgets.inputText("r") + PyWimsWidgets.inputMatrix("m", 1, 1) + PyWimsWidgets.inputVMatrix("v", 1, 1);
+      const fields = [...host.querySelectorAll("[data-name], [data-matrix-name]")];
+      const expected = { inputmode: "text", autocapitalize: "off", autocorrect: "off", spellcheck: "false", autocomplete: "off" };
+      for (const field of fields) {
+        for (const [attribute, value] of Object.entries(expected)) {
+          if (field.getAttribute(attribute) !== value) {
+            throw new Error(`${field.id} : ${attribute}="${field.getAttribute(attribute)}" au lieu de "${value}"`);
+          }
+        }
+      }
+      if (fields.length !== 3) throw new Error(`${fields.length} champs au lieu de 3`);
+    });
     test("le nom du fichier conserve les accents du titre", () => {
       if (PyWimsCompiler.createExerciseFilename("Dérivée d’un polynôme") !==
           "Dérivée-d-un-polynôme.html") {

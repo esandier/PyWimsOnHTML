@@ -49,6 +49,14 @@ window.PyWimsTemplate = (() => {
     text: "un texte entre guillemets"
   };
 
+  // Attributs d’un champ texte ou d’une case de matrice : le champ reçoit exactement ce que l’élève
+  // tape (SPECIFICATION.md, § 2.3). Sans eux, un iPhone met une majuscule au premier caractère
+  // (« x+1 » devient « X+1 », jugé faux) et la correction automatique peut remplacer un mot. Le
+  // clavier est le clavier texte complet : le pavé décimal de l’iPhone n’a ni signe moins, ni barre
+  // de fraction, ni lettre, et n’offre que le séparateur décimal de la langue du téléphone.
+  const rawInputAttributes =
+    'inputmode="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"';
+
   // Protège une valeur avant son insertion dans du HTML, y compris dans un attribut.
   function escapeHtml(value) {
     return String(value)
@@ -272,6 +280,7 @@ window.PyWimsTemplate = (() => {
     variablePattern,
     reservedNames,
     choiceTypes,
+    rawInputAttributes,
     escapeHtml,
     parseScoring,
     scoreChoice,

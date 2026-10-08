@@ -103,6 +103,22 @@ solution = Matrix(n, n, lambda i, j: 0 if i > j else LIBRE)
 Une case libre affiche « ∗ » dans un style neutre (bordure en pointillés,
 sans couleur de correction).
 
+**Clavier des téléphones.** Un champ `input_text` et une case de matrice
+reçoivent ce que l’élève tape, tel quel :
+- `autocapitalize="off"`, `autocorrect="off"`, `spellcheck="false"` : sans
+  eux, un iPhone met une majuscule au premier caractère (`x+1` devient `X+1`,
+  jugé faux car les majuscules comptent, § 2.6), et la correction automatique
+  peut remplacer un mot ;
+- clavier texte complet (`inputmode="text"`), y compris pour les cases de
+  matrice. Le pavé décimal, plus rapide pour des chiffres, n’a sur iPhone ni
+  signe moins, ni barre de fraction, ni lettre, et seulement le séparateur
+  décimal de la langue du téléphone : `-1`, `1/2` ou `0.5` y seraient
+  impossibles à taper. Le prix est une saisie des chiffres un peu plus lente
+  (page « 123 » du clavier). Un choix du clavier par l’auteur pourra être
+  ajouté plus tard, si le besoin apparaît.
+
+Les champs MathLive ont leur propre clavier virtuel et ne sont pas concernés.
+
 ### 2.4 Contrôles à la compilation
 
 Le compilateur refuse l’exercice, avec un message précis, si :

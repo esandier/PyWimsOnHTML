@@ -12,7 +12,7 @@ window.PyWimsWidgets = (() => {
 
     const idPrefix = PyWimsTemplate.checkIdPrefix(options.idPrefix);
     const style = options.style ? ` style="${escapeHtml(options.style)}"` : "";
-    return `<span class="pw-input-wrapper"><input class="input pw-input absolute" type="text" autocomplete="off" id="${idPrefix}form_txt_${name}" data-name="${name}"${style} aria-label="${escapeHtml(name)}"><input class="input pw-input phantom" type="text" disabled aria-hidden="true" tabindex="-1"${style}></span>`;
+    return `<span class="pw-input-wrapper"><input class="input pw-input absolute" type="text" ${PyWimsTemplate.rawInputAttributes} id="${idPrefix}form_txt_${name}" data-name="${name}"${style} aria-label="${escapeHtml(name)}"><input class="input pw-input phantom" type="text" disabled aria-hidden="true" tabindex="-1"${style}></span>`;
   }
 
   return Object.freeze({ ...existing, inputText });
