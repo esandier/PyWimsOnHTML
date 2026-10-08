@@ -813,6 +813,10 @@
             { duration: 280, easing: "ease-out" }
           );
         }
+      } catch (error) {
+        // Sans ce catch, une erreur d’affichage du nouveau tirage serait une promesse rejetée que
+        // personne n’attend (le bouton appelle newDraw sans await) : l’élève ne verrait rien.
+        this.reportError(error);
       } finally {
         this.busy = false;
         this.updateButtons();
@@ -999,10 +1003,17 @@
     updateProgress(questions);
     updateScoreTotal(questions);
   }
-  addEventListener("resize", () => questions.forEach(question => {
-    fitChoiceColumns(question.promptElement);
-    question.layoutFeedback();
-  }));
+  // Redimensionnement : le navigateur envoie l’événement à chaque pixel pendant qu’on tire la fenêtre,
+  // et chaque mise en colonnes des choix mesure la page. On regroupe donc les mesures à l’image
+  // suivante, une fois par image au plus.
+  let resizeFrame = 0;
+  addEventListener("resize", () => {
+    cancelAnimationFrame(resizeFrame);
+    resizeFrame = requestAnimationFrame(() => questions.forEach(question => {
+      fitChoiceColumns(question.promptElement);
+      question.layoutFeedback();
+    }));
+  });
   for (const question of questions) {
     question.start();
   }
