@@ -24,7 +24,6 @@ qui fait référence ; le format des exercices est détaillé dans
   (`template.js`), Python et module `pywims` (`python.js`), cycle de vie des
   questions (`runner.js`)
 - `tests/` — pages de tests et outils pour les lancer
-- `maquettes/` — maquette de la mise en page, validée avant le développement
 
 ## Utiliser le compilateur
 

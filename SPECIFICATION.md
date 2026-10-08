@@ -1,9 +1,7 @@
 # Spécification — feuilles d’exercices et tirages précalculés
 
-Ce document rassemble les décisions prises avant le développement. Il sert de
-référence : une implémentation qui s’en écarte doit d’abord le modifier.
-La maquette [`maquettes/feuille-activite.html`](maquettes/feuille-activite.html)
-illustre l’apparence et le comportement attendus.
+Ce document décrit PyWimsOnHTML tel qu’il est. Il sert de référence : une
+modification commence par lui, avant le code (§ 9).
 
 ## 1. Objectifs
 
@@ -207,8 +205,7 @@ valeur numérique approchée) et aux retours ciblés.
 **Principe : sans `apres`, l’élève doit donner ce qu’affiche le bouton
 « Solution ».** L’auteur le vérifie dans l’aperçu du compilateur.
 
-- **Avec `apres`** : `apres` décide seul de la réussite de chaque champ, comme
-  aujourd’hui. Pas de correction partielle : `ok_answer` n’est pas pré-rempli
+- **Avec `apres`** : `apres` décide seul de la réussite de chaque champ. Pas de correction partielle : `ok_answer` n’est pas pré-rempli
   par la correction par défaut.
 - **Python** n’est chargé que par les questions qui ont un `apres` (§ 5.1).
 
@@ -265,21 +262,6 @@ sans `apres` : la comparaison y est sans ambiguïté.
   défaut, ce qui vérifie notamment la normalisation. Une solution texte vide
   (ou faite d’espaces) est refusée : l’élève ne pourrait pas la saisir, car
   « Vérifier » reste inactif tant qu’aucun champ n’est rempli.
-
-Étapes :
-1. `runtime/correction.js` : normalisation des textes et comparaison des
-   choix, avec leurs tests. Aucun changement visible.
-2. Compilation : `apres` facultatif dans l’analyseur, arrondi des flottants
-   dans la conversion de la solution, `decimal_fr` dans `pywims`, cohérence
-   avec la correction par défaut, marque « Python nécessaire » sur la section
-   d’une question qui a un `apres`.
-3. Exécution : correction sans Python ; Pyodide chargé seulement par les
-   questions qui ont un `apres`.
-4. `input_math` : essai de la comparaison par MathLive ; décision : `apres`
-   obligatoire.
-5. README, `PROMPT.md` (principe, quand écrire `apres`, `decimal_fr`) ;
-   `Decim3.pwq` sert d’exemple de QCM sans `apres`. `nombres-premiers.pwq`
-   garde son `apres`, comme exemple de retours ciblés.
 
 ## 3. Compilation
 
@@ -369,9 +351,10 @@ sans `apres` : la comparaison y est sans ambiguïté.
 - Un seul document, sans iframes. Une question seule est une feuille à une
   question, avec la mise en page « question seule ».
 - Chaque question est une `<section>` ; ses identifiants sont préfixés
-  (`q2-…`) et elle a sa propre session Python dans l’instance Pyodide commune.
+  (`q2-…`) et elle a sa propre session Python dans le Pyodide commun, qui
+  tourne dans un Web Worker.
 - Les styles de la feuille sont dans `css/exercise.css` et n’utilisent que les
-  variables de `css/brand.css`. Plus de CSS codé en dur dans `compiler.js`.
+  variables de `css/brand.css`.
 - Le mode « pages séparées (ZIP) » produit une feuille à une question par
   fichier.
 
@@ -521,9 +504,6 @@ sans `apres` : la comparaison y est sans ambiguïté.
 | `compiler/zip.js` | archive ZIP des pages séparées |
 | `compiler/compiler.js` | interface du compilateur : dossier, liste, aperçu, compilation, téléchargement |
 
-Supprimés : les iframes, la scrutation toutes les 500 ms et le rechargement
-de la page pour recommencer.
-
 ## 7. Exercices PyWims existants
 
 L’export des exercices de la base Django PyWims vers des fichiers `.pwq` est
@@ -531,11 +511,16 @@ un sous-projet distinct, traité plus tard.
 
 ## 8. Tests
 
-- Quand une modification fait échouer un test par recherche de chaîne, il est
-  remplacé par un test de comportement.
-- Nouveaux tests : analyse des balises (`template.js`), contrôles de
-  compilation, cycle de vie d’une question (sans Python), et une compilation
-  réelle avec Pyodide de chaque exercice du dépôt.
+- `tests/compiler-tests.html` : analyseur `.pwq`, balises, widgets, correction
+  par défaut, assemblage des feuilles ; quelques secondes.
+- `tests/runtime-tests.html` : cycle de vie des questions, progression, mémoire,
+  délais, avec un Python simulé ; quelques secondes.
+- `tests/python-tests.html` : vrai Pyodide (module `pywims`, isolement des
+  questions, calcul sans fin, chaque exercice du dossier compilé puis corrigé,
+  seul et dans une activité) et balayage des tirages.
+- `tests/outils/lancer-tests.ps1` lance le tout dans Edge sans interface.
+- Un test vérifie un comportement, et non la présence d’une chaîne dans le
+  code.
 - **Un seul analyseur `.pwq`**, celui du compilateur. Le balayage des tirages
   (chaque tirage exécuté, ses solutions converties, saisies comme par un élève
   et jugées justes) passe par lui et par le vrai Pyodide, dans
@@ -543,22 +528,17 @@ un sous-projet distinct, traité plus tard.
   `?tirages=200` pour un balayage complet, plus lent (quelques minutes). Un
   balayage rapide hors du navigateur demandera Node.js, plus tard.
 
-## 9. Étapes de développement
+## 9. Méthode de travail
 
-Chaque étape laisse le projet fonctionnel et se teste avant la suivante.
-
-1. **`template.js`** : grammaire unique, `solution=` reconnu, échappement
-   commun. Aucun changement visible.
-2. **Versions figées** de MathJax et MathLive, attribut MathLive corrigé.
-3. **Format v2 et module `pywims`** : imports explicites, détection des
-   paquets, graines, renommage `feedback` ; migration des 5 exercices.
-4. **Tirages dans le compilateur** : Pyodide, 20 tirages, contrôles, données
-   intégrées. Le runtime actuel les ignore encore.
-5. **Nouveau runtime** : affichage immédiat, Python en arrière-plan, cycle de
-   vie complet, mise en page « question seule ».
-6. **Activité en un seul document** : assemblage sans iframes, progression,
-   mode ZIP adapté.
-7. **Finitions** : animations, README et `PROMPT.md`.
+- Toute modification commence par cette spécification, discutée avant d’écrire
+  le code.
+- Le travail avance par petites étapes : chacune laisse le projet fonctionnel,
+  passe tous les tests, et fait l’objet d’un commit (en français).
+- Les commentaires du code, en français, expliquent le pourquoi des choix non
+  évidents, y compris les solutions écartées quand elles éclairent le choix
+  (par exemple pour l’affichage sur téléphone). Ils décrivent le code tel qu’il
+  est, pas l’histoire de ses versions, qui est celle de git.
+- Le rendu se vérifie sur ordinateur et sur téléphone (cadre de 375 px).
 
 ## 10. Questions à choix
 
@@ -718,22 +698,12 @@ En plus du § 2.4, le compilateur refuse l’exercice si, pour l’un des tirage
   est signalé, pas approximé ;
 - un exemple complet, du source AMC au fichier `.pwq`.
 
-### 10.9 Étapes
-
-1. **Format et tirages** : balises dans `template.js`, conversion et contrôles
-   dans `pywims`, choix, ordre et solutions dans les tirages.
-2. **Widget et cycle de vie** : rendu, colonnes, vérification, correction,
-   solution, animations.
-3. **Barème** : calcul de la note, affichage sous le retour, note indicative
-   de l’activité, aide.
-4. **Documentation** : `PROMPT.md` (format et conversion AMC), README, un
-   exercice d’exemple converti depuis AMC.
-
 ## 11. Compilateur hébergé
 
 Le compilateur est une page publiée en ligne : on n’y choisit plus que le
 dossier des exercices, ce qui est plus naturel que de désigner aussi le dossier
-du projet. Prévu après la version 1 : seule l’étape 1 (cohérence) est faite.
+du projet. Prévu après la version 1 ; la cohérence (§ 3) et la liste par
+titre (§ 11.3) sont déjà en place dans le compilateur local.
 
 ### 11.1 Publication
 
@@ -745,9 +715,8 @@ du projet. Prévu après la version 1 : seule l’étape 1 (cohérence) est fait
 - Les fichiers du projet utiles à l’assemblage (`layouts/`, `runtime/`,
   `widgets/`, `css/`) sont lus par la page à côté d’elle (même origine), et
   non plus dans un dossier choisi par l’utilisateur.
-- Le contrôle du § 3 (module `pywims` de la page identique à celui de
-  `runtime/python.js`) reste : il compare la version chargée à celle lue en
-  ligne, pour détecter une page restée en cache.
+- Le module `pywims` est lu en ligne avec les autres fichiers, puis intégré
+  au fichier généré : tirages calculés et rejoués utilisent le même (§ 3).
 - Pour le développement, la page s’ouvre aussi par un serveur local
   (`python -m http.server` à la racine du projet), comme les tests. Ouverte
   directement depuis le disque (`file://`), elle ne peut plus lire ses
@@ -782,19 +751,16 @@ Ces règles s’appliquent déjà au compilateur local.
   « (10) ») ; le compilateur hébergé les regroupera d’abord par sous-dossier.
 - Un fichier illisible est listé sous son nom de fichier, avec la mention
   « fichier illisible » ; son erreur s’affiche quand on le choisit.
-- La recherche porte, comme aujourd’hui, sur le titre, les mots-clés et le
-  chemin.
+- La recherche porte sur le titre, les mots-clés et le chemin.
 
 ### 11.4 Étapes
 
-1. **Cohérence** (§ 3) : la solution de chaque tirage est vérifiée par
-   `apres` à la compilation et dans l’aperçu.
-2. **Fichiers du projet lus en ligne** : plus de choix du dossier du projet ;
+1. **Fichiers du projet lus en ligne** : plus de choix du dossier du projet ;
    le dossier choisi ne contient que des exercices. Publication sur GitHub
    Pages, README mis à jour.
-3. **Dossier mémorisé** : accès conservé sur Chrome et Edge, nom rappelé sur
+2. **Dossier mémorisé** : accès conservé sur Chrome et Edge, nom rappelé sur
    Firefox et Safari, bouton « Relire ».
-4. **Liste par titre**, regroupée par sous-dossier.
+3. **Liste regroupée par sous-dossier.**
 
 ## 12. Points ouverts
 
@@ -807,3 +773,11 @@ Ces règles s’appliquent déjà au compilateur local.
   ultérieur.
 - **Figures interactives** avec GeoGebra et/ou JSXGraph. Chantier ultérieur.
 - **Compilateur hébergé** (§ 11) : après la version 1.
+- **Outils SymPy pour `apres`** (comparer une expression saisie en une ligne),
+  et une seule façon de lire les saisies : `py_wims` passe par `sympify`, qui
+  exécute du code, alors que `math_expression` a sa propre grammaire.
+- **Tests hors du navigateur** (Node.js) et intégration continue sur GitHub,
+  avant la diffusion large.
+- **Clavier choisi par l’auteur** pour une case ou un champ (pavé numérique
+  quand toutes les réponses sont des nombres positifs).
+- **Autres écritures des nombres** (notation scientifique pour la physique).

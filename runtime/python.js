@@ -1,8 +1,8 @@
 // Python de la page : une instance Pyodide unique, dans un Web Worker (un fil d’exécution séparé), où
 // chaque question a sa propre session (createSession). La page ne gèle donc pas pendant le chargement
 // de SymPy ou un calcul long (≈ 350 ms de gel mesuré sans Worker), et un calcul sans fin pourra être
-// arrêté (SPECIFICATION.md, § 5.1). L’interface publiée reste celle d’avant le Worker : chaque appel
-// devient un message, et sa réponse revient comme une promesse.
+// arrêté (SPECIFICATION.md, § 5.1). Chaque appel de l’interface publiée devient un message au Worker,
+// et sa réponse revient comme une promesse.
 window.PyWimsPython = (() => {
   // ---------------------------------------------------------------------------------------------
   // Code du Worker. Cette fonction n’est jamais appelée dans la page : son texte devient le script
@@ -430,7 +430,7 @@ if importlib.util.find_spec("numpy") is not None:
   }
 
   // Les contrôles des arguments restent dans la page : une donnée invalide échoue tout de suite, avec
-  // le même message qu’avant le Worker, sans aller-retour.
+  // un message précis, sans aller-retour.
   function setMatrix(name, values, sessionId = "default") {
     if (!namePattern.test(name) ||
         !Array.isArray(values) ||
