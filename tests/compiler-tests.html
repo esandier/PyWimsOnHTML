@@ -11,6 +11,10 @@
   <ol id="results"></ol>
   <script src="../runtime/template.js"></script>
   <script src="../runtime/correction.js"></script>
+  <script src="../compiler/format.js"></script>
+  <script src="../compiler/draws.js"></script>
+  <script src="../compiler/assemble.js"></script>
+  <script src="../compiler/zip.js"></script>
   <script src="../compiler/compiler.js"></script>
   <script src="../widgets/input-matrix.js"></script>
   <script src="../widgets/input-math.js"></script>
@@ -640,7 +644,9 @@
     // Charge les ressources du projet pour vérifier leurs contrats et leur intégration.
     pendingTests.push(Promise.all([
       fetch("../compiler/index.html").then(response => response.text()),
-      fetch("../compiler/compiler.js").then(response => response.text()),
+      // Texte de tous les scripts du compilateur, réunis : les tests y cherchent des liaisons.
+      Promise.all(["format", "draws", "assemble", "zip", "compiler"].map(name =>
+        fetch(`../compiler/${name}.js`).then(response => response.text()))).then(texts => texts.join("\n")),
       fetch("../layouts/standard.html").then(response => response.text()),
         fetch("../css/brand.css").then(response => response.text()),
         fetch("../css/exercise.css").then(response => response.text()),

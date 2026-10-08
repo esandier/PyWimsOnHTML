@@ -501,7 +501,11 @@ sans `apres` : la comparaison y est sans ambiguïté.
 | `widgets/*.js` | champs de saisie, avec pré-remplissage pour la solution |
 | `layouts/standard.html` | mise en page commune aux feuilles et aux questions seules |
 | `css/exercise.css` | styles des feuilles, à partir des variables de `brand.css` |
-| `compiler/compiler.js` | tirages avec Pyodide, contrôles, assemblage |
+| `compiler/format.js` | analyse d’un fichier `.pwq`, types de ses champs de réponse |
+| `compiler/draws.js` | tirages avec Pyodide, contrôles de l’auteur, cohérence, ordre des choix |
+| `compiler/assemble.js` | ressources du projet, assemblage des feuilles, empreinte d’une activité |
+| `compiler/zip.js` | archive ZIP des pages séparées |
+| `compiler/compiler.js` | interface du compilateur : dossier, liste, aperçu, compilation, téléchargement |
 
 Supprimés : les iframes, la scrutation toutes les 500 ms et le rechargement
 de la page pour recommencer.

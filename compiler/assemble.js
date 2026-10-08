@@ -1,0 +1,181 @@
+// Assemblage du fichier généré : ressources du projet, sections des questions, mise en page,
+// empreinte d’une activité et nom du fichier.
+// Script classique (et non module ES), pour que le compilateur marche aussi ouvert depuis le
+// disque ; il ajoute ses fonctions à window.PyWimsCompiler, que les autres scripts complètent.
+(() => {
+  // Protège les données de l’exercice avant de les insérer dans le HTML généré.
+  const { escapeHtml } = PyWimsTemplate;
+
+  // Intègre les champs comme texte lisible dans des blocs dédiés au runtime.
+  function renderExerciseData(fields) {
+    return Object.entries(fields)
+      .map(([name, value]) => `<pre data-field="${escapeHtml(name)}">${escapeHtml(value)}</pre>`)
+      .join("\n");
+  }
+
+  // Intègre les tirages précalculés en JSON, dans un bloc de texte échappé comme les champs.
+  function renderDrawData(draws) {
+    return `<pre data-draws>${escapeHtml(JSON.stringify(draws))}</pre>`;
+  }
+
+  // Fichiers du projet intégrés au HTML généré ; les widgets facultatifs ne sont lus que s’ils servent.
+  const resourcePaths = {
+    layout: "layouts/standard.html",
+    template: "runtime/template.js",
+    correction: "runtime/correction.js",
+    brandCss: "css/brand.css",
+    exerciseCss: "css/exercise.css",
+    textWidget: "widgets/input-text.js",
+    mathWidget: "widgets/input-math.js",
+    matrixWidget: "widgets/input-matrix.js",
+    choiceWidget: "widgets/input-choice.js",
+    runner: "runtime/runner.js",
+    python: "runtime/python.js",
+    pywims: "runtime/pywims.py"
+  };
+
+  // Indique quels fichiers du projet utilisent une question ou l’ensemble des questions d’une feuille.
+  function neededResources(fieldsOrList) {
+    const list = Array.isArray(fieldsOrList) ? fieldsOrList : [fieldsOrList];
+    const tagTypes = new Set(list.flatMap(fields => [...PyWimsTemplate.tagTypes(fields.enonce)]));
+    // Le module pywims ne sert qu’aux questions qui ont un « apres » : elles seules chargent Python.
+    const usesPython = list.some(fields => fields.apres !== undefined);
+    return Object.keys(resourcePaths).filter(key =>
+      (key !== "pywims" || usesPython) &&
+      (key !== "mathWidget" || tagTypes.has("input_math")) &&
+      (key !== "matrixWidget" || tagTypes.has("input_matrix") || tagTypes.has("input_vmatrix")) &&
+      (key !== "choiceWidget" || tagTypes.has("input_radio") || tagTypes.has("input_checkbox"))
+    );
+  }
+
+  // Section d’une question : ses champs et ses tirages en texte échappé, lus par runner.js.
+  function renderQuestionSection(fields, draws, index) {
+    if (!Array.isArray(draws) || !draws.length) {
+      throw new Error(`Les tirages de « ${fields.title} » doivent être calculés avant l’assemblage.`);
+    }
+    if (fields.layout !== "STD") {
+      throw new Error(`La mise en page « ${fields.layout} » n’est pas prise en charge par ce prototype.`);
+    }
+    const tagErrors = PyWimsTemplate.validateTemplate(fields.enonce);
+    if (tagErrors.length) {
+      throw new Error(tagErrors.join(" ; "));
+    }
+    // Seule une question qui a un « apres » a besoin de Python ; les autres se corrigent par
+    // comparaison avec leur solution (SPECIFICATION.md, § 2.6) et ne chargent pas Pyodide.
+    const python = fields.apres === undefined ? "false" : "true";
+    return `<section class="pw-question" id="q${index + 1}" data-python="${python}">
+<div class="pw-question-data" hidden>
+${renderExerciseData(fields)}
+${renderDrawData(draws)}
+</div>
+</section>`;
+  }
+
+  // Assemble une question seule ; c’est une feuille d’une question avec la mise en page « question seule ».
+  function assembleExercise(fields, draws, resources) {
+    return assembleSheet({ title: fields.title, kind: "single", questions: [{ fields, draws }] }, resources);
+  }
+
+  // Assemble une activité : une feuille de plusieurs questions dans un seul document.
+  function assembleActivity(title, questions, resources) {
+    if (!title.trim() || questions.length < 2) {
+      throw new Error("Une activité exige un titre et au moins deux questions.");
+    }
+    return assembleSheet({ title, kind: "activity", questions }, resources);
+  }
+
+  // Emplacements de la mise en page qui reçoivent du code tel quel, avec la balise qui l’entoure.
+  const inlinedPlaceholders = {
+    CSS: "style", TEMPLATE: "script", CORRECTION: "script", WIDGETS: "script", MATHLIVE_LOADER: "script",
+    PYWIMS: "script", PYTHON_RUNTIME: "script", RUNNER: "script"
+  };
+
+  // Refuse un code qui fermerait sa balise : « </script » au milieu d’un script termine la balise
+  // pour le navigateur, et la page générée serait cassée sans aucun message. On n’échappe pas en
+  // « <\/script » : le module pywims, intégré tel quel dans un bloc non exécuté, serait modifié.
+  function checkInlined(name, code) {
+    const element = inlinedPlaceholders[name];
+    if (element && new RegExp(`</${element}`, "i").test(code)) {
+      throw new Error(`Le code intégré en @@${name}@@ contient « </${element} », qui fermerait la balise <${element}> de la page générée : coupez la chaîne, par exemple '</' + '${element}'.`);
+    }
+    return code;
+  }
+
+  // Empreinte d’une activité, pour la mémoire de la progression (SPECIFICATION.md, § 5.3) : hachage
+  // cyrb53 (53 bits, rapide, sans dépendance) du titre et du contenu de toutes les questions. Ce
+  // n’est pas une protection : il suffit que deux feuilles différentes n’aient pas la même empreinte,
+  // et qu’une feuille modifiée en change.
+  function sheetFingerprint(title, questions) {
+    const text = JSON.stringify([title, questions.map(({ fields, draws }) => [fields, draws])]);
+    let h1 = 0xdeadbeef;
+    let h2 = 0x41c6ce57;
+    for (let index = 0; index < text.length; index += 1) {
+      const code = text.charCodeAt(index);
+      h1 = Math.imul(h1 ^ code, 2654435761);
+      h2 = Math.imul(h2 ^ code, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+  }
+
+  // Assemble le HTML autonome à partir des textes des fichiers du projet, sans accès au disque.
+  // Pyodide, MathJax et MathLive sont chargés une seule fois, quel que soit le nombre de questions.
+  function assembleSheet({ title, kind, questions }, resources) {
+    const sections = questions.map(({ fields, draws }, index) => renderQuestionSection(fields, draws, index));
+    const usesMathWidget = neededResources(questions.map(({ fields }) => fields)).includes("mathWidget");
+    const replacements = {
+      TITLE: escapeHtml(title),
+      SHEET_KIND: kind,
+      // Seule une activité garde sa progression : une question seule n’a pas d’empreinte.
+      SHEET_ID: kind === "activity" ? ` data-sheet-id="${sheetFingerprint(title, questions)}"` : "",
+      CSS: `${resources.brandCss}\n${resources.exerciseCss}`,
+      TEMPLATE: resources.template,
+      CORRECTION: resources.correction,
+      WIDGETS: [resources.textWidget, resources.mathWidget, resources.matrixWidget, resources.choiceWidget]
+        .filter(Boolean).join("\n"),
+      MATHLIVE_LOADER: usesMathWidget
+        ? `// Charge le clavier mathématique uniquement pour les exercices qui en ont besoin.
+window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
+  const script = document.createElement("script");
+  script.src = "https://unpkg.com/mathlive@0.111.0";
+  script.onload = resolve;
+  script.onerror = () => reject(new Error("Échec du chargement de MathLive."));
+  document.head.append(script);
+});`
+        : "window.pyWimsMathLiveReady = Promise.resolve();",
+      // Vide si aucune question n’a d’« apres » : Python n’est alors jamais chargé.
+      PYWIMS: resources.pywims ?? "",
+      PYTHON_RUNTIME: resources.python,
+      QUESTIONS: sections.join("\n"),
+      RUNNER: resources.runner
+    };
+    return resources.layout.replace(/@@([A-Z_]+)@@/g, (_match, name) => {
+      if (!Object.hasOwn(replacements, name)) {
+        throw new Error(`Emplacement réservé inconnu dans la mise en page : ${name}`);
+      }
+      return checkInlined(name, replacements[name]);
+    });
+  }
+
+  // Crée un nom de fichier sûr en conservant les lettres Unicode, dont les accents français.
+  function createExerciseFilename(title) {
+    const slug = title
+      .normalize("NFC")
+      .replace(/[^\p{L}\p{N}_-]+/gu, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
+    return `${slug || "exercice"}.html`;
+  }
+
+  window.PyWimsCompiler = Object.freeze({
+    ...window.PyWimsCompiler,
+    renderDrawData,
+    resourcePaths,
+    neededResources,
+    assembleExercise,
+    assembleActivity,
+    renderExerciseData,
+    createExerciseFilename
+  });
+})();
