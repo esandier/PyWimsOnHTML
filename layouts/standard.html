@@ -131,6 +131,9 @@
   <!-- Correction par défaut des questions sans « apres », sans Python. -->
   <script>@@CORRECTION@@</script>
   <script>@@WIDGETS@@</script>
+  <!-- Module Python « pywims » (runtime/pywims.py), lu par le runtime Python : le type text/x-python
+       empêche le navigateur de l’exécuter. Vide si aucune question n’a d’« apres ». -->
+  <script type="text/x-python" id="pywims-module">@@PYWIMS@@</script>
   <script>@@PYTHON_RUNTIME@@</script>
   <script>@@RUNNER@@</script>
 </body>

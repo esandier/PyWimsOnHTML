@@ -313,8 +313,8 @@ sans `apres` : la comparaison y est sans ambiguïté.
   - valeur `LIBRE` : `1`, une valeur quelconque ;
   - `input_vmatrix` : une grille aux dimensions de la solution ;
   - champ à choix : l’indice ou la liste des indices de la solution.
-  Ce contrôle reprend, pour chaque auteur et sans Python installé, celui que
-  `tests/outils/balayage.py` fait sur 200 tirages des exemples du dépôt.
+  Les tests appliquent ce contrôle aux exemples du dépôt, sur 20 tirages ou
+  plus (`?tirages=200`, § 8).
 - Les tirages identiques (même `context` et mêmes `solutions`) sont fusionnés.
   Une question sans aléatoire n’a donc qu’un tirage.
 - Les tirages sont intégrés au fichier généré en JSON, dans un bloc de texte
@@ -324,13 +324,21 @@ sans `apres` : la comparaison y est sans ambiguïté.
   `<script>` et `<style>`. L’assemblage refuse un fichier qui contient
   `</script` (ou `</style` pour une feuille de style) : le navigateur y
   fermerait la balise et la page serait cassée sans message. On refuse au lieu
-  d’échapper, car `<\/script` modifierait le texte du module `pywims`, écrit
-  dans une chaîne brute de `runtime/python.js`.
+  d’échapper, car `<\/script` modifierait le texte du module `pywims`, intégré
+  tel quel dans son bloc `<script type="text/x-python">`.
 - Versions figées : MathJax **3.2.2**, MathLive **0.111.0**. Le widget MathLive
   passe à l’attribut `math-virtual-keyboard-policy`.
-- La compilation est refusée si le module `pywims` chargé par la page du
-  compilateur diffère de celui de `runtime/python.js` publié avec elle
-  (§ 11.1 ; page restée en cache) : les tirages ne seraient pas reproductibles.
+- **Module `pywims`.** C’est un vrai fichier Python, `runtime/pywims.py`. Le
+  compilateur le lit dans le dossier ouvert, l’installe dans son Pyodide pour
+  calculer les tirages, et l’intègre tel quel au fichier généré (bloc
+  `<script type="text/x-python" id="pywims-module">`, que le navigateur
+  n’exécute pas), seulement si une question a un `apres`. Tirages calculés et
+  tirages rejoués utilisent donc le même module : une page du compilateur
+  restée en cache ne peut plus les désaccorder. Un dossier rouvert après une
+  modification de `pywims.py` remplace le module déjà chargé.
+- L’auteur peut ajouter ses propres outils à `pywims.py` ; tout nom exporté
+  (`__all__`) doit aussi être un nom réservé de `runtime/template.js`, ce que
+  vérifient les tests.
 - **Aperçu.** La page réelle de l’exercice s’affiche dans un cadre isolé
   (`sandbox="allow-scripts"`), sans Python et avec des boutons inactifs :
   d’abord un tirage provisoire où chaque variable porte son nom, puis un tirage
@@ -447,7 +455,8 @@ sans `apres` : la comparaison y est sans ambiguïté.
 |---|---|
 | `runtime/template.js` (nouveau) | grammaire unique des balises et échappement HTML, utilisés par le compilateur (validation, aperçu) et par le fichier généré (rendu) |
 | `runtime/correction.js` | correction par défaut sans Python (§ 2.6) : comparaison des choix et des textes, aux différences typographiques près ; utilisée par le fichier généré et par le compilateur |
-| `runtime/python.js` | Pyodide partagé, sessions par question, module `pywims`, graines, détection des paquets |
+| `runtime/pywims.py` | module `pywims` : outils de l’auteur, conversion des solutions, contrôles des tirages |
+| `runtime/python.js` | Pyodide partagé, sessions par question, installation du module `pywims`, graines, détection des paquets |
 | `runtime/runner.js` | classe `Question` (rendu, cycle de vie) et progression de la feuille |
 | `widgets/*.js` | champs de saisie, avec pré-remplissage pour la solution |
 | `layouts/standard.html` | mise en page commune aux feuilles et aux questions seules |
@@ -469,6 +478,12 @@ un sous-projet distinct, traité plus tard.
 - Nouveaux tests : analyse des balises (`template.js`), contrôles de
   compilation, cycle de vie d’une question (sans Python), et une compilation
   réelle avec Pyodide de chaque exercice du dépôt.
+- **Un seul analyseur `.pwq`**, celui du compilateur. Le balayage des tirages
+  (chaque tirage exécuté, ses solutions converties, saisies comme par un élève
+  et jugées justes) passe par lui et par le vrai Pyodide, dans
+  `tests/python-tests.html` : 20 tirages par exercice par défaut,
+  `?tirages=200` pour un balayage complet, plus lent (quelques minutes). Un
+  balayage rapide hors du navigateur demandera Node.js, plus tard.
 
 ## 9. Étapes de développement
 
@@ -648,8 +663,7 @@ En plus du § 2.4, le compilateur refuse l’exercice si, pour l’un des tirage
 ### 10.9 Étapes
 
 1. **Format et tirages** : balises dans `template.js`, conversion et contrôles
-   dans `pywims`, choix, ordre et solutions dans les tirages ; prise en charge
-   par `balayage.py`.
+   dans `pywims`, choix, ordre et solutions dans les tirages.
 2. **Widget et cycle de vie** : rendu, colonnes, vérification, correction,
    solution, animations.
 3. **Barème** : calcul de la note, affichage sous le retour, note indicative

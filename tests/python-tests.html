@@ -36,24 +36,48 @@
       }
     }
 
-    const exerciseFiles = [
-      "Decim3.pwq",
-      "addition-fractions.pwq",
-      "dérivée-polynôme.pwq",
-      "matrice-triangulaire.pwq",
-      "nombres-premiers.pwq",
-      "pgcd.pwq",
-      "produit-matrices.pwq"
-    ];
+    // Nombre de tirages du balayage de chaque exercice : 20 par défaut, ?tirages=200 pour un balayage
+    // complet (quelques minutes).
+    const sweepCount = Number(new URLSearchParams(location.search).get("tirages")) || 20;
+
+    // Tous les exercices du dossier, d’après la liste que le serveur de test (python -m http.server)
+    // affiche pour un dossier : un nouvel exercice est testé sans modifier cette page.
+    async function listExerciseFiles() {
+      const listing = new DOMParser().parseFromString(await (await fetch("../exercises/")).text(), "text/html");
+      return [...listing.querySelectorAll("a[href]")]
+        .map(link => decodeURIComponent(link.getAttribute("href")))
+        .filter(name => name.toLowerCase().endsWith(".pwq"))
+        .sort((a, b) => a.localeCompare(b, "fr"));
+    }
 
     (async () => {
-      await test("le compilateur repère une version de runtime/python.js différente de celle de sa page", async () => {
-        const source = (await (await fetch("../runtime/python.js", { cache: "no-store" })).text()).replace(/\r\n?/g, "\n");
-        if (!PyWimsCompiler.pythonRuntimeMatches(source) ||
-            !PyWimsCompiler.pythonRuntimeMatches(source.replace(/\n/g, "\r\n")) ||
-            PyWimsCompiler.pythonRuntimeMatches(source.replace('mat_delim="["', 'mat_delim="("'))) {
-          throw new Error("La comparaison du module pywims chargé et du fichier du projet est incorrecte.");
+      // Le module pywims vient de runtime/pywims.py, comme dans le compilateur.
+      const moduleSource = await (await fetch("../runtime/pywims.py", { cache: "no-store" })).text();
+      await PyWimsPython.setModuleSource(moduleSource);
+      const exerciseFiles = await listExerciseFiles();
+
+      await test("chaque outil exporté par pywims est un nom de champ réservé", async () => {
+        const session = PyWimsPython.createSession("exports");
+        await session.initialize("import pywims");
+        const exported = JSON.parse(await session.run("__import__('json').dumps(__import__('pywims').__all__)"));
+        const missing = exported.filter(name => !PyWimsTemplate.reservedNames.has(name));
+        if (!exported.length || missing.length) {
+          throw new Error(`Noms à ajouter à reservedNames dans runtime/template.js : ${missing.join(", ")}`);
         }
+        await session.dispose();
+      });
+
+      await test("un module pywims modifié remplace l’ancien sans recharger la page", async () => {
+        await PyWimsPython.setModuleSource(`${moduleSource}\nMARQUE_ESSAI = 1\n`);
+        const session = PyWimsPython.createSession("module-modifie");
+        await session.initialize("import pywims");
+        await expectPython(session, "getattr(__import__('pywims'), 'MARQUE_ESSAI', None) == 1", "Le module modifié n’est pas importé");
+        await session.dispose();
+        await PyWimsPython.setModuleSource(moduleSource);
+        const restored = PyWimsPython.createSession("module-restaure");
+        await restored.initialize("import pywims");
+        await expectPython(restored, "not hasattr(__import__('pywims'), 'MARQUE_ESSAI')", "Le module d’origine n’est pas rétabli");
+        await restored.dispose();
       });
 
       await test("le module pywims analyse les saisies sans exécuter de code", async () => {
@@ -265,10 +289,15 @@ json.dumps({
         }
       });
 
-      await test("les 20 tirages de chaque exercice s’intègrent au fichier et se relisent à l’identique", async () => {
+      // Balayage : computeDraws exécute chaque tirage deux fois, convertit ses solutions, les saisit
+      // comme un élève et exige qu’elles soient jugées justes (SPECIFICATION.md, §§ 3 et 8).
+      await test(`balayage de ${sweepCount} tirages par exercice : contrôles, intégration au fichier et relecture`, async () => {
         const sizes = [];
         for (const [file, fields] of Object.entries(exerciseFields)) {
-          const draws = await PyWimsCompiler.computeDraws(fields);
+          document.getElementById("progress").textContent = `Balayage : ${file}…`;
+          const draws = await PyWimsCompiler.computeDraws(fields, { count: sweepCount }).catch(error => {
+            throw new Error(`${file} : ${error.message}`);
+          });
           const html = PyWimsCompiler.renderDrawData(draws);
           const host = document.createElement("div");
           host.innerHTML = html;

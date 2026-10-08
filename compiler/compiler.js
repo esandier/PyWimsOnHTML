@@ -264,6 +264,15 @@
       projectFiles.set(normalizedProjectPath(file), file);
     }
 
+    // Les tirages se calculent avec le module pywims du dossier, celui qui sera intégré au fichier
+    // généré : tirages calculés et rejoués utilisent le même code (SPECIFICATION.md, § 3).
+    const moduleFile = projectFiles.get(resourcePaths.pywims);
+    if (!moduleFile) {
+      showMessage(projectStatus, `Le dossier ne contient pas « ${resourcePaths.pywims} » : ce n’est pas un dossier PyWimsOnHTML.`, "error");
+      return;
+    }
+    await PyWimsPython.setModuleSource(await moduleFile.text());
+
     const sources = [...projectFiles.entries()]
       .filter(([path]) => path.startsWith("exercises/") && path.toLowerCase().endsWith(".pwq"));
 
@@ -462,7 +471,7 @@
     if (apres === undefined) {
       return defaultCoherenceErrors(tags, draw);
     }
-    // Une valeur LIBRE accepte n’importe quelle saisie : « 1 » en tient lieu, comme dans balayage.py.
+    // Une valeur LIBRE accepte n’importe quelle saisie : « 1 » en tient lieu.
     const typed = value => value ?? "1";
     for (const tag of tags) {
       const { name, type, attributes } = tag;
@@ -706,14 +715,18 @@
     matrixWidget: "widgets/input-matrix.js",
     choiceWidget: "widgets/input-choice.js",
     runner: "runtime/runner.js",
-    python: "runtime/python.js"
+    python: "runtime/python.js",
+    pywims: "runtime/pywims.py"
   };
 
   // Indique quels fichiers du projet utilisent une question ou l’ensemble des questions d’une feuille.
   function neededResources(fieldsOrList) {
-    const tagTypes = new Set((Array.isArray(fieldsOrList) ? fieldsOrList : [fieldsOrList])
-      .flatMap(fields => [...PyWimsTemplate.tagTypes(fields.enonce)]));
+    const list = Array.isArray(fieldsOrList) ? fieldsOrList : [fieldsOrList];
+    const tagTypes = new Set(list.flatMap(fields => [...PyWimsTemplate.tagTypes(fields.enonce)]));
+    // Le module pywims ne sert qu’aux questions qui ont un « apres » : elles seules chargent Python.
+    const usesPython = list.some(fields => fields.apres !== undefined);
     return Object.keys(resourcePaths).filter(key =>
+      (key !== "pywims" || usesPython) &&
       (key !== "mathWidget" || tagTypes.has("input_math")) &&
       (key !== "matrixWidget" || tagTypes.has("input_matrix") || tagTypes.has("input_vmatrix")) &&
       (key !== "choiceWidget" || tagTypes.has("input_radio") || tagTypes.has("input_checkbox"))
@@ -759,12 +772,12 @@ ${renderDrawData(draws)}
   // Emplacements de la mise en page qui reçoivent du code tel quel, avec la balise qui l’entoure.
   const inlinedPlaceholders = {
     CSS: "style", TEMPLATE: "script", CORRECTION: "script", WIDGETS: "script", MATHLIVE_LOADER: "script",
-    PYTHON_RUNTIME: "script", RUNNER: "script"
+    PYWIMS: "script", PYTHON_RUNTIME: "script", RUNNER: "script"
   };
 
   // Refuse un code qui fermerait sa balise : « </script » au milieu d’un script termine la balise
   // pour le navigateur, et la page générée serait cassée sans aucun message. On n’échappe pas en
-  // « <\/script » : dans le String.raw de runtime/python.js, cela changerait le module pywims.
+  // « <\/script » : le module pywims, intégré tel quel dans un bloc non exécuté, serait modifié.
   function checkInlined(name, code) {
     const element = inlinedPlaceholders[name];
     if (element && new RegExp(`</${element}`, "i").test(code)) {
@@ -796,6 +809,8 @@ window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
   document.head.append(script);
 });`
         : "window.pyWimsMathLiveReady = Promise.resolve();",
+      // Vide si aucune question n’a d’« apres » : Python n’est alors jamais chargé.
+      PYWIMS: resources.pywims ?? "",
       PYTHON_RUNTIME: resources.python,
       QUESTIONS: sections.join("\n"),
       RUNNER: resources.runner
@@ -911,26 +926,6 @@ window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
-  // Les tirages sont calculés avec le runtime Python chargé par cette page, puis rejoués par celui
-  // du dossier du projet, intégré au fichier généré. Si la page a gardé une ancienne version en
-  // cache, les valeurs affichées diffèrent et l’élève ne peut pas vérifier (« … diffère »).
-  // Le module pywims contient tout le calcul des valeurs et des solutions : c’est lui qu’on compare.
-  async function checkPythonRuntime() {
-    const file = projectFiles.get(resourcePaths.python);
-    if (!file) {
-      throw new Error(`Le dossier du projet ne contient pas « ${resourcePaths.python} ».`);
-    }
-    if (!pythonRuntimeMatches(await file.text())) {
-      throw new Error("La page du compilateur utilise une ancienne version de runtime/python.js : rechargez-la (Ctrl+F5), puis recompilez.");
-    }
-  }
-
-  // Indique si le texte de runtime/python.js contient le module pywims chargé par cette page.
-  function pythonRuntimeMatches(projectSource) {
-    // Un gabarit JavaScript ramène les fins de ligne à « \n » : le fichier lu doit l’être aussi.
-    return projectSource.replace(/\r\n?/g, "\n").includes(PyWimsPython.moduleSource);
-  }
-
   // Compile les questions choisies, seules ou assemblées selon le mode demandé.
   async function downloadExercise() {
     const selected = [...selectedExercises].filter(exercise => !exercise.error);
@@ -941,7 +936,6 @@ window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
     showMessage(messages, "Compilation de l’exercice…");
     compileButton.disabled = true;
     try {
-      await checkPythonRuntime();
       const questions = [];
       for (const [index, exercise] of selected.entries()) {
         const label = selected.length > 1 ? `question ${index + 1}/${selected.length}, ` : "";
@@ -1001,7 +995,6 @@ window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
     previewPlaceholderDraw,
     choiceOrder,
     computeDraws,
-    pythonRuntimeMatches,
     renderDrawData,
     resourcePaths,
     neededResources,

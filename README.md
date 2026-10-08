@@ -51,10 +51,11 @@ au fichier ; les tirages identiques sont fusionnés. Elle s’arrête au premier
 problème, avec la graine en cause : erreur dans `avant`, variable de l’énoncé
 non définie, solution absente ou de mauvaises dimensions, etc.
 
-Si la page du compilateur a gardé en cache une ancienne version de
-`runtime/python.js`, la compilation est refusée avec un message demandant de la
-recharger (Ctrl+F5) : sinon, les tirages calculés ne correspondraient plus à
-ceux que rejoue le fichier généré.
+Les tirages sont calculés avec le module `runtime/pywims.py` du dossier ouvert,
+celui qui est intégré au fichier généré : les deux restent toujours d’accord.
+Après une modification de `pywims.py`, il suffit de rouvrir le dossier. On peut
+y ajouter ses propres outils Python ; chaque nom exporté (`__all__`) doit aussi
+être réservé dans `runtime/template.js`, ce que vérifient les tests.
 
 ## Le fichier généré
 
@@ -165,15 +166,16 @@ projet :
 - `tests/runtime-tests.html` : cycle de vie des questions, progression et aide,
   avec un Python simulé ; quelques secondes ;
 - `tests/python-tests.html` : vrai Pyodide (module `pywims`, isolement des
-  questions, chaque exercice du dépôt compilé puis corrigé, seul et dans une
-  activité) ; une à deux minutes.
+  questions, chaque exercice du dossier `exercises/` compilé puis corrigé, seul
+  et dans une activité), et balayage des tirages de chaque exercice : chaque
+  tirage est exécuté deux fois, ses solutions converties, saisies comme par un
+  élève et jugées justes. 20 tirages par exercice par défaut, quelques minutes ;
+  `?tirages=200` pour un balayage complet, plus long.
 
 Sous Windows, `tests/outils/lancer-tests.ps1` lance tout automatiquement (Edge
-sans interface, profil vierge) et y ajoute `tests/outils/balayage.py`, qui
-vérifie 200 tirages de chaque exercice avec le Python local : solution
-convertible et jugée juste par `apres` (quand il existe). Prérequis : Python avec les paquets
-`websocket-client` et `sympy`. L’option `-SansPyodide` saute les tests du vrai
-Pyodide, les plus longs.
+sans interface, profil vierge). Prérequis : Python avec le paquet
+`websocket-client`. L’option `-SansPyodide` saute les tests du vrai Pyodide, les
+plus longs ; `-Tirages 200` demande un balayage complet.
 
 Les tests servent les pages par `http://`, alors qu’un élève ouvre souvent le
 fichier depuis le disque (`file://`), où le navigateur se comporte parfois
