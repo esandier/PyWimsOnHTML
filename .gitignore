@@ -5,3 +5,5 @@ __pycache__/
 Thumbs.db
 # Réglages personnels de VS Code (interpréteur Python choisi, etc.).
 .vscode/
+# Notes de travail personnelles (prompt de la session suivante) : gardées sur le disque, pas dans le dépôt public.
+NOTES-prochaine-session.md
