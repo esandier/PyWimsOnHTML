@@ -340,18 +340,19 @@ sans `apres` : la comparaison y est sans ambiguïté.
 - Versions figées : MathJax **3.2.2**, MathLive **0.111.0**. Le widget MathLive
   passe à l’attribut `math-virtual-keyboard-policy`.
 - **Module `pywims`.** C’est un vrai fichier Python, `runtime/pywims.py`. Le
-  compilateur le lit dans le dossier ouvert, l’installe dans son Pyodide pour
+  compilateur le lit en ligne avec les autres fichiers du projet (§ 11.1), au
+  début de chaque compilation, l’installe dans son Pyodide pour
   calculer les tirages, et l’intègre tel quel au fichier généré (bloc
   `<script type="text/x-python" id="pywims-module">`, que le navigateur
   n’exécute pas), seulement si une question a un `apres`. Tirages calculés et
   tirages rejoués utilisent donc le même module : une page du compilateur
-  restée en cache ne peut plus les désaccorder. Un dossier rouvert après une
-  modification de `pywims.py` remplace le module déjà chargé.
+  restée en cache ne peut plus les désaccorder. Un module modifié depuis la
+  compilation précédente remplace le module déjà chargé.
 - **Script du Worker.** Le code du Web Worker de Python est un vrai fichier,
   `runtime/python-worker.js`, et non le texte d’une fonction de `python.js`
   (une telle fonction ne pouvait utiliser aucune variable de son fichier, piège
   que les outils ne signalent pas). Il suit le chemin du module `pywims` : le
-  compilateur le lit dans le dossier ouvert et le donne à `python.js`
+  compilateur le lit en ligne avec les autres fichiers et le donne à `python.js`
   (`setWorkerSource`), les tests aussi, et le fichier généré l’intègre tel
   quel dans un bloc `<script type="text/x-worker" id="pywims-worker">`, que
   le navigateur n’exécute pas, seulement si une question a un `apres`.
@@ -532,7 +533,8 @@ sans `apres` : la comparaison y est sans ambiguïté.
 | `compiler/draws.js` | tirages avec Pyodide, contrôles de l’auteur, cohérence, ordre des choix |
 | `compiler/assemble.js` | ressources du projet, assemblage des feuilles, empreinte d’une activité |
 | `compiler/zip.js` | archive ZIP des pages séparées |
-| `compiler/compiler.js` | interface du compilateur : dossier, liste, aperçu, compilation, téléchargement |
+| `compiler/compiler.js` | interface du compilateur : dossier d’exercices, liste, aperçu, compilation, téléchargement ; lit en ligne les fichiers du projet (§ 11.1) |
+| `compiler/lancer-local.ps1` | serveur local et compilateur, pour essayer une modification du moteur avant de la publier |
 
 ## 7. Exercices PyWims existants
 
@@ -549,10 +551,10 @@ un sous-projet distinct, traité plus tard.
   questions, calcul sans fin, chaque exercice du dossier compilé puis corrigé,
   seul et dans une activité) et balayage des tirages.
 - `tests/outils/essai_compilateur.py` : l’interface du compilateur, de bout en
-  bout (ouverture du dossier, liste, aperçu réel, compilation, fichier
-  téléchargé), sans erreur JavaScript, sur une copie du projet réduite aux
-  exercices de la racine d’`exercises/` : comme les autres tests, il ne dépend
-  pas du contenu des sous-dossiers.
+  bout (ouverture d’un dossier d’exercices, liste, « Tout sélectionner »,
+  aperçu réel, compilation, fichier téléchargé), sans erreur JavaScript. Le
+  dossier ouvert est une copie des seuls exercices de la racine d’`exercises/` :
+  comme les autres tests, il ne dépend pas du contenu des sous-dossiers.
 - `tests/outils/lancer-tests.ps1` lance le tout dans Edge sans interface.
 - Le pilotage d’Edge passe par Playwright pour Python (`pip install
   playwright`), avec l’Edge installé (`channel="msedge"`) : aucun autre

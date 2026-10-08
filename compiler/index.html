@@ -89,7 +89,7 @@
     .folder-button:hover,
     #compile-exercise:hover:not(:disabled) { background: #874c00; }
     #compile-exercise:disabled { cursor: not-allowed; opacity: 0.55; }
-    #project-folder { display: none; }
+    #exercise-folder { display: none; }
 
     #folder-name {
       min-width: 0;
@@ -318,11 +318,12 @@
   <!-- La zone principale : à gauche le dossier et la liste filtrable, à droite l’aperçu sur toute la hauteur. -->
   <main class="workspace">
     <div class="sidebar">
-      <!-- Le sélecteur donne au compilateur accès local au dossier choisi par l’utilisateur. -->
+      <!-- Le sélecteur donne au compilateur accès local au dossier d’exercices choisi par l’utilisateur ;
+           les fichiers du projet, eux, sont lus en ligne à côté de cette page. -->
       <div class="folder-row">
         <!-- Le bouton devient « Dossier ouvert : » une fois un dossier choisi ; il permet d’en ouvrir un autre. -->
-        <button class="folder-button" id="choose-folder" type="button">Ouvrir un dossier</button>
-        <input id="project-folder" type="file" webkitdirectory directory multiple>
+        <button class="folder-button" id="choose-folder" type="button">Ouvrir un dossier d’exercices</button>
+        <input id="exercise-folder" type="file" webkitdirectory directory multiple>
         <span id="folder-name" aria-live="polite">Aucun dossier ouvert</span>
       </div>
       <!-- Filtres et liste des fichiers d’exercice chargés depuis le dossier. -->

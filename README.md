@@ -29,10 +29,18 @@ qui fait référence ; le format des exercices est détaillé dans
 
 ## Utiliser le compilateur
 
-Ouvre `compiler/index.html` dans un navigateur récent, puis clique sur
-**Ouvrir un dossier** et choisis le dossier du projet PyWimsOnHTML. Le bouton
-devient **Dossier ouvert :** suivi du nom du dossier ; il permet d’en ouvrir un
-autre. Les fichiers restent sur l’ordinateur : rien n’est téléversé.
+Ouvre le compilateur en ligne, <https://esandier.github.io/PyWimsOnHTML/compiler/>,
+dans un navigateur récent, puis clique sur **Ouvrir un dossier d’exercices** et
+choisis le dossier où sont tes fichiers `.pwq` (ceux de ses sous-dossiers sont
+lus aussi). Le bouton devient **Dossier ouvert :** suivi du nom du dossier ; il
+permet d’en ouvrir un autre. Les exercices restent sur l’ordinateur : rien n’est
+téléversé.
+
+Pour essayer une modification du moteur (`runtime/`, `widgets/`, `css/`,
+`layouts/`) avant de la publier, lance `compiler/lancer-local.ps1` : il démarre
+un serveur local à la racine du projet et ouvre le compilateur. Ouvert
+directement depuis le disque (`file://`), le compilateur ne peut pas lire ses
+fichiers, et il le dit.
 
 À gauche, la liste des exercices se filtre par nom ou par mot-clé. Un clic sur
 un exercice en affiche l’aperçu à droite, dans une fenêtre qui défile : la vraie
@@ -57,11 +65,12 @@ non définie, solution absente ou de mauvaises dimensions, etc. Une exécution
 de `avant` ou de `apres` qui dépasse 30 s (boucle sans fin) arrête la
 compilation avec un message, sans bloquer le compilateur.
 
-Les tirages sont calculés avec le module `runtime/pywims.py` du dossier ouvert,
-celui qui est intégré au fichier généré : les deux restent toujours d’accord.
-Après une modification de `pywims.py`, il suffit de rouvrir le dossier. On peut
-y ajouter ses propres outils Python ; chaque nom exporté (`__all__`) doit aussi
-être réservé dans `runtime/template.js`, ce que vérifient les tests.
+Les fichiers du projet (mise en page, moteur, module `runtime/pywims.py`) sont
+lus en ligne, à côté du compilateur, au début de chaque compilation : les
+tirages sont calculés avec le module qui est intégré au fichier généré, et les
+deux restent toujours d’accord. On peut ajouter ses propres outils Python à
+`pywims.py` (en local, avec `lancer-local.ps1`) ; chaque nom exporté (`__all__`)
+doit aussi être réservé dans `runtime/template.js`, ce que vérifient les tests.
 
 ## Le fichier généré
 

@@ -1,5 +1,6 @@
-# Essai de bout en bout de l’interface du compilateur, dans Edge sans interface : ouverture du dossier
-# du projet, liste des exercices, aperçu avec un tirage réel, compilation et fichier téléchargé.
+# Essai de bout en bout de l’interface du compilateur, dans Edge sans interface : ouverture d’un dossier
+# d’exercices, liste, aperçu avec un tirage réel, compilation et fichier téléchargé. Le compilateur lit
+# les fichiers du projet en ligne, à côté de lui : l’URL doit être servie depuis la racine du projet.
 # C’est la seule partie du projet que les pages de tests ne couvrent pas : elles appellent les
 # fonctions du compilateur, mais pas sa page. Le sélecteur de dossier ne peut pas être cliqué par un
 # programme ; Playwright lui donne le dossier (set_input_files), comme un choix de l’utilisateur.
@@ -19,29 +20,24 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from navigateur import lancer_edge  # noqa: E402
 
 PROJECT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-# Dossiers du projet que lit le compilateur, en plus des exercices.
-RESSOURCES = ["css", "layouts", "runtime", "widgets"]
 
 
-def copie_du_projet(destination):
-    """Copie le projet avec les seuls exercices de la racine d’exercises/ : les sous-dossiers
-    contiennent du contenu personnel, que les tests ne vérifient pas (le compilateur les liste
-    aussi, et l’essai dépendrait de leur contenu). Renvoie les noms des exercices copiés."""
-    for nom in RESSOURCES:
-        shutil.copytree(os.path.join(PROJECT, nom), os.path.join(destination, nom))
-    os.mkdir(os.path.join(destination, "exercises"))
+def dossier_d_exercices(destination):
+    """Copie dans un dossier d’exercices les seuls exercices de la racine d’exercises/ : les
+    sous-dossiers contiennent du contenu personnel, que les tests ne vérifient pas (le compilateur
+    les liste aussi, et l’essai dépendrait de leur contenu). Renvoie les noms des exercices copiés."""
     exercices = sorted(nom for nom in os.listdir(os.path.join(PROJECT, "exercises")) if nom.endswith(".pwq"))
     for nom in exercices:
-        shutil.copy(os.path.join(PROJECT, "exercises", nom), os.path.join(destination, "exercises", nom))
+        shutil.copy(os.path.join(PROJECT, "exercises", nom), os.path.join(destination, nom))
     return exercices
 
 
 def main():
     url = sys.argv[1]
-    dossier = tempfile.mkdtemp(prefix="pywims-projet-")
+    dossier = tempfile.mkdtemp(prefix="pywims-exercices-")
     erreurs = []
     try:
-        exercises = copie_du_projet(dossier)
+        exercises = dossier_d_exercices(dossier)
         with sync_playwright() as playwright:
             browser = lancer_edge(playwright, sys.argv[2] if len(sys.argv) > 2 else None)
             try:
@@ -51,7 +47,7 @@ def main():
                 page.wait_for_function("!!window.PyWimsCompiler", timeout=30_000)
 
                 # Ouverture du dossier : la liste montre chaque exercice par son titre et ses champs.
-                page.set_input_files("#project-folder", dossier)
+                page.set_input_files("#exercise-folder", dossier)
                 page.wait_for_function("document.querySelectorAll('#exercise-list li').length > 0", timeout=30_000)
                 items = page.eval_on_selector_all(
                     "#exercise-list li",
@@ -106,15 +102,18 @@ def main():
                     raise AssertionError("« Tout désélectionner » n’a pas décoché les exercices.")
                 print("tout sélectionner / désélectionner : exercices visibles seulement")
 
-                # Un fichier du moteur modifié après l’ouverture du dossier : message explicite.
-                with open(os.path.join(dossier, "runtime", "sheet.js"), "a", encoding="utf-8") as fichier:
-                    fichier.write("\n// modifié après l’ouverture du dossier\n")
+                # Une question sans « apres » : la compilation lit le module pywims et le script du
+                # Worker pour ses tirages, mais le fichier n’en contient aucun (il ne charge pas Python).
+                page.fill("#exercise-search", "Valeur approchée")
                 page.click(".exercise-selection >> nth=0")
-                page.click("#compile-exercise")
-                page.wait_for_function("document.getElementById('messages').classList.contains('error')", timeout=180_000)
-                if "a changé depuis l’ouverture du dossier" not in page.text_content("#messages"):
-                    raise AssertionError(f"message inattendu : {page.text_content('#messages')}")
-                print("fichier modifié après l’ouverture : message explicite")
+                with page.expect_download(timeout=180_000) as attente:
+                    page.click("#compile-exercise")
+                sans_python = open(attente.value.path(), encoding="utf-8").read()
+                if ('id="pywims-worker"></script>' not in sans_python or
+                        'id="pywims-module"></script>' not in sans_python):
+                    raise AssertionError("Une question sans « apres » intègre le module ou le script du Worker.")
+                print(f"question sans « apres » : ni module ni Worker intégrés ({len(sans_python) // 1024} Ko)")
+
             finally:
                 browser.close()
 

@@ -729,7 +729,7 @@
           // Les contrôles suivants couvrent l’interface, le runtime et les exercices fournis.
           test("la page du compilateur propose deux panneaux et une prévisualisation", () => {
             if (!compilerPage.includes('id="folder-name"') ||
-                !compilerPage.includes('id="choose-folder" type="button">Ouvrir un dossier</button>') ||
+                !compilerPage.includes('id="choose-folder" type="button">Ouvrir un dossier d’exercices</button>') ||
                 !compilerScript.includes('chooseFolderButton.textContent = "Dossier ouvert :"') ||
                 !compilerPage.includes('id="exercise-list"') ||
                 !compilerPage.includes('id="exercise-search"') ||
@@ -738,7 +738,7 @@
                 !compilerPage.includes('id="output-mode"') ||
                 !compilerPage.includes('id="activity-title"') ||
                 !compilerPage.includes('id="compile-exercise" type="button" disabled>Compiler</button>') ||
-                !compilerPage.includes("#project-folder { display: none; }") ||
+                !compilerPage.includes("#exercise-folder { display: none; }") ||
                 !/#exercise-list\s*\{[^}]*overflow-y:\s*auto/s.test(compilerPage)) {
               throw new Error("La page ne contient pas les panneaux, filtres, aperçu ou défilement attendus.");
             }

@@ -1,11 +1,13 @@
-// Interface du compilateur : ouverture du dossier, liste des exercices, aperçu sûr et compilation.
+// Interface du compilateur : ouverture du dossier d’exercices, liste, aperçu sûr et compilation.
 // Le format, les tirages, l’assemblage et l’archive sont dans les autres scripts de ce dossier.
+// Les fichiers du projet (mise en page, moteur, widgets, styles) sont lus en ligne, à côté de cette
+// page (SPECIFICATION.md, § 11.1) ; le dossier choisi par l’utilisateur ne contient que ses exercices.
 (() => {
   // Fonctions des modules du compilateur (format.js, draws.js, assemble.js, zip.js).
   const { assembleActivity, assembleExercise, computeDraws, createExerciseFilename, createZip, fieldKindsLabel, neededResources, parseExerciseSource, previewPlaceholderDraw, resourcePaths, templateWarnings } = PyWimsCompiler;
 
   const chooseFolderButton = document.getElementById("choose-folder");
-  const filePicker = document.getElementById("project-folder");
+  const filePicker = document.getElementById("exercise-folder");
   const folderName = document.getElementById("folder-name");
   const projectStatus = document.getElementById("project-status");
   const search = document.getElementById("exercise-search");
@@ -22,7 +24,6 @@
   const activityTitleLabel = document.getElementById("activity-title-label");
   const messages = document.getElementById("messages");
 
-  let projectFiles = new Map();
   let exercises = [];
   let selectedExercise;
   const selectedExercises = new Set();
@@ -71,8 +72,8 @@
     }
   }
 
-  // Retire le dossier racine ajouté par le sélecteur pour retrouver le chemin relatif du projet.
-  function normalizedProjectPath(file) {
+  // Retire le dossier racine ajouté par le sélecteur : chemin relatif au dossier d’exercices.
+  function relativePath(file) {
     const path = file.webkitRelativePath || file.name;
     const firstSlash = path.indexOf("/");
     return firstSlash < 0 ? path : path.slice(firstSlash + 1);
@@ -100,7 +101,7 @@
 
   // Assemble la page de l’exercice pour un tirage donné et l’affiche dans le cadre.
   async function renderPreviewFrame(fields, draw) {
-    const resources = await readProjectResources([fields]);
+    const resources = await readProjectResources(neededResources([fields]));
     resources.python = previewPythonStub;
     previewFrame.srcdoc = assembleExercise(fields, [draw], resources).replace("</head>", `${previewHead}</head>`);
     previewFrame.hidden = false;
@@ -123,7 +124,9 @@
       showPreviewNotice(PyWimsPython.isLoaded?.()
         ? "Aperçu provisoire : les variables apparaissent sous leur nom, le temps de calculer un tirage…"
         : "Aperçu provisoire : les variables apparaissent sous leur nom. Chargement de Python pour calculer un tirage (10 à 20 secondes la première fois)…");
-      const draws = computeDraws(fields, { count: 1 });
+      const draws = readProjectResources(pythonResources)
+        .then(installPythonSources)
+        .then(() => computeDraws(fields, { count: 1 }));
       previewDrawCache.set(exercise, draws);
       draws.catch(() => previewDrawCache.delete(exercise));
     }
@@ -143,11 +146,10 @@
     }
   }
 
-  // Recharge les fichiers du dossier, analyse les exercices et réinitialise l’interface.
-  async function onProjectSelected() {
+  // Lit les exercices du dossier choisi, sous-dossiers compris, et réinitialise l’interface.
+  async function onFolderSelected() {
     clearMessage(messages);
     clearMessage(projectStatus);
-    projectFiles = new Map();
     exercises = [];
     selectedExercise = undefined;
     selectedExercises.clear();
@@ -164,7 +166,7 @@
     showPreviewNotice("Choisissez un exercice dans la liste pour afficher son aperçu.");
 
     if (!filePicker.files.length) {
-      chooseFolderButton.textContent = "Ouvrir un dossier";
+      chooseFolderButton.textContent = "Ouvrir un dossier d’exercices";
       folderName.textContent = "Aucun dossier ouvert";
       listEmpty.textContent = "Ouvrez un dossier pour afficher ses fichiers d’exercice.";
       return;
@@ -177,26 +179,9 @@
     folderName.textContent = selectedFolder || filePicker.files[0].name;
     showMessage(projectStatus, "Chargement des fichiers d’exercice…");
 
-    for (const file of filePicker.files) {
-      projectFiles.set(normalizedProjectPath(file), file);
-    }
-
-    // Les tirages se calculent avec le module pywims et le script du Worker du dossier, ceux qui
-    // seront intégrés au fichier généré : tirages calculés et rejoués utilisent le même code
-    // (SPECIFICATION.md, § 3).
-    const moduleFile = projectFiles.get(resourcePaths.pywims);
-    const workerFile = projectFiles.get(resourcePaths.pythonWorker);
-    const missing = [[moduleFile, resourcePaths.pywims], [workerFile, resourcePaths.pythonWorker]]
-      .find(([file]) => !file);
-    if (missing) {
-      showMessage(projectStatus, `Le dossier ne contient pas « ${missing[1]} » : ce n’est pas un dossier PyWimsOnHTML.`, "error");
-      return;
-    }
-    PyWimsPython.setWorkerSource(await workerFile.text());
-    await PyWimsPython.setModuleSource(await moduleFile.text());
-
-    const sources = [...projectFiles.entries()]
-      .filter(([path]) => path.startsWith("exercises/") && path.toLowerCase().endsWith(".pwq"));
+    const sources = [...filePicker.files]
+      .map(file => [relativePath(file), file])
+      .filter(([path]) => path.toLowerCase().endsWith(".pwq"));
 
     for (const [path, file] of sources) {
       try {
@@ -342,33 +327,46 @@
       : "Compiler";
   }
 
-  // Lit dans le dossier du projet choisi les fichiers dont ces questions ont besoin.
-  async function readProjectResources(fieldsList) {
-    const resources = {};
-    for (const key of neededResources(fieldsList)) {
-      const file = projectFiles.get(resourcePaths[key]);
-      if (!file) {
-        throw new Error(`Le dossier du projet ne contient pas « ${resourcePaths[key]} ».`);
+  // Fichiers dont Python a besoin pour calculer des tirages, qu’une question ait un « apres » ou non.
+  const pythonResources = ["pywims", "pythonWorker"];
+
+  // Lit les fichiers du projet à côté de cette page (« ../ » depuis compiler/). « no-cache » les fait
+  // revalider auprès du serveur à chaque lecture : après une publication, une compilation ne mêle
+  // jamais l’ancienne et la nouvelle version (le cache de GitHub Pages dure quelques minutes).
+  async function readProjectResources(keys) {
+    const entries = await Promise.all(keys.map(async key => {
+      const response = await fetch(new URL(`../${resourcePaths[key]}`, location.href), { cache: "no-cache" });
+      if (!response.ok) {
+        throw new Error(`Fichier du projet introuvable : « ${resourcePaths[key]} » (${response.status}).`);
       }
-      // Le navigateur garde les fichiers tels qu’à l’ouverture du dossier : un fichier modifié ou
-      // supprimé depuis ne peut plus être lu, avec un message brut (« The requested file could not
-      // be read… »). Les tirages, calculés avant, n’en dépendent pas : l’échec n’arrive qu’ici.
-      try {
-        resources[key] = await file.text();
-      } catch {
-        throw new Error(`« ${resourcePaths[key]} » a changé depuis l’ouverture du dossier : rouvrez le dossier, puis compilez de nouveau.`);
-      }
-    }
-    return resources;
+      return [key, await response.text()];
+    }));
+    return Object.fromEntries(entries);
   }
 
-  // Assemble la feuille avec les fichiers du projet : une question seule si le titre est absent,
-  // une activité sinon.
-  async function compileSheet(questions, activityTitle = null) {
-    const resources = await readProjectResources(questions.map(({ fields }) => fields));
+  // Donne à Python le module pywims et le script du Worker lus avec les autres fichiers : tirages
+  // calculés et rejoués utilisent le même code (SPECIFICATION.md, § 3). Un script inchangé ne relance
+  // pas le Worker (setWorkerSource) ; le module n’est réinstallé que s’il a changé.
+  let installedModule = null;
+  async function installPythonSources(resources) {
+    PyWimsPython.setWorkerSource(resources.pythonWorker);
+    if (resources.pywims !== installedModule) {
+      await PyWimsPython.setModuleSource(resources.pywims);
+      installedModule = resources.pywims;
+    }
+  }
+
+  // Assemble la feuille avec les fichiers du projet lus au début de la compilation : une question
+  // seule si le titre est absent, une activité sinon.
+  // Seuls les fichiers dont ces questions ont besoin sont intégrés : la compilation lit aussi le
+  // module pywims et le script du Worker pour calculer les tirages, mais une feuille sans « apres »
+  // ne charge jamais Python et n’a pas à les contenir.
+  function compileSheet(questions, resources, activityTitle = null) {
+    const needed = Object.fromEntries(
+      neededResources(questions.map(({ fields }) => fields)).map(key => [key, resources[key]]));
     return activityTitle === null
-      ? assembleExercise(questions[0].fields, questions[0].draws, resources)
-      : assembleActivity(activityTitle, questions, resources);
+      ? assembleExercise(questions[0].fields, questions[0].draws, needed)
+      : assembleActivity(activityTitle, questions, needed);
   }
 
   // Propose le fichier au téléchargement ; l’adresse temporaire est libérée juste après, le temps
@@ -392,6 +390,11 @@
     showMessage(messages, "Compilation de l’exercice…");
     compileButton.disabled = true;
     try {
+      // Tous les fichiers du projet sont lus une fois, au début : ceux des tirages et ceux de
+      // l’assemblage sont de la même version.
+      const keys = [...new Set([...pythonResources, ...neededResources(selected.map(({ fields }) => fields))])];
+      const resources = await readProjectResources(keys);
+      await installPythonSources(resources);
       const questions = [];
       for (const [index, exercise] of selected.entries()) {
         const label = selected.length > 1 ? `question ${index + 1}/${selected.length}, ` : "";
@@ -409,20 +412,20 @@
       }
       const html = content => new Blob([content], { type: "text/html;charset=utf-8" });
       if (questions.length === 1) {
-        downloadBlob(html(await compileSheet(questions)), createExerciseFilename(questions[0].fields.title));
+        downloadBlob(html(compileSheet(questions, resources)), createExerciseFilename(questions[0].fields.title));
       } else if (outputMode.value === "activity") {
         const title = activityTitleInput.value.trim();
         if (!title) {
           throw new Error("Indiquez un titre pour l’activité.");
         }
-        downloadBlob(html(await compileSheet(questions, title)), createExerciseFilename(title));
+        downloadBlob(html(compileSheet(questions, resources, title)), createExerciseFilename(title));
       } else {
         // Pages séparées : une feuille d’une question par fichier.
         const archiveEntries = [];
         for (const question of questions) {
           archiveEntries.push({
-            name: question.path.replace(/^exercises\//, "").replace(/\.pwq$/i, ".html"),
-            content: await compileSheet([question])
+            name: question.path.replace(/\.pwq$/i, ".html"),
+            content: compileSheet([question], resources)
           });
         }
         downloadBlob(createZip(archiveEntries), `${questions.length}-questions.zip`);
@@ -445,7 +448,15 @@
     return;
   }
 
-  filePicker.addEventListener("change", onProjectSelected);
+  // Ouverte depuis le disque, la page ne peut pas lire les fichiers du projet (le navigateur refuse
+  // fetch en file://) : elle l’explique au lieu d’échouer à la première compilation.
+  if (location.protocol === "file:") {
+    chooseFolderButton.disabled = true;
+    showMessage(projectStatus, "Ouvert depuis le disque, le compilateur ne peut pas lire ses fichiers : utilisez la version en ligne, ou lancez compiler/lancer-local.ps1.", "error");
+    return;
+  }
+
+  filePicker.addEventListener("change", onFolderSelected);
   chooseFolderButton.addEventListener("click", () => filePicker.click());
   search.addEventListener("input", renderExerciseList);
   selectVisibleButton.addEventListener("click", toggleVisibleSelection);
