@@ -479,7 +479,7 @@ sans `apres` : la comparaison y est sans ambiguïté.
 | `runtime/template.js` (nouveau) | grammaire unique des balises et échappement HTML, utilisés par le compilateur (validation, aperçu) et par le fichier généré (rendu) |
 | `runtime/correction.js` | correction par défaut sans Python (§ 2.6) : comparaison des choix et des textes, aux différences typographiques près ; utilisée par le fichier généré et par le compilateur |
 | `runtime/pywims.py` | module `pywims` : outils de l’auteur, conversion des solutions, contrôles des tirages |
-| `runtime/python.js` | Pyodide partagé, sessions par question, installation du module `pywims`, graines, détection des paquets |
+| `runtime/python.js` | Pyodide partagé, dans un Web Worker (la page ne gèle pas, un calcul sans fin peut être arrêté) ; sessions par question, installation du module `pywims`, graines, détection des paquets. L’interface reste asynchrone et inchangée pour `runner.js` et le compilateur |
 | `runtime/runner.js` | classe `Question` (rendu, cycle de vie) et progression de la feuille |
 | `widgets/*.js` | champs de saisie, avec pré-remplissage pour la solution |
 | `layouts/standard.html` | mise en page commune aux feuilles et aux questions seules |

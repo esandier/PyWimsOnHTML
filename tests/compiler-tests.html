@@ -711,8 +711,10 @@
             const urls = [layout, compilerScript, pythonRuntime]
               .flatMap(source => source.match(/https:\/\/(?:cdn\.jsdelivr\.net|unpkg\.com)\/[^"'\s)]+/g) || []);
             const unpinned = urls.filter(url => !/(?:@|\/v)\d+\.\d+\.\d+(?:\/|$)/.test(url));
-            if (urls.length < 4 || unpinned.length) {
-              throw new Error(`Bibliothèques sans version exacte : ${unpinned.join(", ") || "aucune URL trouvée"}`);
+            // Chacune des trois bibliothèques doit être présente, quel que soit le nombre de ses URL.
+            const missing = ["pyodide", "mathjax", "mathlive"].filter(name => !urls.some(url => url.includes(name)));
+            if (missing.length || unpinned.length) {
+              throw new Error(`Bibliothèques absentes : ${missing.join(", ") || "aucune"} ; sans version exacte : ${unpinned.join(", ") || "aucune"}`);
             }
           });
           test("le compilateur prend en charge le champ MathLive et son chargement", () => {
