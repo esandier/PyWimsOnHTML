@@ -141,6 +141,10 @@ def main():
                 page.goto(url)
                 page.wait_for_function("!!window.PyWimsCompiler", timeout=30_000)
 
+                # Python se charge dès l’ouverture, sans attendre un aperçu ou une compilation.
+                page.wait_for_function("PyWimsPython.isLoaded()", timeout=180_000)
+                print("Python préchargé dès l’ouverture de la page")
+
                 # Ouverture du dossier : la liste montre chaque exercice par son titre et ses champs.
                 page.set_input_files("#exercise-folder", dossier)
                 page.wait_for_function("document.querySelectorAll('#exercise-list li').length > 0", timeout=30_000)

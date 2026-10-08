@@ -49,8 +49,9 @@ fichiers, et il le dit.
 un exercice en affiche l’aperçu à droite, dans une fenêtre qui défile : la vraie
 page de l’exercice, aux boutons inactifs. Il apparaît tout de suite, avec chaque
 variable de l’énoncé sous son nom, puis il est remplacé par un tirage réel dès
-que Python l’a calculé : 10 à 20 secondes la première fois, le temps de charger
-Python, puis environ une seconde par exercice. Une erreur dans `avant` est
+que Python l’a calculé, environ une seconde par exercice. Python se charge dès
+l’ouverture du compilateur, en arrière-plan (10 à 20 secondes) : le premier
+aperçu ne l’attend que s’il est demandé tout de suite. Une erreur dans `avant` est
 signalée au-dessus de l’aperçu, qui reste provisoire.
 
 Coche une ou plusieurs questions, puis **Compiler** :

@@ -771,6 +771,11 @@ liste par titre (§ 11.3) sont déjà en place dans le compilateur local.
 - Le module `pywims` et le script du Worker sont lus en ligne avec les autres
   fichiers, puis intégrés au fichier généré : tirages calculés et rejoués
   utilisent le même code (§ 3).
+- Python (Pyodide, SymPy et le module `pywims`) se charge dès l’ouverture du
+  compilateur, en arrière-plan : le premier aperçu et la première compilation
+  n’attendent plus son chargement (de 10 s à beaucoup plus, selon le navigateur
+  et la connexion). Un échec de ce préchargement est silencieux : la
+  compilation recommence le chargement, et en donne l’erreur.
 - **Développement local** : `compiler/lancer-local.ps1` démarre un serveur
   local à la racine du projet et ouvre le compilateur dans le navigateur ; on
   essaie ainsi une modification du moteur avant de la publier. Ouvert

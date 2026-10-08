@@ -624,6 +624,20 @@
   });
   otherFolderButton.addEventListener("click", pickFolder);
   reloadFolderButton.addEventListener("click", () => openHandle(folderHandle, { keepSelection: true }));
+  // Préchargement de Python dès l’ouverture (SPECIFICATION.md, § 11.1) : Pyodide, SymPy et pywims
+  // sont chargés et importés pendant que l’utilisateur choisit son dossier. La session sert
+  // seulement à déclencher le chargement ; le Worker et ses paquets restent pour la suite.
+  readProjectResources(pythonResources)
+    .then(installPythonSources)
+    .then(async () => {
+      const warmUp = PyWimsPython.createSession("prechargement");
+      await warmUp.initialize("import pywims\nfrom sympy import *");
+      await warmUp.dispose();
+    })
+    .catch(() => {
+      // Échec silencieux : la compilation recommence le chargement et en donne l’erreur.
+    });
+
   if (canRememberFolder) {
     rememberedFolder().then(handle => {
       rememberedHandle = handle ?? null;
