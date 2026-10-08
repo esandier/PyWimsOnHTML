@@ -11,11 +11,11 @@ window.PyWimsPython = (() => {
   // Module « pywims » importé explicitement par les exercices. Ses fonctions internes restent
   // dans son propre espace de noms : une variable de l’auteur ne peut pas les perturber.
   const pywimsModuleSource = String.raw`
-"""Outils PyWims : from pywims import py_wims, is_nombre, math_expression, LIBRE"""
+"""Outils PyWims : from pywims import py_wims, is_nombre, math_expression, decimal_fr, LIBRE"""
 import re as _re
 import sys as _sys
 
-__all__ = ["py_wims", "is_nombre", "math_expression", "LIBRE"]
+__all__ = ["py_wims", "is_nombre", "math_expression", "decimal_fr", "LIBRE"]
 
 _libre = None
 
@@ -36,11 +36,39 @@ def _is_libre(value):
     return _libre is not None and value is _libre
 
 
+def _plain_decimal(value):
+    """Écriture décimale d’un Decimal, sans exposant ni zéros finaux : 1E+3 → 1000, 2.50 → 2.5."""
+    text = format(value, "f")
+    if "." in text:
+        text = text.rstrip("0").rstrip(".")
+    # -0 s’écrirait « -0 » : un élève n’écrit jamais le signe d’un zéro.
+    return "0" if text in ("-0", "") else text
+
+
+def _float_text(value):
+    """Flottant arrondi à 12 chiffres significatifs, en écriture décimale avec un point.
+
+    L’arrondi efface les artefacts du calcul binaire (0.1 + 0.2 vaut 0.30000000000000004) : sans
+    lui, le bouton « Solution » afficherait ces chiffres et la correction par défaut les exigerait
+    (SPECIFICATION.md, § 2.6). Douze chiffres gardent toute valeur qu’un exercice demande.
+    """
+    import decimal
+    import math
+    number = float(value)
+    if not math.isfinite(number):
+        return str(number)
+    return _plain_decimal(decimal.Decimal(format(number, ".12g")))
+
+
 def _solution_text(value):
     """Solution d’un champ texte, écrite comme un élève la saisirait ; None pour une valeur libre."""
     if _is_libre(value):
         return None
+    if isinstance(value, float):
+        return _float_text(value)
     sympy = _sys.modules.get("sympy")
+    if sympy is not None and isinstance(value, sympy.Float):
+        return _float_text(value)
     if sympy is not None and isinstance(value, sympy.Basic):
         return sympy.sstr(value).replace("**", "^")
     return str(value)
@@ -233,6 +261,40 @@ def py_wims(value):
         return sympy.sympify(value, evaluate=False)
     except (sympy.SympifyError, NameError, SyntaxError, IndexError, TypeError):
         return None
+
+
+def decimal_fr(value, digits):
+    """Écriture française d’un nombre arrondi à digits décimales, sans zéros finaux.
+
+    decimal_fr(sqrt(2), 2) → "1,41" ; decimal_fr(1.5, 2) → "1,5" ; decimal_fr(2, 2) → "2".
+    Sert de solution quand la réponse attendue s’écrit avec une virgule : la correction par défaut
+    ne confond pas la virgule et le point (SPECIFICATION.md, § 2.6).
+
+    L’arrondi se fait sur l’écriture décimale, au plus proche, les cas à mi-chemin vers le haut,
+    comme en classe : round(2.675, 2) donne 2.67 en Python, car le flottant 2.675 vaut en réalité
+    2.67499999…, alors qu’un élève attend 2,68.
+    """
+    import decimal
+    if isinstance(digits, bool) or not isinstance(digits, int) or digits < 0:
+        raise TypeError("decimal_fr : le nombre de décimales doit être un entier positif ou nul.")
+    sympy = _sys.modules.get("sympy")
+    if isinstance(value, bool):
+        raise TypeError("decimal_fr : {!r} n’est pas un nombre.".format(value))
+    if isinstance(value, int):
+        exact = decimal.Decimal(value)
+    elif isinstance(value, float):
+        # repr donne l’écriture la plus courte qui redonne ce flottant : « 2.675 », pas 2.67499999…
+        exact = decimal.Decimal(repr(value))
+    elif sympy is not None and isinstance(value, sympy.Basic) and value.is_real:
+        # Assez de chiffres pour que l’arrondi demandé soit exact (sqrt(2), pi, 1/3…).
+        exact = decimal.Decimal(str(sympy.N(value, digits + 30)))
+    else:
+        raise TypeError("decimal_fr : {!r} n’est pas un nombre réel.".format(value))
+    # La précision par défaut (28 chiffres) ferait échouer quantize sur un grand nombre (10**30).
+    with decimal.localcontext() as context:
+        context.prec = len(exact.as_tuple().digits) + digits + 10
+        rounded = exact.quantize(decimal.Decimal(1).scaleb(-digits), rounding=decimal.ROUND_HALF_UP)
+    return _plain_decimal(rounded).replace(".", ",")
 
 
 def is_nombre(value):

@@ -10,6 +10,7 @@
   <!-- Chaque vérification ajoute ici son résultat sans bloquer les tests suivants. -->
   <ol id="results"></ol>
   <script src="../runtime/template.js"></script>
+  <script src="../runtime/correction.js"></script>
   <script src="../compiler/compiler.js"></script>
   <script src="../widgets/input-matrix.js"></script>
   <script src="../widgets/input-math.js"></script>
@@ -211,7 +212,7 @@
     });
     // Ressources minimales pour assembler une feuille : la mise en page réelle, des scripts vides.
     const sheetResources = layout => ({
-      layout, brandCss: "", exerciseCss: "", template: "", textWidget: "", mathWidget: "",
+      layout, brandCss: "", exerciseCss: "", template: "", correction: "", textWidget: "", mathWidget: "",
       matrixWidget: "", choiceWidget: "", python: "", runner: ""
     });
     const sheetQuestion = (title, enonce) => ({
@@ -251,6 +252,18 @@
         if (single.body.dataset.sheet !== "single" || single.querySelectorAll(".pw-question").length !== 1 ||
             single.getElementById("exercise-title").textContent !== "Seule") {
           throw new Error("Une question seule n’est pas une feuille d’une question.");
+        }
+      });
+      test("seule une question qui a un « apres » est marquée comme ayant besoin de Python", () => {
+        const withoutApres = sheetQuestion("Sans", "Un {% input_text 'r' solution=a %}");
+        delete withoutApres.fields.apres;
+        const page = new DOMParser().parseFromString(PyWimsCompiler.assembleActivity("Mixte", [
+          sheetQuestion("Avec", "Un {% input_text 'r' solution=a %}"), withoutApres
+        ], sheetResources(layout)), "text/html");
+        const marks = [...page.querySelectorAll(".pw-question")].map(section => section.dataset.python);
+        if (marks.join() !== "true,false" ||
+            page.querySelectorAll(".pw-question")[1].querySelector('pre[data-field="apres"]')) {
+          throw new Error(`Marques inattendues : ${marks.join()}`);
         }
       });
       test("l’assemblage refuse un script ou un style qui fermerait sa balise", () => {
@@ -327,7 +340,7 @@
     });
     test("rejette un champ obligatoire absent ou vide", () => {
       for (const [variant, name] of [
-        [source.replace(/%\n% apres\n%\n[^%]*/, ""), "apres"],
+        [source.replace("Essai", " "), "title"],
         [source.replace("x = 3", "  "), "avant"]
       ]) {
         let rejected = false;
@@ -338,6 +351,58 @@
         }
         if (!rejected) throw new Error(`L’absence du champ « ${name} » n’a pas été signalée.`);
       }
+    });
+    test("« apres » est facultatif ; vide, il équivaut à son absence", () => {
+      const absent = PyWimsCompiler.parseExerciseSource(source.replace(/%\n% apres\n%\n[^%]*/, ""));
+      const empty = PyWimsCompiler.parseExerciseSource(source.replace(/(% apres\n%\n)[^%]*/, "$1  \n"));
+      for (const fields of [absent, empty]) {
+        if (Object.hasOwn(fields, "apres") || fields.enonce !== PyWimsCompiler.parseExerciseSource(source).enonce) {
+          throw new Error(`Exercice sans « apres » mal lu : ${JSON.stringify(fields)}`);
+        }
+      }
+    });
+    // Correction par défaut sans Python (runtime/correction.js, SPECIFICATION.md § 2.6) : l’élève
+    // doit donner ce qu’affiche « Solution », aux différences typographiques près.
+    test("la correction par défaut compare les écritures, aux différences typographiques près", () => {
+      const { isCorrect } = PyWimsCorrection;
+      for (const [input, solution, expected] of [
+        ["19/12", "19/12", true], ["x^2+1", "x^2 + 1", true], [" 1 000 ", "1000", true],
+        ["1 000", "1000", true], ["−7", "-7", true], ["Café", "Café", true],
+        ["x^2 + 1", "x^2 + 1", true],
+        // Tout le reste compte : ordre, valeur équivalente, séparateur décimal, majuscules.
+        ["1 + x^2", "x^2 + 1", false], ["14/24", "7/12", false], ["0,5", "0.5", false],
+        ["(1.5)", "(1, 5)", false], ["0.50", "0.5", false], ["a", "A", false], ["", "12", false],
+        ["tache", "tâche", false]
+      ]) {
+        if (isCorrect("input_text", input, solution) !== expected) {
+          throw new Error(`« ${input} » pour la solution « ${solution} » devrait être ${expected ? "juste" : "faux"}.`);
+        }
+      }
+      // Une case de matrice suit la même règle ; une valeur libre (null) accepte toute saisie non vide.
+      if (!isCorrect("input_matrix", "-1", "−1") || isCorrect("input_vmatrix", "2", "3") ||
+          !isCorrect("input_matrix", "n’importe quoi", null) || isCorrect("input_text", "   ", null)) {
+        throw new Error("Une case de matrice ou une valeur libre est mal jugée.");
+      }
+    });
+    test("la correction par défaut compare les choix comme des ensembles", () => {
+      const { isCorrect } = PyWimsCorrection;
+      for (const [type, input, solution, expected] of [
+        ["input_radio", 2, 2, true], ["input_radio", 1, 2, false], ["input_radio", null, 0, false],
+        ["input_checkbox", [0, 3], [3, 0], true], ["input_checkbox", [], [], true],
+        ["input_checkbox", [0], [0, 3], false], ["input_checkbox", [0, 3, 4], [0, 3], false],
+        ["input_checkbox", [0, 0], [0, 3], false], ["input_checkbox", 0, [0], false]
+      ]) {
+        if (isCorrect(type, input, solution) !== expected) {
+          throw new Error(`${type} : ${JSON.stringify(input)} pour la solution ${JSON.stringify(solution)} devrait être ${expected ? "juste" : "faux"}.`);
+        }
+      }
+      let rejected = false;
+      try {
+        isCorrect("input_math", "x^2+1", "x^{2} + 1");
+      } catch {
+        rejected = true;
+      }
+      if (!rejected) throw new Error("Un champ input_math a été jugé alors que sa règle n’est pas encore décidée.");
     });
     test("refuse un champ inconnu", () => {
       let message = "";

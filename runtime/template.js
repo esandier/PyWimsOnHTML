@@ -36,7 +36,7 @@ window.PyWimsTemplate = (() => {
   // écraser une variable du contrat d’exercice, un outil pywims ni un mot-clé Python.
   const reservedNames = new Set([
     "ok_answer", "feedback", "explication_solution",
-    "py_wims", "is_nombre", "math_expression", "LIBRE", "pywims",
+    "py_wims", "is_nombre", "math_expression", "decimal_fr", "LIBRE", "pywims",
     "False", "None", "True", "and", "as", "assert", "async", "await", "break",
     "class", "continue", "def", "del", "elif", "else", "except", "finally", "for",
     "from", "global", "if", "import", "in", "is", "lambda", "nonlocal", "not",

@@ -1,0 +1,31 @@
+%
+% title
+%
+Valeur approchée au plus proche à 0,1 près
+%
+% keywords
+%
+décimaux, arrondis, valeur approchée, arrondi
+%
+% layout
+%
+STD
+%
+% avant
+%
+choix = ["7,9", "8", "7,93", "8,01"]
+solution = 0
+%
+% enonce
+%
+Soit $x=7,937253933$. Quelle est la valeur approchée de $x$ à $10^{-1}$ près <b>au plus proche</b> ?
+{% input_radio 'reponse' choices=choix solution=solution columns=4 bareme='e=-0.5,v=0,b=1,m=-0.5' %}
+%
+% apres
+%
+ok_answer['reponse'] = reponse == solution
+if ok_answer['reponse']:
+    feedback = 'Bravo, c’est exact !'
+else:
+    feedback = 'Regardez le chiffre suivant ($3$) pour décider s’il faut arrondir par défaut ou par excès.'
+%

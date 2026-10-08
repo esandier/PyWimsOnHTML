@@ -1,8 +1,9 @@
 // Gère le chargement du projet, l’aperçu sûr des exercices et leur compilation HTML.
 (() => {
-  // Tous les champs du format sont obligatoires.
-  const requiredFields = ["title", "keywords", "layout", "avant", "enonce", "apres"];
-  const knownFields = new Set(requiredFields);
+  // « apres » est facultatif : sans lui, la correction par défaut compare chaque saisie à sa
+  // solution (SPECIFICATION.md, § 2.6).
+  const requiredFields = ["title", "keywords", "layout", "avant", "enonce"];
+  const knownFields = new Set([...requiredFields, "apres"]);
   const chooseFolderButton = document.getElementById("choose-folder");
   const filePicker = document.getElementById("project-folder");
   const folderName = document.getElementById("folder-name");
@@ -122,6 +123,10 @@
       if (!fields[required]?.trim()) {
         throw new Error(`${path} : le champ obligatoire « ${required} » est absent ou vide.`);
       }
+    }
+    // Un « apres » vide équivaut à son absence : la question se corrige alors sans Python.
+    if (fields.apres !== undefined && !fields.apres.trim()) {
+      delete fields.apres;
     }
     return fields;
   }
@@ -429,6 +434,9 @@
   // indices dans un autre ordre…), ou « apres » planter pour un tirage rare. La session est celle
   // du tirage, où « avant » vient d’être exécuté ; elle est jetée ensuite. Renvoie les messages.
   async function coherenceErrors(session, tags, draw, apres) {
+    if (apres === undefined) {
+      return defaultCoherenceErrors(tags, draw);
+    }
     // Une valeur LIBRE accepte n’importe quelle saisie : « 1 » en tient lieu, comme dans balayage.py.
     const typed = value => value ?? "1";
     for (const tag of tags) {
@@ -473,6 +481,36 @@
     // Le retour de l’auteur aide souvent à comprendre pourquoi la solution est refusée.
     if (errors.length && await session.getBoolean("'feedback' in globals()")) {
       errors.push(`Retour obtenu : « ${await session.getTemplateValue("feedback")} ».`);
+    }
+    return errors;
+  }
+
+  // Cohérence sans « apres » : la solution, saisie comme le ferait un élève, doit être acceptée par
+  // la correction par défaut (runtime/correction.js). C’est vrai par construction, sauf pour une
+  // solution qu’aucun élève ne peut saisir : un texte vide (ou fait d’espaces) laisserait le champ
+  // vide, et « Vérifier » resterait inactif. Le contrôle passe aussi par le même code que le
+  // navigateur, ce qui vérifie la normalisation sur chaque solution réelle.
+  function defaultCoherenceErrors(tags, draw) {
+    const { isCorrect, normalizedText } = PyWimsCorrection;
+    const errors = [];
+    for (const { name, type } of tags) {
+      const solution = draw.solutions[name];
+      let wrong;
+      if (PyWimsTemplate.choiceTypes.has(type)) {
+        wrong = isCorrect(type, solution, solution) ? [] : [""];
+      } else {
+        // Une valeur libre (null) se saisit « 1 », comme dans le contrôle avec « apres ».
+        const cells = ["input_matrix", "input_vmatrix"].includes(type)
+          ? solution.flatMap((row, i) => row.map((cell, j) => [`[${i}][${j}]`, cell]))
+          : [["", solution]];
+        wrong = cells
+          .filter(([, cell]) => (cell !== null && normalizedText(cell) === "") || !isCorrect(type, cell ?? "1", cell))
+          .map(([key]) => key);
+      }
+      if (wrong.length) {
+        const where = wrong[0] ? ` (case${wrong.length > 1 ? "s" : ""} ${wrong.join(", ")})` : "";
+        errors.push(`la solution du champ « ${name} »${where} est vide ou n’est pas acceptée par la correction par défaut.`);
+      }
     }
     return errors;
   }
@@ -536,9 +574,14 @@
     };
     // Une formule TeX dans une chaîne ordinaire passe sans erreur Python mais s’affiche abîmée :
     // on la refuse avant tout tirage, pour les deux champs Python.
+    // La correction par défaut d’un champ MathLive n’est pas encore décidée (SPECIFICATION.md, § 2.6).
+    const mathTag = fields.apres === undefined && tags.find(tag => tag.type === "input_math");
+    if (mathTag) {
+      throw new Error(`Le champ « ${mathTag.name} » (input_math) exige pour l’instant un « apres » : sa correction par défaut n’est pas encore prise en charge.`);
+    }
     const stringErrors = [
       ...await PyWimsPython.sourceErrors(fields.avant, "avant"),
-      ...await PyWimsPython.sourceErrors(fields.apres, "apres")
+      ...(fields.apres === undefined ? [] : await PyWimsPython.sourceErrors(fields.apres, "apres"))
     ];
     if (stringErrors.length) {
       throw new Error(stringErrors.join(" "));
@@ -549,7 +592,8 @@
       drawSessionCounter += 1;
       const session = PyWimsPython.createSession(`compilation-${drawSessionCounter}`);
       try {
-        await session.initialize(`${fields.avant}\n${fields.apres}`);
+        // Les paquets à charger sont déduits des imports de tout le code Python de la question.
+        await session.initialize(`${fields.avant}\n${fields.apres ?? ""}`);
         try {
           await session.runSeeded(fields.avant, seed);
         } catch (error) {
@@ -629,6 +673,7 @@
   const resourcePaths = {
     layout: "layouts/standard.html",
     template: "runtime/template.js",
+    correction: "runtime/correction.js",
     brandCss: "css/brand.css",
     exerciseCss: "css/exercise.css",
     textWidget: "widgets/input-text.js",
@@ -662,7 +707,10 @@
     if (tagErrors.length) {
       throw new Error(tagErrors.join(" ; "));
     }
-    return `<section class="pw-question" id="q${index + 1}">
+    // Seule une question qui a un « apres » a besoin de Python ; les autres se corrigent par
+    // comparaison avec leur solution (SPECIFICATION.md, § 2.6) et ne chargent pas Pyodide.
+    const python = fields.apres === undefined ? "false" : "true";
+    return `<section class="pw-question" id="q${index + 1}" data-python="${python}">
 <div class="pw-question-data" hidden>
 ${renderExerciseData(fields)}
 ${renderDrawData(draws)}
@@ -685,7 +733,7 @@ ${renderDrawData(draws)}
 
   // Emplacements de la mise en page qui reçoivent du code tel quel, avec la balise qui l’entoure.
   const inlinedPlaceholders = {
-    CSS: "style", TEMPLATE: "script", WIDGETS: "script", MATHLIVE_LOADER: "script",
+    CSS: "style", TEMPLATE: "script", CORRECTION: "script", WIDGETS: "script", MATHLIVE_LOADER: "script",
     PYTHON_RUNTIME: "script", RUNNER: "script"
   };
 
@@ -710,6 +758,7 @@ ${renderDrawData(draws)}
       SHEET_KIND: kind,
       CSS: `${resources.brandCss}\n${resources.exerciseCss}`,
       TEMPLATE: resources.template,
+      CORRECTION: resources.correction,
       WIDGETS: [resources.textWidget, resources.mathWidget, resources.matrixWidget, resources.choiceWidget]
         .filter(Boolean).join("\n"),
       MATHLIVE_LOADER: usesMathWidget

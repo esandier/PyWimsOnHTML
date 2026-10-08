@@ -69,6 +69,10 @@ def main():
                         # Une case libre reçoit une valeur quelconque, ici 1.
                         answers[name] = [[cell if cell is not None else "1" for cell in row]
                                          for row in pywims._solution_cells(value)]
+                # Sans « apres », la correction par défaut est en JavaScript : le compilateur et
+                # tests/compiler-tests.html la vérifient ; ici, « avant » et les solutions suffisent.
+                if "apres" not in fields:
+                    continue
                 namespace.update(answers)
                 namespace["ok_answer"] = {}
                 exec(fields["apres"], namespace)

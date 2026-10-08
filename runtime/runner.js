@@ -143,11 +143,17 @@
       this.index = index;
       // Préfixe des identifiants des champs : deux questions peuvent nommer un champ de la même façon.
       this.idPrefix = `${section.id}-`;
-      this.python = PyWimsPython.createSession(section.id);
-      this.tagTypes = PyWimsTemplate.tagTypes(this.exercise.enonce);
-      this.choiceTags = PyWimsTemplate.parseTags(this.exercise.enonce)
-        .filter(tag => PyWimsTemplate.choiceTypes.has(tag.type));
-      this.pythonCode = `${this.exercise.avant}\n${this.exercise.apres}`;
+      // Sans « apres », la question se corrige par comparaison avec sa solution, sans Python
+      // (SPECIFICATION.md, § 2.6) : elle ne crée aucune session, donc ne charge jamais Pyodide.
+      // Une section sans marque vient d’un fichier compilé avant cette règle : elle garde Python.
+      this.usesPython = section.dataset.python !== "false";
+      this.python = this.usesPython ? PyWimsPython.createSession(section.id) : null;
+      const tags = PyWimsTemplate.parseTags(this.exercise.enonce);
+      this.tagTypes = new Set(tags.map(tag => tag.type));
+      // Type de la balise de chaque champ, d’après son nom : la correction par défaut en dépend.
+      this.typeOf = new Map(tags.map(tag => [tag.name, tag.type]));
+      this.choiceTags = tags.filter(tag => PyWimsTemplate.choiceTypes.has(tag.type));
+      this.pythonCode = `${this.exercise.avant}\n${this.exercise.apres ?? ""}`;
 
       section.append(questionTemplate.content.cloneNode(true));
       const element = role => section.querySelector(`[data-role="${role}"]`);
@@ -212,7 +218,9 @@
         }
         const selected = this.draws[Math.floor(Math.random() * this.draws.length)];
         this.renderDraw(selected).catch(error => this.reportError(error));
-        this.preparePython(selected);
+        if (this.usesPython) {
+          this.preparePython(selected);
+        }
       } catch (error) {
         this.reportError(error);
       }
@@ -483,58 +491,93 @@
       promptElement.style.minHeight = `${Math.max(height, Number.parseFloat(promptElement.style.minHeight) || 0)}px`;
     }
 
-    // Transmet toutes les saisies à Python, exécute « apres », colore les champs ouverts et affiche le retour.
-    async check() {
+    // Verdicts de la correction par défaut (SPECIFICATION.md, § 2.6), un par champ de fields() :
+    // chaque saisie est comparée à la solution du tirage, sans Python.
+    defaultVerdicts(inputs) {
+      const { isCorrect } = PyWimsCorrection;
+      return inputs.map(input => {
+        const { name, matrixName, vmatrixName } = input.dataset;
+        if (isChoiceGroup(input)) {
+          const indices = checkedIndices(input);
+          const given = input.dataset.multiple === "true" ? indices : indices[0] ?? null;
+          return isCorrect(this.typeOf.get(name), given, this.draw.solutions[name]);
+        }
+        // Une matrice redimensionnable aux dimensions fausses : toutes ses cases sont fausses. Sans
+        // ce contrôle, une case hors de la solution passerait pour une valeur libre (solutionFor).
+        if (vmatrixName !== undefined) {
+          const viewport = input.closest(".pw-vmatrix-viewport");
+          const cells = this.draw.solutions[matrixName];
+          if (Number(viewport.dataset.visibleRows) !== cells.length ||
+              Number(viewport.dataset.visibleColumns) !== cells[0].length) {
+            return false;
+          }
+        }
+        return isCorrect(this.typeOf.get(matrixName ?? name), fieldValue(input), this.solutionFor(input));
+      });
+    }
+
+    // Transmet toutes les saisies à Python et exécute « apres ». Renvoie les verdicts, un par champ de
+    // fields(), et le retour de l’auteur (null s’il n’a pas défini « feedback »).
+    async pythonVerdicts(inputs) {
       const { python } = this;
+      if (!this.pythonSettled) {
+        this.showStatus("Chargement du moteur Python…");
+      }
+      await this.pythonReady;
+      const matrices = new Map();
+      for (const input of inputs) {
+        const { matrixName, matrixRow, matrixColumn, vmatrixName } = input.dataset;
+        if (isChoiceGroup(input)) {
+          const indices = checkedIndices(input);
+          await python.setChoice(input.dataset.name, input.dataset.multiple === "true" ? indices : indices[0] ?? null);
+          continue;
+        }
+        if (matrixName === undefined) {
+          await python.set(input.dataset.name, fieldValue(input));
+          continue;
+        }
+        if (!matrices.has(matrixName)) {
+          const viewport = vmatrixName === undefined ? null : input.closest(".pw-vmatrix-viewport");
+          matrices.set(matrixName, viewport
+            ? Array.from({ length: Number(viewport.dataset.visibleRows) },
+              () => Array(Number(viewport.dataset.visibleColumns)).fill(""))
+            : []);
+        }
+        const matrix = matrices.get(matrixName);
+        matrix[Number(matrixRow)] ??= [];
+        matrix[Number(matrixRow)][Number(matrixColumn)] = input.value;
+      }
+      for (const [name, matrix] of matrices) {
+        await python.setMatrix(name, matrix);
+      }
+      await python.resetAnswers();
+      await python.run(this.exercise.apres);
+
+      const answerResults = await Promise.all(inputs.map(input => {
+        const key = input.dataset.matrixName === undefined
+          ? input.dataset.name
+          : `${input.dataset.matrixName}[${input.dataset.matrixRow}][${input.dataset.matrixColumn}]`;
+        return python.getBoolean(`bool(ok_answer.get(${JSON.stringify(key)}, False))`);
+      }));
+      const feedback = await python.getBoolean("'feedback' in globals()")
+        ? await python.getTemplateValue("feedback")
+        : null;
+      return { answerResults, feedback };
+    }
+
+    // Corrige les saisies (avec « apres » ou par défaut), colore les champs ouverts et affiche le retour.
+    async check() {
       this.busy = true;
       this.updateButtons();
       try {
-        if (!this.pythonSettled) {
-          this.showStatus("Chargement du moteur Python…");
-        }
-        await this.pythonReady;
         await this.mathLiveReady();
         const inputs = this.fields();
-        const matrices = new Map();
-        for (const input of inputs) {
-          const { matrixName, matrixRow, matrixColumn, vmatrixName } = input.dataset;
-          if (isChoiceGroup(input)) {
-            const indices = checkedIndices(input);
-            await python.setChoice(input.dataset.name, input.dataset.multiple === "true" ? indices : indices[0] ?? null);
-            continue;
-          }
-          if (matrixName === undefined) {
-            await python.set(input.dataset.name, fieldValue(input));
-            continue;
-          }
-          if (!matrices.has(matrixName)) {
-            const viewport = vmatrixName === undefined ? null : input.closest(".pw-vmatrix-viewport");
-            matrices.set(matrixName, viewport
-              ? Array.from({ length: Number(viewport.dataset.visibleRows) },
-                () => Array(Number(viewport.dataset.visibleColumns)).fill(""))
-              : []);
-          }
-          const matrix = matrices.get(matrixName);
-          matrix[Number(matrixRow)] ??= [];
-          matrix[Number(matrixRow)][Number(matrixColumn)] = input.value;
-        }
-        for (const [name, matrix] of matrices) {
-          await python.setMatrix(name, matrix);
-        }
-        await python.resetAnswers();
-        await python.run(this.exercise.apres);
-
-        const answerResults = await Promise.all(inputs.map(input => {
-          const key = input.dataset.matrixName === undefined
-            ? input.dataset.name
-            : `${input.dataset.matrixName}[${input.dataset.matrixRow}][${input.dataset.matrixColumn}]`;
-          return python.getBoolean(`bool(ok_answer.get(${JSON.stringify(key)}, False))`);
-        }));
+        const { answerResults, feedback: authorFeedback } = this.usesPython
+          ? await this.pythonVerdicts(inputs)
+          : { answerResults: this.defaultVerdicts(inputs), feedback: null };
         const allCorrect = inputs.length > 0 && answerResults.every(Boolean);
         // La variable « feedback » de « apres » est facultative : sans elle, un retour générique s’affiche.
-        const feedback = await python.getBoolean("'feedback' in globals()")
-          ? await python.getTemplateValue("feedback")
-          : allCorrect ? defaultFeedback.correct : defaultFeedback.incorrect;
+        const feedback = authorFeedback ?? (allCorrect ? defaultFeedback.correct : defaultFeedback.incorrect);
         this.hideStatus();
 
         const verdicts = new Map(inputs.map((input, index) => [input, answerResults[index]]));
@@ -690,7 +733,9 @@
       const others = this.draws.filter(candidate => candidate !== this.draw);
       const next = others.length ? others[Math.floor(Math.random() * others.length)] : this.draw;
       this.hideStatus();
-      this.preparePython(next);
+      if (this.usesPython) {
+        this.preparePython(next);
+      }
       this.busy = true;
       this.updateButtons();
       try {

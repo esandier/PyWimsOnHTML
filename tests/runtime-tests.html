@@ -528,6 +528,85 @@ window.PyWimsPython = (() => {
         frame.remove();
       });
 
+      // Sans « apres » (SPECIFICATION.md, § 2.6) : la section est marquée data-python="false", la
+      // question se corrige par comparaison avec sa solution et ne crée aucune session Python.
+      const { apres: _apres, ...choiceWithoutApres } = choiceExercise;
+
+      await test("une question à choix sans « apres » se corrige sans jamais créer de session Python", async () => {
+        const { $, role, frame, window: frameWindow } = await openExercise(choiceWithoutApres, choiceDraws, choiceOptions);
+        await waitFor(() => $("#q1 .pw-choices"), "affichage des choix");
+        if ($("#q1").dataset.python !== "false") throw new Error("La section n’est pas marquée sans Python.");
+        click(choiceBox($, 0));
+        click(choiceBox($, 1));
+        role("check").click();
+        await waitFor(() => role("feedback").classList.contains("is-visible"), "retour de la vérification");
+        if (role("feedback").textContent !== "Certaines réponses sont incorrectes." ||
+            !choiceLabel($, 0).className.includes("is-correct") || !choiceLabel($, 1).className.includes("is-incorrect")) {
+          throw new Error(`Vérification inattendue : ${role("feedback").textContent}`);
+        }
+        role("check").click();
+        click(choiceBox($, 1));
+        click(choiceBox($, 2));
+        role("check").click();
+        await waitFor(() => role("feedback").classList.contains("is-correct"), "retour juste");
+        if (role("feedback").textContent !== "Bravo, c’est exact !" || $("#q1").dataset.result !== "ok") {
+          throw new Error(`Retour juste inattendu : ${role("feedback").textContent}`);
+        }
+        role("new-draw").click();
+        await waitFor(() => !role("new-draw").disabled && $("#q1").dataset.state === "open", "nouvel énoncé");
+        if (Object.keys(frameWindow.pythonLogs).length) {
+          throw new Error(`Une session Python a été créée : ${JSON.stringify(frameWindow.pythonLogs)}`);
+        }
+        frame.remove();
+      });
+
+      await test("sans « apres », un champ texte et une matrice se comparent à l’écriture de la solution", async () => {
+        const fields = {
+          title: "Écritures", layout: "STD", avant: "s = 0",
+          enonce: "{% input_text 't' solution=s %} {% input_vmatrix 'm' max_rows=3 max_cols=3 solution=M %}"
+        };
+        const draws = [{ seed: 0, context: {}, dimensions: {}, solutions: { t: "x^2 + 1", m: [["1", "-2"]] }, explication: null }];
+        const { $, role, frame, window: frameWindow } = await openExercise(fields, draws, {});
+        const text = $("#q1-form_txt_t");
+        const cell = (i, j) => $(`[id='q1-form_txt_m[${i}][${j}]']`);
+        await waitFor(() => text && cell(0, 0), "affichage des champs");
+        // La grille commence à 2 × 2 alors que la solution est 1 × 2 : toutes les cases sont fausses.
+        type(text, "1+x^2");
+        type(cell(0, 0), "1");
+        type(cell(0, 1), "−2");
+        role("check").click();
+        await waitFor(() => role("feedback").classList.contains("is-visible"), "première vérification");
+        if (!text.classList.contains("is-incorrect") || !cell(0, 0).classList.contains("is-incorrect")) {
+          throw new Error("L’ordre des termes ou de mauvaises dimensions n’ont pas été refusés.");
+        }
+        role("check").click();
+        frameWindow.PyWimsWidgets.resizeVariableMatrix($("#q1 .pw-vmatrix-viewport"), 1, 2);
+        type(text, "x^2+1");
+        role("check").click();
+        await waitFor(() => role("feedback").classList.contains("is-correct"), "seconde vérification");
+        if (!cell(0, 1).classList.contains("is-correct") || Object.keys(frameWindow.pythonLogs).length) {
+          throw new Error("Les espaces et le signe « − » auraient dû être ignorés, sans Python.");
+        }
+        frame.remove();
+      });
+
+      await test("dans une feuille mixte, seule la question qui a un « apres » utilise Python", async () => {
+        const { $, role, frame, window: frameWindow } = await openSheet([
+          { fields: textExercise, draws: textDraws },
+          { fields: choiceWithoutApres, draws: choiceDraws }
+        ], { questions: { q1: textOptions } }, "Mixte");
+        await waitFor(() => $("#q2 .pw-choices") && frameWindow.pythonLogs.q1?.length, "affichage et préparation");
+        $(`#q2 .pw-choice[data-choice-index="0"] input`).click();
+        $(`#q2 .pw-choice[data-choice-index="2"] input`).click();
+        role("check", 2).click();
+        await waitFor(() => role("feedback", 2).classList.contains("is-correct"), "question 2 juste");
+        await waitFor(() => $("#pw-completion-value").textContent === "50 %", "progression à 50 %");
+        if (Object.keys(frameWindow.pythonLogs).join() !== "q1" || $("#q1").dataset.python !== "true") {
+          throw new Error(`Sessions inattendues : ${Object.keys(frameWindow.pythonLogs).join()}`);
+        }
+        frame.remove();
+      });
+
       await test("une question seule n’a ni numéro ni progression, mais garde l’aide", async () => {
         const { $, role, frame } = await openExercise(textExercise, textDraws, textOptions);
         const hidden = element => getComputedStyle(element).display === "none";

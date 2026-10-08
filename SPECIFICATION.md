@@ -8,7 +8,10 @@ illustre l’apparence et le comportement attendus.
 ## 1. Objectifs
 
 1. L’énoncé s’affiche dès l’ouverture du fichier, sans attendre Python.
-2. Pyodide se charge en arrière-plan ; la correction par Python reste complète.
+2. Une question sans `apres` se corrige sans Python, par comparaison avec sa
+   solution (§ 2.6) : c’est le cas courant des questions à choix. Seules les
+   questions qui ont un `apres` chargent Pyodide, en arrière-plan, et leur
+   correction par Python reste complète.
 3. Une activité est une feuille d’exercices compacte dans une seule page :
    un seul chargement de Pyodide, MathJax et MathLive pour toutes les questions.
 4. L’apparence suit `css/brand.css`, y compris pour les activités.
@@ -31,7 +34,7 @@ et une activité en réunit plusieurs.
 | `title`, `keywords`, `layout` | obligatoire | inchangés |
 | `avant` | obligatoire | tirage et calcul des solutions |
 | `enonce` | obligatoire | modèle de l’énoncé |
-| `apres` | obligatoire | correction |
+| `apres` | facultatif | correction ; sans lui, chaque champ est corrigé par comparaison avec sa solution (§ 2.6) |
 
 Le retour destiné à l’élève est la variable `feedback` de `apres` (§ 2.2).
 Les paquets Pyodide sont déduits des `import` du code. Un champ inconnu est
@@ -42,7 +45,7 @@ refusé.
 - Chaque exercice importe explicitement ce qu’il utilise :
   `import sympy as sp`, `from sympy import …`, `import random`, etc.
 - Les outils PyWims viennent d’un module dédié :
-  `from pywims import py_wims, is_nombre, math_expression`.
+  `from pywims import py_wims, is_nombre, math_expression, decimal_fr`.
   Ses fonctions internes ne sont pas visibles par l’auteur, qui ne peut donc
   pas les perturber (par exemple en écrivant `E = 3`).
 - `apres` partage l’espace de noms de `avant` et y trouve les saisies de
@@ -166,6 +169,82 @@ else:
 Le retour explique l’erreur sans donner la réponse : c’est le rôle du bouton
 « Solution ».
 
+### 2.6 Correction par défaut
+
+Chaque champ désigne sa solution : `apres` est facultatif. Sans lui, chaque
+saisie est comparée à la solution du tirage, en JavaScript, sans Python.
+`apres` ne sert qu’aux corrections particulières (plusieurs écritures justes,
+valeur numérique approchée) et aux retours ciblés.
+
+**Principe : sans `apres`, l’élève doit donner ce qu’affiche le bouton
+« Solution ».** L’auteur le vérifie dans l’aperçu du compilateur.
+
+- **Avec `apres`** : `apres` décide seul de la réussite de chaque champ, comme
+  aujourd’hui. Pas de correction partielle : `ok_answer` n’est pas pré-rempli
+  par la correction par défaut.
+- **Python** n’est chargé que par les questions qui ont un `apres` (§ 5.1).
+
+| Champ | Saisie juste si |
+|---|---|
+| `input_radio` | le choix est celui de la solution |
+| `input_checkbox` | les cases cochées sont exactement celles de la solution |
+| futur glisser-déposer | chaque élément est à la place de la solution |
+| `input_text`, case de matrice | le texte saisi est celui de la solution (§ 2.3), aux différences typographiques près (ci-dessous) |
+| `input_vmatrix` | la grille a les dimensions de la solution, et chaque case est juste ; avec d’autres dimensions, toutes les cases sont fausses |
+| valeur `LIBRE` | la saisie n’est pas vide |
+| `input_math` | point ouvert, ci-dessous |
+
+Les questions à choix (et plus tard le glisser-déposer) sont le cas principal
+sans `apres` : la comparaison y est sans ambiguïté.
+
+- **Différences typographiques ignorées** pour un champ texte : les espaces
+  (`x^2+1` est juste pour `x^2 + 1`, `1 000` pour `1000`), le signe moins
+  typographique « − » (U+2212, fréquent sur téléphone et dans les
+  copier-coller) et le codage des accents (forme NFC : un « é » en un ou deux
+  caractères). Tout le reste compte : majuscules (`A` et `a` sont deux objets
+  mathématiques), ordre des termes (`1 + x^2` est faux pour `x^2 + 1`),
+  fractions équivalentes (`14/24` pour `7/12`), séparateur décimal.
+- **Séparateur décimal.** Aucune équivalence entre la virgule et le point : en
+  anglais la virgule sépare les milliers, et en mathématiques elle sépare des
+  éléments (`(1, 5)` n’est pas `(1.5)`). L’élève écrit le séparateur que montre
+  la solution. Un flottant s’affiche comme Python l’écrit (`0.3`), après
+  arrondi à 12 chiffres significatifs, qui efface les artefacts de calcul
+  (`0.1 + 0.2` donne `0.3`, et non `0.30000000000000004`). Pour une écriture
+  française, l’auteur donne une solution texte, par exemple avec l’outil
+  `decimal_fr(x, 2)` du module `pywims`, qui renvoie `"1,41"`.
+- **Plusieurs écritures justes** (ordre des termes, fraction non simplifiée,
+  valeur approchée) : l’auteur écrit `apres`. `PROMPT.md` le dit.
+- **Retour.** Le texte générique : « Bravo, c’est exact ! » ou « Certaines
+  réponses sont incorrectes. ». `explication_solution` reste affichée avec la
+  solution.
+- **`input_math` : point ouvert.** L’élève écrit dans MathLive ; la solution
+  est le LaTeX produit par SymPy (`x^{2} + 1`), alors que MathLive écrit
+  `x^2+1`. Piste : convertir les deux écritures avec MathLive lui-même
+  (`convertLatexToAsciiMath`) avant de les comparer comme des textes. À vérifier
+  sur des cas réels (fractions, racines, puissances, produits) ; si ce n’est
+  pas fiable, un champ `input_math` exige un `apres`, et le compilateur le dit.
+- **Code partagé.** Les règles sont dans `runtime/correction.js`, intégré au
+  fichier généré et utilisé aussi par le compilateur pour le contrôle de
+  cohérence (§ 3) : la solution doit être jugée juste par la correction par
+  défaut, ce qui vérifie notamment la normalisation. Une solution texte vide
+  (ou faite d’espaces) est refusée : l’élève ne pourrait pas la saisir, car
+  « Vérifier » reste inactif tant qu’aucun champ n’est rempli.
+
+Étapes :
+1. `runtime/correction.js` : normalisation des textes et comparaison des
+   choix, avec leurs tests. Aucun changement visible.
+2. Compilation : `apres` facultatif dans l’analyseur, arrondi des flottants
+   dans la conversion de la solution, `decimal_fr` dans `pywims`, cohérence
+   avec la correction par défaut, marque « Python nécessaire » sur la section
+   d’une question qui a un `apres`.
+3. Exécution : correction sans Python ; Pyodide chargé seulement par les
+   questions qui ont un `apres`.
+4. `input_math` : vérification de la piste MathLive sur des cas réels, puis
+   décision.
+5. README, `PROMPT.md` (principe, quand écrire `apres`, `decimal_fr`) ; un
+   nouvel exemple de QCM sans `apres`. `nombres-premiers.pwq` garde son
+   `apres`, comme exemple de retours ciblés.
+
 ## 3. Compilation
 
 - Le compilateur charge Pyodide (version **0.27.7**, la même que le fichier
@@ -194,8 +273,9 @@ Le retour explique l’erreur sans donner la réponse : c’est le rôle du bout
   - `explication` : le texte de `explication_solution`, s’il est défini.
 - **Cohérence.** Pour chaque tirage, dans le même espace de noms, le
   compilateur saisit la solution de chaque champ comme le ferait un élève,
-  exécute `apres` et exige `ok_answer` vrai pour chaque champ (et chaque case
-  d’une matrice). Sinon la compilation est refusée avec la graine, le champ et
+  exécute `apres` (ou, sans `apres`, la correction par défaut du § 2.6) et
+  exige `ok_answer` vrai pour chaque champ (et chaque case d’une matrice).
+  Sinon la compilation est refusée avec la graine, le champ et
   le `feedback` obtenu, par exemple « Graine 7 : la solution du champ « r » est
   jugée fausse par « apres » ». Ainsi le bouton « Solution » ne montre jamais
   une réponse que la correction refuse, et `apres` ne plante pour aucun tirage.
@@ -249,10 +329,13 @@ Le retour explique l’erreur sans donner la réponse : c’est le rôle du bout
    tout de suite à partir de `context`.
 2. MathJax compose les formules. MathLive n’est chargé que si une question en a
    besoin.
-3. En arrière-plan : chargement de Pyodide et des paquets détectés, puis, pour
-   chaque question, exécution de `avant` avec la graine du tirage.
-4. Contrôle : le `context` recalculé doit être identique au `context` stocké.
-   Sinon la question affiche une erreur et ne peut pas être vérifiée.
+3. En arrière-plan, seulement pour les questions qui ont un `apres`
+   (§ 2.6) : chargement de Pyodide et des paquets détectés, puis exécution de
+   `avant` avec la graine du tirage. Une feuille dont aucune question n’a
+   d’`apres` ne charge jamais Pyodide.
+4. Contrôle (questions avec Python) : le `context` recalculé doit être
+   identique au `context` stocké. Sinon la question affiche une erreur et ne
+   peut pas être vérifiée.
 5. Si l’élève clique « Vérifier ma réponse » avant que Python soit prêt, la
    vérification attend la fin du chargement, avec un indicateur dans le bouton.
 
@@ -330,6 +413,7 @@ Le retour explique l’erreur sans donner la réponse : c’est le rôle du bout
 | Fichier | Rôle |
 |---|---|
 | `runtime/template.js` (nouveau) | grammaire unique des balises et échappement HTML, utilisés par le compilateur (validation, aperçu) et par le fichier généré (rendu) |
+| `runtime/correction.js` | correction par défaut sans Python (§ 2.6) : comparaison des choix et des textes, aux différences typographiques près ; utilisée par le fichier généré et par le compilateur |
 | `runtime/python.js` | Pyodide partagé, sessions par question, module `pywims`, graines, détection des paquets |
 | `runtime/runner.js` | classe `Question` (rendu, cycle de vie) et progression de la feuille |
 | `widgets/*.js` | champs de saisie, avec pré-remplissage pour la solution |
@@ -410,7 +494,8 @@ c’est un choix comme les autres, qui n’exclut pas les autres cases.
   utiliser le `random` de l’auteur ; les `fixed_last` derniers choix restent à
   la fin, dans leur ordre.
 - Les textes des choix font partie des valeurs affichées : le navigateur les
-  recalcule et les compare comme le `context` (§ 5.1).
+  recalcule et les compare comme le `context` (§ 5.1), quand la question a
+  un `apres`.
 - Deux tirages qui ne diffèrent que par l’ordre des choix restent distincts :
   « Nouvel énoncé » mélange alors les choix d’une question sans aléatoire.
 
@@ -421,6 +506,8 @@ c’est un choix comme les autres, qui n’exclut pas les autres cases.
   coché), dans l’ordre de l’auteur : le mélange est invisible pour lui.
 - `apres` décide de la réussite par `ok_answer['nom']`, comme pour les autres
   champs. Un choix multiple est juste en tout ou rien.
+- `apres` est facultatif (§ 2.6) : sans lui, la saisie est comparée à la
+  solution, sans Python. On ne l’écrit que pour des retours ciblés.
 - `explication_solution` joue le rôle de `\explain` d’AMC.
 
 ### 10.4 Cycle de vie
