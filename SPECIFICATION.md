@@ -19,6 +19,9 @@ modification commence par lui, avant le code (§ 9).
    raisonnable. Il faut une connexion pour la correction (bibliothèques en ligne).
 6. Hors périmètre : le secret des réponses et la notation, qui exigeraient un
    serveur. Le pourcentage affiché mesure la progression de l’entraînement.
+   Les solutions sont lisibles dans le code source de la page, et la note
+   d’une question à barème n’est qu’indicative : un fichier généré sert à
+   l’entraînement, jamais à une évaluation notée.
 
 ## 2. Format `.pwq`
 
