@@ -518,6 +518,9 @@ un sous-projet distinct, traité plus tard.
 - `tests/python-tests.html` : vrai Pyodide (module `pywims`, isolement des
   questions, calcul sans fin, chaque exercice du dossier compilé puis corrigé,
   seul et dans une activité) et balayage des tirages.
+- `tests/outils/essai_compilateur.py` : l’interface du compilateur, de bout en
+  bout (ouverture du dossier, liste, aperçu réel, compilation, fichier
+  téléchargé), sans erreur JavaScript.
 - `tests/outils/lancer-tests.ps1` lance le tout dans Edge sans interface.
 - Un test vérifie un comportement, et non la présence d’une chaîne dans le
   code.

@@ -27,6 +27,10 @@ try {
     "== Tests Python avec Pyodide, balayage de $Tirages tirages par exercice (tests/python-tests.html)"
     python -I -X utf8 "$PSScriptRoot\pilote_edge.py" "http://127.0.0.1:$port/tests/python-tests.html?tirages=$Tirages"
     if ($LASTEXITCODE) { $failed = $true }
+    # L’interface du compilateur, de bout en bout : elle aussi a besoin de Pyodide (aperçu, compilation).
+    "== Interface du compilateur : dossier, liste, aperçu, compilation (tests/outils/essai_compilateur.py)"
+    python -I -X utf8 "$PSScriptRoot\essai_compilateur.py" "http://127.0.0.1:$port/compiler/index.html"
+    if ($LASTEXITCODE) { $failed = $true }
   }
 } finally {
   Stop-Process -Id $server.Id -Force -ErrorAction SilentlyContinue

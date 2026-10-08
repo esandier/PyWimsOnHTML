@@ -188,7 +188,9 @@ projet :
   `?tirages=200` pour un balayage complet, plus long.
 
 Sous Windows, `tests/outils/lancer-tests.ps1` lance tout automatiquement (Edge
-sans interface, profil vierge). Prérequis : Python avec le paquet
+sans interface, profil vierge), puis `tests/outils/essai_compilateur.py`, qui
+essaie l’interface du compilateur de bout en bout : ouverture du dossier, liste,
+aperçu, compilation et fichier téléchargé. Prérequis : Python avec le paquet
 `websocket-client`. L’option `-SansPyodide` saute les tests du vrai Pyodide, les
 plus longs ; `-Tirages 200` demande un balayage complet.
 
