@@ -6,6 +6,10 @@ généré fonctionne sans serveur et charge Pyodide, SymPy, MathJax et, si besoi
 MathLive depuis Internet. Il est conçu pour l’ordinateur comme pour le
 téléphone.
 
+Le site du projet, <https://esandier.github.io/PyWimsOnHTML/>, présente l’outil
+avec des démonstrations, donne un mode d’emploi pour créer un exercice (avec ou
+sans IA, avec des modèles) et héberge le compilateur.
+
 La conception d’ensemble est décrite dans [`SPECIFICATION.md`](SPECIFICATION.md),
 qui fait référence ; le format des exercices est détaillé dans
 [`PROMPT.md`](PROMPT.md).

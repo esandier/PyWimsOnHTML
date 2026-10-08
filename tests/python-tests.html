@@ -44,14 +44,21 @@
     // complet (quelques minutes).
     const sweepCount = Number(new URLSearchParams(location.search).get("tirages")) || 20;
 
-    // Tous les exercices du dossier, d’après la liste que le serveur de test (python -m http.server)
-    // affiche pour un dossier : un nouvel exercice est testé sans modifier cette page.
+    // Tous les exercices de la racine d’exercises/ et les modèles du mode d’emploi (guide/modeles/),
+    // vérifiés de la même façon (SPECIFICATION.md, § 11.5), d’après la liste que le serveur de test
+    // (python -m http.server) affiche pour un dossier : un nouvel exercice est testé sans modifier
+    // cette page. Chemins relatifs à la racine du projet.
     async function listExerciseFiles() {
-      const listing = new DOMParser().parseFromString(await (await fetch("../exercises/")).text(), "text/html");
-      return [...listing.querySelectorAll("a[href]")]
-        .map(link => decodeURIComponent(link.getAttribute("href")))
-        .filter(name => name.toLowerCase().endsWith(".pwq"))
-        .sort((a, b) => a.localeCompare(b, "fr"));
+      const files = [];
+      for (const folder of ["exercises/", "guide/modeles/"]) {
+        const listing = new DOMParser().parseFromString(await (await fetch(`../${folder}`)).text(), "text/html");
+        files.push(...[...listing.querySelectorAll("a[href]")]
+          .map(link => decodeURIComponent(link.getAttribute("href")))
+          .filter(name => name.toLowerCase().endsWith(".pwq"))
+          .sort((a, b) => a.localeCompare(b, "fr"))
+          .map(name => `${folder}${name}`));
+      }
+      return files;
     }
 
     (async () => {
@@ -233,7 +240,7 @@ json.dumps({
 
       for (const file of exerciseFiles) {
         await test(`l’exercice ${file} s’exécute et fournit les variables de son énoncé`, async () => {
-          const response = await fetch(`../exercises/${file}`);
+          const response = await fetch(`../${file}`);
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
           const fields = PyWimsCompiler.parseExerciseSource(await response.text(), file);
           const session = PyWimsPython.createSession(file.replace(/\W/g, "_"));
@@ -300,8 +307,9 @@ json.dumps({
       // Tirages calculés par le compilateur (étape 4a).
       const exerciseFields = {};
       for (const file of exerciseFiles) {
-        const response = await fetch(`../exercises/${file}`);
-        exerciseFields[file] = PyWimsCompiler.parseExerciseSource(await response.text(), file);
+        const response = await fetch(`../${file}`);
+        // Clé : le nom du fichier, que des tests ci-dessous désignent (« pgcd.pwq »).
+        exerciseFields[file.split("/").pop()] = PyWimsCompiler.parseExerciseSource(await response.text(), file);
       }
 
       await test("le compilateur calcule des tirages complets et distincts pour chaque exercice", async () => {

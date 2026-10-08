@@ -1,0 +1,34 @@
+%
+% title
+%
+Modèle : QCM
+%
+% keywords
+%
+modèle, QCM, fractions
+%
+% layout
+%
+STD
+%
+% avant
+%
+# Modèle de QCM. Copiez ce fichier dans votre dossier d’exercices, puis remplacez le titre, les
+# mots-clés, l’énoncé, les choix et l’explication. Les lignes qui commencent par # sont des
+# commentaires : elles n’apparaissent pas aux élèves.
+
+# Les choix, dans votre ordre : le compilateur les mélange à chaque tirage. Une formule s’écrit
+# entre $…$ ; mettez alors r devant les guillemets, à cause des barres obliques de \frac.
+choix = [r"$\frac{1}{2}$", r"$\frac{2}{3}$", r"$\frac{3}{4}$", "Aucune de ces réponses"]
+
+# Le numéro du bon choix, en comptant à partir de 0 : ici le premier, 1/2.
+bonne = 0
+
+# Facultatif : une explication, affichée avec la solution.
+explication_solution = r"On divise le numérateur et le dénominateur par $3$ : $\frac{3}{6}=\frac{1}{2}$."
+%
+% enonce
+%
+Quelle est la forme irréductible de $\frac{3}{6}$ ?
+{% input_radio 'reponse' choices=choix solution=bonne columns=4 fixed_last=1 %}
+%

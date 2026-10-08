@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PyWimsOnHTML — exercices de mathématiques aléatoires en une page HTML</title>
+  <meta name="description" content="Des exercices de mathématiques aléatoires, corrigés dans le navigateur, en un seul fichier HTML, sans serveur ni compte : pour l’entraînement, sur ordinateur et téléphone.">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+  <header class="bandeau">
+    <div class="bandeau-interieur">
+      <a class="marque" href="./">PyWimsOnHTML</a>
+      <nav aria-label="Site">
+        <a href="./" aria-current="page">Accueil</a>
+        <a href="guide/">Créer un exercice</a>
+        <a href="compiler/">Compilateur</a>
+        <a href="https://github.com/esandier/PyWimsOnHTML">Code source</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <h1>Des exercices de mathématiques aléatoires, en une seule page HTML</h1>
+    <p class="chapeau">Chaque exercice est tiré au hasard et corrigé dans le navigateur de l’élève : on dépose
+      le fichier sur Moodle, ou on l’envoie, et les élèves s’entraînent, sur ordinateur comme sur téléphone,
+      sans rien demander à personne.</p>
+
+    <div class="actions">
+      <a class="bouton" href="#demonstrations">Essayer</a>
+      <a class="bouton secondaire" href="guide/">Créer un exercice</a>
+      <a class="bouton secondaire" href="compiler/">Ouvrir le compilateur</a>
+    </div>
+
+    <div class="cartes">
+      <div class="carte">
+        <h3>Toujours un nouvel énoncé</h3>
+        <p>Les valeurs sont tirées au hasard : « Nouvel énoncé » propose la même question avec d’autres
+          nombres, autant de fois qu’on veut.</p>
+      </div>
+      <div class="carte">
+        <h3>Un fichier, rien d’autre</h3>
+        <p>Ni serveur, ni compte, ni installation : une page HTML qui s’ouvre dans n’importe quel
+          navigateur, et se dépose sur Moodle comme un simple fichier.</p>
+      </div>
+      <div class="carte">
+        <h3>Correction immédiate</h3>
+        <p>Champs verts ou rouges, commentaire, solution et explication ; la progression de la feuille est
+          gardée sur l’appareil de l’élève.</p>
+      </div>
+      <div class="carte">
+        <h3>Écrit en Python</h3>
+        <p>Les exercices s’écrivent en Python avec SymPy, à la main à partir d’un modèle, ou avec l’aide
+          d’une IA qui suit un prompt fourni.</p>
+      </div>
+    </div>
+
+    <h2 id="demonstrations">Démonstrations</h2>
+    <p>De vraies feuilles, produites par le compilateur : répondez, vérifiez, demandez la solution ou un
+      nouvel énoncé.</p>
+    <div class="cartes">
+      <div class="carte">
+        <h3>Une feuille d’exercices</h3>
+        <p>Sept questions réunies en une page : QCM, réponse écrite, formule, matrices ; avec la
+          progression de la feuille et une note indicative.</p>
+        <p><a class="bouton" href="demos/feuille.html">Ouvrir la feuille</a></p>
+      </div>
+      <div class="carte">
+        <h3>Une question seule</h3>
+        <p>Un QCM à choix multiple sur les nombres premiers, avec des retours ciblés selon les réponses
+          cochées.</p>
+        <p><a class="bouton" href="demos/question.html">Ouvrir la question</a></p>
+      </div>
+    </div>
+
+    <h2>Pour l’entraînement</h2>
+    <p>La correction se fait chez l’élève : les solutions sont lisibles dans le code de la page, et la note
+      affichée n’est qu’indicative. PyWimsOnHTML sert à s’entraîner, pas à évaluer.</p>
+
+    <h2>Commencer</h2>
+    <ol>
+      <li><a href="guide/">Créez un exercice</a> : avec une IA, en copiant le prompt fourni, ou à la main à
+        partir d’un modèle.</li>
+      <li>Ouvrez votre dossier d’exercices dans le <a href="compiler/">compilateur</a> : l’aperçu montre
+        chaque exercice, la compilation produit la page HTML.</li>
+      <li>Déposez la page sur Moodle, ou envoyez-la à vos élèves.</li>
+    </ol>
+  </main>
+
+  <footer>
+    <p>PyWimsOnHTML ressuscite PyWims, des exercices interactifs de mathématiques écrits en Python.
+      Logiciel libre (<a href="https://github.com/esandier/PyWimsOnHTML/blob/master/LICENCE">CeCILL 2.1</a>),
+      © 2026 Etienne Sandier. <a href="https://github.com/esandier/PyWimsOnHTML">Code source</a>.</p>
+  </footer>
+</body>
+</html>

@@ -540,6 +540,8 @@ sans `apres` : la comparaison y est sans ambiguïté.
 | `compiler/zip.js` | archive ZIP des pages séparées |
 | `compiler/compiler.js` | interface du compilateur : dossier d’exercices, liste, aperçu, compilation, téléchargement ; lit en ligne les fichiers du projet (§ 11.1) |
 | `compiler/lancer-local.ps1` | serveur local et compilateur, pour essayer une modification du moteur avant de la publier |
+| `index.html`, `guide/`, `css/site.css`, `favicon.svg` | site du projet : accueil, mode d’emploi et ses modèles (`guide/modeles/`), styles et icône communs (§ 11.5, § 11.6) |
+| `demos/` | démonstrations de l’accueil, produites par `tests/outils/demos.py` |
 
 ## 7. Exercices PyWims existants
 
@@ -553,8 +555,9 @@ un sous-projet distinct, traité plus tard.
 - `tests/runtime-tests.html` : cycle de vie des questions, progression, mémoire,
   délais, avec un Python simulé ; quelques secondes.
 - `tests/python-tests.html` : vrai Pyodide (module `pywims`, isolement des
-  questions, calcul sans fin, chaque exercice du dossier compilé puis corrigé,
-  seul et dans une activité) et balayage des tirages.
+  questions, calcul sans fin, chaque exercice compilé puis corrigé, seul et
+  dans une activité) et balayage des tirages ; « chaque exercice » : ceux de la
+  racine d’`exercises/` et les modèles du mode d’emploi (`guide/modeles/`).
 - `tests/outils/essai_compilateur.py` : l’interface du compilateur, de bout en
   bout (ouverture d’un dossier d’exercices, liste, « Tout sélectionner »,
   aperçu réel, compilation, fichier téléchargé, dossier mémorisé, « Relire »,

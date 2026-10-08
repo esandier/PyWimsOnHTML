@@ -1,0 +1,37 @@
+%
+% title
+%
+Modèle : réponse calculée
+%
+% keywords
+%
+modèle, calcul, aléatoire
+%
+% layout
+%
+STD
+%
+% avant
+%
+# Modèle de question à réponse calculée, avec des valeurs tirées au hasard. Copiez ce fichier
+# dans votre dossier d’exercices, puis remplacez le titre, les mots-clés, le calcul et l’énoncé.
+# Les lignes qui commencent par # sont des commentaires : elles n’apparaissent pas aux élèves.
+from random import randint
+
+# Valeurs tirées au hasard : le compilateur prépare 20 tirages, et « Nouvel énoncé » en propose
+# un autre à l’élève.
+a = randint(2, 9)
+b = randint(11, 19)
+
+# La réponse attendue. Sans champ « apres », l’élève doit l’écrire exactement ainsi (un entier
+# ici) ; pour accepter plusieurs écritures (fractions équivalentes, expressions), voir PROMPT.md.
+produit = a * b
+
+# Facultatif : une explication, affichée avec la solution. rf"…" : formule et valeurs de Python.
+explication_solution = rf"${a}\times {b} = {a}\times 10 + {a}\times {b - 10} = {10 * a} + {a * (b - 10)} = {produit}$."
+%
+% enonce
+%
+Calculez ${{a}} \times {{b}}$ :
+{% input_text 'reponse' solution=produit style='width:4em' %}
+%

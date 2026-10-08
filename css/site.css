@@ -1,0 +1,147 @@
+/* Pages du site (accueil, mode d’emploi) : sobres, dans la palette de la charte neutre
+   (css/brand.css), lisibles sur téléphone. Polices du système : rien à télécharger. */
+:root {
+  color-scheme: light;
+  --primaire: #2f5d7c;
+  --primaire-fonce: #234a63;
+  --texte: #1f2933;
+  --gris: #52606d;
+  --filet: #d9dee3;
+  --fond: #f5f6f8;
+  --code: #eef1f4;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  color: var(--texte);
+  background: var(--fond);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  line-height: 1.6;
+  background: var(--fond);
+}
+
+.bandeau {
+  color: #fff;
+  background: var(--primaire);
+}
+
+.bandeau-interieur,
+main,
+footer {
+  width: min(100%, 50rem);
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.bandeau-interieur {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 1.5rem;
+  padding-top: 0.9rem;
+  padding-bottom: 0.9rem;
+}
+
+.bandeau a { color: #fff; }
+.marque { color: #fff; font-size: 1.25rem; font-weight: 700; text-decoration: none; }
+.bandeau nav { display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; font-size: 0.95rem; }
+
+main { padding-top: 1.75rem; padding-bottom: 2.5rem; }
+
+h1 { margin: 0 0 0.5rem; font-size: clamp(1.6rem, 5vw, 2.2rem); line-height: 1.2; }
+h2 { margin: 2.25rem 0 0.6rem; padding-top: 0.25rem; font-size: 1.35rem; line-height: 1.3; }
+h3 { margin: 1.5rem 0 0.4rem; font-size: 1.05rem; }
+p, ul, ol { margin: 0 0 0.85rem; }
+li { margin-bottom: 0.3rem; }
+a { color: var(--primaire); }
+
+.chapeau { margin-bottom: 1.5rem; color: var(--gris); font-size: 1.1rem; }
+
+/* Boutons d’action : liens mis en forme, ou vrais boutons (copier le prompt). */
+.actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin: 1.25rem 0; }
+.bouton {
+  display: inline-block;
+  padding: 0.6rem 1.1rem;
+  border: 1px solid var(--primaire);
+  border-radius: 0.4rem;
+  color: #fff;
+  background: var(--primaire);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+.bouton:hover { background: var(--primaire-fonce); }
+.bouton.secondaire { color: var(--primaire); background: #fff; }
+.bouton.secondaire:hover { background: var(--code); }
+
+/* Cartes des démonstrations et des points clés. */
+.cartes { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1rem; margin: 1rem 0; }
+.carte {
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--filet);
+  border-radius: 0.5rem;
+  background: #fff;
+}
+.carte h3 { margin-top: 0; }
+.carte p:last-child { margin-bottom: 0; }
+
+code, pre { font-family: Consolas, "Cascadia Mono", Menlo, monospace; font-size: 0.9em; }
+code { padding: 0.05rem 0.3rem; border-radius: 0.25rem; background: var(--code); }
+pre {
+  overflow-x: auto;
+  margin: 0 0 1rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--filet);
+  border-radius: 0.4rem;
+  background: #fff;
+  line-height: 1.45;
+}
+pre code { padding: 0; background: none; }
+
+/* Tableaux de paramètres : ils défilent seuls sur un écran étroit, jamais la page. */
+.tableau { overflow-x: auto; margin: 0 0 1rem; }
+table { width: 100%; border-collapse: collapse; background: #fff; font-size: 0.95rem; }
+th, td { padding: 0.45rem 0.6rem; border: 1px solid var(--filet); text-align: left; vertical-align: top; }
+th { background: var(--code); font-weight: 600; }
+
+/* Sur téléphone, trois colonnes laissaient trois mots par ligne au rôle d’un paramètre : chaque
+   ligne devient une petite carte, nom et statut en tête, rôle dessous sur toute la largeur. */
+@media (max-width: 640px) {
+  .tableau thead { display: none; }
+  .tableau table, .tableau tbody, .tableau tr, .tableau td { display: block; }
+  .tableau table { background: none; }
+  .tableau tr {
+    margin-bottom: 0.6rem;
+    border: 1px solid var(--filet);
+    border-radius: 0.4rem;
+    background: #fff;
+  }
+  .tableau td { padding: 0.15rem 0.75rem; border: 0; }
+  .tableau td:first-child { padding-top: 0.55rem; font-weight: 600; }
+  .tableau td:nth-child(2):not(:last-child) { color: var(--gris); font-size: 0.9rem; }
+  .tableau td:last-child { padding-bottom: 0.55rem; }
+}
+
+.encadre {
+  margin: 1rem 0;
+  padding: 0.8rem 1rem;
+  border-left: 4px solid var(--primaire);
+  border-radius: 0.25rem;
+  background: #fff;
+}
+
+.sommaire { padding: 0.8rem 1rem 0.5rem 2rem; border: 1px solid var(--filet); border-radius: 0.5rem; background: #fff; }
+
+.statut { margin-left: 0.5rem; color: var(--gris); font-size: 0.9rem; }
+
+footer {
+  padding-top: 1rem;
+  padding-bottom: 2rem;
+  border-top: 1px solid var(--filet);
+  color: var(--gris);
+  font-size: 0.9rem;
+}

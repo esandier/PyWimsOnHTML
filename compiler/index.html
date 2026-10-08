@@ -5,6 +5,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Compilateur PyWimsOnHTML</title>
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
   <style>
     /* Palette neutre de l’interface du compilateur, distincte de la charte des exercices. */
     :root {
@@ -40,6 +41,9 @@
     }
 
     h1 { margin: 0; color: #a95f00; font-size: clamp(1.4rem, 3vw, 2rem); }
+    .titre { min-width: 0; }
+    .liens-site { font-size: 0.85rem; }
+    .liens-site a { color: #8a4d00; }
     h2, h3 { margin-top: 0; }
     button, input { font: inherit; }
 
@@ -329,7 +333,11 @@
 <body>
   <!-- Barre de titre et deux emplacements de notification transitoires. -->
   <header class="titlebar">
-    <h1>Compilateur PyWimsOnHTML</h1>
+    <div class="titre">
+      <h1>Compilateur PyWimsOnHTML</h1>
+      <!-- Le mode d’emploi et l’accueil du site, à côté du compilateur (SPECIFICATION.md, § 11.5). -->
+      <nav class="liens-site" aria-label="Site"><a href="../guide/">Mode d’emploi</a> · <a href="../">Accueil</a></nav>
+    </div>
     <div class="message-stack" aria-live="polite">
       <p id="project-status" class="header-message muted transient-message" role="status" hidden></p>
       <p id="messages" class="header-message transient-message" role="status" hidden></p>
