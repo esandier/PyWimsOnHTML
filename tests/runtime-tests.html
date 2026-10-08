@@ -417,6 +417,21 @@ window.PyWimsPython = (() => {
         frame.remove();
       });
 
+      // La copie MathML des formules (lecteurs d’écran) comptait dans le débordement du texte d’un
+      // choix : des flèches de défilement apparaissaient sous chaque formule à exposant.
+      await test("une formule à exposant ne fait pas déborder le texte de son choix", async () => {
+        const draws = [{ ...choiceDraws[0], choices: { r: ["$2^{-1}$", "$2^{-3}$", "$\\frac{1}{2}$", "$9$"] } }];
+        const { $, frame } = await openExercise(choiceExercise, draws,
+          { ...choiceOptions, choices: { 0: { choix: draws[0].choices.r } } });
+        await waitFor(() => $("#q1 .pw-choices").querySelectorAll("mjx-container").length === 4, "composition des choix", 20000);
+        const overflowing = [...$("#q1 .pw-choices").querySelectorAll(".pw-choice-text")]
+          .filter(text => text.scrollHeight > text.clientHeight);
+        if (overflowing.length) {
+          throw new Error(`${overflowing.length} choix débordent : ${overflowing.map(text => `${text.scrollHeight}/${text.clientHeight}`).join(", ")}`);
+        }
+        frame.remove();
+      });
+
       await test("un groupe de choix perd des colonnes tant qu’un choix déborde, jamais au-delà", async () => {
         const draws = [{ ...choiceDraws[0], choices: { r: ["$2$", "x".repeat(80), "$5$", "$9$"] } }];
         const exercise = { ...choiceExercise, enonce: choiceExercise.enonce.replace("columns=2", "columns=4") };

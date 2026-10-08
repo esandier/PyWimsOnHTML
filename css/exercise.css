@@ -858,6 +858,17 @@ body:not([data-scored]) .pw-help-score {
   overflow-wrap: normal;
 }
 
+/* Copie MathML d’une formule, que MathJax ajoute pour les lecteurs d’écran : découpée pour ne rien
+   montrer (clip), mais sa boîte gardait la hauteur de la formule rendue par le navigateur, et elle
+   comptait dans le débordement des zones qui défilent. Dans un choix (overflow-x: auto, donc aussi
+   défilement vertical), elle dépassait de 2 ou 3 px selon la police de la charte : des flèches de
+   défilement apparaissaient sous chaque formule. Hauteur de 1 px, comme le texte réservé aux
+   lecteurs d’écran (.pw-sr-only) : elle reste lue, et ne déborde plus.
+   Solution écartée : désactiver cette copie (enableAssistiveMml: false), au prix de l’accessibilité. */
+mjx-assistive-mml {
+  height: 1px;
+}
+
 /* Choix coché, sans verdict. Le « :not(…) » est nécessaire : « :has(input:checked) » est plus
    spécifique que « .is-correct » et l’emporterait sur les couleurs de correction. */
 .pw-choice:not(.is-correct, .is-incorrect):has(input:checked) {
