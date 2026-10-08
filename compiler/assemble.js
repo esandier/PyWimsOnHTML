@@ -67,9 +67,12 @@
     // Seule une question qui a un « apres » a besoin de Python ; les autres se corrigent par
     // comparaison avec leur solution (SPECIFICATION.md, § 2.6) et ne chargent pas Pyodide.
     const python = fields.apres === undefined ? "false" : "true";
+    // Sans Python, « avant » ne servirait à rien : il ne sert qu’à rejouer un tirage. Les tirages
+    // suffisent, et la page s’allège d’autant (un quart d’une activité de QCM à variantes).
+    const { avant, ...withoutAvant } = fields;
     return `<section class="pw-question" id="q${index + 1}" data-python="${python}">
 <div class="pw-question-data" hidden>
-${renderExerciseData(fields)}
+${renderExerciseData(fields.apres === undefined ? withoutAvant : fields)}
 ${renderDrawData(draws)}
 </div>
 </section>`;

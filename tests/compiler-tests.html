@@ -269,6 +269,12 @@
             page.querySelectorAll(".pw-question")[1].querySelector('pre[data-field="apres"]')) {
           throw new Error(`Marques inattendues : ${marks.join()}`);
         }
+        // « avant » ne sert qu’à rejouer un tirage dans Python : absent de la question sans « apres ».
+        const [withPython, withoutPython] = page.querySelectorAll(".pw-question");
+        if (!withPython.querySelector('pre[data-field="avant"]') || withoutPython.querySelector('pre[data-field="avant"]') ||
+            !withoutPython.querySelector('pre[data-field="enonce"]')) {
+          throw new Error("« avant » doit être intégré seulement à la question qui a un « apres ».");
+        }
       });
       test("l’assemblage refuse un script ou un style qui fermerait sa balise", () => {
         // Les chaînes sont coupées : écrites d’un seul tenant, elles fermeraient le script de cette page.
