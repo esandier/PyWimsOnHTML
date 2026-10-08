@@ -15,9 +15,10 @@ window.PyWimsCorrection = (() => {
   // le séparateur décimal : la virgule n’équivaut pas au point, car elle sépare les milliers en
   // anglais et des éléments en mathématiques (« (1, 5) » n’est pas « (1.5) »).
   function normalizedText(text) {
-    return String(text).normalize("NFC").replace(/−/g, "-").replace(/\s+/g, "");
+    return String(text).normalize("NFC").replace(/\u2212/g, "-").replace(/\s+/g, "");
   }
 
+  // Champ texte ou case de matrice : même écriture que la solution, une fois normalisée.
   function sameText(input, solution) {
     return typeof input === "string" && normalizedText(input) === normalizedText(solution);
   }
@@ -40,8 +41,9 @@ window.PyWimsCorrection = (() => {
       return sameChoice(input, solution);
     }
     if (type === "input_math") {
-      // Point ouvert (§ 2.6) : la comparaison d’une saisie MathLive reste à valider.
-      throw new Error("La correction par défaut d’un champ input_math n’est pas encore prise en charge.");
+      // Une formule ne se compare pas à l’écriture de sa solution (§ 2.6) : SymPy en choisit la
+      // forme, et l’enseignant attend une expression égale. Le compilateur exige donc « apres ».
+      throw new Error("Un champ input_math n’a pas de correction par défaut : il exige un « apres ».");
     }
     if (solution === null) {
       return typeof input === "string" && input.trim() !== "";

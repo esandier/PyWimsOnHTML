@@ -588,7 +588,7 @@ window.PyWimsPython = (() => {
         // La grille commence à 2 × 2 alors que la solution est 1 × 2 : toutes les cases sont fausses.
         type(text, "1+x^2");
         type(cell(0, 0), "1");
-        type(cell(0, 1), "−2");
+        type(cell(0, 1), "\u22122");
         role("check").click();
         await waitFor(() => role("feedback").classList.contains("is-visible"), "première vérification");
         if (!text.classList.contains("is-incorrect") || !cell(0, 0).classList.contains("is-incorrect")) {

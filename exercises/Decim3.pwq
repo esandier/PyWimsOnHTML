@@ -13,8 +13,12 @@ STD
 %
 % avant
 %
+# Choix : la valeur approchée au dixième la plus proche (indice 0), puis des distracteurs ;
+# le compilateur les mélange à chaque tirage.
 choix = ["7,9", "8", "7,93", "8,01"]
 solution = 0
+# Pas de « apres » : la correction compare le choix à la solution, sans Python. L’indice ne
+# dépend pas de la réponse de l’élève : il est affiché avec la solution.
 explication_solution = r'Regardez le chiffre suivant ($3$) pour décider s’il faut arrondir par défaut ou par excès.'
 %
 % enonce

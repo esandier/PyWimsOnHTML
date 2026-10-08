@@ -211,7 +211,7 @@ valeur numérique approchée) et aux retours ciblés.
 | `input_text`, case de matrice | le texte saisi est celui de la solution (§ 2.3), aux différences typographiques près (ci-dessous) |
 | `input_vmatrix` | la grille a les dimensions de la solution, et chaque case est juste ; avec d’autres dimensions, toutes les cases sont fausses |
 | valeur `LIBRE` | la saisie n’est pas vide |
-| `input_math` | point ouvert, ci-dessous |
+| `input_math` | pas de correction par défaut : `apres` est obligatoire (ci-dessous) |
 
 Les questions à choix (et plus tard le glisser-déposer) sont le cas principal
 sans `apres` : la comparaison y est sans ambiguïté.
@@ -237,12 +237,19 @@ sans `apres` : la comparaison y est sans ambiguïté.
   question qui n’attend qu’une réponse). Un indice qui ne dépend pas de la
   réponse de l’élève peut aller dans `explication_solution`, affichée avec la
   solution.
-- **`input_math` : point ouvert.** L’élève écrit dans MathLive ; la solution
-  est le LaTeX produit par SymPy (`x^{2} + 1`), alors que MathLive écrit
-  `x^2+1`. Piste : convertir les deux écritures avec MathLive lui-même
-  (`convertLatexToAsciiMath`) avant de les comparer comme des textes. À vérifier
-  sur des cas réels (fractions, racines, puissances, produits) ; si ce n’est
-  pas fiable, un champ `input_math` exige un `apres`, et le compilateur le dit.
+- **`input_math` exige un `apres`**, et le compilateur le dit. Une
+  formule ne se compare pas à l’écriture de sa solution ; essai fait sur 23
+  cas, en passant la solution et une frappe d’élève par MathLive :
+  - SymPy, et non l’auteur, choisit l’écriture de la solution : `(x+1)/2`
+    devient `x/2 + 1/2`, `ln(x)` devient `\log(x)`, et l’ordre des termes est
+    le sien ; l’élève devrait deviner ces conventions ;
+  - MathLive garde des traces de la frappe (un numérateur tapé entre
+    parenthèses les conserve) ;
+  - ignorer les espaces confondrait le produit `p i` et le nombre π.
+
+  Surtout, pour une formule, l’enseignant attend presque toujours une
+  expression égale, pas une écriture : c’est une comparaison symbolique, donc
+  Python. Des outils `pywims` pour l’écrire en une ligne viendront plus tard.
 - **Code partagé.** Les règles sont dans `runtime/correction.js`, intégré au
   fichier généré et utilisé aussi par le compilateur pour le contrôle de
   cohérence (§ 3) : la solution doit être jugée juste par la correction par
@@ -259,11 +266,11 @@ sans `apres` : la comparaison y est sans ambiguïté.
    d’une question qui a un `apres`.
 3. Exécution : correction sans Python ; Pyodide chargé seulement par les
    questions qui ont un `apres`.
-4. `input_math` : vérification de la piste MathLive sur des cas réels, puis
-   décision.
-5. README, `PROMPT.md` (principe, quand écrire `apres`, `decimal_fr`) ; un
-   nouvel exemple de QCM sans `apres`. `nombres-premiers.pwq` garde son
-   `apres`, comme exemple de retours ciblés.
+4. `input_math` : essai de la comparaison par MathLive ; décision : `apres`
+   obligatoire.
+5. README, `PROMPT.md` (principe, quand écrire `apres`, `decimal_fr`) ;
+   `Decim3.pwq` sert d’exemple de QCM sans `apres`. `nombres-premiers.pwq`
+   garde son `apres`, comme exemple de retours ciblés.
 
 ## 3. Compilation
 

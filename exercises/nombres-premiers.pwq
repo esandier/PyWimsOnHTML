@@ -31,6 +31,8 @@ Parmi les nombres suivants, lesquels sont <b>premiers</b> ?
 %
 % apres
 %
+# « apres » ne sert qu’aux retours ciblés : sans lui, la correction par défaut jugerait déjà la
+# réponse en tout ou rien. La saisie et « bonnes » sont des listes croissantes d’indices.
 ok_answer['reponse'] = reponse == bonnes
 if ok_answer['reponse']:
     feedback = 'Bravo, c’est exact !'

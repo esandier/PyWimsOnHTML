@@ -367,7 +367,7 @@
       const { isCorrect } = PyWimsCorrection;
       for (const [input, solution, expected] of [
         ["19/12", "19/12", true], ["x^2+1", "x^2 + 1", true], [" 1 000 ", "1000", true],
-        ["1 000", "1000", true], ["−7", "-7", true], ["Café", "Café", true],
+        ["1\u202f000", "1000", true], ["\u22127", "-7", true], ["Cafe\u0301", "Café", true],
         ["x^2 + 1", "x^2 + 1", true],
         // Tout le reste compte : ordre, valeur équivalente, séparateur décimal, majuscules.
         ["1 + x^2", "x^2 + 1", false], ["14/24", "7/12", false], ["0,5", "0.5", false],
@@ -379,7 +379,7 @@
         }
       }
       // Une case de matrice suit la même règle ; une valeur libre (null) accepte toute saisie non vide.
-      if (!isCorrect("input_matrix", "-1", "−1") || isCorrect("input_vmatrix", "2", "3") ||
+      if (!isCorrect("input_matrix", "-1", "\u22121") || isCorrect("input_vmatrix", "2", "3") ||
           !isCorrect("input_matrix", "n’importe quoi", null) || isCorrect("input_text", "   ", null)) {
         throw new Error("Une case de matrice ou une valeur libre est mal jugée.");
       }
@@ -402,7 +402,7 @@
       } catch {
         rejected = true;
       }
-      if (!rejected) throw new Error("Un champ input_math a été jugé alors que sa règle n’est pas encore décidée.");
+      if (!rejected) throw new Error("Un champ input_math a été jugé sans « apres ».");
     });
     test("refuse un champ inconnu", () => {
       let message = "";

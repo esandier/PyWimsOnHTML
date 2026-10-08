@@ -16,7 +16,8 @@ contenu du champ
 
 Ajoute chaque champ après une ligne délimiteur contenant uniquement `%`.
 Les champs sont, dans cet ordre : `title`, `keywords`, `layout`, `avant`,
-`enonce` et `apres`. Ils sont tous obligatoires et non vides.
+`enonce` et `apres`. Ils sont obligatoires et non vides, sauf `apres`, qui est
+facultatif (voir « Correction : avec ou sans `apres` »).
 N’insère pas de ligne contenant uniquement `%` dans le contenu d’un champ.
 
 Tout le contenu destiné à l’élève doit être en français, y compris le titre,
@@ -25,8 +26,9 @@ français, séparés par des virgules.
 
 ## Python
 
-- Le code Python va dans `avant` (tirage aléatoire et calcul des solutions) et
-  dans `apres` (correction). `apres` voit toutes les variables de `avant`.
+- Le code Python va dans `avant` (tirage aléatoire et calcul des solutions) et,
+  s’il existe, dans `apres` (correction). `apres` voit toutes les variables de
+  `avant`.
 - Rien n’est importé d’office : commence `avant` par les imports nécessaires,
   par exemple `from random import randint, choice` et `from sympy import *`.
 - Tire le hasard uniquement avec le module `random` (ou `numpy.random`) : le
@@ -36,7 +38,7 @@ français, séparés par des virgules.
   tirage impossible à reproduire : le compilateur exécute chaque graine deux
   fois et refuse l’exercice si les deux tirages diffèrent.
 - Les outils PyWims s’importent depuis le module `pywims` :
-  `from pywims import py_wims, is_nombre, math_expression, LIBRE`.
+  `from pywims import py_wims, is_nombre, math_expression, decimal_fr, LIBRE`.
   - `math_expression(saisie)` analyse une expression écrite par un élève
     (`2x`, `x^2`, `sqrt(2)`) avec une grammaire restreinte, sans exécuter de
     code, et renvoie une expression SymPy ou `None`. Utilise-la pour toute
@@ -44,6 +46,10 @@ français, séparés par des virgules.
   - `py_wims(saisie)` convertit une saisie simple (nombre, fraction) en objet
     SymPy, ou renvoie `None`.
   - `is_nombre(valeur)` indique si une valeur est un nombre.
+  - `decimal_fr(nombre, chiffres)` écrit un nombre arrondi à `chiffres`
+    décimales, avec une virgule et sans zéros finaux : `decimal_fr(sqrt(2), 2)`
+    donne `"1,41"`, `decimal_fr(1.5, 2)` donne `"1,5"`. Utilise-le comme
+    solution d’une réponse décimale en français.
 - Toute chaîne Python qui contient une formule TeX s’écrit en **chaîne brute**,
   préfixée par `r` : `feedback = r'Simplifiez $\frac{6}{8}$ par $2$.'`, et non
   `'… $\frac{6}{8}$ …'`. Dans une chaîne ordinaire, Python transforme `\f`
@@ -52,13 +58,38 @@ français, séparés par des virgules.
   `explication_solution`, les choix et toute autre chaîne ; pour une chaîne
   formatée, écris `rf'…'`. Le compilateur refuse une chaîne qui contient un
   tel caractère.
-- Dans `apres`, affecte `True` ou `False` à `ok_answer['nom_du_champ']` pour
-  chaque champ. Pour une matrice, ajoute une entrée par case, nommée exactement
+- Si tu écris `apres`, affecte `True` ou `False` à `ok_answer['nom_du_champ']`
+  pour chaque champ. Pour une matrice, ajoute une entrée par case, nommée exactement
   `ok_answer["nom_du_champ[{}][{}]".format(i, j)]`.
 - Définis aussi dans `apres` la variable `feedback`, le retour affiché à
   l’élève (formules TeX admises). Elle est facultative : sans elle, le retour
   est « Bravo, c’est exact ! », ou en cas d’erreur « Réponse incorrecte. »
   (une seule réponse attendue) ou « Certaines réponses sont incorrectes. ».
+
+## Correction : avec ou sans `apres`
+
+- **Sans `apres`**, l’élève doit donner ce qu’affiche le bouton « Solution » :
+  chaque saisie est comparée à la solution du tirage, sans Python, ce qui rend
+  l’exercice plus léger et plus rapide. Sont seulement ignorés les espaces, le
+  signe moins typographique « − » et le codage des accents. Tout le reste
+  compte : majuscules, ordre des termes (`1 + x^2` est faux pour `x^2 + 1`),
+  fractions équivalentes (`14/24` est faux pour `7/12`), séparateur décimal
+  (`0,5` est faux pour `0.5`).
+- **N’écris pas `apres`** pour une question à choix corrigée en tout ou rien,
+  ni pour un champ texte dont la réponse a une seule écriture (un entier, une
+  fraction irréductible, un mot).
+- **Écris `apres`** quand plusieurs écritures sont justes (expression dans un
+  autre ordre, fraction non simplifiée, valeur approchée), pour un retour ciblé
+  selon l’erreur, et toujours pour un champ `input_math` : une formule se
+  corrige par une comparaison symbolique, par exemple
+  `simplify(math_expression(saisie) - solution) == 0`.
+- La solution s’affiche telle que SymPy l’écrit (`19/12`, `x^2 + 1`). Un
+  flottant est arrondi à 12 chiffres significatifs et s’écrit avec un point
+  (`0.1 + 0.2` donne `0.3`). Pour une réponse décimale écrite à la française,
+  donne une solution texte avec `decimal_fr`.
+- Un indice qui ne dépend pas de la réponse de l’élève va dans
+  `explication_solution`, affichée avec la solution : il ne demande pas
+  d’`apres`.
 
 ## Énoncé et champs de saisie
 
@@ -102,6 +133,9 @@ français, séparés par des virgules.
 - Aucun choix n’est ajouté automatiquement : pour proposer « Aucune de ces
   réponses », écris-le comme dernier choix, avec `fixed_last=1`, et mets son
   indice dans la solution quand aucun autre choix n’est bon.
+- Sans `apres`, la question est juste si les choix cochés sont exactement ceux
+  de la solution. N’écris `apres` que pour un retour ciblé selon les choix
+  cochés.
 - Dans `apres`, le champ contient l’indice choisi (`input_radio`) ou la liste
   croissante des indices cochés (`input_checkbox`, `[]` si rien n’est coché),
   dans l’ordre de `choices`. Un choix multiple se corrige en tout ou rien :
@@ -124,10 +158,11 @@ français, séparés par des virgules.
   `solution_matrice = Matrix(n, n, lambda i, j: 0 if i > j else LIBRE)`.
 - Tu peux définir dans `avant` une variable `explication_solution` (texte,
   formules TeX admises), affichée avec la solution pour l’éclairer.
-- La solution doit être jugée juste par `apres` : pour chaque tirage, le
-  compilateur la saisit comme le ferait un élève (texte de la solution, `1`
-  pour une valeur `LIBRE`, indices pour une question à choix), exécute `apres`
-  et refuse l’exercice si un champ est jugé faux ou si `apres` plante.
+- La solution doit être jugée juste : pour chaque tirage, le compilateur la
+  saisit comme le ferait un élève (texte de la solution, `1` pour une valeur
+  `LIBRE`, indices pour une question à choix), la corrige (par `apres`, ou par
+  comparaison sans `apres`) et refuse l’exercice si un champ est jugé faux, si
+  `apres` plante, ou si une solution texte est vide.
 
 ## Retour à l’élève
 
@@ -168,8 +203,11 @@ auto-multiple-choice (AMC). Convertis chaque question en un fichier `.pwq` :
   n’est pas interprété : écris un texte simple.
 - Un titre et des mots-clés en français sont obligatoires : déduis-les de la
   question.
-- `apres` vérifie la réponse en tout ou rien et écrit un `feedback` utile, qui
-  ne donne pas la réponse.
+- N’écris pas d’`apres` : AMC n’a pas de retour selon la réponse, et la
+  correction sans `apres` vérifie déjà la réponse en tout ou rien. Écris-en un
+  seulement si l’on te demande des retours ciblés ; il écrit alors un
+  `feedback` utile, qui ne donne pas la réponse (voir
+  `exercises/nombres-premiers.pwq`).
 - Ne transpose pas en silence ce qui n’a pas d’équivalent : question ouverte
   (`\AMCOpen`), réponse numérique (`\AMCnumericChoices`), image, barème par
   réponse (`\bonne{…}\bareme{…}`), directive `formula`, `set.…`, `default.…`,
@@ -227,18 +265,6 @@ explication_solution = "Un nombre premier a exactement deux diviseurs : $1$ et l
 %
 Parmi les nombres suivants, lesquels sont <b>premiers</b> ?
 {% input_checkbox 'reponse' choices=choix solution=bonnes columns=5 fixed_last=1 bareme='b=1,m=-0.5,p=0' %}
-%
-% apres
-%
-ok_answer['reponse'] = reponse == bonnes
-if ok_answer['reponse']:
-    feedback = 'Bravo, c’est exact !'
-elif 4 in reponse and len(reponse) > 1:
-    feedback = '« Aucun de ces nombres » contredit les autres cases cochées.'
-elif any(i < 4 and not isprime(nombres[i]) for i in reponse):
-    feedback = 'Au moins un nombre coché a un diviseur autre que $1$ et lui-même.'
-else:
-    feedback = 'Il manque au moins un nombre premier.'
 %
 ```
 

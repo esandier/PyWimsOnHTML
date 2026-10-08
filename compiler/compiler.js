@@ -176,6 +176,7 @@
     return { seed: 0, context, dimensions, solutions: {}, choices, orders, explication: null };
   }
 
+  // Ligne d’état au-dessus de l’aperçu (calcul en cours, erreur) ; vide quand l’aperçu est prêt.
   function showPreviewNotice(text, className = "muted") {
     previewNotice.textContent = text;
     previewNotice.className = className;
@@ -598,10 +599,10 @@
     };
     // Une formule TeX dans une chaîne ordinaire passe sans erreur Python mais s’affiche abîmée :
     // on la refuse avant tout tirage, pour les deux champs Python.
-    // La correction par défaut d’un champ MathLive n’est pas encore décidée (SPECIFICATION.md, § 2.6).
+    // Une formule se corrige par une comparaison symbolique, donc par « apres » (SPECIFICATION.md, § 2.6).
     const mathTag = fields.apres === undefined && tags.find(tag => tag.type === "input_math");
     if (mathTag) {
-      throw new Error(`Le champ « ${mathTag.name} » (input_math) exige pour l’instant un « apres » : sa correction par défaut n’est pas encore prise en charge.`);
+      throw new Error(`Le champ « ${mathTag.name} » (input_math) exige un « apres » : une formule se corrige par comparaison symbolique, par exemple simplify(math_expression(saisie) - solution) == 0.`);
     }
     const stringErrors = [
       ...await PyWimsPython.sourceErrors(fields.avant, "avant"),
@@ -899,6 +900,8 @@ window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
     });
   }
 
+  // Propose le fichier au téléchargement ; l’adresse temporaire est libérée juste après, le temps
+  // que le navigateur ait commencé à lire le fichier.
   function downloadBlob(blob, filename) {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");

@@ -421,12 +421,16 @@ def math_expression(value):
         return None
 `;
 
+  // Exécute les opérations Python l’une après l’autre : Pyodide n’a qu’un interpréteur, et deux
+  // questions qui l’utiliseraient en même temps mêleraient leurs graines et leurs variables. Un échec
+  // est renvoyé à l’appelant sans bloquer les opérations suivantes.
   function enqueuePythonOperation(operation) {
     const result = pythonOperationQueue.then(operation);
     pythonOperationQueue = result.catch(() => {});
     return result;
   }
 
+  // Charge Pyodide une seule fois pour toute la page ; un échec permet de réessayer plus tard.
   async function ensurePyodide() {
     if (!pyodidePromise) {
       pyodidePromise = import(pyodideUrl).then(({ loadPyodide }) =>

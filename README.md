@@ -59,8 +59,12 @@ ceux que rejoue le fichier généré.
 ## Le fichier généré
 
 - **Affichage immédiat.** Un tirage précalculé est affiché dès l’ouverture.
-  Python se charge en arrière-plan et rejoue ce tirage pour vérifier qu’il
-  retrouve les mêmes valeurs.
+- **Python seulement si besoin.** Une question sans `apres` se corrige dans le
+  navigateur, sans Python, par comparaison avec sa solution : c’est le cas
+  courant des QCM, et une feuille qui n’a que de telles questions ne charge
+  jamais Pyodide. Pour une question qui a un `apres`, Python se charge en
+  arrière-plan et rejoue le tirage pour vérifier qu’il retrouve les mêmes
+  valeurs.
 - **Cycle de vie d’une question.** **Vérifier ma réponse** colore les champs
   (vert ou rouge) et affiche le retour ; **Corriger ma réponse** rouvre les
   champs faux ; **Solution** remplit tous les champs avec la solution et affiche
@@ -68,7 +72,7 @@ ceux que rejoue le fichier généré.
   recharger la page. Les boutons gardent leur place : rien ne bouge quand on
   clique.
 - **Activité.** Un seul document : Pyodide, MathJax et MathLive ne sont chargés
-  qu’une fois, et chaque question a sa propre session Python. L’en-tête affiche
+  qu’une fois, et chaque question qui a un `apres` a sa propre session Python. L’en-tête affiche
   le pourcentage de questions réussies (une vérification entièrement juste ; une
   solution affichée ne compte pas) et une barre de progression ; le numéro d’une
   question réussie devient ✓, et des confettis saluent les 100 %.
@@ -84,7 +88,9 @@ ceux que rejoue le fichier généré.
   et, dans une activité, le sens du pourcentage et de la note ; une bulle
   rappelle le sens du pourcentage au survol ou au toucher.
 - **Téléphone.** Les boutons n’affichent que leur icône ; dans une activité, le
-  retour passe sous l’énoncé et la carte s’agrandit en douceur.
+  retour passe sous l’énoncé et la carte s’agrandit en douceur. Les champs
+  texte et les cases de matrice reçoivent la saisie telle quelle (pas de
+  majuscule ni de correction automatiques), avec le clavier complet.
 
 La vérification se fait dans le navigateur : elle sert à l’entraînement, pas à
 une évaluation sécurisée. Les champs de l’exercice et ses tirages sont intégrés
@@ -97,13 +103,22 @@ MathJax reconnaît `$...$`, `$$...$$`, `\(...\)` et `\[...\]`.
 
 ## Format des exercices
 
-Un fichier `.pwq` contient six champs, tous obligatoires : `title`, `keywords`,
-`layout` (`STD`), `avant` (tirage et calcul des solutions), `enonce` (modèle de
-l’énoncé, avec `{{variable}}` et des balises de saisie) et `apres` (correction).
-Chaque balise de saisie désigne sa solution (`solution=variable`). L’exercice
-importe lui-même ses bibliothèques, ainsi que les outils du module `pywims`
-(`py_wims`, `is_nombre`, `math_expression`, `LIBRE`). `apres` peut définir la
-variable `feedback`, et `avant` la variable `explication_solution`.
+Un fichier `.pwq` contient les champs `title`, `keywords`, `layout` (`STD`),
+`avant` (tirage et calcul des solutions), `enonce` (modèle de l’énoncé, avec
+`{{variable}}` et des balises de saisie) et, facultativement, `apres`
+(correction). Chaque balise de saisie désigne sa solution
+(`solution=variable`). L’exercice importe lui-même ses bibliothèques, ainsi que
+les outils du module `pywims` (`py_wims`, `is_nombre`, `math_expression`,
+`decimal_fr`, `LIBRE`). `apres` peut définir la variable `feedback`, et `avant`
+la variable `explication_solution`.
+
+**Sans `apres`, l’élève doit donner ce qu’affiche le bouton « Solution ».**
+Seuls les espaces, le signe moins typographique et le codage des accents sont
+ignorés ; les majuscules, l’ordre des termes et le séparateur décimal comptent.
+On écrit donc `apres` quand plusieurs écritures sont justes, pour un retour
+ciblé selon l’erreur, et toujours pour un champ MathLive (`input_math`), qui se
+corrige par une comparaison symbolique. Pour une réponse décimale écrite avec
+une virgule, `decimal_fr(x, 2)` donne la solution (`"1,41"`).
 
 Les questions à choix unique (`input_radio`) ou multiple (`input_checkbox`)
 prennent leurs choix dans une liste de `avant` (`choices=`) et leur solution
@@ -125,7 +140,10 @@ dépôt :
 - [`produit-matrices.pwq`](exercises/produit-matrices.pwq) — matrice
   redimensionnable ;
 - [`nombres-premiers.pwq`](exercises/nombres-premiers.pwq) — choix multiple
-  converti depuis AMC, avec « Aucun de ces nombres » et un barème.
+  converti depuis AMC, avec « Aucun de ces nombres », un barème et des retours
+  ciblés (`apres`) ;
+- [`Decim3.pwq`](exercises/Decim3.pwq) — choix unique sans `apres`, corrigé
+  sans Python, avec un barème et une explication de la solution.
 
 Les matrices redimensionnables commencent à 2 × 2 ; la poignée ↘ ajoute ou
 retire des lignes et des colonnes jusqu’aux limites déclarées, à la souris ou
@@ -152,7 +170,7 @@ projet :
 Sous Windows, `tests/outils/lancer-tests.ps1` lance tout automatiquement (Edge
 sans interface, profil vierge) et y ajoute `tests/outils/balayage.py`, qui
 vérifie 200 tirages de chaque exercice avec le Python local : solution
-convertible et jugée juste par `apres`. Prérequis : Python avec les paquets
+convertible et jugée juste par `apres` (quand il existe). Prérequis : Python avec les paquets
 `websocket-client` et `sympy`. L’option `-SansPyodide` saute les tests du vrai
 Pyodide, les plus longs.
 

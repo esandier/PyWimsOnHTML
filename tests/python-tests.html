@@ -37,6 +37,7 @@
     }
 
     const exerciseFiles = [
+      "Decim3.pwq",
       "addition-fractions.pwq",
       "dérivée-polynôme.pwq",
       "matrice-triangulaire.pwq",
@@ -175,7 +176,7 @@ json.dumps({
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
           const fields = PyWimsCompiler.parseExerciseSource(await response.text(), file);
           const session = PyWimsPython.createSession(file.replace(/\W/g, "_"));
-          await session.initialize(`${fields.avant}\n${fields.apres}`);
+          await session.initialize(`${fields.avant}\n${fields.apres ?? ""}`);
           await session.run(fields.avant);
           const names = [...PyWimsTemplate.templateVariables(fields.enonce)];
           const values = await Promise.all(names.map(name => session.getTemplateValue(name)));
@@ -202,6 +203,10 @@ json.dumps({
               throw new Error(`Solution « ${variable} » du champ « ${tag.name} » inutilisable : ${converted}`);
             }
           }
+
+          // Sans « apres », la correction par défaut est en JavaScript : l’exercice compilé, testé
+          // plus bas, la vérifie dans la page générée. Ici, « avant » et les solutions suffisent.
+          if (fields.apres === undefined) return;
 
           // Saisit la solution comme un élève (texte ASCII, « 1 » pour une case libre), puis corrige.
           for (const tag of PyWimsTemplate.parseTags(fields.enonce)) {
@@ -330,7 +335,7 @@ json.dumps({
         }
         for (const [fields, fragment] of [
           [{ avant: "from sympy import symbols\nx = symbols('x')\nd = 2*x",
-             enonce: "{% input_math 'm' solution=d %}" }, "Le champ « m » (input_math) exige pour l’instant un « apres »"],
+             enonce: "{% input_math 'm' solution=d %}" }, "Le champ « m » (input_math) exige un « apres »"],
           [{ avant: "s = '  '", enonce: "{% input_text 'r' solution=s %}" },
             "Graine 0 : la solution du champ « r » est vide"],
           [{ avant: "M = [['1', ''], ['0', '2']]", enonce: "{% input_matrix 'm' size=2 solution=M %}" },

@@ -25,6 +25,8 @@
     await window.MathJax.typesetPromise([element]);
   }
 
+  // Saisie d’un champ : texte, ou expression ASCII d’un champ MathLive (« x^2+1 »), plus proche de
+  // ce qu’un élève écrirait au clavier que le LaTeX qu’il affiche.
   function fieldValue(input) {
     if (input.matches("math-field")) {
       return typeof input.getValue === "function" ? input.getValue("ascii-math") : "";
@@ -32,6 +34,7 @@
     return input.value;
   }
 
+  // Écrit une valeur dans un champ ; un champ MathLive l’interprète comme du LaTeX.
   function setFieldValue(input, value) {
     input.value = value;
   }
@@ -85,6 +88,8 @@
     }
   }
 
+  // Fige ou rouvre un champ : un groupe de choix par ses cases, un champ MathLive par readOnly,
+  // les autres par disabled.
   function lock(input, locked) {
     if (isChoiceGroup(input)) {
       choiceInputs(input).forEach(choice => { choice.disabled = locked; });
@@ -286,18 +291,21 @@
       }
     }
 
+    // Ligne d’état sous l’énoncé : chargement de Python ou erreur.
     showStatus(message, isError = false) {
       this.statusElement.textContent = message;
       this.statusElement.classList.toggle("is-error", isError);
       this.statusElement.hidden = false;
     }
 
+    // Masque la ligne d’état et efface son message.
     hideStatus() {
       this.statusElement.textContent = "";
       this.statusElement.classList.remove("is-error");
       this.statusElement.hidden = true;
     }
 
+    // Affiche une erreur à l’élève, et son détail dans la console pour l’auteur.
     reportError(error) {
       this.showStatus(error.message, true);
       console.error(error);
@@ -342,6 +350,7 @@
       setButton(this.newDrawButton, { disabled: this.busy });
     }
 
+    // Change l’état de la question ; le CSS s’appuie sur data-state et data-result de la section.
     setState(state, result = null) {
       this.state = state;
       this.result = result;
@@ -774,6 +783,8 @@
   let shownPercent = 0;
   let celebrated = false;
 
+  // Met à jour le pourcentage, l’étiquette et la barre de progression de l’activité ; à 100 %,
+  // la feuille est fêtée une seule fois.
   function updateProgress(questions) {
     const done = questions.filter(question => question.succeeded).length;
     const percent = Math.round(done * 100 / questions.length);
@@ -861,6 +872,7 @@
   const scoreTotalValue = document.getElementById("pw-score-total-value");
   const scoreTotalLabel = document.getElementById("pw-score-total-label");
 
+  // Affiche dans l’en-tête la note indicative de l’activité.
   function updateScoreTotal(questions) {
     const scored = questions.filter(question => question.scoring);
     if (!scored.length) {
