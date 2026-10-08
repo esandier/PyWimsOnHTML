@@ -61,10 +61,14 @@ def dossier_memorise(page, fichiers):
     page.fill("#exercise-search", "")
     page.click("#choose-folder")
     page.wait_for_function("document.getElementById('folder-name').textContent === 'exercices-essai'")
-    page.wait_for_function("document.querySelectorAll('#exercise-list li').length === 2")
+    page.wait_for_function("document.querySelectorAll('#exercise-list li:not(.exercise-group)').length === 2")
     if page.is_hidden("#reload-folder"):
         raise AssertionError("« Relire » n’apparaît pas pour un dossier ouvert par Chrome ou Edge.")
-    print("dossier mémorisé : ouvert, sous-dossier compris")
+    # Liste regroupée : le dossier choisi d’abord, puis le sous-dossier sous son chemin (§ 11.3).
+    groupes = page.evaluate("[...document.querySelectorAll('#exercise-list li')].map(li => li.classList.contains('exercise-group') ? '# ' + li.textContent : li.querySelector('.exercise-title').textContent)")
+    if len(groupes) != 4 or groupes[0] != "# exercices-essai" or groupes[2] != "# sous-dossier/" or groupes[3] != "PGCD":
+        raise AssertionError(f"liste regroupée inattendue : {groupes}")
+    print("dossier mémorisé : ouvert, sous-dossier compris, liste regroupée par dossier")
 
     # Fichier modifié, puis « Relire » : le nouveau titre apparaît, la sélection est gardée.
     decim = fichiers["Decim3.pwq"]
@@ -82,7 +86,7 @@ def dossier_memorise(page, fichiers):
     for case in page.query_selector_all(".exercise-selection"):
         if case.is_checked():
             case.uncheck()
-    titres = page.eval_on_selector_all("#exercise-list li", TITRES)
+    titres = page.eval_on_selector_all("#exercise-list li:not(.exercise-group)", TITRES)
     page.click(f".exercise-selection >> nth={titres.index('Titre relu')}")
     with page.expect_download(timeout=180_000) as attente:
         page.click("#compile-exercise")
@@ -108,7 +112,7 @@ def dossier_memorise(page, fichiers):
     page.wait_for_function("document.getElementById('choose-folder').textContent === 'Rouvrir « exercices-essai »'")
     page.evaluate("() => { delete window.showDirectoryPicker; }")
     page.click("#choose-folder")
-    page.wait_for_function("document.querySelectorAll('#exercise-list li').length === 2")
+    page.wait_for_function("document.querySelectorAll('#exercise-list li:not(.exercise-group)').length === 2")
     print("visite suivante : « Rouvrir « exercices-essai » » rouvre le dossier")
 
 
@@ -120,14 +124,14 @@ def sans_dossier_memorise(browser, url, dossier):
     page.goto(url)
     page.wait_for_function("!!window.PyWimsCompiler")
     page.set_input_files("#exercise-folder", dossier)
-    page.wait_for_function("document.querySelectorAll('#exercise-list li').length > 0")
+    page.wait_for_function("document.querySelectorAll('#exercise-list li:not(.exercise-group)').length > 0")
     if not page.is_hidden("#reload-folder"):
         raise AssertionError("« Relire » ne devrait pas apparaître sans accès durable au dossier.")
     page.reload()
     nom = os.path.basename(dossier)
     page.wait_for_function(f"document.getElementById('folder-name').textContent === 'Dernier dossier : {nom}'")
     page.set_input_files("#exercise-folder", dossier)
-    page.wait_for_function("document.querySelectorAll('#exercise-list li').length > 0")
+    page.wait_for_function("document.querySelectorAll('#exercise-list li:not(.exercise-group)').length > 0")
     with open(os.path.join(dossier, "Decim3.pwq"), "a", encoding="utf-8") as fichier:
         fichier.write("\n")
     page.fill("#exercise-search", "Valeur approchée")
@@ -160,9 +164,9 @@ def main():
 
                 # Ouverture du dossier : la liste montre chaque exercice par son titre et ses champs.
                 page.set_input_files("#exercise-folder", dossier)
-                page.wait_for_function("document.querySelectorAll('#exercise-list li').length > 0", timeout=30_000)
+                page.wait_for_function("document.querySelectorAll('#exercise-list li:not(.exercise-group)').length > 0", timeout=30_000)
                 items = page.eval_on_selector_all(
-                    "#exercise-list li",
+                    "#exercise-list li:not(.exercise-group)",
                     "items => items.map(li => [li.querySelector('.exercise-title').textContent, "
                     "li.querySelector('.exercise-fields').textContent])")
                 if len(items) != len(exercises) or any(not title or not kinds for title, kinds in items):

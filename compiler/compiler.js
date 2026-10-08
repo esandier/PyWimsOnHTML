@@ -46,7 +46,7 @@
     element.hidden = true;
     element.textContent = "";
     element.removeAttribute("title");
-    element.className = "";
+    element.className = "header-message";
   }
 
   // Affiche un message ; une durée facultative déclenche ensuite sa disparition en fondu.
@@ -56,7 +56,9 @@
       clearTimeout(timer);
       messageTimers.delete(element);
     }
-    element.className = `${className} transient-message`.trim();
+    // header-message porte la taille et la coupure du texte : la remplacer faisait déborder un
+    // message long sur la ligne du dossier, sur téléphone.
+    element.className = `header-message ${className} transient-message`.trim();
     element.textContent = text;
     element.title = text;
     element.hidden = false;
@@ -68,7 +70,7 @@
           element.hidden = true;
           element.textContent = "";
           element.removeAttribute("title");
-          element.className = "";
+          element.className = "header-message";
           messageTimers.delete(element);
         }, messageFadeDurationMs));
       }, durationMs));
@@ -378,9 +380,25 @@
       return searchable.includes(query);
     });
 
-    // Ordre naturel des titres : « (2) » avant « (10) » (SPECIFICATION.md, § 11.3).
-    matches.sort((left, right) => exerciseLabel(left).localeCompare(exerciseLabel(right), "fr", { numeric: true }));
+    // Regroupement par sous-dossier (SPECIFICATION.md, § 11.3) : le dossier choisi d’abord, puis
+    // chaque sous-dossier sous son chemin ; dans chaque groupe, ordre naturel des titres (« (2) »
+    // avant « (10) »). Sans sous-dossier, aucun intertitre.
+    const naturalOrder = (left, right) => left.localeCompare(right, "fr", { numeric: true });
+    const folderOf = exercise => exercise.path.includes("/") ? exercise.path.slice(0, exercise.path.lastIndexOf("/")) : "";
+    matches.sort((left, right) =>
+      (folderOf(left) === "" ? -1 : 0) - (folderOf(right) === "" ? -1 : 0) ||
+      naturalOrder(folderOf(left), folderOf(right)) ||
+      naturalOrder(exerciseLabel(left), exerciseLabel(right)));
+    const grouped = exercises.some(exercise => folderOf(exercise) !== "");
+    let currentFolder = null;
     for (const exercise of matches) {
+      if (grouped && folderOf(exercise) !== currentFolder) {
+        currentFolder = folderOf(exercise);
+        const heading = document.createElement("li");
+        heading.className = "exercise-group";
+        heading.textContent = currentFolder === "" ? folderName.textContent : `${currentFolder}/`;
+        exerciseList.append(heading);
+      }
       const item = document.createElement("li");
       const selection = document.createElement("input");
       selection.className = "exercise-selection";

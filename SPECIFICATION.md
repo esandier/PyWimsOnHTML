@@ -814,8 +814,9 @@ liste par titre (§ 11.3) sont déjà en place dans le compilateur local.
   sans répétition : « texte », « formule », « matrice », « matrice
   redimensionnable », « choix unique », « choix multiple ».
 - Les exercices sont regroupés par sous-dossier (le dossier choisi d’abord,
-  puis chaque sous-dossier sous son nom), et triés par titre dans l’ordre
-  naturel (« (2) » avant « (10) ») dans chaque groupe.
+  puis chaque sous-dossier sous son chemin, en intertitre), et triés par titre
+  dans l’ordre naturel (« (2) » avant « (10) ») dans chaque groupe. Sans
+  sous-dossier, la liste n’a pas d’intertitre.
 - Un fichier illisible est listé sous son nom de fichier, avec la mention
   « fichier illisible » ; son erreur s’affiche quand on le choisit.
 - La recherche porte sur le titre, les mots-clés et le chemin.

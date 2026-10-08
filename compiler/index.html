@@ -44,23 +44,29 @@
     button, input { font: inherit; }
 
     .message-stack {
-      display: grid;
+      display: flex;
       flex: 0 1 34rem;
+      flex-direction: column;
+      justify-content: center;
       min-width: 0;
       height: 2.8rem;
-      grid-template-rows: 1fr 1fr;
-      align-items: center;
+      overflow: hidden;
       text-align: right;
     }
 
+    /* Un message tient sur deux lignes au plus, coupées par « … » ; le texte complet reste au
+       survol (title). Sans cette limite, un message long débordait sur la ligne du dossier. */
     .header-message {
+      display: -webkit-box;
       min-width: 0;
       overflow: hidden;
       margin: 0;
       font-size: 0.86rem;
       line-height: 1.25;
-      text-overflow: ellipsis;
       overflow-wrap: anywhere;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
     }
 
     /* Contrôle du dossier et affichage de son nom sélectionné. */
@@ -163,6 +169,17 @@
     .filter-row { position: sticky; top: -1rem; z-index: 1; padding-top: 0.25rem; background: #fff; }
 
     #exercise-list li + li { margin-top: 0.25rem; }
+    /* Intertitre d’un sous-dossier dans la liste. */
+    #exercise-list .exercise-group {
+      display: block;
+      margin: 0.75rem 0 0.15rem;
+      padding: 0 0.2rem;
+      color: #656b72;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    #exercise-list .exercise-group:first-child { margin-top: 0; }
 
     #exercise-list li {
       display: grid;
