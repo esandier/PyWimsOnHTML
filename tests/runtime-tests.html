@@ -198,7 +198,8 @@ window.PyWimsPython = (() => {
         role("check").click();
         await waitFor(() => role("feedback").classList.contains("is-visible"), "retour par défaut")
           .catch(error => { throw new Error(`${error.message} ; état : ${role("status").textContent}`); });
-        if (role("feedback").textContent !== "Certaines réponses sont incorrectes.") {
+        // Un seul champ : le retour générique est au singulier.
+        if (role("feedback").textContent !== "Réponse incorrecte.") {
           throw new Error(`Retour inattendu : ${role("feedback").textContent}`);
         }
         frame.remove();
@@ -556,6 +557,20 @@ window.PyWimsPython = (() => {
         await waitFor(() => !role("new-draw").disabled && $("#q1").dataset.state === "open", "nouvel énoncé");
         if (Object.keys(frameWindow.pythonLogs).length) {
           throw new Error(`Une session Python a été créée : ${JSON.stringify(frameWindow.pythonLogs)}`);
+        }
+        frame.remove();
+      });
+
+      await test("un choix unique sans « apres » faux reçoit « Réponse incorrecte. »", async () => {
+        const radio = { ...choiceWithoutApres, enonce: "Le plus petit ? {% input_radio 'r' choices=choix solution=bonne %}" };
+        const draws = [{ ...choiceDraws[0], solutions: { r: 0 } }];
+        const { $, role, frame } = await openExercise(radio, draws, {});
+        await waitFor(() => $("#q1 .pw-choices"), "affichage des choix");
+        click(choiceBox($, 3));
+        role("check").click();
+        await waitFor(() => role("feedback").classList.contains("is-visible"), "retour");
+        if (role("feedback").textContent !== "Réponse incorrecte.") {
+          throw new Error(`Retour inattendu : ${role("feedback").textContent}`);
         }
         frame.remove();
       });

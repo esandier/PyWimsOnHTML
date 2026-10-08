@@ -15,6 +15,7 @@ STD
 %
 choix = ["7,9", "8", "7,93", "8,01"]
 solution = 0
+explication_solution = r'Regardez le chiffre suivant ($3$) pour décider s’il faut arrondir par défaut ou par excès.'
 %
 % enonce
 %

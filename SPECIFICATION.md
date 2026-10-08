@@ -53,9 +53,12 @@ refusé.
 - Contrat de sortie de `apres` : `ok_answer[nom_du_champ] = True/False` pour
   chaque champ (`"matrice[i][j]"` pour une case), et, facultativement, une
   variable `feedback` : un texte (formules TeX admises) qui explique l’erreur
-  sans donner la réponse. Sans elle, le retour est « Bravo, c’est exact ! » ou
-  « Certaines réponses sont incorrectes. ». Le texte est échappé ; ses formules
-  sont composées par MathJax.
+  sans donner la réponse. Sans elle, le retour est générique : « Bravo, c’est
+  exact ! », ou en cas d’erreur « Réponse incorrecte. » pour une question qui
+  n’attend qu’une réponse (un seul champ texte, MathLive ou à choix unique),
+  « Certaines réponses sont incorrectes. » sinon (plusieurs champs, choix
+  multiple, matrice). Le texte est échappé ; ses formules sont composées par
+  MathJax.
 - Variable facultative de `avant` : `explication_solution`, un texte (formules
   TeX admises) affiché avec la solution (§ 5.2).
 - Pour lire une saisie qui contient une expression (champ texte ou case de
@@ -230,8 +233,9 @@ sans `apres` : la comparaison y est sans ambiguïté.
   `decimal_fr(x, 2)` du module `pywims`, qui renvoie `"1,41"`.
 - **Plusieurs écritures justes** (ordre des termes, fraction non simplifiée,
   valeur approchée) : l’auteur écrit `apres`. `PROMPT.md` le dit.
-- **Retour.** Le texte générique : « Bravo, c’est exact ! » ou « Certaines
-  réponses sont incorrectes. ». `explication_solution` reste affichée avec la
+- **Retour.** Le texte générique du § 2.2 (« Réponse incorrecte. » pour une
+  question qui n’attend qu’une réponse). Un indice qui ne dépend pas de la
+  réponse de l’élève peut aller dans `explication_solution`, affichée avec la
   solution.
 - **`input_math` : point ouvert.** L’élève écrit dans MathLive ; la solution
   est le LaTeX produit par SymPy (`x^{2} + 1`), alors que MathLive écrit

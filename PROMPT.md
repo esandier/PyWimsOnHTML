@@ -57,7 +57,8 @@ français, séparés par des virgules.
   `ok_answer["nom_du_champ[{}][{}]".format(i, j)]`.
 - Définis aussi dans `apres` la variable `feedback`, le retour affiché à
   l’élève (formules TeX admises). Elle est facultative : sans elle, le retour
-  est « Bravo, c’est exact ! » ou « Certaines réponses sont incorrectes. ».
+  est « Bravo, c’est exact ! », ou en cas d’erreur « Réponse incorrecte. »
+  (une seule réponse attendue) ou « Certaines réponses sont incorrectes. ».
 
 ## Énoncé et champs de saisie
 

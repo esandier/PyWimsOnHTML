@@ -4,8 +4,12 @@
   const answerToggleDurationMs = 550;
   const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const freeValue = "∗";
+  // Retour générique, quand « apres » ne définit pas « feedback » ou n’existe pas. Une question qui
+  // n’attend qu’une réponse (un champ texte, MathLive ou à choix unique) dit « Réponse incorrecte » :
+  // le pluriel n’a de sens qu’avec plusieurs champs, un choix multiple ou une matrice.
   const defaultFeedback = {
     correct: "Bravo, c’est exact !",
+    incorrectSingle: "Réponse incorrecte.",
     incorrect: "Certaines réponses sont incorrectes."
   };
   const questionTemplate = document.getElementById("pw-question-template");
@@ -39,6 +43,9 @@
   const isChoiceGroup = field => field.matches(".pw-choices");
   const choiceInputs = group => [...group.querySelectorAll("input")];
   const choiceIndex = element => Number(element.closest(".pw-choice").dataset.choiceIndex);
+  // Un champ qui n’attend qu’une réponse : ni case de matrice, ni choix multiple.
+  const isSingleAnswer = field => field.dataset.matrixName === undefined &&
+    !(isChoiceGroup(field) && field.dataset.multiple === "true");
 
   // Indices cochés, dans l’ordre de l’auteur : le mélange de l’affichage est invisible pour « apres ».
   function checkedIndices(group) {
@@ -577,7 +584,9 @@
           : { answerResults: this.defaultVerdicts(inputs), feedback: null };
         const allCorrect = inputs.length > 0 && answerResults.every(Boolean);
         // La variable « feedback » de « apres » est facultative : sans elle, un retour générique s’affiche.
-        const feedback = authorFeedback ?? (allCorrect ? defaultFeedback.correct : defaultFeedback.incorrect);
+        const singleAnswer = inputs.length === 1 && isSingleAnswer(inputs[0]);
+        const feedback = authorFeedback ?? (allCorrect ? defaultFeedback.correct
+          : singleAnswer ? defaultFeedback.incorrectSingle : defaultFeedback.incorrect);
         this.hideStatus();
 
         const verdicts = new Map(inputs.map((input, index) => [input, answerResults[index]]));
