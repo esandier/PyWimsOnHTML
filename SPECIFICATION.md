@@ -679,7 +679,9 @@ directive absente d’un barème donné prend la valeur indiquée :
   question.
 - Chaque vérification affiche une nouvelle note dans le coin inférieur droit
   de la question, par exemple « Note : 2,5 / 7 ». C’est une indication pour
-  l’entraînement, pas une évaluation.
+  l’entraînement, pas une évaluation. Sa place est réservée dès l’affichage
+  (son apparition ne déplace rien), mais au plus juste : elle empiète sur la
+  marge qui suit le groupe de choix, sans toucher au dernier choix.
 
 ### 10.6 Contrôles à la compilation
 

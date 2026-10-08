@@ -179,20 +179,24 @@ body:not([data-scored]) .pw-help-score {
 }
 
 /* Note d’une question notée : coin inférieur droit de la carte, dans une marge réservée dès
-   l’affichage (data-scored). Son apparition ne déplace donc rien ; vide, elle reste invisible. */
+   l’affichage (data-scored). Son apparition ne déplace donc rien ; vide, elle reste invisible.
+   La marge est réduite au plus juste : la note (≈ 23 px de haut) empiète sur la marge qui suit le
+   groupe de choix (0.75em), et reste à quelques pixels du dernier choix, sur téléphone comme sur
+   grand écran. Solution écartée : une marge de toute la hauteur de la note (2.4rem), qui laissait
+   environ 60 px vides sous les choix de chaque carte sur téléphone. */
 .pw-question {
   position: relative;
 }
 
 /* Sélecteur assez précis pour l’emporter sur les marges de la carte, y compris sur téléphone. */
 .pw-sheet .pw-question[data-scored] {
-  padding-bottom: 2.4rem;
+  padding-bottom: 1rem;
 }
 
 .pw-q-score {
   position: absolute;
   right: 1rem;
-  bottom: 0.55rem;
+  bottom: 0.35rem;
   padding: 0.15rem 0.65rem;
   border-radius: 999px;
   color: var(--pw-brand-navy);
