@@ -285,6 +285,16 @@ json.dumps({
         }
       });
 
+      await test("le hachage des chaînes est fixe : l’ordre d’un set de chaînes ne dépend pas du chargement", async () => {
+        const session = PyWimsPython.createSession("hachage");
+        await session.initialize("import sys");
+        // Valeur de hash("abc") avec PYTHONHASHSEED=0 sur Pyodide 0.27.7 (wasm32), mesurée sur
+        // plusieurs chargements ; sans la variable, elle change à chaque chargement.
+        await expectPython(session, "__import__('sys').flags.hash_randomization == 0 and hash('abc') == -1600925533",
+          "Pyodide n’a pas été lancé avec PYTHONHASHSEED=0");
+        await session.dispose();
+      });
+
       await test("un champ à choix enregistre ses choix, sa solution et un ordre mélangé par tirage", async () => {
         const draws = await PyWimsCompiler.computeDraws({
           avant: "from sympy import Rational\nchoix = ['$2$', Rational(1, 2), 'pair', 'Aucun de ces nombres']\nbonnes = [2, 0]",
@@ -361,7 +371,12 @@ json.dumps({
             ["la solution du champ « m » (cases [0][1], [1][0]) est jugée fausse par « apres »"]],
           [{ avant: "c = ['a', 'b', 'c']\ns = [2, 0]", enonce: "{% input_checkbox 'r' choices=c solution=s %}",
              apres: "ok_answer['r'] = r == s" },
-            ["la solution du champ « r » est jugée fausse par « apres »"]]
+            ["la solution du champ « r » est jugée fausse par « apres »"]],
+          // Hasard que la graine ne fixe pas : un compteur gardé hors de l’espace de noms change à
+          // chaque exécution, à coup sûr (l’heure le ferait presque toujours, mais pas toujours).
+          [{ avant: "import sys\nsys.compteur_essai = getattr(sys, 'compteur_essai', 0) + 1\na = sys.compteur_essai",
+             enonce: "{{ a }} {% input_text 'r' solution=a %}" },
+            ["Graine 0 : deux exécutions de « avant » avec la même graine donnent des tirages différents (les valeurs de l’énoncé, les solutions)"]]
         ];
         for (const [fields, fragments] of cases) {
           let message = "";

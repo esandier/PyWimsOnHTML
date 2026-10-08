@@ -553,9 +553,9 @@
     if (stringErrors.length) {
       throw new Error(stringErrors.join(" "));
     }
-    const draws = [];
-    const seen = new Set();
-    for (let seed = 0; seed < count; seed += 1) {
+    // Exécute « avant » avec la graine dans une session neuve et renvoie la session et le tirage ;
+    // l’appelant libère la session.
+    async function runDraw(seed) {
       drawSessionCounter += 1;
       const session = PyWimsPython.createSession(`compilation-${drawSessionCounter}`);
       try {
@@ -565,10 +565,39 @@
         } catch (error) {
           throw new Error(`Erreur dans « avant » pour la graine ${seed}, ${pythonErrorSummary(error.message)}`);
         }
-        const draw = await session.collectDraw(spec);
+        return { session, draw: await session.collectDraw(spec) };
+      } catch (error) {
+        await session.dispose();
+        throw error;
+      }
+    }
+
+    // Parties du tirage que le navigateur affiche ou utilise, comparées entre les deux exécutions.
+    const drawParts = {
+      context: "les valeurs de l’énoncé",
+      dimensions: "les dimensions des matrices",
+      solutions: "les solutions",
+      choices: "les choix",
+      explication: "l’explication"
+    };
+
+    const draws = [];
+    const seen = new Set();
+    for (let seed = 0; seed < count; seed += 1) {
+      const { session, draw } = await runDraw(seed);
+      try {
         const errors = [...draw.errors, ...matrixShapeErrors(tags, draw), ...choiceErrors(tags, draw)];
         if (errors.length) {
           throw new Error(`Graine ${seed} : ${errors.join(" ")}`);
+        }
+        // Seconde exécution de la même graine (SPECIFICATION.md, § 3) : un hasard que la graine ne
+        // fixe pas donnerait au navigateur un autre tirage que celui intégré au fichier.
+        const twin = await runDraw(seed);
+        await twin.session.dispose();
+        const differing = Object.keys(drawParts)
+          .filter(part => JSON.stringify(draw[part]) !== JSON.stringify(twin.draw[part]));
+        if (differing.length) {
+          throw new Error(`Graine ${seed} : deux exécutions de « avant » avec la même graine donnent des tirages différents (${differing.map(part => drawParts[part]).join(", ")}). Tirez le hasard uniquement avec le module random (ou numpy.random.seed) : le navigateur ne pourrait pas rejouer ce tirage.`);
         }
         // Les solutions ont la forme attendue : on peut les saisir et vérifier la correction.
         const incoherences = await coherenceErrors(session, tags, draw, fields.apres);

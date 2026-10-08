@@ -34,7 +34,9 @@ français, séparés par des virgules.
 - Tire le hasard uniquement avec le module `random` (ou `numpy.random`) : le
   compilateur calcule 20 tirages avec des graines fixes, puis le navigateur
   rejoue le tirage affiché avec la même graine. Une autre source de hasard
-  (heure, `secrets`…) rendrait le tirage impossible à reproduire.
+  (heure, `secrets`, `numpy.random.default_rng()` sans graine…) rendrait le
+  tirage impossible à reproduire : le compilateur exécute chaque graine deux
+  fois et refuse l’exercice si les deux tirages diffèrent.
 - Les outils PyWims s’importent depuis le module `pywims` :
   `from pywims import py_wims, is_nombre, math_expression, LIBRE`.
   - `math_expression(saisie)` analyse une expression écrite par un élève

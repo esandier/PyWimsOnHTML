@@ -369,7 +369,11 @@ def math_expression(value):
     if (!pyodidePromise) {
       pyodidePromise = import(pyodideUrl).then(({ loadPyodide }) =>
         loadPyodide({
-          indexURL: "https://cdn.jsdelivr.net/pyodide/v0.27.7/full/"
+          indexURL: "https://cdn.jsdelivr.net/pyodide/v0.27.7/full/",
+          // Hachage des chaînes fixe : sinon il change à chaque chargement de Pyodide, et avec lui
+          // l’ordre d’un set de chaînes ; le tirage rejoué dans le navigateur différerait de celui
+          // de la compilation (mesuré sur Pyodide 0.27.7, SPECIFICATION.md § 3).
+          env: { PYTHONHASHSEED: "0" }
         })
       ).then(instance => {
         // Installe le module pywims dans les paquets du site pour qu’un simple import le trouve.

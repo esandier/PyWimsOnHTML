@@ -170,6 +170,19 @@ Le retour explique l’erreur sans donner la réponse : c’est le rôle du bout
 - Pour chaque question, il exécute **20 tirages**. Chaque tirage part d’un
   espace de noms neuf, initialisé avec une graine (`random.seed`, et
   `numpy.random.seed` si NumPy est importé), puis exécute `avant`.
+- **Hachage fixe.** Pyodide est lancé avec `PYTHONHASHSEED=0`, à la compilation
+  comme dans le fichier généré. Sinon le hachage des chaînes change à chaque
+  chargement de Pyodide, et avec lui l’ordre d’un `set` de chaînes (mesuré :
+  `{"pomme", "poire", "kiwi", "figue"}` sort dans un ordre différent d’une
+  instance à l’autre) : `choice(list(un_ensemble))` donnerait un autre tirage
+  dans le navigateur qu’à la compilation.
+- **Reproductibilité.** Chaque graine est exécutée deux fois, dans deux espaces
+  de noms neufs ; les deux tirages (`context`, `solutions`, choix,
+  explication) doivent être identiques. Sinon la compilation est refusée :
+  « avant » utilise un hasard que la graine ne fixe pas (heure,
+  `numpy.random.default_rng()`, `secrets`…), et le navigateur ne pourrait pas
+  rejouer le tirage. L’erreur apparaît ainsi chez l’auteur, et non chez
+  l’élève (« … diffère », § 5.1).
 - Un tirage enregistre :
   - `seed` : la graine ;
   - `context` : la valeur affichée de chaque `{{variable}}` de l’énoncé et de
