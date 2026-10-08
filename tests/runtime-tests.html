@@ -762,6 +762,33 @@ window.PyWimsPython = (() => {
         frame.remove();
       });
 
+      // § 5.4 : la carte ne rétrécit jamais d’un énoncé à l’autre ; mais au premier affichage, aucune
+      // hauteur minimale n’est fixée (mesurée trop tôt, elle laissait un espace vide sous les choix).
+      await test("l’énoncé n’a pas de minimum au premier affichage, et ne rétrécit pas au nouvel énoncé", async () => {
+        const fields = {
+          title: "Hauteurs", layout: "STD", avant: "t = ''",
+          enonce: "<p>{{ t }}</p> {% input_text 'r' solution=s %}"
+        };
+        const draws = [
+          { seed: 0, context: { t: "mot ".repeat(150) }, dimensions: {}, solutions: { r: "1" }, explication: null },
+          { seed: 1, context: { t: "court" }, dimensions: {}, solutions: { r: "1" }, explication: null }
+        ];
+        const { role, frame } = await openExercise(fields, draws, {});
+        const prompt = role("prompt");
+        await waitFor(() => prompt.querySelector("input"), "affichage de l’énoncé");
+        if (prompt.style.minHeight) throw new Error(`Minimum fixé dès le premier affichage : ${prompt.style.minHeight}`);
+        for (let round = 0; round < 2; round += 1) {
+          const before = prompt.getBoundingClientRect().height;
+          const text = prompt.textContent;
+          role("new-draw").click();
+          await waitFor(() => prompt.textContent !== text && !role("new-draw").disabled, "nouvel énoncé");
+          if (prompt.getBoundingClientRect().height < before - 0.5) {
+            throw new Error(`La carte a rétréci : ${before} px, puis ${prompt.getBoundingClientRect().height} px.`);
+          }
+        }
+        frame.remove();
+      });
+
       // Vrai MathLive, chargé en ligne comme dans un fichier généré : la feuille assemblée doit le
       // charger, attendre qu’il soit prêt, puis transmettre à « apres » l’écriture ASCII (« x^2+1 »)
       // et non le LaTeX affiché (« x^{2}+1 »).

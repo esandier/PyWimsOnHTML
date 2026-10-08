@@ -409,8 +409,26 @@ window.PyWimsQuestion = (() => {
       );
     }
 
-    // Affiche un tirage tout de suite, à partir des valeurs précalculées. L’énoncé garde la hauteur
-    // du plus haut tirage déjà affiché : un nouvel énoncé ne fait jamais remonter les boutons.
+    // Hauteur à garder avant d’afficher un autre tirage (newDraw) : celle de l’énoncé affiché,
+    // mesurée maintenant, sans minimum, ou le minimum déjà fixé s’il est plus grand. La carte ne
+    // rétrécit donc jamais d’un énoncé à l’autre (SPECIFICATION.md, § 5.4).
+    // Solution écartée : mesurer à la fin de chaque affichage. Au premier affichage, la mise en page
+    // n’est pas définitive (polices, formules) : l’énoncé raccourcissait ensuite, et le minimum
+    // laissait jusqu’à 50 px vides sous les choix sur téléphone.
+    keepPromptHeight() {
+      const { promptElement } = this;
+      const kept = Number.parseFloat(promptElement.style.minHeight) || 0;
+      promptElement.style.minHeight = "";
+      const height = promptElement.getBoundingClientRect().height;
+      promptElement.style.minHeight = `${Math.max(height, kept)}px`;
+    }
+
+    // Largeur de la fenêtre changée (rotation du téléphone) : les hauteurs mesurées ne valent plus.
+    forgetPromptHeight() {
+      this.promptElement.style.minHeight = "";
+    }
+
+    // Affiche un tirage tout de suite, à partir des valeurs précalculées.
     async renderDraw(selected) {
       const { promptElement } = this;
       this.draw = selected;
@@ -441,8 +459,6 @@ window.PyWimsQuestion = (() => {
       // Les largeurs des choix ne sont connues qu’une fois les formules composées. Le widget de
       // choix n’est intégré qu’à une feuille qui a une question à choix.
       PyWimsWidgets.fitChoiceColumns?.(promptElement);
-      const height = promptElement.getBoundingClientRect().height;
-      promptElement.style.minHeight = `${Math.max(height, Number.parseFloat(promptElement.style.minHeight) || 0)}px`;
     }
 
     // Verdicts de la correction par défaut (SPECIFICATION.md, § 2.6), un par champ de fields() :
@@ -707,6 +723,7 @@ window.PyWimsQuestion = (() => {
         if (!reduceMotion) {
           await promptElement.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150 }).finished;
         }
+        this.keepPromptHeight();
         await this.renderDraw(next);
         if (!reduceMotion) {
           promptElement.animate(

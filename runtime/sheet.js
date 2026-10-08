@@ -188,13 +188,22 @@
   // Redimensionnement : le navigateur envoie l’événement à chaque pixel pendant qu’on tire la fenêtre,
   // et chaque mise en colonnes des choix mesure la page. On regroupe donc les mesures à l’image
   // suivante, une fois par image au plus.
+  // Seul un changement de largeur fait oublier les hauteurs gardées des énoncés : sur téléphone, la
+  // barre d’adresse qui apparaît ou disparaît au défilement change la hauteur de la fenêtre, et
+  // les cartes ne doivent pas rétrécir pendant qu’on fait défiler la feuille.
   let resizeFrame = 0;
+  let lastWidth = innerWidth;
   addEventListener("resize", () => {
     cancelAnimationFrame(resizeFrame);
-    resizeFrame = requestAnimationFrame(() => questions.forEach(question => {
-      PyWimsWidgets.fitChoiceColumns?.(question.promptElement);
-      question.layoutFeedback();
-    }));
+    resizeFrame = requestAnimationFrame(() => {
+      const widthChanged = innerWidth !== lastWidth;
+      lastWidth = innerWidth;
+      questions.forEach(question => {
+        if (widthChanged) question.forgetPromptHeight();
+        PyWimsWidgets.fitChoiceColumns?.(question.promptElement);
+        question.layoutFeedback();
+      });
+    });
   });
   for (const question of questions) {
     question.start();
