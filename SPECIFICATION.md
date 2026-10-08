@@ -552,7 +552,9 @@ un sous-projet distinct, traité plus tard.
   seul et dans une activité) et balayage des tirages.
 - `tests/outils/essai_compilateur.py` : l’interface du compilateur, de bout en
   bout (ouverture d’un dossier d’exercices, liste, « Tout sélectionner »,
-  aperçu réel, compilation, fichier téléchargé), sans erreur JavaScript. Le
+  aperçu réel, compilation, fichier téléchargé, dossier mémorisé, « Relire »,
+  « Rouvrir », et le chemin de Firefox et Safari imité sans
+  `showDirectoryPicker`), sans erreur JavaScript. Le
   dossier ouvert est une copie des seuls exercices de la racine d’`exercises/` :
   comme les autres tests, il ne dépend pas du contenu des sous-dossiers.
 - `tests/outils/lancer-tests.ps1` lance le tout dans Edge sans interface.

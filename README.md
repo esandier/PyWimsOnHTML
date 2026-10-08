@@ -34,7 +34,10 @@ dans un navigateur récent, puis clique sur **Ouvrir un dossier d’exercices** 
 choisis le dossier où sont tes fichiers `.pwq` (ceux de ses sous-dossiers sont
 lus aussi). Le bouton devient **Dossier ouvert :** suivi du nom du dossier ; il
 permet d’en ouvrir un autre. Les exercices restent sur l’ordinateur : rien n’est
-téléversé.
+téléversé. Sur Chrome et Edge, le dossier est mémorisé : à la visite suivante,
+**Rouvrir « nom »** suffit, et **Relire** prend en compte les fichiers modifiés,
+ajoutés ou supprimés ; la compilation relit d’elle-même les exercices choisis.
+Sur Firefox et Safari, on choisit le dossier à chaque visite.
 
 Pour essayer une modification du moteur (`runtime/`, `widgets/`, `css/`,
 `layouts/`) avant de la publier, lance `compiler/lancer-local.ps1` : il démarre

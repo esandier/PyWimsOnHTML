@@ -92,12 +92,14 @@
     #exercise-folder { display: none; }
 
     #folder-name {
+      flex: 1 1 auto;
       min-width: 0;
       overflow: hidden;
       color: #555;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
+    #reload-folder, #other-folder { flex: 0 0 auto; }
 
     /* Répartition de la liste des exercices et du panneau de prévisualisation. */
     .workspace {
@@ -321,10 +323,13 @@
       <!-- Le sélecteur donne au compilateur accès local au dossier d’exercices choisi par l’utilisateur ;
            les fichiers du projet, eux, sont lus en ligne à côté de cette page. -->
       <div class="folder-row">
-        <!-- Le bouton devient « Dossier ouvert : » une fois un dossier choisi ; il permet d’en ouvrir un autre. -->
+        <!-- Le bouton devient « Dossier ouvert : » une fois un dossier choisi ; il permet d’en ouvrir un autre.
+             Sur Chrome et Edge, il propose d’abord de rouvrir le dernier dossier (SPECIFICATION.md, § 11.2). -->
         <button class="folder-button" id="choose-folder" type="button">Ouvrir un dossier d’exercices</button>
         <input id="exercise-folder" type="file" webkitdirectory directory multiple>
         <span id="folder-name" aria-live="polite">Aucun dossier ouvert</span>
+        <button id="reload-folder" class="link-button" type="button" hidden>Relire</button>
+        <button id="other-folder" class="link-button" type="button" hidden>Autre dossier</button>
       </div>
       <!-- Filtres et liste des fichiers d’exercice chargés depuis le dossier. -->
       <section class="panel panel-exercises" aria-labelledby="exercise-list-heading">

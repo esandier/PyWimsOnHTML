@@ -9,6 +9,8 @@
   const chooseFolderButton = document.getElementById("choose-folder");
   const filePicker = document.getElementById("exercise-folder");
   const folderName = document.getElementById("folder-name");
+  const reloadFolderButton = document.getElementById("reload-folder");
+  const otherFolderButton = document.getElementById("other-folder");
   const projectStatus = document.getElementById("project-status");
   const search = document.getElementById("exercise-search");
   const exerciseList = document.getElementById("exercise-list");
@@ -79,6 +81,140 @@
     return firstSlash < 0 ? path : path.slice(firstSlash + 1);
   }
 
+  // Dossier d’exercices (SPECIFICATION.md, § 11.2). Chrome et Edge donnent à la page un accès
+  // durable au dossier (File System Access) : on le mémorise, on le rouvre à la visite suivante,
+  // et on relit ses fichiers à la demande. Firefox et Safari n’ont que le sélecteur de dossier :
+  // ses fichiers sont figés à l’ouverture, et seul le nom du dernier dossier est rappelé.
+  const canRememberFolder = typeof window.showDirectoryPicker === "function";
+  let folderHandle = null;
+  let rememberedHandle = null;
+  const lastFolderNameKey = "pywims-compilateur:dernier-dossier";
+
+  // Magasin IndexedDB à un seul enregistrement : l’accès au dossier, qui s’y range tel quel.
+  function folderStore(mode, action) {
+    return new Promise((resolve, reject) => {
+      const opening = indexedDB.open("pywims-compilateur", 1);
+      opening.onupgradeneeded = () => opening.result.createObjectStore("dossier");
+      opening.onerror = () => reject(opening.error);
+      opening.onsuccess = () => {
+        const request = action(opening.result.transaction("dossier", mode).objectStore("dossier"));
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      };
+    });
+  }
+  // Sans mémoire (navigation privée, réglages), le compilateur marche, sans rouvrir le dossier.
+  const rememberFolder = handle => folderStore("readwrite", store => store.put(handle, "exercices")).catch(() => {});
+  const rememberedFolder = () => folderStore("readonly", store => store.get("exercices")).catch(() => null);
+
+  // Fichiers .pwq d’un dossier et de ses sous-dossiers, avec leur chemin relatif et de quoi les
+  // relire. Les dossiers cachés (.git…) sont sautés : ils ne contiennent pas d’exercices et
+  // peuvent compter des milliers de fichiers.
+  async function pwqFilesOf(directory, prefix = "") {
+    const found = [];
+    for await (const [name, entry] of directory.entries()) {
+      if (name.startsWith(".")) continue;
+      if (entry.kind === "directory") {
+        found.push(...await pwqFilesOf(entry, `${prefix}${name}/`));
+      } else if (name.toLowerCase().endsWith(".pwq")) {
+        const path = `${prefix}${name}`;
+        found.push({
+          path,
+          read: async () => {
+            try {
+              return await (await entry.getFile()).text();
+            } catch {
+              throw new Error(`« ${path} » est introuvable ou illisible : cliquez sur « Relire ».`);
+            }
+          }
+        });
+      }
+    }
+    return found;
+  }
+
+  // Fichiers .pwq choisis par le sélecteur classique (Firefox, Safari). Le navigateur les fige à
+  // l’ouverture : un fichier modifié ou supprimé depuis ne peut plus être lu.
+  function pwqFilesOfPicker(files) {
+    return [...files]
+      .map(file => ({ path: relativePath(file), file }))
+      .filter(({ path }) => path.toLowerCase().endsWith(".pwq"))
+      .map(({ path, file }) => ({
+        path,
+        read: async () => {
+          try {
+            return await file.text();
+          } catch {
+            throw new Error(`« ${path} » a changé depuis l’ouverture du dossier : rouvrez le dossier, puis compilez de nouveau.`);
+          }
+        }
+      }));
+  }
+
+  // Boutons du dossier selon l’état : ouvert (nom, « Relire » sur Chrome et Edge), mémorisé mais
+  // fermé (« Rouvrir « nom » » et « Autre dossier »), ou aucun (nom du dernier dossier rappelé
+  // sur Firefox et Safari).
+  function updateFolderControls(openName = null) {
+    reloadFolderButton.hidden = !(openName && folderHandle);
+    otherFolderButton.hidden = Boolean(openName) || !rememberedHandle;
+    if (openName) {
+      chooseFolderButton.textContent = "Dossier ouvert :";
+      chooseFolderButton.title = "Ouvrir un autre dossier";
+      folderName.textContent = openName;
+    } else if (rememberedHandle) {
+      chooseFolderButton.textContent = `Rouvrir « ${rememberedHandle.name} »`;
+      chooseFolderButton.title = "Rouvrir le dernier dossier d’exercices";
+      folderName.textContent = "";
+    } else {
+      chooseFolderButton.textContent = "Ouvrir un dossier d’exercices";
+      chooseFolderButton.removeAttribute("title");
+      let lastName = null;
+      try {
+        lastName = localStorage.getItem(lastFolderNameKey);
+      } catch {
+        // Stockage indisponible : pas de rappel.
+      }
+      folderName.textContent = lastName ? `Dernier dossier : ${lastName}` : "Aucun dossier ouvert";
+    }
+  }
+
+  // Ouvre un dossier par son accès (Chrome, Edge) et le mémorise. keepSelection : relecture du
+  // même dossier, qui garde la sélection, l’exercice affiché et la recherche.
+  async function openHandle(handle, { keepSelection = false } = {}) {
+    folderHandle = handle;
+    rememberedHandle = handle;
+    rememberFolder(handle);
+    showMessage(projectStatus, "Lecture du dossier…");
+    try {
+      await loadFolder(handle.name, await pwqFilesOf(handle), { keepSelection });
+    } catch (error) {
+      showMessage(projectStatus, `Le dossier n’a pas pu être lu : ${error.message}`, "error");
+    }
+  }
+
+  // Choisit un dossier dans la fenêtre du navigateur (Chrome, Edge). « id » fait rouvrir la fenêtre
+  // au même endroit d’une fois sur l’autre.
+  async function pickFolder() {
+    let handle;
+    try {
+      handle = await window.showDirectoryPicker({ id: "pywims-exercices", mode: "read" });
+    } catch {
+      return; // Fenêtre fermée sans choisir : rien ne change.
+    }
+    await openHandle(handle);
+  }
+
+  // Rouvre le dossier mémorisé : le navigateur demande seulement de confirmer l’accès.
+  async function reopenFolder() {
+    const mode = { mode: "read" };
+    if (await rememberedHandle.queryPermission(mode) !== "granted" &&
+        await rememberedHandle.requestPermission(mode) !== "granted") {
+      showMessage(projectStatus, "Accès au dossier refusé : rouvrez-le, ou choisissez-en un autre.", "error");
+      return;
+    }
+    await openHandle(rememberedHandle);
+  }
+
   // Aperçu : la vraie page de l’exercice, assemblée comme à la compilation, dans un cadre isolé
   // (sandbox sans « allow-same-origin ») car l’énoncé est du HTML écrit par l’auteur. Le cadre
   // n’exécute jamais Python : il affiche d’abord un tirage provisoire où chaque variable porte son
@@ -147,14 +283,20 @@
   }
 
   // Lit les exercices du dossier choisi, sous-dossiers compris, et réinitialise l’interface.
-  async function onFolderSelected() {
+  // sources : [{ path, read }] ; keepSelection garde la sélection d’une relecture du même dossier.
+  async function loadFolder(name, sources, { keepSelection = false } = {}) {
+    const selectedPaths = new Set([...selectedExercises].map(exercise => exercise.path));
+    const shownPath = selectedExercise?.path;
     clearMessage(messages);
     clearMessage(projectStatus);
     exercises = [];
     selectedExercise = undefined;
     selectedExercises.clear();
-    outputMode.value = "separate";
-    activityTitleInput.value = "";
+    if (!keepSelection) {
+      outputMode.value = "separate";
+      activityTitleInput.value = "";
+      search.value = "";
+    }
     exerciseList.replaceChildren();
     listEmpty.hidden = false;
     updateCompilationControls();
@@ -165,35 +307,30 @@
     previewFrame.removeAttribute("srcdoc");
     showPreviewNotice("Choisissez un exercice dans la liste pour afficher son aperçu.");
 
-    if (!filePicker.files.length) {
-      chooseFolderButton.textContent = "Ouvrir un dossier d’exercices";
-      folderName.textContent = "Aucun dossier ouvert";
-      listEmpty.textContent = "Ouvrez un dossier pour afficher ses fichiers d’exercice.";
-      return;
-    }
-
-    // Le bouton annonce le dossier ouvert ; il permet toujours d’en ouvrir un autre.
-    const selectedFolder = filePicker.files[0].webkitRelativePath?.split("/")[0];
-    chooseFolderButton.textContent = "Dossier ouvert :";
-    chooseFolderButton.title = "Ouvrir un autre dossier";
-    folderName.textContent = selectedFolder || filePicker.files[0].name;
+    updateFolderControls(name);
     showMessage(projectStatus, "Chargement des fichiers d’exercice…");
 
-    const sources = [...filePicker.files]
-      .map(file => [relativePath(file), file])
-      .filter(([path]) => path.toLowerCase().endsWith(".pwq"));
-
-    for (const [path, file] of sources) {
+    for (const { path, read } of sources) {
+      const exercise = { path, read };
       try {
-        const fields = parseExerciseSource(await file.text(), path);
-        exercises.push({ path, file, fields });
+        exercise.source = await read();
+        exercise.fields = parseExerciseSource(exercise.source, path);
       } catch (error) {
-        exercises.push({ path, file, error });
+        exercise.error = error;
+      }
+      exercises.push(exercise);
+      if (keepSelection && selectedPaths.has(path) && !exercise.error) {
+        selectedExercises.add(exercise);
       }
     }
 
     const count = exercises.length;
     renderExerciseList();
+    updateCompilationControls();
+    const shown = keepSelection && exercises.find(exercise => exercise.path === shownPath);
+    if (shown) {
+      selectExercise(shown);
+    }
     showMessage(
       projectStatus,
       `${count} fichier${count === 1 ? "" : "s"} d’exercice chargé${count === 1 ? "" : "s"}.`,
@@ -204,7 +341,7 @@
 
   // Nom d’un exercice dans la liste : son titre, ou le nom du fichier s’il est illisible.
   function exerciseLabel(exercise) {
-    return exercise.fields?.title || exercise.file.name;
+    return exercise.fields?.title || exercise.path.split("/").pop();
   }
 
   // Filtre et trie les exercices, puis reconstruit leur liste accessible.
@@ -228,7 +365,7 @@
       selection.disabled = Boolean(exercise.error);
       selection.setAttribute(
         "aria-label",
-        `Inclure « ${exercise.fields?.title || exercise.file.name} » dans la compilation`
+        `Inclure « ${exerciseLabel(exercise)} » dans la compilation`
       );
       selection.addEventListener("change", () => {
         if (selection.checked) {
@@ -395,6 +532,16 @@
       const keys = [...new Set([...pythonResources, ...neededResources(selected.map(({ fields }) => fields))])];
       const resources = await readProjectResources(keys);
       await installPythonSources(resources);
+      // Les exercices sont relus : un fichier modifié depuis l’ouverture est compilé dans sa
+      // dernière version (Chrome, Edge), ou signalé (Firefox, Safari).
+      for (const exercise of selected) {
+        const source = await exercise.read();
+        if (source !== exercise.source) {
+          exercise.fields = parseExerciseSource(source, exercise.path);
+          exercise.source = source;
+          previewDrawCache.delete(exercise);
+        }
+      }
       const questions = [];
       for (const [index, exercise] of selected.entries()) {
         const label = selected.length > 1 ? `question ${index + 1}/${selected.length}, ` : "";
@@ -456,8 +603,35 @@
     return;
   }
 
-  filePicker.addEventListener("change", onFolderSelected);
-  chooseFolderButton.addEventListener("click", () => filePicker.click());
+  filePicker.addEventListener("change", () => {
+    if (!filePicker.files.length) return;
+    const name = filePicker.files[0].webkitRelativePath?.split("/")[0] || filePicker.files[0].name;
+    try {
+      localStorage.setItem(lastFolderNameKey, name);
+    } catch {
+      // Stockage indisponible : le nom ne sera pas rappelé.
+    }
+    loadFolder(name, pwqFilesOfPicker(filePicker.files));
+  });
+  chooseFolderButton.addEventListener("click", () => {
+    if (!canRememberFolder) {
+      filePicker.click();
+    } else if (rememberedHandle && !folderHandle) {
+      reopenFolder();
+    } else {
+      pickFolder();
+    }
+  });
+  otherFolderButton.addEventListener("click", pickFolder);
+  reloadFolderButton.addEventListener("click", () => openHandle(folderHandle, { keepSelection: true }));
+  if (canRememberFolder) {
+    rememberedFolder().then(handle => {
+      rememberedHandle = handle ?? null;
+      if (!folderHandle) updateFolderControls();
+    });
+  } else {
+    updateFolderControls();
+  }
   search.addEventListener("input", renderExerciseList);
   selectVisibleButton.addEventListener("click", toggleVisibleSelection);
   compileButton.addEventListener("click", downloadExercise);
