@@ -638,6 +638,42 @@ json.dumps({
         }
       });
 
+      // Calcul sans fin (SPECIFICATION.md, §§ 3 et 5.1) : en dernier, car il relance le moteur Python.
+      await test("un calcul sans fin est arrêté au bout du délai, et le moteur Python repart", async () => {
+        const looping = PyWimsPython.createSession("boucle");
+        await looping.initialize("x = 1");
+        const epochBefore = PyWimsPython.epoch();
+        const start = performance.now();
+        let error = null;
+        await looping.run("while True:\n    pass", { timeoutMs: 1500 }).catch(caught => { error = caught; });
+        const elapsed = performance.now() - start;
+        if (error?.name !== "PyWimsTimeout" || elapsed > 10000 || PyWimsPython.epoch() !== epochBefore + 1) {
+          throw new Error(`Arrêt inattendu : ${error?.name} ${error?.message}, après ${Math.round(elapsed)} ms`);
+        }
+        // Le moteur relancé accepte de nouvelles sessions ; l’ancienne n’existe plus.
+        const fresh = PyWimsPython.createSession("apres-boucle");
+        await fresh.initialize("x = 1");
+        if (await fresh.run("1 + 1") !== 2) throw new Error("Le moteur relancé ne calcule pas.");
+        let lost = false;
+        await looping.run("x").catch(() => { lost = true; });
+        if (!lost) throw new Error("La session d’avant la relance existe encore.");
+      });
+
+      await test("une boucle sans fin dans « avant » arrête la compilation avec un message clair", async () => {
+        let message = "";
+        try {
+          await PyWimsCompiler.computeDraws({
+            avant: "a = 1\nwhile True:\n    pass",
+            enonce: "{% input_text 'r' solution=a %}"
+          }, { count: 1, timeoutMs: 1500 });
+        } catch (error) {
+          message = error.message;
+        }
+        if (!message.includes("« avant » n’a pas terminé en 1.5 s pour la graine 0 (boucle sans fin ?)")) {
+          throw new Error(`Message inattendu : ${message}`);
+        }
+      });
+
       document.getElementById("progress").textContent = "Tests terminés.";
       document.body.dataset.done = "true";
     })();

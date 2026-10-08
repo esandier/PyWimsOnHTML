@@ -49,7 +49,9 @@ Coche une ou plusieurs questions, puis **Compiler** :
 La compilation calcule 20 tirages par question (graines 0 à 19) et les intègre
 au fichier ; les tirages identiques sont fusionnés. Elle s’arrête au premier
 problème, avec la graine en cause : erreur dans `avant`, variable de l’énoncé
-non définie, solution absente ou de mauvaises dimensions, etc.
+non définie, solution absente ou de mauvaises dimensions, etc. Une exécution
+de `avant` ou de `apres` qui dépasse 30 s (boucle sans fin) arrête la
+compilation avec un message, sans bloquer le compilateur.
 
 Les tirages sont calculés avec le module `runtime/pywims.py` du dossier ouvert,
 celui qui est intégré au fichier généré : les deux restent toujours d’accord.
@@ -67,6 +69,10 @@ y ajouter ses propres outils Python ; chaque nom exporté (`__all__`) doit aussi
   arrière-plan au premier contact de l’élève avec elle (toucher, clic ou focus),
   puis rejoue le tirage pour vérifier qu’il retrouve les mêmes valeurs : un
   élève qui ne fait que lire la feuille ne télécharge pas Pyodide.
+- **Calcul trop long.** Python tourne à part (Web Worker) : la page ne gèle pas
+  pendant ses calculs. Une correction qui dépasse 15 s, par exemple pour une
+  saisie démesurée, est arrêtée ; l’élève est invité à modifier sa réponse, et
+  Python repart de lui-même.
 - **Cycle de vie d’une question.** **Vérifier ma réponse** colore les champs
   (vert ou rouge) et affiche le retour ; **Corriger ma réponse** rouvre les
   champs faux ; **Solution** remplit tous les champs avec la solution et affiche

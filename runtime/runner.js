@@ -4,6 +4,13 @@
   const answerToggleDurationMs = 550;
   const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const freeValue = "∗";
+  // Durée maximale de « apres » à la vérification (SPECIFICATION.md, § 5.1) : au-delà, le moteur
+  // Python est arrêté et relancé, et l’élève est invité à modifier sa réponse.
+  const checkTimeoutMs = 15000;
+  const checkTimeoutMessage =
+    "La correction a pris trop de temps : votre réponse est peut-être trop complexe. Modifiez-la et vérifiez de nouveau.";
+  // Nombre de relances du moteur Python ; le Python simulé des tests peut ne pas le fournir.
+  const pythonEpoch = () => PyWimsPython.epoch?.() ?? 0;
   // Retour générique, quand « apres » ne définit pas « feedback » ou n’existe pas. Une question qui
   // n’attend qu’une réponse (un champ texte, MathLive ou à choix unique) dit « Réponse incorrecte » :
   // le pluriel n’a de sens qu’avec plusieurs champs, un choix multiple ou une matrice.
@@ -465,6 +472,8 @@
       const generation = this.drawGeneration;
       const { python, exercise } = this;
       this.pythonSettled = false;
+      // Session préparée dans ce Worker : après une relance, elle n’existe plus (pythonVerdicts).
+      this.pythonEpoch = pythonEpoch();
       this.pythonReady = this.pythonReady.catch(() => {}).then(async () => {
         if (generation !== this.drawGeneration) {
           return;
@@ -492,7 +501,9 @@
         error => {
           if (generation === this.drawGeneration) {
             this.pythonSettled = true;
-            this.reportError(error);
+            // Une relance du moteur, causée par une autre question, n’est pas une erreur de celle-ci :
+            // elle se préparera de nouveau à sa prochaine vérification.
+            if (error.name !== "PyWimsRestart") this.reportError(error);
           }
         }
       );
@@ -563,6 +574,11 @@
     async pythonVerdicts(inputs) {
       const { python } = this;
       this.activatePython();
+      // Le moteur a été relancé depuis la préparation (calcul trop long) : la session de cette
+      // question n’existe plus, on la prépare de nouveau.
+      if (this.pythonEpoch !== pythonEpoch()) {
+        this.preparePython(this.draw);
+      }
       if (!this.pythonSettled) {
         this.showStatus("Chargement du moteur Python…");
       }
@@ -594,7 +610,9 @@
         await python.setMatrix(name, matrix);
       }
       await python.resetAnswers();
-      await python.run(this.exercise.apres);
+      await python.run(this.exercise.apres, { timeoutMs: checkTimeoutMs }).catch(error => {
+        throw error.name === "PyWimsTimeout" ? new Error(checkTimeoutMessage) : error;
+      });
 
       const answerResults = await Promise.all(inputs.map(input => {
         const key = input.dataset.matrixName === undefined

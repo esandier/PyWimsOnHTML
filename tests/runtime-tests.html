@@ -32,6 +32,8 @@
 window.PyWimsPython = (() => {
   const options = ${JSON.stringify(options)};
   const logs = window.pythonLogs = {};
+  // Relances du moteur : une saisie « boucle » simule un calcul trop long (erreur PyWimsTimeout).
+  let epoch = 0;
   const pause = () => new Promise(resolve => setTimeout(resolve, options.delay || 0));
   function createSession(id) {
     const exercise = options.questions?.[id] ?? options;
@@ -52,6 +54,12 @@ window.PyWimsPython = (() => {
       getChoiceTexts: async variable => exercise.mismatch ? ["autre"] : exercise.choices[seed][variable],
       resetAnswers: async () => { ok = {}; feedback = null; },
       run: async () => {
+        if (Object.values(values).includes("boucle")) {
+          epoch += 1;
+          const error = new Error("délai dépassé");
+          error.name = "PyWimsTimeout";
+          throw error;
+        }
         log.push("apres");
         const expected = exercise.answers[seed];
         let allOk = true;
@@ -80,7 +88,7 @@ window.PyWimsPython = (() => {
       }
     };
   }
-  return { createSession };
+  return { createSession, epoch: () => epoch };
 })();`;
 
     // Charge dans un cadre une feuille assemblée par le compilateur, avec le Python simulé.
@@ -221,6 +229,26 @@ window.PyWimsPython = (() => {
             !role("feedback").textContent.includes("Car") ||
             !absent(role("check")) || !absent(role("solution")) || absent(role("new-draw"))) {
           throw new Error("La solution n’est pas affichée comme prévu.");
+        }
+        frame.remove();
+      });
+
+      await test("une correction trop longue invite à modifier la réponse, puis la question se prépare de nouveau", async () => {
+        const { $, role, seeds, frame } = await openExercise(textExercise, textDraws, textOptions);
+        const field = $("#q1-form_txt_r");
+        type(field, "boucle");
+        role("check").click();
+        await waitFor(() => role("status").classList.contains("is-error"), "message de délai");
+        if (!role("status").textContent.includes("La correction a pris trop de temps") ||
+            field.disabled || field.classList.contains("is-incorrect") || $("#q1").dataset.state !== "open") {
+          throw new Error(`État inattendu : ${role("status").textContent}`);
+        }
+        const preparedBefore = seeds().length;
+        type(field, textOptions.answers[seeds().at(-1)].r);
+        role("check").click();
+        await waitFor(() => role("feedback").classList.contains("is-correct"), "vérification après relance");
+        if (seeds().length !== preparedBefore + 1 || !role("status").hidden) {
+          throw new Error("La question ne s’est pas préparée de nouveau après la relance du moteur.");
         }
         frame.remove();
       });

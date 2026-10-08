@@ -110,6 +110,13 @@ window.PyWimsPython = (() => {
       return value;
     }
 
+    // Prévient la page qu’un appel limité dans le temps commence : elle lance alors son minuteur.
+    function notifyStart(callId) {
+      if (callId !== undefined) {
+        postMessage({ id: callId, started: true });
+      }
+    }
+
     const operations = {
       setModuleSource(source) {
         pywimsModuleSource = source;
@@ -149,17 +156,23 @@ window.PyWimsPython = (() => {
         }
       },
 
-      // Exécute le code Python d’initialisation ou de correction de l’exercice.
-      run(sessionId, code) {
+      // Exécute le code Python d’initialisation ou de correction de l’exercice. callId : appel limité
+      // dans le temps ; la page est prévenue quand le calcul commence vraiment, après l’attente dans
+      // la file, pour ne compter que la durée du calcul.
+      run(sessionId, code, callId) {
         const globals = sessionGlobals(sessionId);
-        return enqueuePythonOperation(async () => toPage(await pyodide.runPythonAsync(code, { globals })));
+        return enqueuePythonOperation(async () => {
+          notifyStart(callId);
+          return toPage(await pyodide.runPythonAsync(code, { globals }));
+        });
       },
 
       // Initialise le hasard avec la graine du tirage puis exécute le code, en une seule opération :
       // aucune autre question ne peut tirer de nombre aléatoire entre les deux.
-      runSeeded(sessionId, code, seed) {
+      runSeeded(sessionId, code, seed, callId) {
         const globals = sessionGlobals(sessionId);
         return enqueuePythonOperation(async () => {
+          notifyStart(callId);
           // NumPy n’est initialisé que s’il a été chargé pour cet exercice.
           pyodide.runPython(`
 import importlib.util, random
@@ -293,6 +306,32 @@ if importlib.util.find_spec("numpy") is not None:
   let loaded = false;
   let nextCallId = 0;
   const pendingCalls = new Map();
+  // Nombre de relances du Worker : une session créée avant une relance n’existe plus. Une question
+  // compare cette valeur à celle de sa préparation pour savoir qu’elle doit se préparer de nouveau.
+  let epoch = 0;
+
+  // Arrête le Worker, par exemple après un calcul trop long : c’est le seul moyen d’interrompre
+  // Pyodide sans les en-têtes HTTP que Moodle n’envoie pas (SharedArrayBuffer). Le calcul en cause
+  // échoue avec timedOut ; les autres appels en attente échouent avec une erreur « PyWimsRestart »,
+  // que les questions savent taire. Le Worker suivant est créé au prochain appel.
+  function restart(timedOutId, timedOut) {
+    worker.terminate();
+    worker = null;
+    loaded = false;
+    epoch += 1;
+    const calls = [...pendingCalls.entries()];
+    pendingCalls.clear();
+    for (const [id, pending] of calls) {
+      clearTimeout(pending.timer);
+      if (id === timedOutId) {
+        pending.reject(timedOut);
+      } else {
+        const error = new Error("Le moteur Python a été relancé après un calcul trop long.");
+        error.name = "PyWimsRestart";
+        pending.reject(error);
+      }
+    }
+  }
 
   // Crée le Worker au premier appel : une page qui n’utilise pas Python n’en démarre aucun.
   function ensureWorker() {
@@ -302,10 +341,25 @@ if importlib.util.find_spec("numpy") is not None:
     // L’adresse du Blob n’est pas révoquée : un navigateur peut lire le script du Worker après sa
     // création, et ce petit texte ne coûte presque rien.
     const url = URL.createObjectURL(new Blob([`(${pythonWorker.toString()})()`], { type: "text/javascript" }));
-    worker = new Worker(url);
-    worker.onmessage = ({ data }) => {
-      loaded = data.loaded;
+    const current = new Worker(url);
+    worker = current;
+    // Un Worker arrêté peut encore livrer un message déjà parti : seuls ceux du Worker actuel comptent.
+    current.onmessage = ({ data }) => {
+      if (worker !== current) return;
       const pending = pendingCalls.get(data.id);
+      // Début réel d’un calcul limité dans le temps : le minuteur part maintenant.
+      if (data.started) {
+        if (pending?.timeoutMs) {
+          pending.timer = setTimeout(() => {
+            const error = new Error(`Le calcul Python a dépassé ${pending.timeoutMs / 1000} s.`);
+            error.name = "PyWimsTimeout";
+            restart(data.id, error);
+          }, pending.timeoutMs);
+        }
+        return;
+      }
+      loaded = data.loaded;
+      clearTimeout(pending?.timer);
       pendingCalls.delete(data.id);
       if (data.ok) {
         pending?.resolve(data.value);
@@ -315,11 +369,20 @@ if importlib.util.find_spec("numpy") is not None:
     };
     // Erreur du Worker lui-même (script illisible, chargement impossible) : tous les appels en
     // attente échouent avec son message, au lieu d’attendre indéfiniment.
-    worker.onerror = event => {
+    // Le Worker en panne est oublié : le prochain appel en crée un neuf.
+    current.onerror = event => {
       event.preventDefault();
+      if (worker !== current) return;
       const error = new Error(`Le moteur Python s’est arrêté : ${event.message || "erreur inconnue"}`);
-      for (const pending of pendingCalls.values()) pending.reject(error);
+      for (const pending of pendingCalls.values()) {
+        clearTimeout(pending.timer);
+        pending.reject(error);
+      }
       pendingCalls.clear();
+      current.terminate();
+      worker = null;
+      loaded = false;
+      epoch += 1;
     };
     if (pywimsModuleSource !== null) {
       worker.postMessage({ id: nextCallId++, op: "setModuleSource", args: [pywimsModuleSource] });
@@ -327,12 +390,14 @@ if importlib.util.find_spec("numpy") is not None:
     return worker;
   }
 
-  // Appelle une opération du Worker et renvoie la promesse de sa réponse.
-  function call(op, ...args) {
+  // Appelle une opération du Worker et renvoie la promesse de sa réponse. timeoutMs : durée maximale
+  // du calcul (run, runSeeded), comptée à partir de son début réel ; l’identifiant de l’appel est
+  // alors passé au Worker, qui signale ce début.
+  function call(op, args, { timeoutMs } = {}) {
     const id = nextCallId++;
     return new Promise((resolve, reject) => {
-      pendingCalls.set(id, { resolve, reject });
-      ensureWorker().postMessage({ id, op, args });
+      pendingCalls.set(id, { resolve, reject, timeoutMs });
+      ensureWorker().postMessage({ id, op, args: timeoutMs ? [...args, id] : args });
     });
   }
 
@@ -346,21 +411,22 @@ if importlib.util.find_spec("numpy") is not None:
       throw new Error("Le module pywims doit être un texte.");
     }
     pywimsModuleSource = source;
-    return worker ? call("setModuleSource", source) : Promise.resolve();
+    return worker ? call("setModuleSource", [source]) : Promise.resolve();
   }
 
   function initialize(code, sessionId = "default") {
     if (typeof code !== "string") {
       throw new Error("Le code Python de l’exercice est invalide.");
     }
-    return call("initialize", sessionId, code);
+    return call("initialize", [sessionId, code]);
   }
 
-  function runSeeded(code, seed, sessionId = "default") {
+  // options.timeoutMs : durée maximale du calcul (SPECIFICATION.md, §§ 3 et 5.1).
+  function runSeeded(code, seed, sessionId = "default", options = {}) {
     if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) {
       throw new Error(`Graine de tirage invalide : ${seed}`);
     }
-    return call("runSeeded", sessionId, code, seed);
+    return call("runSeeded", [sessionId, code, seed], options);
   }
 
   // Les contrôles des arguments restent dans la page : une donnée invalide échoue tout de suite, avec
@@ -379,7 +445,7 @@ if importlib.util.find_spec("numpy") is not None:
         )) {
       throw new Error("Les données de la matrice saisie sont invalides.");
     }
-    return call("set", sessionId, name, values);
+    return call("set", [sessionId, name, values]);
   }
 
   // Saisie d’un champ à choix : un indice (choix unique), null si rien n’est choisi, ou la liste des
@@ -390,30 +456,32 @@ if importlib.util.find_spec("numpy") is not None:
         !(value === null || isIndex(value) || (Array.isArray(value) && value.length <= 1000 && value.every(isIndex)))) {
       throw new Error("La saisie du champ à choix est invalide.");
     }
-    return call("set", sessionId, name, value);
+    return call("set", [sessionId, name, value]);
   }
 
   function getChoiceTexts(name, sessionId = "default") {
     if (!namePattern.test(name)) {
       throw new Error(`Liste de choix non prise en charge : ${name}`);
     }
-    return call("getChoiceTexts", sessionId, name);
+    return call("getChoiceTexts", [sessionId, name]);
   }
 
   function getTemplateValue(name, sessionId = "default") {
     if (!namePattern.test(name)) {
       throw new Error(`Variable de modèle non prise en charge : ${name}`);
     }
-    return call("getTemplateValue", sessionId, name);
+    return call("getTemplateValue", [sessionId, name]);
   }
 
-  const run = (code, sessionId = "default") => call("run", sessionId, code);
-  const collectDraw = (spec, sessionId = "default") => call("collectDraw", sessionId, spec);
-  const sourceErrors = (code, field) => call("sourceErrors", code, field);
-  const dispose = (sessionId = "default") => (worker ? call("dispose", sessionId) : Promise.resolve());
-  const set = (name, value, sessionId = "default") => call("set", sessionId, name, value);
-  const resetAnswers = (sessionId = "default") => call("resetAnswers", sessionId);
-  const getBoolean = (expression, sessionId = "default") => call("getBoolean", sessionId, expression);
+  // options.timeoutMs : durée maximale du calcul, comme pour runSeeded.
+  const run = (code, sessionId = "default", options = {}) => call("run", [sessionId, code], options);
+  const collectDraw = (spec, sessionId = "default") => call("collectDraw", [sessionId, spec]);
+  const sourceErrors = (code, field) => call("sourceErrors", [code, field]);
+  // Sans Worker, il n’y a aucune session à libérer (page neuve, ou Worker arrêté).
+  const dispose = (sessionId = "default") => (worker ? call("dispose", [sessionId]) : Promise.resolve());
+  const set = (name, value, sessionId = "default") => call("set", [sessionId, name, value]);
+  const resetAnswers = (sessionId = "default") => call("resetAnswers", [sessionId]);
+  const getBoolean = (expression, sessionId = "default") => call("getBoolean", [sessionId, expression]);
 
   // Lie l’API de réponse à l’espace Python privé d’une question.
   function createSession(sessionId) {
@@ -422,8 +490,8 @@ if importlib.util.find_spec("numpy") is not None:
     }
     return Object.freeze({
       initialize: code => initialize(code, sessionId),
-      run: code => run(code, sessionId),
-      runSeeded: (code, seed) => runSeeded(code, seed, sessionId),
+      run: (code, options) => run(code, sessionId, options),
+      runSeeded: (code, seed, options) => runSeeded(code, seed, sessionId, options),
       collectDraw: spec => collectDraw(spec, sessionId),
       dispose: () => dispose(sessionId),
       set: (name, value) => set(name, value, sessionId),
@@ -440,6 +508,8 @@ if importlib.util.find_spec("numpy") is not None:
     setModuleSource,
     // Indique si Pyodide est déjà chargé (le compilateur adapte son message d’attente).
     isLoaded: () => loaded,
+    // Nombre de relances du Worker (voir restart).
+    epoch: () => epoch,
     initialize,
     run,
     runSeeded,

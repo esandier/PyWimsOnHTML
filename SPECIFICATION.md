@@ -285,6 +285,11 @@ sans `apres` : la comparaison y est sans ambiguïté.
   `{"pomme", "poire", "kiwi", "figue"}` sort dans un ordre différent d’une
   instance à l’autre) : `choice(list(un_ensemble))` donnerait un autre tirage
   dans le navigateur qu’à la compilation.
+- **Calcul trop long.** Chaque exécution de `avant`, et de `apres` pour le
+  contrôle de cohérence, est limitée à **30 s** (comptées comme au § 5.1).
+  Au-delà, la compilation s’arrête : « « avant » n’a pas terminé en 30 s pour
+  la graine 7 (boucle sans fin ?) ». Le compilateur garde la main et reste
+  utilisable.
 - **Reproductibilité.** Chaque graine est exécutée deux fois, dans deux espaces
   de noms neufs ; les deux tirages (`context`, `solutions`, choix,
   explication) doivent être identiques. Sinon la compilation est refusée :
@@ -379,6 +384,18 @@ sans `apres` : la comparaison y est sans ambiguïté.
    peut pas être vérifiée.
 5. Si l’élève clique « Vérifier ma réponse » avant que Python soit prêt, la
    vérification attend la fin du chargement, avec un indicateur dans le bouton.
+6. **Calcul trop long.** Python tourne dans un Web Worker : la page garde la
+   main pendant ses calculs. L’exécution de `apres` par « Vérifier » est
+   limitée à **15 s**, comptées à partir du début réel du calcul (pas pendant
+   une attente derrière le chargement d’une autre question). Au-delà, le Worker
+   est arrêté et un Worker neuf le remplace (≈ 1,5 s, fichiers en cache) ; la
+   question affiche « La correction a pris trop de temps : votre réponse est
+   peut-être trop complexe. Modifiez-la et vérifiez de nouveau. », et ses champs
+   restent modifiables. Toutes les sessions sont perdues : chaque question qui
+   a un `apres` se prépare de nouveau (Python, puis `avant` avec la graine) à
+   sa prochaine vérification, sans message d’erreur pour celles qui se
+   préparaient pendant l’arrêt. Le chargement de Pyodide et des paquets n’est
+   pas limité : il dépend de la connexion de l’élève.
 
 ### 5.2 Cycle de vie d’une question
 

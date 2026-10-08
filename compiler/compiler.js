@@ -421,6 +421,9 @@
   }
 
   const drawCount = 20;
+  // Durée maximale d’une exécution de « avant », ou de « apres » pour le contrôle de cohérence
+  // (SPECIFICATION.md, § 3) : une boucle sans fin arrête la compilation au lieu de la bloquer.
+  const drawTimeoutMs = 30000;
   let drawSessionCounter = 0;
 
   // Résume une erreur Python : sa dernière ligne, précédée du numéro de ligne dans « avant ».
@@ -467,7 +470,7 @@
   // « Solution » pourrait montrer une réponse que la correction refuse (fraction non simplifiée,
   // indices dans un autre ordre…), ou « apres » planter pour un tirage rare. La session est celle
   // du tirage, où « avant » vient d’être exécuté ; elle est jetée ensuite. Renvoie les messages.
-  async function coherenceErrors(session, tags, draw, apres) {
+  async function coherenceErrors(session, tags, draw, apres, timeoutMs = drawTimeoutMs) {
     if (apres === undefined) {
       return defaultCoherenceErrors(tags, draw);
     }
@@ -490,8 +493,11 @@
     }
     await session.resetAnswers();
     try {
-      await session.run(apres);
+      await session.run(apres, { timeoutMs });
     } catch (error) {
+      if (error.name === "PyWimsTimeout") {
+        return [`« apres » n’a pas terminé en ${timeoutMs / 1000} s quand on saisit la solution (boucle sans fin ?).`];
+      }
       return [`« apres » lève une erreur quand on saisit la solution, ${pythonErrorSummary(error.message)}`];
     }
     const errors = [];
@@ -593,7 +599,8 @@
   // contient les valeurs de l’énoncé, les solutions converties, les choix et leur ordre
   // d’affichage, et l’explication éventuelle.
   // La première erreur de l’auteur interrompt le calcul, avec la graine en cause.
-  async function computeDraws(fields, { count = drawCount, onProgress } = {}) {
+  // timeoutMs : durée maximale de chaque exécution de « avant » et de « apres » ; les tests la réduisent.
+  async function computeDraws(fields, { count = drawCount, onProgress, timeoutMs = drawTimeoutMs } = {}) {
     const tags = PyWimsTemplate.parseTags(fields.enonce);
     const choiceTags = tags.filter(tag => PyWimsTemplate.choiceTypes.has(tag.type));
     const spec = {
@@ -629,8 +636,11 @@
         // Les paquets à charger sont déduits des imports de tout le code Python de la question.
         await session.initialize(`${fields.avant}\n${fields.apres ?? ""}`);
         try {
-          await session.runSeeded(fields.avant, seed);
+          await session.runSeeded(fields.avant, seed, { timeoutMs });
         } catch (error) {
+          if (error.name === "PyWimsTimeout") {
+            throw new Error(`« avant » n’a pas terminé en ${timeoutMs / 1000} s pour la graine ${seed} (boucle sans fin ?).`);
+          }
           throw new Error(`Erreur dans « avant » pour la graine ${seed}, ${pythonErrorSummary(error.message)}`);
         }
         return { session, draw: await session.collectDraw(spec) };
@@ -668,7 +678,7 @@
           throw new Error(`Graine ${seed} : deux exécutions de « avant » avec la même graine donnent des tirages différents (${differing.map(part => drawParts[part]).join(", ")}). Tirez le hasard uniquement avec le module random (ou numpy.random.seed) : le navigateur ne pourrait pas rejouer ce tirage.`);
         }
         // Les solutions ont la forme attendue : on peut les saisir et vérifier la correction.
-        const incoherences = await coherenceErrors(session, tags, draw, fields.apres);
+        const incoherences = await coherenceErrors(session, tags, draw, fields.apres, timeoutMs);
         if (incoherences.length) {
           throw new Error(`Graine ${seed} : ${incoherences.join(" ")}`);
         }
