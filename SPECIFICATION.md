@@ -742,30 +742,37 @@ En plus du § 2.4, le compilateur refuse l’exercice si, pour l’un des tirage
   est signalé, pas approximé ;
 - un exemple complet, du source AMC au fichier `.pwq`.
 
-## 11. Compilateur hébergé
+## 11. Site du projet : compilateur hébergé, accueil, mode d’emploi
 
-Le compilateur est une page publiée en ligne : on n’y choisit plus que le
-dossier des exercices, ce qui est plus naturel que de désigner aussi le dossier
-du projet. Prévu après la version 1 ; la cohérence (§ 3) et la liste par
-titre (§ 11.3) sont déjà en place dans le compilateur local.
+Le projet est publié en ligne : une page d’accueil qui le présente et le montre,
+le compilateur, où l’on ne choisit plus que son dossier d’exercices, et un mode
+d’emploi pour créer un exercice, avec ou sans IA. La cohérence (§ 3) et la
+liste par titre (§ 11.3) sont déjà en place dans le compilateur local.
 
 ### 11.1 Publication
 
-- La page est publiée par GitHub Pages depuis la branche `master` du dépôt
-  public, par exemple à l’adresse
-  `https://esandier.github.io/PyWimsOnHTML/compiler/`. C’est gratuit pour un
-  dépôt public ; l’activation se fait une fois dans les réglages du dépôt.
-- Chaque push sur `master` met à jour le compilateur en ligne.
+- Le site est publié par GitHub Pages depuis la branche `master` du dépôt
+  public, à l’adresse `https://esandier.github.io/PyWimsOnHTML/` : accueil
+  (`index.html` à la racine), compilateur (`compiler/`), mode d’emploi
+  (`guide/`). C’est gratuit pour un dépôt public ; l’activation se fait une
+  fois dans les réglages du dépôt.
+- Chaque push sur `master` met à jour le site.
 - Les fichiers du projet utiles à l’assemblage (`layouts/`, `runtime/`,
-  `widgets/`, `css/`) sont lus par la page à côté d’elle (même origine), et
-  non plus dans un dossier choisi par l’utilisateur.
-- Le module `pywims` est lu en ligne avec les autres fichiers, puis intégré
-  au fichier généré : tirages calculés et rejoués utilisent le même (§ 3).
-- Pour le développement, la page s’ouvre aussi par un serveur local
-  (`python -m http.server` à la racine du projet), comme les tests. Ouverte
-  directement depuis le disque (`file://`), elle ne peut plus lire ses
-  fichiers et le dit.
+  `widgets/`, `css/`) sont lus par le compilateur à côté de lui (même origine),
+  et non plus dans un dossier choisi par l’utilisateur. Ils sont relus à chaque
+  compilation, sans cache périmé (revalidation auprès du serveur) : une
+  compilation n’utilise jamais deux versions mêlées du projet.
+- Le module `pywims` et le script du Worker sont lus en ligne avec les autres
+  fichiers, puis intégrés au fichier généré : tirages calculés et rejoués
+  utilisent le même code (§ 3).
+- **Développement local** : `compiler/lancer-local.ps1` démarre un serveur
+  local à la racine du projet et ouvre le compilateur dans le navigateur ; on
+  essaie ainsi une modification du moteur avant de la publier. Ouvert
+  directement depuis le disque (`file://`), le compilateur ne peut pas lire
+  ses fichiers : il le dit, et indique ce script.
 - Les exercices ne sont jamais envoyés : la page les lit sur l’ordinateur.
+- L’extension reste `.pwq` : le format est celui de PyWims, que ce projet
+  ressuscite.
 
 ### 11.2 Dossier des exercices
 
@@ -775,24 +782,26 @@ titre (§ 11.3) sont déjà en place dans le compilateur local.
   conservé par le navigateur, dans IndexedDB). À la visite suivante, un bouton
   « Rouvrir « nom du dossier » » suffit : le navigateur demande seulement de
   confirmer l’accès. Un bouton « Relire » prend en compte les fichiers modifiés,
-  ajoutés ou supprimés, sans choisir de nouveau le dossier.
+  ajoutés ou supprimés, sans choisir de nouveau le dossier ; la compilation
+  relit elle aussi les fichiers, et un fichier modifié depuis l’ouverture ne
+  pose plus de problème.
 - **Firefox et Safari** : ces navigateurs ne permettent pas à une page de
   rouvrir un dossier d’une visite à l’autre. Le dossier se choisit à chaque
   visite ; le nom du dernier dossier est rappelé pour aider à le retrouver.
-  Pour prendre en compte un fichier modifié, on choisit de nouveau le dossier.
+  Pour prendre en compte un fichier modifié, on choisit de nouveau le dossier
+  (le message du § 11.3 le rappelle).
 - La page détecte ce que le navigateur permet ; aucun message d’erreur ne
   signale l’absence de mémorisation.
 
 ### 11.3 Liste des exercices
 
-Ces règles s’appliquent déjà au compilateur local.
-
 - Chaque exercice est désigné par son **titre**. Dessous, en petit et en gris,
   les types de champs de réponse qu’il utilise, dans l’ordre de l’énoncé et
   sans répétition : « texte », « formule », « matrice », « matrice
   redimensionnable », « choix unique », « choix multiple ».
-- Les exercices sont triés par titre dans l’ordre naturel (« (2) » avant
-  « (10) ») ; le compilateur hébergé les regroupera d’abord par sous-dossier.
+- Les exercices sont regroupés par sous-dossier (le dossier choisi d’abord,
+  puis chaque sous-dossier sous son nom), et triés par titre dans l’ordre
+  naturel (« (2) » avant « (10) ») dans chaque groupe.
 - Un fichier illisible est listé sous son nom de fichier, avec la mention
   « fichier illisible » ; son erreur s’affiche quand on le choisit.
 - La recherche porte sur le titre, les mots-clés et le chemin.
@@ -800,19 +809,69 @@ Ces règles s’appliquent déjà au compilateur local.
   ceux que la recherche laisse affichés ; quand ils sont tous cochés, il devient
   « Tout désélectionner » et les décoche. Les exercices masqués par la
   recherche gardent leur état.
-- Un fichier du dossier modifié ou supprimé après l’ouverture du dossier ne
-  peut plus être lu par le navigateur : la compilation l’explique (« … a changé
-  depuis l’ouverture du dossier : rouvrez le dossier ») au lieu d’afficher le
-  message brut du navigateur.
+- Un fichier modifié ou supprimé après l’ouverture du dossier, quand le
+  navigateur ne peut pas le relire (Firefox, Safari) : la compilation
+  l’explique (« … a changé depuis l’ouverture du dossier : rouvrez le
+  dossier ») au lieu d’afficher le message brut du navigateur.
 
-### 11.4 Étapes
+### 11.4 Charte
+
+- La charte d’une feuille (couleurs, polices, logo) est une feuille de style
+  qui ne définit que les variables et le logo prévus par `css/brand.css`.
+- **Par défaut, une charte neutre** : `css/brand.css`, sans logo ni couleurs
+  d’établissement. La charte de l’UPEC devient un exemple,
+  `css/chartes/upec.css`.
+- **Charte du dossier** : si le dossier d’exercices contient un fichier
+  `brand.css` à sa racine, il remplace la charte par défaut, pour l’aperçu
+  comme pour les fichiers générés. Un enseignant y met la charte de son
+  établissement, une fois pour toutes.
+- Le compilateur indique la charte utilisée (« Charte : brand.css du dossier »
+  ou « Charte neutre »).
+
+### 11.5 Mode d’emploi : créer un exercice
+
+Une page `guide/`, liée depuis l’accueil et le compilateur, en deux chemins :
+
+- **Avec une IA** : un bouton « Copier le prompt » copie le texte de
+  `PROMPT.md`. On le colle dans son assistant, on décrit l’exercice voulu (ou
+  on donne une question AMC à convertir), on enregistre la réponse dans un
+  fichier `.pwq` du dossier d’exercices, puis on l’ouvre dans le compilateur.
+- **Sans IA** : l’essentiel du format en une page (les champs, `{{variable}}`,
+  les balises de saisie, la correction avec ou sans `apres`), et deux modèles
+  commentés à télécharger et modifier : un QCM sans Python
+  (`guide/modeles/qcm.pwq`) et une question à réponse calculée
+  (`guide/modeles/calcul.pwq`). `PROMPT.md` reste la référence complète,
+  lisible aussi par un humain ; le guide y renvoie au lieu de la recopier.
+- **Publier** : compiler, puis déposer le fichier HTML sur Moodle comme
+  ressource « Fichier » (ou l’envoyer aux élèves) ; rappel que le fichier sert
+  à l’entraînement (§ 1).
+- Les modèles sont des exercices vérifiés par les tests, comme ceux de la
+  racine d’`exercises/`.
+
+### 11.6 Page d’accueil
+
+- `index.html` à la racine : ce que fait PyWimsOnHTML en quelques lignes
+  (exercices aléatoires corrigés dans le navigateur, un seul fichier HTML, sans
+  serveur ni compte, pour l’entraînement, sur ordinateur et téléphone), des
+  démonstrations à essayer, et deux liens : « Créer un exercice » (guide) et
+  « Compiler » (compilateur).
+- **Démonstrations** : des feuilles compilées à partir des exercices de la
+  racine d’`exercises/`, avec la charte neutre, enregistrées dans `demos/`. Un
+  script (`tests/outils/demos.py`) les recompile par le vrai compilateur ; on
+  le lance avant de publier une modification du moteur.
+- Charte neutre, page sobre, lisible sur téléphone.
+
+### 11.7 Étapes
 
 1. **Fichiers du projet lus en ligne** : plus de choix du dossier du projet ;
-   le dossier choisi ne contient que des exercices. Publication sur GitHub
-   Pages, README mis à jour.
-2. **Dossier mémorisé** : accès conservé sur Chrome et Edge, nom rappelé sur
-   Firefox et Safari, bouton « Relire ».
-3. **Liste regroupée par sous-dossier.**
+   `compiler/lancer-local.ps1` ; README mis à jour. Activation de GitHub Pages
+   (par l’auteur).
+2. **Dossier mémorisé** sur Chrome et Edge, nom rappelé sur Firefox et Safari,
+   bouton « Relire ».
+3. **Charte** : charte neutre par défaut, UPEC en exemple, charte du dossier.
+4. **Liste regroupée par sous-dossier.**
+5. **Mode d’emploi et modèles**, puis **page d’accueil et démonstrations**,
+   publiés ensemble.
 
 ## 12. Points ouverts
 
@@ -824,7 +883,6 @@ Ces règles s’appliquent déjà au compilateur local.
 - **Glisser-déposer** (balises PyWims `input_drag` / `input_drop`). Chantier
   ultérieur.
 - **Figures interactives** avec GeoGebra et/ou JSXGraph. Chantier ultérieur.
-- **Compilateur hébergé** (§ 11) : après la version 1.
 - **Outils SymPy pour `apres`** (comparer une expression saisie en une ligne),
   et une seule façon de lire les saisies : `py_wims` passe par `sympify`, sans
   le filtre de `math_expression`, et n’évalue pas la saisie.
@@ -840,7 +898,5 @@ Ces règles s’appliquent déjà au compilateur local.
   `array`, rendu, MathLive). Mesure d’octobre 2026 : MathJax pèse 603 Ko, et
   compose les 21 questions d’une activité en 2,5 s sur un processeur ralenti
   4 fois.
-- **Charte choisie** : sélectionner sa feuille `brand.css` favorite au lieu de
-  celle du dossier.
 - **`py_wims` sur l’analyseur de `math_expression`** (filtre et `parse_expr`) :
   son comportement changerait, car il n’évalue pas la saisie aujourd’hui.
