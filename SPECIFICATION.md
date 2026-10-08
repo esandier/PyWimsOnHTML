@@ -305,7 +305,9 @@ sans `apres` : la comparaison y est sans ambiguïté.
 - Un tirage enregistre :
   - `seed` : la graine ;
   - `context` : la valeur affichée de chaque `{{variable}}` de l’énoncé et de
-    chaque dimension de matrice (des chaînes, comme aujourd’hui) ;
+    chaque dimension de matrice, en texte ; un objet SymPy est écrit en LaTeX
+    (matrices entre crochets), sans `\displaystyle` : l’auteur choisit la
+    taille des formules (`$\displaystyle {{f}}$`, ou `$$ {{f}} $$`) ;
   - `solutions` : la valeur convertie de chaque champ (§ 2.3) ;
   - `explication` : le texte de `explication_solution`, s’il est défini.
 - **Cohérence.** Pour chaque tirage, dans le même espace de noms, le

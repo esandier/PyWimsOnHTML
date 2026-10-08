@@ -298,14 +298,16 @@ def is_nombre(value):
 def _template_value(value):
     """Texte affiché pour une variable de l’énoncé : LaTeX pour les objets SymPy.
 
-    Les matrices sont écrites entre crochets, comme les champs de saisie matriciels : les
-    parenthèses ont été essayées, mais s’adaptent moins bien à une matrice redimensionnable.
+    Aucun \\displaystyle n’est ajouté : l’auteur choisit la taille des formules, en écrivant
+    $\\displaystyle {{f}}$ ou $$ {{f}} $$ ; un ajout d’office grossissait les fractions en ligne et
+    s’affichait tel quel hors d’une formule. Les matrices sont écrites entre crochets, comme les
+    champs de saisie matriciels, qui s’adaptent mieux à une matrice redimensionnable.
     """
     sympy = _sys.modules.get("sympy")
     if sympy is not None:
         from sympy.matrices.matrixbase import MatrixBase
         if isinstance(value, (MatrixBase, sympy.Basic)):
-            return r"\displaystyle " + sympy.latex(value, mat_delim="[")
+            return sympy.latex(value, mat_delim="[")
     return str(value)
 
 

@@ -123,9 +123,10 @@
         await session.initialize("import sympy");
         await session.run("import sympy\nn = 3\nnom = 'Ada'\nM = sympy.Matrix([[1, 2], [3, 4]])\nf = sympy.Rational(3, 4)");
         const values = await Promise.all(["n", "nom", "M", "f"].map(name => session.getTemplateValue(name)));
+        // Pas de \displaystyle ajouté d’office : l’auteur choisit la taille des formules.
         if (values[0] !== "3" || values[1] !== "Ada" ||
-            !values[2].startsWith("\\displaystyle \\left[\\begin{matrix}1 & 2") ||
-            values[3] !== "\\displaystyle \\frac{3}{4}") {
+            !values[2].startsWith("\\left[\\begin{matrix}1 & 2") ||
+            values[3] !== "\\frac{3}{4}") {
           throw new Error(`Valeurs inattendues : ${JSON.stringify(values)}`);
         }
         let rejected = false;
