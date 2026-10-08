@@ -687,11 +687,16 @@ du projet. Prévu après la version 1 : seule l’étape 1 (cohérence) est fait
 
 ### 11.3 Liste des exercices
 
-- Chaque exercice est désigné par son **titre** ; le chemin du fichier, relatif
-  au dossier, est écrit dessous en petit.
-- Les exercices sont regroupés par sous-dossier, puis triés par titre dans
-  l’ordre naturel (« (2) » avant « (10) »).
-- Un fichier illisible est listé sous son nom de fichier, avec l’erreur.
+Ces règles s’appliquent déjà au compilateur local.
+
+- Chaque exercice est désigné par son **titre**. Dessous, en petit et en gris,
+  les types de champs de réponse qu’il utilise, dans l’ordre de l’énoncé et
+  sans répétition : « texte », « formule », « matrice », « matrice
+  redimensionnable », « choix unique », « choix multiple ».
+- Les exercices sont triés par titre dans l’ordre naturel (« (2) » avant
+  « (10) ») ; le compilateur hébergé les regroupera d’abord par sous-dossier.
+- Un fichier illisible est listé sous son nom de fichier, avec la mention
+  « fichier illisible » ; son erreur s’affiche quand on le choisit.
 - La recherche porte, comme aujourd’hui, sur le titre, les mots-clés et le
   chemin.
 

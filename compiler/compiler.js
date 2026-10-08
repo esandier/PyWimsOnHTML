@@ -285,6 +285,27 @@
     );
   }
 
+  // Nom d’un exercice dans la liste : son titre, ou le nom du fichier s’il est illisible.
+  function exerciseLabel(exercise) {
+    return exercise.fields?.title || exercise.file.name;
+  }
+
+  // Noms des types de champs de réponse, tels que la liste les affiche.
+  const fieldKindNames = {
+    input_text: "texte",
+    input_math: "formule",
+    input_matrix: "matrice",
+    input_vmatrix: "matrice redimensionnable",
+    input_radio: "choix unique",
+    input_checkbox: "choix multiple"
+  };
+
+  // Types de champs de réponse d’un énoncé, dans l’ordre et sans répétition : « choix unique ».
+  function fieldKindsLabel(enonce) {
+    const kinds = [...new Set(PyWimsTemplate.parseTags(enonce).map(tag => fieldKindNames[tag.type] ?? tag.type))];
+    return kinds.length ? kinds.join(" · ") : "aucun champ de réponse";
+  }
+
   // Filtre et trie les exercices, puis reconstruit leur liste accessible.
   function renderExerciseList() {
     const query = search.value.trim().toLocaleLowerCase();
@@ -295,7 +316,8 @@
       return searchable.includes(query);
     });
 
-    matches.sort((left, right) => left.path.localeCompare(right.path, "fr"));
+    // Ordre naturel des titres : « (2) » avant « (10) » (SPECIFICATION.md, § 11.3).
+    matches.sort((left, right) => exerciseLabel(left).localeCompare(exerciseLabel(right), "fr", { numeric: true }));
     for (const exercise of matches) {
       const item = document.createElement("li");
       const selection = document.createElement("input");
@@ -319,13 +341,15 @@
       button.className = "exercise-preview-button";
       button.type = "button";
       button.setAttribute("aria-current", String(exercise === selectedExercise));
-      const filename = document.createElement("span");
-      filename.className = "exercise-filename";
-      filename.textContent = exercise.file.name;
-      const path = document.createElement("span");
-      path.className = "exercise-path";
-      path.textContent = exercise.path;
-      button.append(filename, path);
+      const title = document.createElement("span");
+      title.className = "exercise-title";
+      title.textContent = exerciseLabel(exercise);
+      const kinds = document.createElement("span");
+      kinds.className = "exercise-fields";
+      kinds.textContent = exercise.error ? "fichier illisible" : fieldKindsLabel(exercise.fields.enonce);
+      // Le chemin reste accessible au survol : deux exercices peuvent porter le même titre.
+      button.title = exercise.path;
+      button.append(title, kinds);
       button.addEventListener("click", () => selectExercise(exercise));
       item.append(selection, button);
       exerciseList.append(item);
@@ -970,6 +994,7 @@ window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
 
   window.PyWimsCompiler = Object.freeze({
     parseExerciseSource,
+    fieldKindsLabel,
     previewPlaceholderDraw,
     choiceOrder,
     computeDraws,

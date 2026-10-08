@@ -622,6 +622,15 @@
       }
       if (fields.length !== 3) throw new Error(`${fields.length} champs au lieu de 3`);
     });
+    test("la liste des exercices nomme les types de champs de réponse, dans l’ordre, sans répétition", () => {
+      const label = PyWimsCompiler.fieldKindsLabel(
+        "{% input_radio 'a' choices=c solution=s %} {% input_text 'b' solution=s %} " +
+        "{% input_radio 'c' choices=c solution=s %} {% input_vmatrix 'd' solution=s %}");
+      if (label !== "choix unique · texte · matrice redimensionnable" ||
+          PyWimsCompiler.fieldKindsLabel("Pas de champ.") !== "aucun champ de réponse") {
+        throw new Error(`Libellé inattendu : ${label}`);
+      }
+    });
     test("le nom du fichier conserve les accents du titre", () => {
       if (PyWimsCompiler.createExerciseFilename("Dérivée d’un polynôme") !==
           "Dérivée-d-un-polynôme.html") {
