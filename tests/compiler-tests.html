@@ -339,21 +339,14 @@
         if (!rejected) throw new Error(`L’absence du champ « ${name} » n’a pas été signalée.`);
       }
     });
-    test("indique comment mettre à jour un champ de l’ancien format", () => {
-      for (const [old, hint] of [
-        ["libraries", "importez les bibliothèques en tête de « avant »"],
-        ["ggb_commands", "n’est plus pris en charge"],
-        ["reponse", "définissez la variable « feedback » dans « apres »"],
-        ["feedback", "définissez la variable « feedback » dans « apres »"]
-      ]) {
-        let message = "";
-        try {
-          PyWimsCompiler.parseExerciseSource(source.replace("%\n% apres", `%\n% ${old}`));
-        } catch (error) {
-          message = error.message;
-        }
-        if (!message.includes(hint)) throw new Error(`Message inattendu pour « ${old} » : ${message}`);
+    test("refuse un champ inconnu", () => {
+      let message = "";
+      try {
+        PyWimsCompiler.parseExerciseSource(source.replace("%\n% apres", "%\n% libraries"));
+      } catch (error) {
+        message = error.message;
       }
+      if (!message.includes("champ inconnu « libraries »")) throw new Error(`Message inattendu : ${message}`);
     });
     test("les tirages sont intégrés en texte échappé et relus à l’identique", () => {
       const draws = [{

@@ -12,7 +12,9 @@ illustre l’apparence et le comportement attendus.
 3. Une activité est une feuille d’exercices compacte dans une seule page :
    un seul chargement de Pyodide, MathJax et MathLive pour toutes les questions.
 4. L’apparence suit `css/brand.css`, y compris pour les activités.
-5. L’élève est surtout sur téléphone. Le fichier HTML reste unique et de taille
+5. L’élève travaille sur ordinateur comme sur téléphone : les deux usages
+   comptent autant, et la page doit être confortable sur un petit écran tactile
+   comme avec un clavier et une souris. Le fichier HTML reste unique et de taille
    raisonnable. Il faut une connexion pour la correction (bibliothèques en ligne).
 6. Hors périmètre : le secret des réponses et la notation, qui exigeraient un
    serveur. Le pourcentage affiché mesure la progression de l’entraînement.
@@ -31,13 +33,9 @@ et une activité en réunit plusieurs.
 | `enonce` | obligatoire | modèle de l’énoncé |
 | `apres` | obligatoire | correction |
 
-Le retour n’est plus un champ : c’est la variable `feedback` de `apres`
-(§ 2.2). Les anciens champs `reponse` et `feedback` sont refusés avec un
-message qui l’explique.
-
-Le champ `libraries` disparaît : le compilateur déduit les paquets Pyodide des
-`import` du code. Le champ `ggb_commands` est retiré pour le moment ; GeoGebra
-reviendra plus tard, peut-être sous une autre forme.
+Le retour destiné à l’élève est la variable `feedback` de `apres` (§ 2.2).
+Les paquets Pyodide sont déduits des `import` du code. Un champ inconnu est
+refusé.
 
 ### 2.2 Python
 
@@ -77,14 +75,19 @@ définie par `avant` :
 
 Les questions à choix (`input_radio`, `input_checkbox`) sont décrites au § 10.
 
-La valeur de la solution est convertie selon le type de champ :
+**Conversion de la solution.** À la compilation, pour chaque tirage, la
+valeur Python de la variable de solution (calculée par `avant`) est convertie
+en la valeur que le bouton « Solution » écrit dans le champ. Cette valeur
+convertie est enregistrée dans le tirage (`solutions`, § 3) ; le navigateur
+n’a pas besoin de Python pour l’afficher.
 
-| Champ | Conversion |
-|---|---|
-| `input_text` | texte tel qu’un élève l’écrirait : `Rational(19, 12)` → `19/12`, `x**2 + 1` → `x^2 + 1` |
-| `input_math` | LaTeX de l’expression SymPy |
-| `input_matrix` | un texte par case, converti comme pour `input_text` |
-| `input_vmatrix` | idem ; la grille prend les dimensions de la solution |
+| Champ | Valeur Python (entrée) | Valeur écrite dans le champ (sortie) |
+|---|---|---|
+| `input_text` | nombre, expression SymPy ou texte | le texte qu’un élève taperait : `Rational(19, 12)` → `19/12`, `x**2 + 1` → `x^2 + 1`, `'oui'` → `oui` |
+| `input_math` | expression SymPy | son code LaTeX, affiché par MathLive : `Rational(19, 12)` → `\frac{19}{12}` |
+| `input_matrix` | `Matrix` ou liste de lignes | un texte par case, converti comme pour `input_text` |
+| `input_vmatrix` | idem | idem ; la grille prend les dimensions de la solution |
+| `input_radio`, `input_checkbox` | indice, ou liste d’indices | les choix correspondants sont cochés (§ 10) |
 
 Quand plusieurs réponses sont justes, une valeur peut être déclarée libre avec
 `LIBRE` (fourni par `pywims`), y compris dans une `Matrix` :
@@ -337,20 +340,10 @@ Le retour explique l’erreur sans donner la réponse : c’est le rôle du bout
 Supprimés : les iframes, la scrutation toutes les 500 ms et le rechargement
 de la page pour recommencer.
 
-## 7. Migration des exercices
+## 7. Exercices PyWims existants
 
-- **Automatique** : suppression des champs `reponse` (ou `feedback`),
-  `libraries` et `ggb_commands`, `py_wims_math_expression` → `math_expression`,
-  ajout des imports explicites (version prudente :
-  `from sympy import *`, les fonctions de `random` utilisées et les outils
-  `pywims`).
-- **Manuelle** : `solution=` sur chaque balise, réécriture des retours qui
-  donnent la réponse, suppression de l’indice de `pgcd.pwq`.
-  `matrice-triangulaire.pwq` utilise `LIBRE` au-dessus de la diagonale, avec
-  une `explication_solution`.
-- `PROMPT.md` est mis à jour avec le nouveau format.
-- L’export des exercices de la base Django PyWims vers des fichiers `.pwq` est
-  un sous-projet distinct, traité plus tard.
+L’export des exercices de la base Django PyWims vers des fichiers `.pwq` est
+un sous-projet distinct, traité plus tard.
 
 ## 8. Tests
 

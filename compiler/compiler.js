@@ -3,13 +3,6 @@
   // Tous les champs du format sont obligatoires.
   const requiredFields = ["title", "keywords", "layout", "avant", "enonce", "apres"];
   const knownFields = new Set(requiredFields);
-  // Champs de l’ancien format : le message indique comment mettre l’exercice à jour.
-  const removedFields = {
-    libraries: "n’existe plus : importez les bibliothèques en tête de « avant », par exemple « from sympy import * »",
-    ggb_commands: "n’est plus pris en charge pour le moment : retirez-le",
-    reponse: "n’existe plus : définissez la variable « feedback » dans « apres »",
-    feedback: "n’existe plus : définissez la variable « feedback » dans « apres »"
-  };
   const chooseFolderButton = document.getElementById("choose-folder");
   const filePicker = document.getElementById("project-folder");
   const folderName = document.getElementById("folder-name");
@@ -97,9 +90,6 @@
       }
 
       const name = header[1];
-      if (Object.hasOwn(removedFields, name)) {
-        throw new Error(`${path}:${index + 1} : le champ « ${name} » ${removedFields[name]}.`);
-      }
       if (!knownFields.has(name)) {
         throw new Error(`${path}:${index + 1} : champ inconnu « ${name} ».`);
       }

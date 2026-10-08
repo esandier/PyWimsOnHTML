@@ -3,7 +3,8 @@
 PyWimsOnHTML compile des exercices PyWims (fichiers `.pwq`) en fichiers HTML
 interactifs et autonomes. Le compilateur est une page web statique ; le fichier
 généré fonctionne sans serveur et charge Pyodide, SymPy, MathJax et, si besoin,
-MathLive depuis Internet. Les élèves l’utilisent souvent sur téléphone.
+MathLive depuis Internet. Il est conçu pour l’ordinateur comme pour le
+téléphone.
 
 La conception d’ensemble est décrite dans [`SPECIFICATION.md`](SPECIFICATION.md),
 qui fait référence ; le format des exercices est détaillé dans

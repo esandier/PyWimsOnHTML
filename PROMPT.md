@@ -18,8 +18,6 @@ Ajoute chaque champ après une ligne délimiteur contenant uniquement `%`.
 Les champs sont, dans cet ordre : `title`, `keywords`, `layout`, `avant`,
 `enonce` et `apres`. Ils sont tous obligatoires et non vides.
 N’insère pas de ligne contenant uniquement `%` dans le contenu d’un champ.
-N’utilise pas les anciens champs `libraries`, `ggb_commands`, `reponse` ou
-`feedback`.
 
 Tout le contenu destiné à l’élève doit être en français, y compris le titre,
 les mots-clés, l’énoncé et les messages de correction. Écris les mots-clés en
