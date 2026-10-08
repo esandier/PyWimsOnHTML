@@ -5,5 +5,8 @@ __pycache__/
 Thumbs.db
 # Réglages personnels de VS Code (interpréteur Python choisi, etc.).
 .vscode/
+# Sous-dossiers d'exercices (conversions AMC, WIMS…) : contenu personnel, non vérifié par les
+# tests. La racine d'exercises/ garde les exercices du développement, que les tests compilent.
+exercises/*/
 # Notes de travail personnelles (prompt de la session suivante) : gardées sur le disque, pas dans le dépôt public.
 NOTES-prochaine-session.md
