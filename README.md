@@ -21,8 +21,10 @@ qui fait référence ; le format des exercices est détaillé dans
   unique ou multiple
 - `css/` — charte de l’organisation (`brand.css`) et styles des exercices (`exercise.css`)
 - `runtime/` — code intégré au fichier généré : grammaire des balises
-  (`template.js`), Python et module `pywims` (`python.js`), cycle de vie des
-  questions (`runner.js`)
+  (`template.js`), correction sans Python (`correction.js`), Python dans un
+  Worker (`python.js`, `python-worker.js`) et module `pywims` (`pywims.py`),
+  champs (`fields.js`), cycle de vie d’une question (`question.js`) et feuille
+  (`sheet.js`)
 - `tests/` — pages de tests et outils pour les lancer
 
 ## Utiliser le compilateur

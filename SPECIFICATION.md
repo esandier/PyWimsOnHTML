@@ -344,6 +344,16 @@ sans `apres` : la comparaison y est sans ambiguïté.
   tirages rejoués utilisent donc le même module : une page du compilateur
   restée en cache ne peut plus les désaccorder. Un dossier rouvert après une
   modification de `pywims.py` remplace le module déjà chargé.
+- **Script du Worker.** Le code du Web Worker de Python est un vrai fichier,
+  `runtime/python-worker.js`, et non le texte d’une fonction de `python.js`
+  (une telle fonction ne pouvait utiliser aucune variable de son fichier, piège
+  que les outils ne signalent pas). Il suit le chemin du module `pywims` : le
+  compilateur le lit dans le dossier ouvert et le donne à `python.js`
+  (`setWorkerSource`), les tests aussi, et le fichier généré l’intègre tel
+  quel dans un bloc `<script type="text/x-worker" id="pywims-worker">`, que
+  le navigateur n’exécute pas, seulement si une question a un `apres`.
+  `python.js` en fait le script du Worker (Blob), ce qui marche aussi en
+  `file://`.
 - L’auteur peut ajouter ses propres outils à `pywims.py` ; tout nom exporté
   (`__all__`) doit aussi être un nom réservé de `runtime/template.js`, ce que
   vérifient les tests.
@@ -500,9 +510,12 @@ sans `apres` : la comparaison y est sans ambiguïté.
 | `runtime/template.js` (nouveau) | grammaire unique des balises et échappement HTML, utilisés par le compilateur (validation, aperçu) et par le fichier généré (rendu) |
 | `runtime/correction.js` | correction par défaut sans Python (§ 2.6) : comparaison des choix et des textes, aux différences typographiques près ; utilisée par le fichier généré et par le compilateur |
 | `runtime/pywims.py` | module `pywims` : outils de l’auteur, conversion des solutions, contrôles des tirages |
-| `runtime/python.js` | Pyodide partagé, dans un Web Worker (la page ne gèle pas, un calcul sans fin peut être arrêté) ; sessions par question, installation du module `pywims`, graines, détection des paquets. L’interface reste asynchrone et inchangée pour `runner.js` et le compilateur |
-| `runtime/runner.js` | classe `Question` (rendu, cycle de vie) et progression de la feuille |
-| `widgets/*.js` | champs de saisie, avec pré-remplissage pour la solution |
+| `runtime/python.js` | Pyodide partagé, dans un Web Worker (la page ne gèle pas, un calcul sans fin peut être arrêté) : création et relance du Worker, appels asynchrones, sessions par question. L’interface reste asynchrone et inchangée pour `question.js` et le compilateur |
+| `runtime/python-worker.js` | script du Worker (§ 3) : chargement de Pyodide et des paquets, installation du module `pywims`, graines, exécution du code des sessions |
+| `runtime/fields.js` | outils communs sur les champs d’une question : lire et écrire une saisie, figer un champ, choix cochés, animation d’un champ |
+| `runtime/question.js` | classe `Question` : rendu d’un tirage, préparation de Python, vérification, correction, solution, nouvel énoncé, note |
+| `runtime/sheet.js` | la feuille : création des questions, progression et sa mémoire, note indicative, aide, célébration, redimensionnement |
+| `widgets/*.js` | champs de saisie, avec pré-remplissage pour la solution ; le widget de choix retire des colonnes quand un choix déborde |
 | `layouts/standard.html` | mise en page commune aux feuilles et aux questions seules |
 | `css/exercise.css` | styles des feuilles, à partir des variables de `brand.css` |
 | `compiler/format.js` | analyse d’un fichier `.pwq`, types de ses champs de réponse |
