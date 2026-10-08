@@ -78,6 +78,12 @@ y ajouter ses propres outils Python ; chaque nom exporté (`__all__`) doit aussi
   le pourcentage de questions réussies (une vérification entièrement juste ; une
   solution affichée ne compte pas) et une barre de progression ; le numéro d’une
   question réussie devient ✓, et des confettis saluent les 100 %.
+- **Mémoire de la progression.** Une activité garde, sur l’appareil de l’élève,
+  les questions réussies : en rouvrant la feuille (depuis Moodle ou un site), il
+  retrouve leur ✓ et son pourcentage ; les autres questions repartent vierges.
+  Rien n’est envoyé à personne. « Recommencer la feuille », dans l’aide, efface
+  cette mémoire. Une feuille modifiée puis republiée repart de zéro : il vaut
+  mieux ne pas modifier une feuille pendant que les élèves la travaillent.
 - **Questions à choix.** Les choix sont mélangés à chaque tirage. La
   vérification colore seulement les choix cochés (vert ou rouge, avec ✓ ou ✗) ;
   sur téléphone, les colonnes se réduisent tant qu’un choix ne tient pas.

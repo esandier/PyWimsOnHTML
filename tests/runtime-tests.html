@@ -649,6 +649,61 @@ window.PyWimsPython = (() => {
         frame.remove();
       });
 
+      // Mémoire de la progression (SPECIFICATION.md, § 5.3). Un titre unique donne une empreinte neuve
+      // à chaque exécution : une mémoire laissée par un essai précédent ne fausse pas le test.
+      await test("une activité retrouve ses réussites à la réouverture, et « Recommencer » les efface", async () => {
+        const title = `Mémoire ${Date.now()}`;
+        const sheet = [
+          { fields: { ...choiceWithoutApres, title: "Première" }, draws: choiceDraws },
+          { fields: { ...choiceWithoutApres, title: "Seconde" }, draws: choiceDraws }
+        ];
+        const solve = async ({ $, role }) => {
+          await waitFor(() => $("#q2 .pw-choices"), "affichage des choix");
+          $(`#q2 .pw-choice[data-choice-index="0"] input`).click();
+          $(`#q2 .pw-choice[data-choice-index="2"] input`).click();
+          role("check", 2).click();
+          await waitFor(() => $("#pw-completion-value").textContent === "50 %", "réussite de la question 2");
+        };
+        const first = await openSheet(sheet, {}, title);
+        await solve(first);
+        const key = `pywims-progression:${first.page.body.dataset.sheetId}`;
+        if (!first.page.body.dataset.sheetId || localStorage.getItem(key) !== JSON.stringify({ reussies: [2] })) {
+          throw new Error(`Mémoire inattendue : ${first.page.body.dataset.sheetId} → ${localStorage.getItem(key)}`);
+        }
+        first.frame.remove();
+
+        // Réouverture : la question 2 retrouve son ✓, sans confettis ; ses champs repartent vierges.
+        const again = await openSheet(sheet, {}, title);
+        await waitFor(() => again.$("#pw-completion-value").textContent === "50 %", "progression retrouvée");
+        if (again.role("badge", 2).textContent !== "✓" || again.role("badge", 1).textContent !== "1" ||
+            again.$("#q2").dataset.state !== "open" || again.$(`#q2 .pw-choice input:checked`) ||
+            again.page.querySelector(".pw-toast")) {
+          throw new Error("La réussite retrouvée n’est pas affichée comme prévu.");
+        }
+
+        // Recommencer : après confirmation, la mémoire est effacée et la feuille rechargée.
+        again.window.confirm = () => true;
+        const reloaded = new Promise(resolve => again.frame.addEventListener("load", resolve, { once: true }));
+        again.$("#pw-restart").click();
+        await reloaded;
+        const page = again.frame.contentDocument;
+        await waitFor(() => page.querySelector("#q2 [data-role='badge']")?.textContent === "2", "feuille rechargée");
+        if (localStorage.getItem(key) !== null || page.getElementById("pw-completion-value").textContent !== "0 %") {
+          throw new Error("« Recommencer » n’a pas effacé la progression.");
+        }
+        again.frame.remove();
+      });
+
+      await test("une question seule n’a pas de mémoire de progression", async () => {
+        const { page, frame } = await openExercise(choiceWithoutApres, choiceDraws, {});
+        // Sans empreinte, rien n’est gardé ; le bouton « Recommencer » est dans la partie de l’aide propre
+        // aux activités, que le test « une question seule n’a ni numéro… » vérifie masquée.
+        if (page.body.dataset.sheetId !== undefined) {
+          throw new Error("Une question seule porte une empreinte de feuille.");
+        }
+        frame.remove();
+      });
+
       await test("une question seule n’a ni numéro ni progression, mais garde l’aide", async () => {
         const { $, role, frame } = await openExercise(textExercise, textDraws, textOptions);
         const hidden = element => getComputedStyle(element).display === "none";

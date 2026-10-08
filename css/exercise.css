@@ -640,6 +640,22 @@ body:not([data-scored]) .pw-help-score {
   cursor: pointer;
 }
 
+/* « Recommencer la feuille » : bouton secondaire, en contour, pour ne pas concurrencer « Fermer »,
+   l’action habituelle ; il efface la progression après une confirmation. */
+.pw-help-memory {
+  margin-top: 0.6rem;
+}
+
+.pw-help-restart {
+  padding: 0.35rem 0.9rem;
+  border: 1px solid var(--pw-brand-navy);
+  border-radius: 6px;
+  color: var(--pw-brand-navy);
+  background: transparent;
+  font: 600 0.9rem var(--pw-body-font);
+  cursor: pointer;
+}
+
 /* Fin de la feuille : message bref et confettis aux couleurs de la charte. */
 .pw-toast {
   position: fixed;

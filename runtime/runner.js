@@ -435,7 +435,10 @@
     }
 
     // Première vérification entièrement juste : le numéro devient ✓ avec un rebond, et la feuille est prévenue.
-    markSucceeded() {
+    // restored : réussite retrouvée dans la mémoire de l’activité, à l’ouverture (§ 5.3) ; le numéro
+    // devient ✓ sans rebond, et la feuille, qui met à jour sa progression une seule fois pour toutes
+    // les réussites retrouvées, n’est pas prévenue.
+    markSucceeded({ restored = false } = {}) {
       if (this.succeeded) {
         return;
       }
@@ -443,6 +446,9 @@
       this.section.dataset.succeeded = "true";
       this.badgeElement.textContent = "✓";
       this.badgeElement.classList.add("is-done");
+      if (restored) {
+        return;
+      }
       if (!reduceMotion) {
         this.badgeElement.animate(
           [{ transform: "scale(0.3)" }, { transform: "scale(1.3)", offset: 0.6 }, { transform: "scale(1)" }],
@@ -913,9 +919,51 @@
 
   // Chaque section de la feuille devient une question indépendante ; seule une activité a une
   // progression et une note indicative.
+  // Mémoire de la progression d’une activité (SPECIFICATION.md, § 5.3) : les numéros des questions
+  // réussies, gardés par le navigateur sous l’empreinte de la feuille. Plusieurs feuilles d’un même
+  // site partagent le stockage : l’empreinte les distingue, et une feuille modifiée en change.
+  // Le stockage peut être indisponible (navigation privée, réglages) : la feuille marche sans.
+  const sheetId = document.body.dataset.sheetId;
+  const progressKey = !singleQuestion && sheetId ? `pywims-progression:${sheetId}` : null;
+
+  function loadProgress() {
+    if (!progressKey) return [];
+    try {
+      const saved = JSON.parse(localStorage.getItem(progressKey) ?? "null");
+      return Array.isArray(saved?.reussies) ? saved.reussies : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveProgress(questions) {
+    if (!progressKey) return;
+    try {
+      const succeeded = questions.filter(question => question.succeeded).map(question => question.index + 1);
+      localStorage.setItem(progressKey, JSON.stringify({ reussies: succeeded }));
+    } catch {
+      // Sans stockage, la progression est seulement perdue à la fermeture de la page.
+    }
+  }
+
+  // « Recommencer la feuille », dans l’aide : efface la mémoire, après confirmation, puis recharge
+  // la feuille pour repartir de questions vierges.
+  document.getElementById("pw-restart")?.addEventListener("click", () => {
+    if (!confirm("Effacer vos réussites et recommencer la feuille ?")) return;
+    try {
+      localStorage.removeItem(progressKey);
+    } catch {
+      // Rien à effacer si le stockage est indisponible.
+    }
+    location.reload();
+  });
+
   const questions = [...document.querySelectorAll(".pw-question")].map(
     (section, index) => new Question(section, index, {
-      onSuccess: singleQuestion ? null : () => updateProgress(questions),
+      onSuccess: singleQuestion ? null : () => {
+        updateProgress(questions);
+        saveProgress(questions);
+      },
       onScoreChange: singleQuestion ? null : () => updateScoreTotal(questions)
     })
   );
@@ -923,6 +971,13 @@
     document.body.dataset.scored = "true";
   }
   if (!singleQuestion) {
+    // Réussites retrouvées : le ✓ revient, tout le reste repart vierge. Une feuille retrouvée
+    // terminée ne relance pas les confettis.
+    const restored = new Set(loadProgress());
+    for (const question of questions) {
+      if (restored.has(question.index + 1)) question.markSucceeded({ restored: true });
+    }
+    celebrated = questions.every(question => question.succeeded);
     updateProgress(questions);
     updateScoreTotal(questions);
   }

@@ -413,6 +413,25 @@ sans `apres` : la comparaison y est sans ambiguïté.
 - La barre de titre de l’activité affiche le pourcentage de questions réussies
   (même poids pour chaque question) et une barre de progression. Une question
   seule n’affiche pas de progression.
+- **Mémoire de la progression (activité seulement).** Le navigateur garde, sur
+  l’appareil de l’élève, les questions réussies : un élève qui rouvre
+  l’activité, depuis Moodle ou un site, retrouve leur ✓ et son pourcentage.
+  Tout le reste repart vierge : énoncés tirés de nouveau, champs vides, notes
+  indicatives à 0. Rien n’est envoyé à personne.
+  - Stockage : `localStorage`, clé `pywims-progression:` suivie de l’empreinte
+    de la feuille ; valeur : les numéros des questions réussies. Toutes les
+    feuilles d’un même site partagent ce stockage : l’empreinte les distingue.
+  - Empreinte : calculée à la compilation à partir du titre et du contenu de
+    toutes les questions (champs et tirages), et inscrite dans la page
+    (`data-sheet-id`). Une feuille modifiée puis republiée a une autre
+    empreinte : sa mémoire repart de zéro. C’est à l’enseignant de ne pas
+    modifier une feuille en cours d’utilisation.
+  - Une progression retrouvée à 100 % ne relance pas les confettis.
+  - Le stockage peut être indisponible (navigation privée, réglages) : la
+    feuille fonctionne alors normalement, sans mémoire.
+  - **Recommencer.** L’aide d’une activité propose « Recommencer la feuille » :
+    après confirmation, la mémoire est effacée et la feuille rechargée.
+  - Une question seule n’a pas de mémoire.
 
 ### 5.4 Mise en page et stabilité
 
@@ -445,7 +464,8 @@ sans `apres` : la comparaison y est sans ambiguïté.
 - Dans une activité, l’aide explique aussi le pourcentage : part des questions
   réussies par l’élève lui-même, une solution affichée ne compte pas, une
   réussite reste acquise après un nouvel énoncé, même poids pour chaque
-  question.
+  question. Elle précise que les réussites sont gardées sur cet appareil, et
+  propose « Recommencer la feuille » (§ 5.3).
 - Le même texte, abrégé, apparaît en bulle au survol, au focus ou au toucher du
   pourcentage.
 

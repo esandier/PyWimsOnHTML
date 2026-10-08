@@ -26,7 +26,8 @@
   <script>@@MATHLIVE_LOADER@@</script>
 </head>
 <!-- data-sheet : « single » pour une question seule, « activity » pour une feuille de plusieurs questions. -->
-<body data-sheet="@@SHEET_KIND@@">
+<!-- data-sheet-id : empreinte d’une activité, clé de la mémoire de sa progression (absente pour une question seule). -->
+<body data-sheet="@@SHEET_KIND@@"@@SHEET_ID@@>
   <!-- En-tête : titre, progression (activité seulement), aide et logo. Il reste visible au défilement d’une activité. -->
   <div class="pw-top">
     <!-- Le logo de marque est décoratif ; son image et son style sont définis dans brand.css. -->
@@ -81,6 +82,9 @@
         <li>Une réussite reste acquise, même si vous demandez ensuite un nouvel énoncé.</li>
         <li>Toutes les questions ont le même poids.</li>
       </ul>
+      <!-- Mémoire de la progression : gardée sur l’appareil, effacée par « Recommencer la feuille ». -->
+      <p class="pw-help-memory">Vos réussites sont gardées sur cet appareil : en revenant à cette feuille, vous les retrouvez.</p>
+      <button class="pw-help-restart" id="pw-restart" type="button">Recommencer la feuille</button>
     </section>
     <section class="pw-help-score">
       <h3>La note</h3>

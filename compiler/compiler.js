@@ -786,6 +786,24 @@ ${renderDrawData(draws)}
     return code;
   }
 
+  // Empreinte d’une activité, pour la mémoire de la progression (SPECIFICATION.md, § 5.3) : hachage
+  // cyrb53 (53 bits, rapide, sans dépendance) du titre et du contenu de toutes les questions. Ce
+  // n’est pas une protection : il suffit que deux feuilles différentes n’aient pas la même empreinte,
+  // et qu’une feuille modifiée en change.
+  function sheetFingerprint(title, questions) {
+    const text = JSON.stringify([title, questions.map(({ fields, draws }) => [fields, draws])]);
+    let h1 = 0xdeadbeef;
+    let h2 = 0x41c6ce57;
+    for (let index = 0; index < text.length; index += 1) {
+      const code = text.charCodeAt(index);
+      h1 = Math.imul(h1 ^ code, 2654435761);
+      h2 = Math.imul(h2 ^ code, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+  }
+
   // Assemble le HTML autonome à partir des textes des fichiers du projet, sans accès au disque.
   // Pyodide, MathJax et MathLive sont chargés une seule fois, quel que soit le nombre de questions.
   function assembleSheet({ title, kind, questions }, resources) {
@@ -794,6 +812,8 @@ ${renderDrawData(draws)}
     const replacements = {
       TITLE: escapeHtml(title),
       SHEET_KIND: kind,
+      // Seule une activité garde sa progression : une question seule n’a pas d’empreinte.
+      SHEET_ID: kind === "activity" ? ` data-sheet-id="${sheetFingerprint(title, questions)}"` : "",
       CSS: `${resources.brandCss}\n${resources.exerciseCss}`,
       TEMPLATE: resources.template,
       CORRECTION: resources.correction,
