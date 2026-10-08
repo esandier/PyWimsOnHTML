@@ -64,8 +64,15 @@ refusé.
 - Variable facultative de `avant` : `explication_solution`, un texte (formules
   TeX admises) affiché avec la solution (§ 5.2).
 - Pour lire une saisie qui contient une expression (champ texte ou case de
-  matrice), utiliser `math_expression` plutôt que `py_wims` : sa grammaire est
-  restreinte et accepte l’écriture des élèves (`2x`, `x^2`).
+  matrice), utiliser `math_expression` plutôt que `py_wims` : elle accepte
+  l’écriture des élèves (`2x`, `x^2`, `sin x`, `ln(x)`) et renvoie `None` pour
+  une saisie invalide. Elle s’appuie sur l’analyseur de SymPy (`parse_expr`,
+  avec produit implicite, `^` pour la puissance et décimaux convertis en
+  fractions), précédé d’un filtre : seuls les chiffres, les lettres, les
+  espaces et `+ - * / ^ ( ) .` sont admis, et `//` est refusé. Sans `_`,
+  guillemets, crochets ni virgule, une saisie ne peut appeler que les fonctions
+  admises (`sin`, `cos`, `tan`, `exp`, `log`, `ln`, `sqrt`) ; les autres noms
+  sont des symboles, et `e` et `pi` les constantes.
 
 ### 2.3 Balises de saisie
 
@@ -522,6 +529,12 @@ un sous-projet distinct, traité plus tard.
   bout (ouverture du dossier, liste, aperçu réel, compilation, fichier
   téléchargé), sans erreur JavaScript.
 - `tests/outils/lancer-tests.ps1` lance le tout dans Edge sans interface.
+- Le pilotage d’Edge passe par Playwright pour Python (`pip install
+  playwright`), avec l’Edge installé (`channel="msedge"`) : aucun autre
+  navigateur à télécharger. Il ouvre les pages, donne le dossier au sélecteur,
+  reçoit les téléchargements et fait les captures.
+- `tests/outils/capture.py` : capture d’une page sur ordinateur ou sur
+  téléphone (375 px de large, écran tactile), pour vérifier le rendu (§ 9).
 - Un test vérifie un comportement, et non la présence d’une chaîne dans le
   code.
 - **Un seul analyseur `.pwq`**, celui du compilateur. Le balayage des tirages
@@ -541,7 +554,8 @@ un sous-projet distinct, traité plus tard.
   évidents, y compris les solutions écartées quand elles éclairent le choix
   (par exemple pour l’affichage sur téléphone). Ils décrivent le code tel qu’il
   est, pas l’histoire de ses versions, qui est celle de git.
-- Le rendu se vérifie sur ordinateur et sur téléphone (cadre de 375 px).
+- Le rendu se vérifie sur ordinateur et sur téléphone (375 px de large,
+  `tests/outils/capture.py`).
 
 ## 10. Questions à choix
 
@@ -777,8 +791,8 @@ Ces règles s’appliquent déjà au compilateur local.
 - **Figures interactives** avec GeoGebra et/ou JSXGraph. Chantier ultérieur.
 - **Compilateur hébergé** (§ 11) : après la version 1.
 - **Outils SymPy pour `apres`** (comparer une expression saisie en une ligne),
-  et une seule façon de lire les saisies : `py_wims` passe par `sympify`, qui
-  exécute du code, alors que `math_expression` a sa propre grammaire.
+  et une seule façon de lire les saisies : `py_wims` passe par `sympify`, sans
+  le filtre de `math_expression`, et n’évalue pas la saisie.
 - **Tests hors du navigateur** (Node.js) et intégration continue sur GitHub,
   avant la diffusion large.
 - **Clavier choisi par l’auteur** pour une case ou un champ (pavé numérique

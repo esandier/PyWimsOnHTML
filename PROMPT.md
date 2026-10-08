@@ -42,8 +42,9 @@ français, séparés par des virgules.
 - Les outils PyWims s’importent depuis le module `pywims` :
   `from pywims import py_wims, is_nombre, math_expression, decimal_fr, LIBRE`.
   - `math_expression(saisie)` analyse une expression écrite par un élève
-    (`2x`, `x^2`, `sqrt(2)`) avec une grammaire restreinte, sans exécuter de
-    code, et renvoie une expression SymPy ou `None`. Utilise-la pour toute
+    (`2x`, `x^2`, `sqrt(2)`, `sin x`, `ln(x)`), en n’admettant que les
+    fonctions mathématiques usuelles, et renvoie une expression SymPy ou
+    `None` si la saisie est invalide. Utilise-la pour toute
     saisie qui peut contenir une expression.
   - `py_wims(saisie)` convertit une saisie simple (nombre, fraction) en objet
     SymPy, ou renvoie `None`.

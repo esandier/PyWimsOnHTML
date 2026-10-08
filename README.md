@@ -191,8 +191,13 @@ Sous Windows, `tests/outils/lancer-tests.ps1` lance tout automatiquement (Edge
 sans interface, profil vierge), puis `tests/outils/essai_compilateur.py`, qui
 essaie l’interface du compilateur de bout en bout : ouverture du dossier, liste,
 aperçu, compilation et fichier téléchargé. Prérequis : Python avec le paquet
-`websocket-client`. L’option `-SansPyodide` saute les tests du vrai Pyodide, les
+`playwright` (`pip install playwright`), qui pilote l’Edge installé, sans autre
+navigateur à télécharger. L’option `-SansPyodide` saute les tests du vrai Pyodide, les
 plus longs ; `-Tirages 200` demande un balayage complet.
+
+Pour vérifier un rendu, `python tests/outils/capture.py URL image.png --telephone`
+capture une page comme sur un téléphone (375 px de large) ; sans `--telephone`,
+comme sur un ordinateur.
 
 Les tests servent les pages par `http://`, alors qu’un élève ouvre souvent le
 fichier depuis le disque (`file://`), où le navigateur se comporte parfois
