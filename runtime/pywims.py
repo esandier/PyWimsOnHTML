@@ -311,105 +311,44 @@ def _template_value(value):
     return str(value)
 
 
-# Seules ces fonctions sont admises comme appels dans une expression saisie.
+# Lecture d’une expression saisie : l’analyseur de SymPy (parse_expr), derrière un filtre. parse_expr
+# évalue la saisie par eval ; le filtre ne laisse passer que l’écriture mathématique : sans « _ »,
+# guillemets, crochets ni virgule, sans mot-clé Python ni point entre deux noms, une saisie ne peut
+# appeler que les fonctions de _FUNCTIONS. Tout autre nom devient un symbole, que l’analyse soit faite
+# dans l’espace de noms de l’auteur ou non (E = 3 dans « avant » ne change rien).
+# Solution écartée : une grammaire écrite pour le projet (opérateurs, priorités, produit implicite) ;
+# elle refaisait moins bien ce que fait SymPy (« sin x », « sqrt 2 » étaient lus comme des produits).
 _FUNCTIONS = ("cos", "exp", "log", "sin", "sqrt", "tan")
-_TOKEN = _re.compile(r"\s*(?:(\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)|([A-Za-z][A-Za-z0-9]*)|(.))")
+_EXPRESSION_CHARACTERS = _re.compile(r"[0-9A-Za-z+\-*/^(). \t]*")
+# Un point qui touche un nom ou une parenthèse : un accès à un attribut (x.diff(x)), pas un décimal.
+_ATTRIBUTE_DOT = _re.compile(r"[A-Za-z)]\s*\.|\.\s*[A-Za-z(]")
+_NAME = _re.compile(r"[A-Za-z][A-Za-z0-9]*")
 
 
 def math_expression(value):
-    """Analyse l’expression ASCII de MathLive avec une grammaire restreinte, sans eval ni sympify."""
+    """Expression SymPy écrite par un élève (« 2x », « x^2 », « sin x », « ln(x) »), ou None."""
+    import keyword
     import sympy
-    if not isinstance(value, str) or len(value) > 10000:
+    from sympy.parsing.sympy_parser import (convert_xor, implicit_multiplication_application, parse_expr,
+                                            rationalize, standard_transformations)
+    if (not isinstance(value, str) or len(value) > 10000 or not value.strip()
+            or not _EXPRESSION_CHARACTERS.fullmatch(value) or "//" in value or _ATTRIBUTE_DOT.search(value)):
         return None
-
+    names = set(_NAME.findall(value))
+    if any(keyword.iskeyword(name) for name in names):
+        return None
+    known = {"e": sympy.E, "pi": sympy.pi, "ln": sympy.log}
+    known.update((name, getattr(sympy, name)) for name in _FUNCTIONS)
+    known.update((name, sympy.Symbol(name)) for name in names - set(known))
+    # Seuls les constructeurs que les transformations insèrent ; « __builtins__ » vide, sinon eval
+    # ajouterait les fonctions natives de Python.
+    constructors = {"__builtins__": {}, "Integer": sympy.Integer, "Float": sympy.Float,
+                    "Rational": sympy.Rational, "Symbol": sympy.Symbol}
+    # Produit implicite (« 2x », « sin x »), « ^ » pour la puissance, décimaux en fractions (« 1.5 »
+    # donne 3/2, comme une saisie exacte).
+    transformations = standard_transformations + (implicit_multiplication_application, convert_xor, rationalize)
     try:
-        tokens = []
-        position = 0
-        while position < len(value):
-            match = _TOKEN.match(value, position)
-            if not match:
-                if value[position:].isspace():
-                    break
-                raise ValueError("Expression mathématique invalide.")
-            number, identifier, operator = match.groups()
-            if number:
-                tokens.append(("number", number))
-            elif identifier:
-                tokens.append(("identifier", identifier))
-            elif operator in "+-*/^()":
-                tokens.append((operator, operator))
-            else:
-                raise ValueError("Caractère non pris en charge.")
-            position = match.end()
-        if not tokens or len(tokens) > 1000:
-            raise ValueError("Expression vide ou trop complexe.")
-
-        functions = {name: getattr(sympy, name) for name in _FUNCTIONS}
-        index = [0]
-        nodes = [0]
-
-        # Analyse les opérations par priorité, y compris les produits implicites comme 3x.
-        def parse_expression(min_precedence=0, depth=0):
-            nodes[0] += 1
-            if depth > 64 or nodes[0] > 1000 or index[0] >= len(tokens):
-                raise ValueError("Expression trop complexe ou incomplète.")
-
-            kind, token = tokens[index[0]]
-            index[0] += 1
-            if kind == "number":
-                left = sympy.Rational(token)
-            elif kind == "identifier":
-                if token in functions and index[0] < len(tokens) and tokens[index[0]][0] == "(":
-                    index[0] += 1
-                    argument = parse_expression(0, depth + 1)
-                    if index[0] >= len(tokens) or tokens[index[0]][0] != ")":
-                        raise ValueError("Parenthèse fermante manquante.")
-                    index[0] += 1
-                    left = functions[token](argument)
-                elif token == "pi":
-                    left = sympy.pi
-                elif token == "e":
-                    left = sympy.E
-                else:
-                    left = sympy.Symbol(token)
-            elif kind == "(":
-                left = parse_expression(0, depth + 1)
-                if index[0] >= len(tokens) or tokens[index[0]][0] != ")":
-                    raise ValueError("Parenthèse fermante manquante.")
-                index[0] += 1
-            elif kind in ("+", "-"):
-                operand = parse_expression(25, depth + 1)
-                left = operand if kind == "+" else -operand
-            else:
-                raise ValueError("Expression mathématique invalide.")
-
-            while index[0] < len(tokens):
-                kind, token = tokens[index[0]]
-                precedence = {"+": 10, "-": 10, "*": 20, "/": 20, "^": 30}.get(kind)
-                implicit_product = kind in ("number", "identifier", "(")
-                if implicit_product:
-                    precedence = 20
-                if precedence is None or precedence < min_precedence:
-                    break
-                if not implicit_product:
-                    index[0] += 1
-                next_precedence = precedence if kind == "^" else precedence + 1
-                right = parse_expression(next_precedence, depth + 1)
-                if kind == "+":
-                    left = sympy.Add(left, right)
-                elif kind == "-":
-                    left = sympy.Add(left, -right)
-                elif kind == "/":
-                    left = sympy.Mul(left, sympy.Pow(right, -1))
-                elif kind == "^":
-                    left = sympy.Pow(left, right)
-                else:
-                    left = sympy.Mul(left, right)
-            return left
-
-        result = parse_expression()
-        if index[0] != len(tokens):
-            raise ValueError("L’expression contient une syntaxe non prise en charge.")
-        return result
-    except (ValueError, TypeError, ZeroDivisionError, RecursionError):
+        result = parse_expr(value, local_dict=known, global_dict=constructors, transformations=transformations)
+    except Exception:  # Toute erreur d’analyse ou de calcul : la saisie est invalide.
         return None
+    return result if isinstance(result, sympy.Expr) else None

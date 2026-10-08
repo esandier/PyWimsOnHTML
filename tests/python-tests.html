@@ -84,7 +84,7 @@
         await restored.dispose();
       });
 
-      await test("le module pywims analyse les saisies sans exécuter de code", async () => {
+      await test("le module pywims analyse les saisies et refuse tout autre code", async () => {
         const session = PyWimsPython.createSession("module");
         await session.initialize("from pywims import py_wims, is_nombre, math_expression\nfrom sympy import *");
         await session.run("from pywims import py_wims, is_nombre, math_expression\nfrom sympy import *\nx = symbols('x')");
@@ -92,6 +92,13 @@
         await expectPython(session, "math_expression('sqrt(4)+e') == 2 + E", "Fonctions ou constantes mal lues");
         await expectPython(session, "math_expression(\"__import__('os')\") is None", "Une saisie dangereuse a été acceptée");
         await expectPython(session, "math_expression('3+') is None", "Une expression incomplète a été acceptée");
+        await expectPython(session, "math_expression('sin x + sqrt 2') == sin(x) + sqrt(2)", "Fonction sans parenthèses mal lue");
+        await expectPython(session, "math_expression('ln(x) + ln 2') == log(x) + log(2)", "ln mal lu");
+        await expectPython(session, "math_expression('1.5x') == Rational(3, 2)*x", "Décimal non converti en fraction");
+        await expectPython(session, "math_expression('(x+1)(x-1)') == (x + 1)*(x - 1)", "Produit de parenthèses mal lu");
+        await expectPython(session,
+          "all(math_expression(s) is None for s in ['x//2', 'x.diff(x)', '(x).diff(x)', 'x or y', 'not x', '[x]', '1,5', ''])",
+          "Une saisie hors de l’écriture mathématique a été acceptée");
         await expectPython(session, "simplify(py_wims('1/2') - Rational(1, 2)) == 0", "py_wims ne lit pas une fraction");
         await expectPython(session, "py_wims('(') is None", "py_wims accepte une saisie invalide");
         await expectPython(session, "is_nombre(Rational(1, 2)) and is_nombre(3) and not is_nombre(x)", "is_nombre se trompe");
