@@ -356,10 +356,16 @@ sans `apres` : la comparaison y est sans ambiguïté.
    tout de suite à partir de `context`.
 2. MathJax compose les formules. MathLive n’est chargé que si une question en a
    besoin.
-3. En arrière-plan, seulement pour les questions qui ont un `apres`
-   (§ 2.6) : chargement de Pyodide et des paquets détectés, puis exécution de
-   `avant` avec la graine du tirage. Une feuille dont aucune question n’a
-   d’`apres` ne charge jamais Pyodide.
+3. Seulement pour une question qui a un `apres` (§ 2.6), et seulement au
+   **premier contact** de l’élève avec elle (clic, toucher ou focus dans sa
+   carte, ou « Vérifier ma réponse ») : chargement en arrière-plan de Pyodide
+   et des paquets détectés, puis exécution de `avant` avec la graine du
+   tirage. Un élève qui ne fait que lire la feuille, ou ne travaille que les
+   questions sans `apres`, ne télécharge jamais Pyodide. Le chargement n’est
+   pas lancé à l’apparition de la question à l’écran : il le serait aussi
+   pour une question seulement regardée, alors que l’élève qui commence à
+   répondre laisse de toute façon à Pyodide le temps de se charger.
+   « Nouvel énoncé » avant ce premier contact ne prépare rien non plus.
 4. Contrôle (questions avec Python) : le `context` recalculé doit être
    identique au `context` stocké. Sinon la question affiche une erreur et ne
    peut pas être vérifiée.

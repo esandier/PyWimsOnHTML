@@ -209,6 +209,19 @@
       this.pythonReady = Promise.resolve();
       this.pythonSettled = false;
       this.drawGeneration = 0;
+      // Python n’est préparé qu’au premier contact de l’élève avec la question : un toucher, un clic
+      // ou un focus dans sa carte (SPECIFICATION.md, § 5.1). Un élève qui ne fait que lire ne
+      // télécharge pas Pyodide. « Vérifier » le déclenche aussi, au cas où rien d’autre ne l’a fait.
+      this.pythonActivated = false;
+      if (this.usesPython) {
+        const activate = () => {
+          section.removeEventListener("pointerdown", activate);
+          section.removeEventListener("focusin", activate);
+          this.activatePython();
+        };
+        section.addEventListener("pointerdown", activate);
+        section.addEventListener("focusin", activate);
+      }
 
       this.promptElement.addEventListener("input", () => this.updateButtons());
       // Un bouton absent est inactif ; la garde protège aussi d’un clic déclenché par script.
@@ -222,7 +235,7 @@
       this.mathLiveReady().then(() => this.updateButtons(), error => this.reportError(error));
     }
 
-    // Affiche un tirage au hasard et lance la préparation de Python.
+    // Affiche un tirage au hasard ; Python attend le premier contact de l’élève (activatePython).
     start() {
       try {
         if (!this.draws.length) {
@@ -230,12 +243,19 @@
         }
         const selected = this.draws[Math.floor(Math.random() * this.draws.length)];
         this.renderDraw(selected).catch(error => this.reportError(error));
-        if (this.usesPython) {
-          this.preparePython(selected);
-        }
       } catch (error) {
         this.reportError(error);
       }
+    }
+
+    // Premier contact avec une question qui a un « apres » : prépare la session Python du tirage
+    // affiché. Ensuite, chaque nouvel énoncé prépare la sienne (newDraw).
+    activatePython() {
+      if (!this.usesPython || this.pythonActivated) {
+        return;
+      }
+      this.pythonActivated = true;
+      this.preparePython(this.draw);
     }
 
     // Construit le widget d’une balise ; dimensions nommées, choix et ordre viennent du tirage.
@@ -536,6 +556,7 @@
     // fields(), et le retour de l’auteur (null s’il n’a pas défini « feedback »).
     async pythonVerdicts(inputs) {
       const { python } = this;
+      this.activatePython();
       if (!this.pythonSettled) {
         this.showStatus("Chargement du moteur Python…");
       }
@@ -751,7 +772,8 @@
       const others = this.draws.filter(candidate => candidate !== this.draw);
       const next = others.length ? others[Math.floor(Math.random() * others.length)] : this.draw;
       this.hideStatus();
-      if (this.usesPython) {
+      // Avant le premier contact, rien n’est préparé : activatePython préparera le tirage affiché.
+      if (this.pythonActivated) {
         this.preparePython(next);
       }
       this.busy = true;

@@ -63,8 +63,9 @@ ceux que rejoue le fichier généré.
   navigateur, sans Python, par comparaison avec sa solution : c’est le cas
   courant des QCM, et une feuille qui n’a que de telles questions ne charge
   jamais Pyodide. Pour une question qui a un `apres`, Python se charge en
-  arrière-plan et rejoue le tirage pour vérifier qu’il retrouve les mêmes
-  valeurs.
+  arrière-plan au premier contact de l’élève avec elle (toucher, clic ou focus),
+  puis rejoue le tirage pour vérifier qu’il retrouve les mêmes valeurs : un
+  élève qui ne fait que lire la feuille ne télécharge pas Pyodide.
 - **Cycle de vie d’une question.** **Vérifier ma réponse** colore les champs
   (vert ou rouge) et affiche le retour ; **Corriger ma réponse** rouvre les
   champs faux ; **Solution** remplit tous les champs avec la solution et affiche

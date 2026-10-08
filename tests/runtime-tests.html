@@ -121,6 +121,12 @@ window.PyWimsPython = (() => {
     // Un bouton absent reste à sa place, invisible et inactif.
     const absent = button => button.classList.contains("is-absent") && button.disabled;
 
+    // Premier contact de l’élève avec une question (toucher ou clic) : il déclenche la préparation de
+    // Python (SPECIFICATION.md, § 5.1). element.click() seul ne produit pas cet événement.
+    function touch(element) {
+      element.dispatchEvent(new element.ownerDocument.defaultView.PointerEvent("pointerdown", { bubbles: true }));
+    }
+
     function type(input, value) {
       input.value = value;
       input.dispatchEvent(new Event("input", { bubbles: true }));
@@ -219,10 +225,27 @@ window.PyWimsPython = (() => {
         frame.remove();
       });
 
+      await test("Python n’est préparé qu’au premier contact de l’élève avec la question", async () => {
+        const { $, role, seeds, frame, window: frameWindow } = await openExercise(textExercise, textDraws, textOptions);
+        await waitFor(() => $("#q1-form_txt_r"), "affichage du champ");
+        role("new-draw").click();
+        await waitFor(() => !role("new-draw").disabled, "nouvel énoncé sans contact");
+        await new Promise(resolve => setTimeout(resolve, 300));
+        if (seeds().length || frameWindow.pythonLogs.q1.length) {
+          throw new Error(`Python a été préparé sans contact : ${frameWindow.pythonLogs.q1.join(" ; ")}`);
+        }
+        // Le focus clavier compte comme un contact, et prépare le tirage affiché.
+        $("#q1-form_txt_r").focus();
+        await waitFor(() => seeds().length === 1, "préparation au focus");
+        frame.remove();
+      });
+
       await test("un nouvel énoncé change de tirage sans recharger la page", async () => {
         const { $, role, seeds, window: frameWindow, frame } = await openExercise(textExercise, textDraws, textOptions);
         frameWindow.marker = "même page";
         const before = role("prompt").textContent;
+        touch(role("prompt"));
+        await waitFor(() => seeds().length === 1, "préparation Python au premier contact");
         role("solution").click();
         await waitFor(() => absent(role("solution")) && !role("new-draw").disabled, "fin de l’affichage de la solution");
         role("new-draw").click();
@@ -458,6 +481,7 @@ window.PyWimsPython = (() => {
       await test("des choix que Python ne reproduit pas sont signalés", async () => {
         const { role, frame } = await openExercise(choiceExercise, choiceDraws,
           { ...choiceOptions, choices: { 0: { choix: ["$2$", "$4$", "$5$", "$8$"] } } });
+        touch(role("prompt"));
         await waitFor(() => role("status").classList.contains("is-error"), "message d’erreur");
         if (!role("status").textContent.includes("« choix » diffère")) {
           throw new Error(`Message inattendu : ${role("status").textContent}`);
@@ -467,6 +491,7 @@ window.PyWimsPython = (() => {
 
       await test("un tirage que Python ne reproduit pas est signalé", async () => {
         const { role, frame } = await openExercise(textExercise, textDraws, { ...textOptions, mismatch: true });
+        touch(role("prompt"));
         await waitFor(() => role("status").classList.contains("is-error"), "message d’erreur");
         if (!role("status").textContent.includes("n’a pas pu être reproduit")) {
           throw new Error(`Message inattendu : ${role("status").textContent}`);
@@ -610,7 +635,9 @@ window.PyWimsPython = (() => {
           { fields: textExercise, draws: textDraws },
           { fields: choiceWithoutApres, draws: choiceDraws }
         ], { questions: { q1: textOptions } }, "Mixte");
-        await waitFor(() => $("#q2 .pw-choices") && frameWindow.pythonLogs.q1?.length, "affichage et préparation");
+        await waitFor(() => $("#q2 .pw-choices") && role("prompt", 1).textContent, "affichage des deux questions");
+        touch(role("prompt", 1));
+        await waitFor(() => frameWindow.pythonLogs.q1?.length, "préparation Python de la question 1");
         $(`#q2 .pw-choice[data-choice-index="0"] input`).click();
         $(`#q2 .pw-choice[data-choice-index="2"] input`).click();
         role("check", 2).click();
