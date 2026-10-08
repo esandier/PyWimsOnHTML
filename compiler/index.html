@@ -258,11 +258,22 @@
       .folder-row { gap: 0.5rem; padding: 0.5rem; }
       .sidebar { gap: 0.5rem; }
       .folder-button { flex: 0 0 auto; padding: 0.45rem 0.6rem; font-size: 0.85rem; }
+      /* Panneaux empilés : la page défile, au lieu de tout faire tenir dans la hauteur de la fenêtre,
+         où la liste finissait réduite à rien (0 px de haut dans une fenêtre de 600 × 600). La liste
+         occupe au plus 45 % de l’écran et défile seule ; l’aperçu a sa propre hauteur, en dessous.
+         La barre de titre reste visible en haut : elle porte les messages de la compilation. */
+      body { height: auto; overflow: visible; }
+      .titlebar { position: sticky; top: 0; z-index: 2; background: #f5f6f8; }
       .workspace {
         grid-template-columns: minmax(0, 1fr);
-        grid-template-rows: minmax(7rem, 0.75fr) minmax(0, 1.25fr);
+        grid-template-rows: auto auto;
         gap: 0.5rem;
       }
+      .panel-exercises { overflow: visible; }
+      /* Le filtre n’a plus à rester collé : la liste défile seule, sous lui. */
+      .filter-row { position: static; }
+      #exercise-list { flex: 0 1 auto; max-height: 45vh; max-height: 45dvh; }
+      .panel-preview { height: 85vh; height: 85dvh; }
       .panel { padding: 0.65rem; }
       .panel h2 { margin-bottom: 0.45rem; }
       .panel-heading { gap: 0.5rem; }
