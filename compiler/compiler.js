@@ -12,6 +12,7 @@
   const exerciseList = document.getElementById("exercise-list");
   const listEmpty = document.getElementById("list-empty");
   const selectionCount = document.getElementById("selection-count");
+  const selectVisibleButton = document.getElementById("select-visible");
   const previewFrame = document.getElementById("preview-frame");
   const previewNotice = document.getElementById("preview-notice");
   const compileButton = document.getElementById("compile-exercise");
@@ -25,6 +26,8 @@
   let exercises = [];
   let selectedExercise;
   const selectedExercises = new Set();
+  // Exercices que la recherche laisse affichés et qu’on peut cocher : ceux de « Tout sélectionner ».
+  let visibleExercises = [];
   const messageTimers = new WeakMap();
   const messageFadeDurationMs = 700;
 
@@ -249,6 +252,7 @@
           selectedExercises.delete(exercise);
         }
         updateCompilationControls();
+        updateSelectVisibleButton();
       });
       const button = document.createElement("button");
       button.className = "exercise-preview-button";
@@ -268,12 +272,37 @@
       exerciseList.append(item);
     }
 
+    visibleExercises = matches.filter(exercise => !exercise.error);
+    updateSelectVisibleButton();
     listEmpty.hidden = matches.length > 0;
     if (!exercises.length) {
       listEmpty.textContent = "Aucun fichier .pwq dans le dossier choisi.";
     } else if (!matches.length) {
       listEmpty.textContent = "Aucun fichier ne correspond à cette recherche.";
     }
+  }
+
+  // « Tout sélectionner » tant qu’un exercice visible n’est pas coché, « Tout désélectionner » sinon ;
+  // absent quand aucun exercice visible ne peut être coché.
+  function updateSelectVisibleButton() {
+    const allSelected = visibleExercises.every(exercise => selectedExercises.has(exercise));
+    selectVisibleButton.hidden = visibleExercises.length === 0;
+    selectVisibleButton.textContent = allSelected ? "Tout désélectionner" : "Tout sélectionner";
+  }
+
+  // Coche ou décoche d’un coup les exercices visibles ; les exercices masqués par la recherche
+  // gardent leur état (SPECIFICATION.md, § 11.3).
+  function toggleVisibleSelection() {
+    const allSelected = visibleExercises.every(exercise => selectedExercises.has(exercise));
+    for (const exercise of visibleExercises) {
+      if (allSelected) {
+        selectedExercises.delete(exercise);
+      } else {
+        selectedExercises.add(exercise);
+      }
+    }
+    renderExerciseList();
+    updateCompilationControls();
   }
 
   // Affiche l’aperçu de l’exercice choisi et met à jour l’état du bouton de compilation.
@@ -321,7 +350,14 @@
       if (!file) {
         throw new Error(`Le dossier du projet ne contient pas « ${resourcePaths[key]} ».`);
       }
-      resources[key] = await file.text();
+      // Le navigateur garde les fichiers tels qu’à l’ouverture du dossier : un fichier modifié ou
+      // supprimé depuis ne peut plus être lu, avec un message brut (« The requested file could not
+      // be read… »). Les tirages, calculés avant, n’en dépendent pas : l’échec n’arrive qu’ici.
+      try {
+        resources[key] = await file.text();
+      } catch {
+        throw new Error(`« ${resourcePaths[key]} » a changé depuis l’ouverture du dossier : rouvrez le dossier, puis compilez de nouveau.`);
+      }
     }
     return resources;
   }
@@ -412,6 +448,7 @@
   filePicker.addEventListener("change", onProjectSelected);
   chooseFolderButton.addEventListener("click", () => filePicker.click());
   search.addEventListener("input", renderExerciseList);
+  selectVisibleButton.addEventListener("click", toggleVisibleSelection);
   compileButton.addEventListener("click", downloadExercise);
   outputMode.addEventListener("change", updateCompilationControls);
   activityTitleInput.addEventListener("input", updateCompilationControls);

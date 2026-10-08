@@ -786,6 +786,14 @@ Ces règles s’appliquent déjà au compilateur local.
 - Un fichier illisible est listé sous son nom de fichier, avec la mention
   « fichier illisible » ; son erreur s’affiche quand on le choisit.
 - La recherche porte sur le titre, les mots-clés et le chemin.
+- Un bouton « Tout sélectionner » coche les exercices visibles, c’est-à-dire
+  ceux que la recherche laisse affichés ; quand ils sont tous cochés, il devient
+  « Tout désélectionner » et les décoche. Les exercices masqués par la
+  recherche gardent leur état.
+- Un fichier du dossier modifié ou supprimé après l’ouverture du dossier ne
+  peut plus être lu par le navigateur : la compilation l’explique (« … a changé
+  depuis l’ouverture du dossier : rouvrez le dossier ») au lieu d’afficher le
+  message brut du navigateur.
 
 ### 11.4 Étapes
 

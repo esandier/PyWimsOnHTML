@@ -84,6 +84,37 @@ def main():
                 if 'class="pw-question"' not in html or "data-draws" not in html:
                     raise AssertionError(f"{telechargement.suggested_filename} ne contient pas de question compilée")
                 print(f"compilation : {telechargement.suggested_filename} téléchargé ({len(html) // 1024} Ko)")
+
+                # « Tout sélectionner » n’agit que sur les exercices visibles, puis devient « Tout désélectionner ».
+                # Seul le premier exercice est coché (compilé ci-dessus) ; « matrice » en montre d’autres.
+                coches = "[...document.querySelectorAll('.exercise-selection')].map(c => c.checked)"
+                page.fill("#exercise-search", "matrice")
+                visibles = len(page.evaluate(coches))
+                if not visibles or any(page.evaluate(coches)):
+                    raise AssertionError("La recherche « matrice » devait montrer des exercices non cochés.")
+                page.click("#select-visible")
+                if not all(page.evaluate(coches)) or page.text_content("#select-visible") != "Tout désélectionner":
+                    raise AssertionError("« Tout sélectionner » n’a pas coché les exercices visibles.")
+                page.fill("#exercise-search", "")
+                if sum(page.evaluate(coches)) != visibles + 1 or page.text_content("#select-visible") != "Tout sélectionner":
+                    raise AssertionError(f"Les exercices masqués ont changé d’état : {page.evaluate(coches)}")
+                page.click("#select-visible")
+                if not all(page.evaluate(coches)):
+                    raise AssertionError("« Tout sélectionner » n’a pas coché tous les exercices.")
+                page.click("#select-visible")
+                if any(page.evaluate(coches)):
+                    raise AssertionError("« Tout désélectionner » n’a pas décoché les exercices.")
+                print("tout sélectionner / désélectionner : exercices visibles seulement")
+
+                # Un fichier du moteur modifié après l’ouverture du dossier : message explicite.
+                with open(os.path.join(dossier, "runtime", "sheet.js"), "a", encoding="utf-8") as fichier:
+                    fichier.write("\n// modifié après l’ouverture du dossier\n")
+                page.click(".exercise-selection >> nth=0")
+                page.click("#compile-exercise")
+                page.wait_for_function("document.getElementById('messages').classList.contains('error')", timeout=180_000)
+                if "a changé depuis l’ouverture du dossier" not in page.text_content("#messages"):
+                    raise AssertionError(f"message inattendu : {page.text_content('#messages')}")
+                print("fichier modifié après l’ouverture : message explicite")
             finally:
                 browser.close()
 

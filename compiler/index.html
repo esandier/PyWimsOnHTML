@@ -169,7 +169,26 @@
     }
 
     .exercise-selection { padding: 0 0.2rem; }
-    #selection-count { margin: 0.25rem 0 0.5rem; font-size: 0.85rem; }
+    .selection-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0 0.75rem;
+      margin: 0.25rem 0 0.5rem;
+    }
+    #selection-count { margin: 0; font-size: 0.85rem; }
+    /* Action secondaire de la liste : un lien plutôt qu’un bouton plein, pour ne pas concurrencer
+       « Compiler ». */
+    .link-button {
+      padding: 0.2rem 0;
+      border: 0;
+      background: none;
+      color: #8a4d00;
+      font-size: 0.85rem;
+      text-decoration: underline;
+      cursor: pointer;
+    }
 
     #exercise-list button {
       width: 100%;
@@ -313,7 +332,11 @@
           <label for="exercise-search">Filtrer par nom ou mot-clé</label>
           <input id="exercise-search" type="search" placeholder="ex. arithmétique, PGCD" autocomplete="off">
         </div>
-        <p id="selection-count" class="muted" aria-live="polite">Aucune question sélectionnée.</p>
+        <div class="selection-row">
+          <p id="selection-count" class="muted" aria-live="polite">Aucune question sélectionnée.</p>
+          <!-- Agit sur les exercices visibles, ceux que la recherche laisse affichés. -->
+          <button id="select-visible" class="link-button" type="button" hidden>Tout sélectionner</button>
+        </div>
         <ul id="exercise-list" aria-label="Fichiers d’exercice"></ul>
         <p id="list-empty" class="muted">Ouvrez un dossier pour afficher ses fichiers d’exercice.</p>
       </section>
