@@ -400,7 +400,8 @@
     // Affiche un retour (juste, faux) ou l’explication de la solution, avec l’animation habituelle.
     async showFeedback(text, kind) {
       this.hideFeedback();
-      this.feedbackElement.innerHTML = PyWimsTemplate.escapeHtml(text);
+      // Quelques balises de mise en forme sont admises (<b>, <i>, <br>…) ; le reste est échappé.
+      this.feedbackElement.innerHTML = PyWimsTemplate.limitedHtml(text);
       this.feedbackElement.classList.add(kind);
       await typeset(this.feedbackElement);
       this.feedbackElement.classList.add("is-visible");

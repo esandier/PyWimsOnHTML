@@ -626,6 +626,20 @@
       }
       if (fields.length !== 3) throw new Error(`${fields.length} champs au lieu de 3`);
     });
+    test("un retour admet quelques balises de mise en forme, et rien d’autre", () => {
+      const { limitedHtml } = PyWimsTemplate;
+      for (const [text, expected] of [
+        ["Le <b>signe</b> et l’<i>ordre</i>.<br>Puis x<sup>2</sup>.", "Le <b>signe</b> et l’<i>ordre</i>.<br>Puis x<sup>2</sup>."],
+        ["<strong>Oui</strong> <em>non</em> H<sub>2</sub>O<br/>", "<strong>Oui</strong> <em>non</em> H<sub>2</sub>O<br>"],
+        ["$x < 3$ & 2 > 1", "$x &lt; 3$ &amp; 2 &gt; 1"],
+        ["<b onclick=\"vol()\">gras</b>", "&lt;b onclick=&quot;vol()&quot;&gt;gras</b>"],
+        ["<script>vol()</" + "script><img src=x>", "&lt;script&gt;vol()&lt;/script&gt;&lt;img src=x&gt;"]
+      ]) {
+        if (limitedHtml(text) !== expected) {
+          throw new Error(`« ${text} » donne « ${limitedHtml(text)} » au lieu de « ${expected} »`);
+        }
+      }
+    });
     test("trois accolades de suite donnent un avertissement, pas une erreur", () => {
       const warned = PyWimsCompiler.templateWarnings({ enonce: "$\\frac{{{n}}}{{{m}}}$" });
       const clean = PyWimsCompiler.templateWarnings({ enonce: "$\\frac{ {{n}} }{ {{m}} }$ et {{x}}" });

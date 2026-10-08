@@ -67,6 +67,16 @@ window.PyWimsTemplate = (() => {
       .replaceAll("'", "&#39;");
   }
 
+  // Texte d’un retour (feedback) ou d’une explication de la solution : tout est échappé, puis seules
+  // quelques balises de mise en forme, sans attribut, sont rétablies (SPECIFICATION.md, § 2.2). Un
+  // « x < 3 » s’affiche donc toujours tel quel, et aucune balise ne peut exécuter de script, même si
+  // le retour reprend la saisie de l’élève.
+  function limitedHtml(text) {
+    return escapeHtml(text)
+      .replace(/&lt;(\/?)(b|i|strong|em|sup|sub)&gt;/g, "<$1$2>")
+      .replace(/&lt;br\s*\/?&gt;/g, "<br>");
+  }
+
   // Préfixe des identifiants d’une question (« q2- ») ; vide pour un champ hors feuille.
   function checkIdPrefix(prefix = "") {
     if (prefix !== "" && !/^[A-Za-z][\w-]*$/.test(prefix)) {
@@ -282,6 +292,7 @@ window.PyWimsTemplate = (() => {
     choiceTypes,
     rawInputAttributes,
     escapeHtml,
+    limitedHtml,
     parseScoring,
     scoreChoice,
     checkIdPrefix,

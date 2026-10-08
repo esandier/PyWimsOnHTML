@@ -57,8 +57,11 @@ refusé.
   exact ! », ou en cas d’erreur « Réponse incorrecte. » pour une question qui
   n’attend qu’une réponse (un seul champ texte, MathLive ou à choix unique),
   « Certaines réponses sont incorrectes. » sinon (plusieurs champs, choix
-  multiple, matrice). Le texte est échappé ; ses formules sont composées par
-  MathJax.
+  multiple, matrice). Le texte est échappé, sauf quelques balises de mise en
+  forme, sans attribut : `<b>`, `<i>`, `<strong>`, `<em>`, `<sup>`, `<sub>`,
+  `<br>` ; un `x < 3` s’affiche donc tel quel, et aucune balise ne peut
+  exécuter de script, même si le retour reprend la saisie de l’élève. Ses
+  formules sont composées par MathJax.
 - Variable facultative de `avant` : `explication_solution`, un texte (formules
   TeX admises) affiché avec la solution (§ 5.2).
 - Pour lire une saisie qui contient une expression (champ texte ou case de
@@ -423,8 +426,8 @@ sans `apres` : la comparaison y est sans ambiguïté.
   leur solution et passent au vert (ou « ∗ » neutre pour une valeur libre). Si le tirage a une
   `explication_solution`, elle remplace le retour dans son emplacement, avec la
   même animation et une couleur neutre (bleu marine de la charte) ; sinon
-  l’emplacement est vidé. Le texte est échappé ; ses formules sont composées
-  par MathJax.
+  l’emplacement est vidé. Le texte suit la règle du retour (§ 2.2) ; ses
+  formules sont composées par MathJax.
 - **Nouvel énoncé** : un autre tirage (différent du tirage courant si possible)
   remplace l’énoncé instantanément ; la session Python correspondante est
   recalculée en arrière-plan.

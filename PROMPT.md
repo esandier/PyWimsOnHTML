@@ -173,6 +173,10 @@ La variable `feedback` explique l’erreur sans donner la réponse : la réponse
 bouton « Solution ». Par exemple « 6 est bien un diviseur commun, mais ce n’est
 pas le plus grand » plutôt que « la réponse était 12 ».
 
+Dans `feedback` et `explication_solution`, seules ces balises de mise en forme
+sont interprétées, sans attribut : `<b>`, `<i>`, `<strong>`, `<em>`, `<sup>`,
+`<sub>`, `<br>`. Tout autre HTML s’affiche tel quel.
+
 N’invente pas de mises en page, de composants, d’API d’exécution ni de
 bibliothèques Python. La seule mise en page prise en charge est `STD`.
 N’utilise pas d’autres balises ou filtres Django. Si l’exercice demandé
