@@ -370,6 +370,10 @@ sans `apres` : la comparaison y est sans ambiguïté.
 - Chaque question est une `<section>` ; ses identifiants sont préfixés
   (`q2-…`) et elle a sa propre session Python dans le Pyodide commun, qui
   tourne dans un Web Worker.
+- Une question sans `apres` n’intègre pas son champ `avant` : il ne sert qu’à
+  rejouer un tirage dans Python, et elle ne charge jamais Python. Ses tirages
+  suffisent (−25 % pour une activité de QCM dont `avant` contient toutes les
+  variantes).
 - Les styles de la feuille sont dans `css/exercise.css` et n’utilisent que les
   variables de `css/brand.css`.
 - Le mode « pages séparées (ZIP) » produit une feuille à une question par
@@ -381,8 +385,11 @@ sans `apres` : la comparaison y est sans ambiguïté.
 
 1. Pour chaque question, un tirage est choisi au hasard. Son énoncé est rendu
    tout de suite à partir de `context`.
-2. MathJax compose les formules. MathLive n’est chargé que si une question en a
-   besoin.
+2. MathJax compose les formules. Il n’est chargé (≈ 600 Ko) que si la feuille
+   peut en afficher : un délimiteur de formule (`$`, `\(`, `\[`) dans un
+   énoncé, une valeur de l’énoncé, un choix ou une explication d’un tirage, ou
+   une question qui a un `apres`, dont le retour peut contenir une formule.
+   MathLive n’est chargé que si une question en a besoin.
 3. Seulement pour une question qui a un `apres` (§ 2.6), et seulement au
    **premier contact** de l’élève avec elle (clic, toucher ou focus dans sa
    carte, ou « Vérifier ma réponse ») : chargement en arrière-plan de Pyodide
@@ -825,6 +832,11 @@ Ces règles s’appliquent déjà au compilateur local.
 - **Autres écritures des nombres** (notation scientifique pour la physique).
 - **Ordre des questions d’une activité**, choisi dans le compilateur ; il suit
   aujourd’hui l’ordre des titres.
+- **KaTeX à la place de MathJax** : plus léger et plus rapide ; à étudier
+  (couverture de l’écriture des exercices, par exemple `@{\;}` dans un
+  `array`, rendu, MathLive). Mesure d’octobre 2026 : MathJax pèse 603 Ko, et
+  compose les 21 questions d’une activité en 2,5 s sur un processeur ralenti
+  4 fois.
 - **Charte choisie** : sélectionner sa feuille `brand.css` favorite au lieu de
   celle du dossier.
 - **`py_wims` sur l’analyseur de `math_expression`** (filtre et `parse_expr`) :

@@ -112,7 +112,8 @@ y ajouter ses propres outils Python ; chaque nom exporté (`__all__`) doit aussi
 
 La vérification se fait dans le navigateur : elle sert à l’entraînement, pas à
 une évaluation sécurisée. Les champs de l’exercice et ses tirages sont intégrés
-au HTML comme blocs de texte lisibles et échappés.
+au HTML comme blocs de texte lisibles et échappés (sans `avant` pour une
+question sans `apres`, qui ne charge pas Python).
 
 Les couleurs, polices et couleurs de correction de l’organisation sont des
 variables CSS de `css/brand.css`. Les bibliothèques en ligne sont figées sur une
