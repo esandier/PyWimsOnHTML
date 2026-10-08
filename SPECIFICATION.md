@@ -527,7 +527,9 @@ un sous-projet distinct, traité plus tard.
   seul et dans une activité) et balayage des tirages.
 - `tests/outils/essai_compilateur.py` : l’interface du compilateur, de bout en
   bout (ouverture du dossier, liste, aperçu réel, compilation, fichier
-  téléchargé), sans erreur JavaScript.
+  téléchargé), sans erreur JavaScript, sur une copie du projet réduite aux
+  exercices de la racine d’`exercises/` : comme les autres tests, il ne dépend
+  pas du contenu des sous-dossiers.
 - `tests/outils/lancer-tests.ps1` lance le tout dans Edge sans interface.
 - Le pilotage d’Edge passe par Playwright pour Python (`pip install
   playwright`), avec l’Edge installé (`channel="msedge"`) : aucun autre

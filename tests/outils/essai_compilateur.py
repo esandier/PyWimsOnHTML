@@ -2,158 +2,103 @@
 # du projet, liste des exercices, aperçu avec un tirage réel, compilation et fichier téléchargé.
 # C’est la seule partie du projet que les pages de tests ne couvrent pas : elles appellent les
 # fonctions du compilateur, mais pas sa page. Le sélecteur de dossier ne peut pas être cliqué par un
-# programme ; le protocole de pilotage (DOM.setFileInputFiles) lui donne le dossier, comme un choix
-# de l’utilisateur.
-# Prérequis : Edge, Python avec le paquet « websocket-client ».
+# programme ; Playwright lui donne le dossier (set_input_files), comme un choix de l’utilisateur.
+# Prérequis : pip install playwright (voir navigateur.py).
 # Usage : python essai_compilateur.py URL_DU_COMPILATEUR [CHEMIN_D’EDGE]
 # Code de sortie : 0 si tout est bon, 1 sinon.
-import json
 import os
 import shutil
-import subprocess
 import sys
 import tempfile
-import time
-import urllib.request
 
-import websocket
+from playwright.sync_api import Error as ErreurPlaywright
+from playwright.sync_api import sync_playwright
 
-DEFAULT_EDGE_PATHS = [
-    r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
-    r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
-]
-# Port différent de celui de pilote_edge.py : les deux outils ne se gênent pas.
-PORT = 9336
+# python -I (lancer-tests.ps1) n’ajoute pas le dossier du script au chemin d’import.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from navigateur import lancer_edge  # noqa: E402
+
 PROJECT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+# Dossiers du projet que lit le compilateur, en plus des exercices.
+RESSOURCES = ["css", "layouts", "runtime", "widgets"]
 
 
-def find_edge(argument):
-    for path in [argument] + DEFAULT_EDGE_PATHS:
-        if path and os.path.exists(path):
-            return path
-    raise SystemExit("Edge est introuvable : indiquez son chemin en second argument.")
-
-
-class Page:
-    """Onglet piloté par le protocole de débogage d’Edge ; note les erreurs JavaScript de la page."""
-
-    def __init__(self, socket):
-        self.socket = socket
-        self.counter = 0
-        self.errors = []
-
-    def call(self, method, **params):
-        self.counter += 1
-        self.socket.send(json.dumps({"id": self.counter, "method": method, "params": params}))
-        while True:
-            message = json.loads(self.socket.recv())
-            if message.get("method") == "Runtime.exceptionThrown":
-                details = message["params"]["exceptionDetails"]
-                self.errors.append(details.get("exception", {}).get("description", details.get("text", "?")))
-            if message.get("id") == self.counter:
-                if "error" in message:
-                    raise RuntimeError(f"{method} : {message['error']}")
-                return message.get("result", {})
-
-    def evaluate(self, expression):
-        result = self.call("Runtime.evaluate", expression=expression, awaitPromise=True, returnByValue=True)
-        return result.get("result", {}).get("value")
-
-    def wait(self, expression, description, timeout):
-        end = time.time() + timeout
-        while time.time() < end:
-            if self.evaluate(expression):
-                return
-            time.sleep(0.5)
-        raise AssertionError(f"délai dépassé : {description}")
+def copie_du_projet(destination):
+    """Copie le projet avec les seuls exercices de la racine d’exercises/ : les sous-dossiers
+    contiennent du contenu personnel, que les tests ne vérifient pas (le compilateur les liste
+    aussi, et l’essai dépendrait de leur contenu). Renvoie les noms des exercices copiés."""
+    for nom in RESSOURCES:
+        shutil.copytree(os.path.join(PROJECT, nom), os.path.join(destination, nom))
+    os.mkdir(os.path.join(destination, "exercises"))
+    exercices = sorted(nom for nom in os.listdir(os.path.join(PROJECT, "exercises")) if nom.endswith(".pwq"))
+    for nom in exercices:
+        shutil.copy(os.path.join(PROJECT, "exercises", nom), os.path.join(destination, "exercises", nom))
+    return exercices
 
 
 def main():
     url = sys.argv[1]
-    edge = find_edge(sys.argv[2] if len(sys.argv) > 2 else None)
-    # Profil vierge : une extension de filtrage du profil habituel bloque les paquets Pyodide.
-    profile = tempfile.mkdtemp(prefix="pywims-essai-")
-    downloads = tempfile.mkdtemp(prefix="pywims-telechargements-")
-    browser = subprocess.Popen([edge, "--headless=new", "--disable-gpu", f"--remote-debugging-port={PORT}",
-                                f"--user-data-dir={profile}", "--no-first-run", "about:blank"])
-    page = None
+    dossier = tempfile.mkdtemp(prefix="pywims-projet-")
+    erreurs = []
     try:
-        for _ in range(40):
+        exercises = copie_du_projet(dossier)
+        with sync_playwright() as playwright:
+            browser = lancer_edge(playwright, sys.argv[2] if len(sys.argv) > 2 else None)
             try:
-                version = json.loads(urllib.request.urlopen(f"http://127.0.0.1:{PORT}/json/version", timeout=2).read())
-                break
-            except OSError:
-                time.sleep(0.25)
-        else:
-            raise SystemExit("Edge ne répond pas au protocole de pilotage.")
-        request = urllib.request.Request(f"http://127.0.0.1:{PORT}/json/new?about:blank", method="PUT")
-        target = json.loads(urllib.request.urlopen(request, timeout=5).read())
-        page = Page(websocket.create_connection(target["webSocketDebuggerUrl"], timeout=120, suppress_origin=True))
-        # Les téléchargements de la page arrivent dans un dossier temporaire, effacé à la fin.
-        Page(websocket.create_connection(version["webSocketDebuggerUrl"], timeout=30, suppress_origin=True)).call(
-            "Browser.setDownloadBehavior", behavior="allow", downloadPath=downloads)
-        page.call("Runtime.enable")
-        page.call("DOM.enable")
-        page.call("Page.navigate", url=url)
-        page.wait("document.readyState === 'complete' && !!window.PyWimsCompiler", "chargement du compilateur", 30)
+                page = browser.new_page(accept_downloads=True)
+                page.on("pageerror", lambda error: erreurs.append(str(error)))
+                page.goto(url)
+                page.wait_for_function("!!window.PyWimsCompiler", timeout=30_000)
 
-        # Ouverture du dossier du projet : la liste montre chaque exercice par son titre et ses champs.
-        root = page.call("DOM.getDocument")["root"]["nodeId"]
-        picker = page.call("DOM.querySelector", nodeId=root, selector="#project-folder")["nodeId"]
-        page.call("DOM.setFileInputFiles", nodeId=picker, files=[PROJECT])
-        page.wait("document.querySelectorAll('#exercise-list li').length > 0", "liste des exercices", 30)
-        exercises = sorted(name for name in os.listdir(os.path.join(PROJECT, "exercises")) if name.endswith(".pwq"))
-        items = page.evaluate("[...document.querySelectorAll('#exercise-list li')].map(li => "
-                              "[li.querySelector('.exercise-title').textContent, li.querySelector('.exercise-fields').textContent])")
-        if len(items) != len(exercises) or any(not title or not kinds for title, kinds in items):
-            raise AssertionError(f"liste inattendue : {items} pour {exercises}")
-        print(f"liste : {len(items)} exercices, avec titre et types de champs")
+                # Ouverture du dossier : la liste montre chaque exercice par son titre et ses champs.
+                page.set_input_files("#project-folder", dossier)
+                page.wait_for_function("document.querySelectorAll('#exercise-list li').length > 0", timeout=30_000)
+                items = page.eval_on_selector_all(
+                    "#exercise-list li",
+                    "items => items.map(li => [li.querySelector('.exercise-title').textContent, "
+                    "li.querySelector('.exercise-fields').textContent])")
+                if len(items) != len(exercises) or any(not title or not kinds for title, kinds in items):
+                    raise AssertionError(f"liste inattendue : {items} pour {exercises}")
+                print(f"liste : {len(items)} exercices, avec titre et types de champs")
 
-        # Aperçu du premier exercice : provisoire, puis un tirage réel calculé par Python.
-        page.evaluate("document.querySelector('.exercise-preview-button').click()")
-        page.wait("document.getElementById('preview-frame').srcdoc.includes('pw-question') && "
-                  "!document.getElementById('preview-notice').textContent.startsWith('Aperçu provisoire') && "
-                  "!document.getElementById('preview-notice').classList.contains('error')",
-                  "aperçu avec un tirage réel", 180)
-        print("aperçu : tirage réel affiché")
+                # Aperçu du premier exercice : provisoire, puis un tirage réel calculé par Python.
+                page.click(".exercise-preview-button >> nth=0")
+                page.wait_for_function(
+                    "document.getElementById('preview-frame').srcdoc.includes('pw-question') && "
+                    "!document.getElementById('preview-notice').textContent.startsWith('Aperçu provisoire') && "
+                    "!document.getElementById('preview-notice').classList.contains('error')",
+                    timeout=180_000)
+                print("aperçu : tirage réel affiché")
 
-        # Compilation de cet exercice : un fichier HTML autonome est téléchargé.
-        page.evaluate("document.querySelector('.exercise-selection').click()")
-        page.evaluate("document.getElementById('compile-exercise').click()")
-        page.wait("/téléchargée|error/.test(document.getElementById('messages').textContent + "
-                  "document.getElementById('messages').className)", "fin de la compilation", 180)
-        message = page.evaluate("document.getElementById('messages').textContent")
-        if "téléchargée" not in message:
-            raise AssertionError(f"compilation en échec : {message}")
-        end = time.time() + 15
-        files = []
-        while time.time() < end:
-            files = [name for name in os.listdir(downloads) if name.endswith(".html")]
-            if files:
-                break
-            time.sleep(0.5)
-        if len(files) != 1:
-            raise AssertionError(f"fichiers téléchargés inattendus : {os.listdir(downloads)}")
-        html = open(os.path.join(downloads, files[0]), encoding="utf-8").read()
-        if 'class="pw-question"' not in html or "data-draws" not in html:
-            raise AssertionError(f"{files[0]} ne contient pas de question compilée")
-        print(f"compilation : {files[0]} téléchargé ({len(html) // 1024} Ko)")
+                # Compilation de cet exercice : un fichier HTML autonome est téléchargé.
+                page.click(".exercise-selection >> nth=0")
+                with page.expect_download(timeout=180_000) as attente:
+                    page.click("#compile-exercise")
+                telechargement = attente.value
+                message = page.text_content("#messages")
+                if "téléchargée" not in message:
+                    raise AssertionError(f"compilation en échec : {message}")
+                if not telechargement.suggested_filename.endswith(".html"):
+                    raise AssertionError(f"fichier téléchargé inattendu : {telechargement.suggested_filename}")
+                html = open(telechargement.path(), encoding="utf-8").read()
+                if 'class="pw-question"' not in html or "data-draws" not in html:
+                    raise AssertionError(f"{telechargement.suggested_filename} ne contient pas de question compilée")
+                print(f"compilation : {telechargement.suggested_filename} téléchargé ({len(html) // 1024} Ko)")
+            finally:
+                browser.close()
 
-        if page.errors:
-            raise AssertionError(f"erreurs JavaScript : {page.errors}")
+        if erreurs:
+            raise AssertionError(f"erreurs JavaScript : {erreurs}")
         print("aucune erreur JavaScript")
         return 0
-    # Une vérification fausse, ou un élément introuvable par le pilotage (page cassée) : échec lisible.
-    except (AssertionError, RuntimeError) as error:
+    # Une vérification fausse, un délai dépassé ou un élément introuvable (page cassée) : échec lisible.
+    except (AssertionError, ErreurPlaywright) as error:
         print(f"ÉCHEC : {error}")
-        if page and page.errors:
-            print(f"erreurs JavaScript : {page.errors}")
+        if erreurs:
+            print(f"erreurs JavaScript : {erreurs}")
         return 1
     finally:
-        browser.kill()
-        browser.wait(timeout=10)
-        shutil.rmtree(downloads, ignore_errors=True)
-        shutil.rmtree(profile, ignore_errors=True)
+        shutil.rmtree(dossier, ignore_errors=True)
 
 
 if __name__ == "__main__":

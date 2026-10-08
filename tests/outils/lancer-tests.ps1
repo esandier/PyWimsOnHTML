@@ -1,6 +1,6 @@
 # Lance les tests du projet : page des tests rapides, cycle de vie avec un Python simulé, puis tests
 # Python avec le vrai Pyodide, qui comprennent le balayage des tirages de chaque exercice.
-# Prérequis : Edge, Python avec le paquet « websocket-client » (pilotage d’Edge).
+# Prérequis : Edge, Python avec le paquet « playwright » (pilotage d’Edge, voir navigateur.py).
 # Usage : .\tests\outils\lancer-tests.ps1 [-SansPyodide] [-Tirages 200]
 #   -Tirages : tirages balayés par exercice (20 par défaut ; 200 pour un balayage complet, plus lent).
 param(
