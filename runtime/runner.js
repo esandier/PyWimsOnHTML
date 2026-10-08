@@ -1,8 +1,10 @@
 // Affiche immédiatement un tirage précalculé de chaque question de la feuille, prépare Python en
 // arrière-plan et gère le cycle de vie de chaque question : vérifier, corriger, solution, nouvel énoncé.
 (() => {
-  const answerToggleDurationMs = 550;
-  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const {
+    reduceMotion, fieldValue, setFieldValue, isChoiceGroup, choiceInputs, choiceIndex, isSingleAnswer,
+    checkedIndices, isFilled, lock, animateFields
+  } = PyWimsFields;
   const freeValue = "∗";
   // Durée maximale de « apres » à la vérification (SPECIFICATION.md, § 5.1) : au-delà, le moteur
   // Python est arrêté et relancé, et l’élève est invité à modifier sa réponse.
@@ -32,118 +34,14 @@
     await window.MathJax.typesetPromise([element]);
   }
 
-  // Saisie d’un champ : texte, ou expression ASCII d’un champ MathLive (« x^2+1 »), plus proche de
-  // ce qu’un élève écrirait au clavier que le LaTeX qu’il affiche.
-  function fieldValue(input) {
-    if (input.matches("math-field")) {
-      return typeof input.getValue === "function" ? input.getValue("ascii-math") : "";
-    }
-    return input.value;
-  }
-
-  // Écrit une valeur dans un champ ; un champ MathLive l’interprète comme du LaTeX.
-  function setFieldValue(input, value) {
-    input.value = value;
-  }
-
   // Note écrite à la française (« 2,5 ») et arrondie au centième ; « + 0 » évite d’afficher « -0 ».
   const formatScore = value => (Math.round(value * 100) / 100 + 0).toLocaleString("fr-FR");
-
-  // Un champ à choix est un groupe (fieldset) : il compte comme un seul champ de la question.
-  const isChoiceGroup = field => field.matches(".pw-choices");
-  const choiceInputs = group => [...group.querySelectorAll("input")];
-  const choiceIndex = element => Number(element.closest(".pw-choice").dataset.choiceIndex);
-  // Un champ qui n’attend qu’une réponse : ni case de matrice, ni choix multiple.
-  const isSingleAnswer = field => field.dataset.matrixName === undefined &&
-    !(isChoiceGroup(field) && field.dataset.multiple === "true");
-
-  // Indices cochés, dans l’ordre de l’auteur : le mélange de l’affichage est invisible pour « apres ».
-  function checkedIndices(group) {
-    return choiceInputs(group).filter(input => input.checked).map(choiceIndex).sort((a, b) => a - b);
-  }
-
-  // Un champ rempli active « Vérifier ». Ne rien cocher est une réponse possible à un choix multiple.
-  function isFilled(field) {
-    if (isChoiceGroup(field)) {
-      return field.dataset.multiple === "true" || choiceInputs(field).some(input => input.checked);
-    }
-    return fieldValue(field).trim() !== "";
-  }
-
-  // Retire des colonnes à un groupe de choix tant qu’un choix déborde de sa colonne.
-  //
-  // Pourquoi : sur téléphone, columns=2 ou plus donne des colonnes d’environ 130 px. Une formule
-  // (« 2x sin x + x² cos x ») ou un long mot n’y tient pas, et aucune solution purement CSS ne
-  // convient, car la grille ne connaît pas la largeur du contenu :
-  //   - faire défiler le choix masque une partie de la réponse : « 2x sin x » se lit alors comme
-  //     un autre choix, ce qui est inacceptable dans un QCM ;
-  //   - couper les mots n’importe où (« dérivabl/e ») est illisible, et la césure française
-  //     (hyphens: auto) n’est pas appliquée par tous les navigateurs, dont Edge sous Windows ;
-  //   - une formule composée par MathJax (SVG) ne se coupe jamais.
-  // On mesure donc après composition : un choix déborde si sa largeur de contenu dépasse sa largeur
-  // visible (exige « overflow-wrap: normal » dans exercise.css). Des choix courts gardent leurs
-  // colonnes, même sur téléphone. On repart du nombre voulu par l’auteur à chaque appel, car la
-  // fenêtre a pu s’élargir depuis (rotation du téléphone).
-  function fitChoiceColumns(root) {
-    for (const group of root.querySelectorAll(".pw-choices")) {
-      for (let columns = Number(group.dataset.columns); columns >= 1; columns -= 1) {
-        group.style.setProperty("--pw-choice-columns", String(columns));
-        const overflowing = [...group.querySelectorAll(".pw-choice-text")]
-          .some(text => text.scrollWidth > text.clientWidth + 1);
-        if (!overflowing) break;
-      }
-    }
-  }
-
-  // Fige ou rouvre un champ : un groupe de choix par ses cases, un champ MathLive par readOnly,
-  // les autres par disabled.
-  function lock(input, locked) {
-    if (isChoiceGroup(input)) {
-      choiceInputs(input).forEach(choice => { choice.disabled = locked; });
-    } else if (input.matches("math-field")) {
-      input.readOnly = locked;
-    } else {
-      input.disabled = locked;
-    }
-  }
 
   // Un bouton absent garde sa place (invisible et inactif) : la barre ne bouge jamais.
   function setButton(button, { absent = false, disabled = false } = {}) {
     button.classList.toggle("is-absent", absent);
     button.disabled = absent || disabled;
     button.tabIndex = absent ? -1 : 0;
-  }
-
-  // Réduit le champ, applique le changement (couleur, valeur), puis le réagrandit avec un léger
-  // rebond. Seules des transformations sont animées : rien ne bouge autour du champ.
-  async function animateField(input, change, delay = 0) {
-    if (reduceMotion) {
-      change();
-      return;
-    }
-    await new Promise(resolve => setTimeout(resolve, delay));
-    const collapse = input.animate(
-      [{ transform: "scaleX(1)", opacity: 1 }, { transform: "scaleX(0)", opacity: 0 }],
-      { duration: answerToggleDurationMs / 2, easing: "ease-in", fill: "forwards" }
-    );
-    await collapse.finished;
-    change();
-    const expand = input.animate(
-      [
-        { transform: "scaleX(0)", opacity: 0 },
-        { transform: "scaleX(1.08)", opacity: 1, offset: 0.7 },
-        { transform: "scaleX(1)", opacity: 1 }
-      ],
-      { duration: answerToggleDurationMs * 0.7, easing: "ease-out", fill: "forwards" }
-    );
-    await expand.finished;
-    collapse.cancel();
-    expand.cancel();
-  }
-
-  // Les cases d’une matrice s’animent l’une après l’autre.
-  function animateFields(inputs, change) {
-    return Promise.all(inputs.map((input, index) => animateField(input, () => change(input, index), index * 60)));
   }
 
   // Une question de la feuille : sa section, ses tirages, sa session Python et son cycle de vie.
@@ -539,8 +437,9 @@
       } catch (error) {
         this.reportError(error);
       }
-      // Les largeurs des choix ne sont connues qu’une fois les formules composées.
-      fitChoiceColumns(promptElement);
+      // Les largeurs des choix ne sont connues qu’une fois les formules composées. Le widget de
+      // choix n’est intégré qu’à une feuille qui a une question à choix.
+      PyWimsWidgets.fitChoiceColumns?.(promptElement);
       const height = promptElement.getBoundingClientRect().height;
       promptElement.style.minHeight = `${Math.max(height, Number.parseFloat(promptElement.style.minHeight) || 0)}px`;
     }
@@ -1011,7 +910,7 @@
   addEventListener("resize", () => {
     cancelAnimationFrame(resizeFrame);
     resizeFrame = requestAnimationFrame(() => questions.forEach(question => {
-      fitChoiceColumns(question.promptElement);
+      PyWimsWidgets.fitChoiceColumns?.(question.promptElement);
       question.layoutFeedback();
     }));
   });

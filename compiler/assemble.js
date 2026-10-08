@@ -29,6 +29,7 @@
     mathWidget: "widgets/input-math.js",
     matrixWidget: "widgets/input-matrix.js",
     choiceWidget: "widgets/input-choice.js",
+    fields: "runtime/fields.js",
     runner: "runtime/runner.js",
     python: "runtime/python.js",
     pywims: "runtime/pywims.py"
@@ -148,6 +149,7 @@ window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
       PYWIMS: resources.pywims ?? "",
       PYTHON_RUNTIME: resources.python,
       QUESTIONS: sections.join("\n"),
+      FIELDS: resources.fields,
       RUNNER: resources.runner
     };
     return resources.layout.replace(/@@([A-Z_]+)@@/g, (_match, name) => {

@@ -755,6 +755,30 @@ window.PyWimsPython = (() => {
         frame.remove();
       });
 
+      // Vrai MathLive, chargé en ligne comme dans un fichier généré : la feuille assemblée doit le
+      // charger, attendre qu’il soit prêt, puis transmettre à « apres » l’écriture ASCII (« x^2+1 »)
+      // et non le LaTeX affiché (« x^{2}+1 »).
+      await test("un champ MathLive est transmis à « apres » en écriture ASCII", async () => {
+        const mathExercise = {
+          title: "Formule", layout: "STD", avant: "a = 1",
+          enonce: "Écrire $x^2+1$ : {% input_math 'd' solution=s %}",
+          apres: "ok_answer['d'] = d == 'x^2+1'"
+        };
+        const draws = [{ seed: 0, context: {}, dimensions: {}, solutions: { d: "x^2+1" }, explication: null }];
+        const { page, role, frame, window } = await openExercise(mathExercise, draws,
+          { contexts: { 0: {} }, answers: { 0: { d: "x^2+1" } } });
+        await waitFor(() => window.customElements.get("math-field"), "chargement de MathLive", 30000);
+        const field = page.querySelector("#q1 math-field");
+        field.value = "x^{2}+1";
+        field.dispatchEvent(new Event("input", { bubbles: true }));
+        role("check").click();
+        await waitFor(() => role("feedback").classList.contains("is-visible"), "retour de la vérification", 15000);
+        if (!field.classList.contains("is-correct")) {
+          throw new Error("« apres » n’a pas reçu l’écriture ASCII x^2+1 de la formule.");
+        }
+        frame.remove();
+      });
+
       document.body.dataset.done = "true";
     })();
   </script>

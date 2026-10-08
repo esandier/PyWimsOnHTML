@@ -26,9 +26,35 @@ window.PyWimsWidgets = (() => {
       return `<label class="pw-choice" data-choice-index="${index}"><input type="${type}" name="${idPrefix}${name}" value="${index}" id="${idPrefix}form_choice_${name}_${index}"><span class="pw-choice-text">${text}</span><span class="pw-choice-mark" aria-hidden="true"></span></label>`;
     }).join("");
     const legend = multiple ? "Cochez toutes les bonnes réponses" : "Choisissez une réponse";
-    // data-columns garde le nombre de colonnes voulu par l’auteur ; runner.js peut en retirer.
+    // data-columns garde le nombre de colonnes voulu par l’auteur ; fitChoiceColumns peut en retirer.
     return `<fieldset class="pw-choices" data-name="${name}" data-multiple="${multiple}" data-columns="${columns}" style="--pw-choice-columns:${columns}"><legend class="pw-sr-only">${legend}</legend>${items}</fieldset>`;
   }
 
-  return Object.freeze({ ...existing, inputChoice });
+  // Retire des colonnes à un groupe de choix tant qu’un choix déborde de sa colonne.
+  //
+  // Pourquoi : sur téléphone, columns=2 ou plus donne des colonnes d’environ 130 px. Une formule
+  // (« 2x sin x + x² cos x ») ou un long mot n’y tient pas, et aucune solution purement CSS ne
+  // convient, car la grille ne connaît pas la largeur du contenu :
+  //   - faire défiler le choix masque une partie de la réponse : « 2x sin x » se lit alors comme
+  //     un autre choix, ce qui est inacceptable dans un QCM ;
+  //   - couper les mots n’importe où (« dérivabl/e ») est illisible, et la césure française
+  //     (hyphens: auto) n’est pas appliquée par tous les navigateurs, dont Edge sous Windows ;
+  //   - une formule composée par MathJax (SVG) ne se coupe jamais.
+  // On mesure donc après composition : un choix déborde si sa largeur de contenu dépasse sa largeur
+  // visible (exige « overflow-wrap: normal » dans exercise.css). Des choix courts gardent leurs
+  // colonnes, même sur téléphone. On repart du nombre voulu par l’auteur à chaque appel, car la
+  // fenêtre a pu s’élargir depuis (rotation du téléphone).
+  // Appelée par la question après la composition des formules, et au redimensionnement.
+  function fitChoiceColumns(root) {
+    for (const group of root.querySelectorAll(".pw-choices")) {
+      for (let columns = Number(group.dataset.columns); columns >= 1; columns -= 1) {
+        group.style.setProperty("--pw-choice-columns", String(columns));
+        const overflowing = [...group.querySelectorAll(".pw-choice-text")]
+          .some(text => text.scrollWidth > text.clientWidth + 1);
+        if (!overflowing) break;
+      }
+    }
+  }
+
+  return Object.freeze({ ...existing, inputChoice, fitChoiceColumns });
 })();
