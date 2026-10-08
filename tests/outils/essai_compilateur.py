@@ -90,6 +90,19 @@ def dossier_memorise(page, fichiers):
         raise AssertionError("La compilation n’a pas relu l’exercice modifié.")
     print("compilation : exercice relu, dernière version compilée")
 
+    # Charte du dossier : un brand.css à sa racine remplace la charte neutre (§ 11.4).
+    if "Charte neutre" not in page.text_content("#brand-status"):
+        raise AssertionError(f"charte annoncée : {page.text_content('#brand-status')}")
+    page.evaluate(ECRIRE_OPFS, ["exercices-essai/brand.css", ":root { --pw-brand-primary: #123456; }"])
+    page.click("#reload-folder")
+    page.wait_for_function("document.getElementById('brand-status').textContent.includes('brand.css du dossier')")
+    with page.expect_download(timeout=180_000) as attente:
+        page.click("#compile-exercise")
+    compile_charte = open(attente.value.path(), encoding="utf-8").read()
+    if "--pw-brand-primary: #123456" not in compile_charte or "--pw-brand-primary: #2f5d7c" in compile_charte:
+        raise AssertionError("Le fichier compilé n’utilise pas le brand.css du dossier.")
+    print("charte du dossier : annoncée et intégrée au fichier compilé")
+
     # Visite suivante : le dossier se rouvre d’un clic.
     page.reload()
     page.wait_for_function("document.getElementById('choose-folder').textContent === 'Rouvrir « exercices-essai »'")

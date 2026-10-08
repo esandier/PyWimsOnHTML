@@ -11,6 +11,7 @@
   const folderName = document.getElementById("folder-name");
   const reloadFolderButton = document.getElementById("reload-folder");
   const otherFolderButton = document.getElementById("other-folder");
+  const brandStatus = document.getElementById("brand-status");
   const projectStatus = document.getElementById("project-status");
   const search = document.getElementById("exercise-search");
   const exerciseList = document.getElementById("exercise-list");
@@ -88,6 +89,8 @@
   const canRememberFolder = typeof window.showDirectoryPicker === "function";
   let folderHandle = null;
   let rememberedHandle = null;
+  // Charte du dossier ouvert : son brand.css, s’il en a un à sa racine (SPECIFICATION.md, § 11.4).
+  let folderBrand = null;
   const lastFolderNameKey = "pywims-compilateur:dernier-dossier";
 
   // Magasin IndexedDB à un seul enregistrement : l’accès au dossier, qui s’y range tel quel.
@@ -131,6 +134,22 @@
       }
     }
     return found;
+  }
+
+  // brand.css à la racine d’un dossier ouvert par son accès (Chrome, Edge), ou null.
+  async function brandOf(directory) {
+    try {
+      const entry = await directory.getFileHandle("brand.css");
+      return { read: async () => (await entry.getFile()).text() };
+    } catch {
+      return null;
+    }
+  }
+
+  // brand.css à la racine du dossier choisi par le sélecteur classique, ou null.
+  function brandOfPicker(files) {
+    const file = [...files].find(candidate => relativePath(candidate) === "brand.css");
+    return file ? { read: () => file.text() } : null;
   }
 
   // Fichiers .pwq choisis par le sélecteur classique (Firefox, Safari). Le navigateur les fige à
@@ -186,7 +205,7 @@
     rememberFolder(handle);
     showMessage(projectStatus, "Lecture du dossier…");
     try {
-      await loadFolder(handle.name, await pwqFilesOf(handle), { keepSelection });
+      await loadFolder(handle.name, await pwqFilesOf(handle), { keepSelection, brand: await brandOf(handle) });
     } catch (error) {
       showMessage(projectStatus, `Le dossier n’a pas pu être lu : ${error.message}`, "error");
     }
@@ -284,7 +303,7 @@
 
   // Lit les exercices du dossier choisi, sous-dossiers compris, et réinitialise l’interface.
   // sources : [{ path, read }] ; keepSelection garde la sélection d’une relecture du même dossier.
-  async function loadFolder(name, sources, { keepSelection = false } = {}) {
+  async function loadFolder(name, sources, { keepSelection = false, brand = null } = {}) {
     const selectedPaths = new Set([...selectedExercises].map(exercise => exercise.path));
     const shownPath = selectedExercise?.path;
     clearMessage(messages);
@@ -308,6 +327,11 @@
     showPreviewNotice("Choisissez un exercice dans la liste pour afficher son aperçu.");
 
     updateFolderControls(name);
+    folderBrand = brand;
+    brandStatus.textContent = brand
+      ? "Charte : brand.css du dossier."
+      : "Charte neutre : ajoutez un brand.css au dossier pour celle de votre établissement.";
+    brandStatus.hidden = false;
     showMessage(projectStatus, "Chargement des fichiers d’exercice…");
 
     for (const { path, read } of sources) {
@@ -478,7 +502,16 @@
       }
       return [key, await response.text()];
     }));
-    return Object.fromEntries(entries);
+    const resources = Object.fromEntries(entries);
+    // La charte du dossier remplace la charte neutre ; relue à chaque fois, comme les exercices.
+    if (folderBrand && "brandCss" in resources) {
+      try {
+        resources.brandCss = await folderBrand.read();
+      } catch {
+        throw new Error("Le brand.css du dossier a changé ou a disparu : rouvrez ou relisez le dossier.");
+      }
+    }
+    return resources;
   }
 
   // Donne à Python le module pywims et le script du Worker lus avec les autres fichiers : tirages
@@ -611,7 +644,7 @@
     } catch {
       // Stockage indisponible : le nom ne sera pas rappelé.
     }
-    loadFolder(name, pwqFilesOfPicker(filePicker.files));
+    loadFolder(name, pwqFilesOfPicker(filePicker.files), { brand: brandOfPicker(filePicker.files) });
   });
   chooseFolderButton.addEventListener("click", () => {
     if (!canRememberFolder) {

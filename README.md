@@ -19,7 +19,8 @@ qui fait référence ; le format des exercices est détaillé dans
 - `layouts/` — mise en page HTML commune aux questions seules et aux activités
 - `widgets/` — champs de saisie : texte, MathLive, matrices fixes et redimensionnables, choix
   unique ou multiple
-- `css/` — charte de l’organisation (`brand.css`) et styles des exercices (`exercise.css`)
+- `css/` — charte neutre par défaut (`brand.css`), exemples de chartes (`chartes/`, dont
+  celle de l’UPEC) et styles des exercices (`exercise.css`)
 - `runtime/` — code intégré au fichier généré : grammaire des balises
   (`template.js`), correction sans Python (`correction.js`), Python dans un
   Worker (`python.js`, `python-worker.js`) et module `pywims` (`pywims.py`),
@@ -128,8 +129,11 @@ une évaluation sécurisée. Les champs de l’exercice et ses tirages sont int�
 au HTML comme blocs de texte lisibles et échappés (sans `avant` pour une
 question sans `apres`, qui ne charge pas Python).
 
-Les couleurs, polices et couleurs de correction de l’organisation sont des
-variables CSS de `css/brand.css`. Les bibliothèques en ligne sont figées sur une
+Les couleurs, polices et couleurs de correction sont les variables CSS d’une
+charte : par défaut la charte neutre, `css/brand.css`. Pour celle de son
+établissement, on place un fichier `brand.css` à la racine de son dossier
+d’exercices (exemple complet, avec logo : `css/chartes/upec.css`) ; le
+compilateur l’utilise et l’indique. Les bibliothèques en ligne sont figées sur une
 version exacte : Pyodide 0.27.7, MathJax 3.2.2 (rendu SVG), MathLive 0.111.0.
 MathJax reconnaît `$...$`, `$$...$$`, `\(...\)` et `\[...\]`.
 

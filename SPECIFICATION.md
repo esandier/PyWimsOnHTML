@@ -12,7 +12,8 @@ modification commence par lui, avant le code (§ 9).
    correction par Python reste complète.
 3. Une activité est une feuille d’exercices compacte dans une seule page :
    un seul chargement de Pyodide, MathJax et MathLive pour toutes les questions.
-4. L’apparence suit `css/brand.css`, y compris pour les activités.
+4. L’apparence suit la charte (§ 11.4) : la charte neutre `css/brand.css`, ou
+   le `brand.css` du dossier d’exercices, y compris pour les activités.
 5. L’élève travaille sur ordinateur comme sur téléphone : les deux usages
    comptent autant, et la page doit être confortable sur un petit écran tactile
    comme avec un clavier et une souris. Le fichier HTML reste unique et de taille
@@ -381,7 +382,7 @@ sans `apres` : la comparaison y est sans ambiguïté.
   suffisent (−25 % pour une activité de QCM dont `avant` contient toutes les
   variantes).
 - Les styles de la feuille sont dans `css/exercise.css` et n’utilisent que les
-  variables de `css/brand.css`.
+  variables de la charte (§ 11.4).
 - Le mode « pages séparées (ZIP) » produit une feuille à une question par
   fichier.
 
@@ -530,7 +531,9 @@ sans `apres` : la comparaison y est sans ambiguïté.
 | `runtime/sheet.js` | la feuille : création des questions, progression et sa mémoire, note indicative, aide, célébration, redimensionnement |
 | `widgets/*.js` | champs de saisie, avec pré-remplissage pour la solution ; le widget de choix retire des colonnes quand un choix déborde |
 | `layouts/standard.html` | mise en page commune aux feuilles et aux questions seules |
-| `css/exercise.css` | styles des feuilles, à partir des variables de `brand.css` |
+| `css/exercise.css` | styles des feuilles, à partir des variables de la charte |
+| `css/brand.css` | charte neutre, par défaut (§ 11.4) |
+| `css/chartes/*.css` | exemples de chartes à copier en `brand.css` dans son dossier d’exercices (UPEC) |
 | `compiler/format.js` | analyse d’un fichier `.pwq`, types de ses champs de réponse |
 | `compiler/draws.js` | tirages avec Pyodide, contrôles de l’auteur, cohérence, ordre des choix |
 | `compiler/assemble.js` | ressources du projet, assemblage des feuilles, empreinte d’une activité |

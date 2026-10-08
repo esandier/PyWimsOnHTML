@@ -100,6 +100,7 @@
       white-space: nowrap;
     }
     #reload-folder, #other-folder { flex: 0 0 auto; }
+    #brand-status { margin: -0.35rem 0 0 0.25rem; font-size: 0.85rem; }
 
     /* Répartition de la liste des exercices et du panneau de prévisualisation. */
     .workspace {
@@ -331,6 +332,8 @@
         <button id="reload-folder" class="link-button" type="button" hidden>Relire</button>
         <button id="other-folder" class="link-button" type="button" hidden>Autre dossier</button>
       </div>
+      <!-- Charte des feuilles : brand.css du dossier d’exercices s’il en a un, charte neutre sinon. -->
+      <p id="brand-status" class="muted" hidden></p>
       <!-- Filtres et liste des fichiers d’exercice chargés depuis le dossier. -->
       <section class="panel panel-exercises" aria-labelledby="exercise-list-heading">
         <h2 id="exercise-list-heading">Questions / exercices</h2>

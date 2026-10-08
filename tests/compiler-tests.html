@@ -716,6 +716,7 @@
         fetch(`../compiler/${name}.js`).then(response => response.text()))).then(texts => texts.join("\n")),
       fetch("../layouts/standard.html").then(response => response.text()),
         fetch("../css/brand.css").then(response => response.text()),
+        fetch("../css/chartes/upec.css").then(response => response.text()),
         fetch("../css/exercise.css").then(response => response.text()),
         fetch("../widgets/input-text.js").then(response => response.text()),
           fetch("../widgets/input-matrix.js").then(response => response.text()),
@@ -725,7 +726,7 @@
         fetch("../exercises/dérivée-polynôme.pwq").then(response => response.text()),
         fetch("../exercises/produit-matrices.pwq").then(response => response.text())
         ])
-          .then(([compilerPage, compilerScript, layout, brandCss, exerciseCss, inputWidget, matrixWidget, mathWidget, pythonWorker, derivativeExercise, matrixProductExercise]) => {
+          .then(([compilerPage, compilerScript, layout, brandCss, upecCss, exerciseCss, inputWidget, matrixWidget, mathWidget, pythonWorker, derivativeExercise, matrixProductExercise]) => {
           // Les contrôles suivants couvrent l’interface, le runtime et les exercices fournis.
           test("la page du compilateur propose deux panneaux et une prévisualisation", () => {
             if (!compilerPage.includes('id="folder-name"') ||
@@ -886,30 +887,43 @@
               throw new Error("La source de l’exercice n’est pas intégrée comme bloc de texte lisible.");
             }
           });
-          test("le thème standard expose les variables graphiques de l’organisation", () => {
-            if (!brandCss.includes("--pw-brand-primary") ||
-                !brandCss.includes("--pw-body-font") ||
-                !brandCss.includes("@import url(")) {
-              throw new Error("Les variables graphiques ou l’import de la police par défaut sont absents.");
+          // Contrat d’une charte (SPECIFICATION.md, § 11.4) : chaque variable --pw-… qu’utilise
+          // exercise.css est définie par la charte neutre comme par l’exemple UPEC. Une variable
+          // oubliée laisserait une couleur ou une police vide, sans erreur.
+          test("chaque charte définit toutes les variables qu’utilisent les styles des exercices", () => {
+            const used = new Set([...exerciseCss.matchAll(/var\((--pw-[a-z-]+)\)/g)].map(match => match[1]));
+            // Variables posées par le code (matrice redimensionnable, colonnes de choix), pas par la charte.
+            const local = new Set([...exerciseCss.matchAll(/(--pw-[a-z-]+)\s*:/g)].map(match => match[1]));
+            for (const [name, css] of [["css/brand.css", brandCss], ["css/chartes/upec.css", upecCss]]) {
+              const missing = [...used].filter(variable => !local.has(variable) &&
+                !["--pw-vmatrix-rows", "--pw-vmatrix-columns", "--pw-choice-columns", "--fb-h"].includes(variable) &&
+                !new RegExp(`${variable}\\s*:`).test(css));
+              if (missing.length) throw new Error(`${name} ne définit pas : ${missing.join(", ")}`);
             }
           });
-          test("la mise en page affiche le logo UPEC à droite du titre", () => {
+          test("la charte neutre n’a ni logo ni police téléchargée", () => {
+            if (brandCss.includes("@import") || /url\(/.test(brandCss) ||
+                !/\.pw-brand-logo\s*\{\s*display:\s*none/.test(brandCss)) {
+              throw new Error("La charte neutre dépend d’un service en ligne ou affiche un logo.");
+            }
+          });
+          test("l’exemple de charte UPEC affiche son logo à droite du titre", () => {
             if (!/<header class="pw-header">[\s\S]*?<h1[^>]*>[\s\S]*?<\/h1>[\s\S]*?<span class="pw-brand-logo" aria-hidden="true"><\/span>[\s\S]*?<\/header>/.test(layout) ||
-                !brandCss.includes(".pw-brand-logo {") ||
-                !brandCss.includes('url("https://www.u-pec.fr/uas/web/LOGO/2017_11_27_Logotype-UPEC_rvb.svg")') ||
-                !brandCss.includes(".pw-brand-logo::after {") ||
-                !brandCss.includes("background: #fff") ||
-                !brandCss.includes("clip-path: polygon(0 62.3%, 0 100%, 100% 37.7%, 100% 0)") ||
-                !brandCss.includes("height: 100%") ||
-                !brandCss.includes("gap: 0.75rem") ||
-                !brandCss.includes("padding: 0 0 0 20px") ||
-                !brandCss.includes("overflow: clip") ||
-                !/@media \(max-width: 640px\)[\s\S]*?\.pw-header\s*\{\s*height: 2\.75rem/.test(brandCss) ||
-                !brandCss.includes(".pw-header #exercise-title") ||
-                !brandCss.includes("text-overflow: ellipsis") ||
-                !brandCss.includes("transform: scale(1.15)") ||
-                !brandCss.includes("transform-origin: top left") ||
-                !brandCss.includes("center / 100% 100% no-repeat") ||
+                !upecCss.includes(".pw-brand-logo {") ||
+                !upecCss.includes('url("https://www.u-pec.fr/uas/web/LOGO/2017_11_27_Logotype-UPEC_rvb.svg")') ||
+                !upecCss.includes(".pw-brand-logo::after {") ||
+                !upecCss.includes("background: #fff") ||
+                !upecCss.includes("clip-path: polygon(0 62.3%, 0 100%, 100% 37.7%, 100% 0)") ||
+                !upecCss.includes("height: 100%") ||
+                !upecCss.includes("gap: 0.75rem") ||
+                !upecCss.includes("padding: 0 0 0 20px") ||
+                !upecCss.includes("overflow: clip") ||
+                !/@media \(max-width: 640px\)[\s\S]*?\.pw-header\s*\{\s*height: 2\.75rem/.test(upecCss) ||
+                !upecCss.includes(".pw-header #exercise-title") ||
+                !upecCss.includes("text-overflow: ellipsis") ||
+                !upecCss.includes("transform: scale(1.15)") ||
+                !upecCss.includes("transform-origin: top left") ||
+                !upecCss.includes("center / 100% 100% no-repeat") ||
                 /\.pw-header\s*\{[^}]*padding\s*:/s.test(exerciseCss)) {
               throw new Error("Le logo UPEC recoloré ou son style plein bandeau est absent.");
             }
