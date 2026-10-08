@@ -276,6 +276,25 @@
           throw new Error("« avant » doit être intégré seulement à la question qui a un « apres ».");
         }
       });
+      test("MathJax n’est intégré qu’à une feuille qui peut afficher une formule", () => {
+        const question = ({ enonce = "Un {% input_text 'r' solution=a %}", apres = false, draw = {} }) => {
+          const built = sheetQuestion("Q", enonce);
+          if (!apres) delete built.fields.apres;
+          built.draws = [{ ...built.draws[0], ...draw }];
+          return built;
+        };
+        const hasMathJax = built => /mathjax@/.test(PyWimsCompiler.assembleExercise(built.fields, built.draws, sheetResources(layout)));
+        const cases = [
+          ["sans formule ni « apres »", question({}), false],
+          ["formule dans l’énoncé", question({ enonce: "Calculer $x^2$ : {% input_text 'r' solution=a %}" }), true],
+          ["formule \\( \\) dans une valeur", question({ draw: { context: { f: "\\(x\\)" } } }), true],
+          ["formule dans un choix", question({ draw: { choices: { c: ["$1$", "deux"] } } }), true],
+          ["formule dans l’explication", question({ draw: { explication: "Car $2+2=4$." } }), true],
+          ["« apres » sans formule", question({ apres: true }), true]
+        ];
+        const wrong = cases.filter(([, built, expected]) => hasMathJax(built) !== expected).map(([name]) => name);
+        if (wrong.length) throw new Error(`MathJax mal décidé : ${wrong.join(", ")}`);
+      });
       test("l’assemblage refuse un script ou un style qui fermerait sa balise", () => {
         // Les chaînes sont coupées : écrites d’un seul tenant, elles fermeraient le script de cette page.
         const close = element => "</" + element;
@@ -753,12 +772,6 @@
                 !compilerPage.includes('id="project-status" class="header-message muted transient-message"') ||
                 !compilerPage.includes('id="messages" class="header-message transient-message"')) {
               throw new Error("Les styles ou les zones de message transitoire sont absents.");
-            }
-          });
-          test("la mise en page standard active les délimiteurs TeX avec dollars", () => {
-            if (!layout.includes('inlineMath: [["$", "$"]') ||
-                !layout.includes('displayMath: [["$$", "$$"]')) {
-              throw new Error("Les délimiteurs MathJax sont absents.");
             }
           });
           test("les bibliothèques en ligne sont figées sur une version exacte", () => {

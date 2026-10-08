@@ -26,8 +26,14 @@ window.PyWimsQuestion = (() => {
   const singleQuestion = document.body.dataset.sheet === "single";
 
   // Compose les formules d’un élément dont le contenu vient d’être remplacé.
+  // Une feuille qui ne peut afficher aucune formule n’intègre pas MathJax (SPECIFICATION.md, § 5.1) :
+  // window.MathJax n’existe pas, il n’y a rien à composer. S’il existe sans être prêt, c’est que son
+  // chargement a échoué, ce que l’élève doit savoir.
   async function typeset(element) {
-    if (!window.MathJax?.startup?.promise || !window.MathJax?.typesetPromise) {
+    if (window.MathJax === undefined) {
+      return;
+    }
+    if (!window.MathJax.startup?.promise || !window.MathJax.typesetPromise) {
       throw new Error("Échec du chargement de MathJax.");
     }
     await window.MathJax.startup.promise;

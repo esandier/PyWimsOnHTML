@@ -639,6 +639,8 @@ window.PyWimsPython = (() => {
         };
         const draws = [{ seed: 0, context: {}, dimensions: {}, solutions: { t: "x^2 + 1", m: [["1", "-2"]] }, explication: null }];
         const { $, role, frame, window: frameWindow } = await openExercise(fields, draws, {});
+        // Ni formule ni « apres » : la feuille n’intègre pas MathJax, et tout marche sans lui.
+        if (frameWindow.MathJax !== undefined) throw new Error("MathJax est chargé par une feuille sans formule.");
         const text = $("#q1-form_txt_t");
         const cell = (i, j) => $(`[id='q1-form_txt_m[${i}][${j}]']`);
         await waitFor(() => text && cell(0, 0), "affichage des champs");
@@ -758,6 +760,20 @@ window.PyWimsPython = (() => {
         $("#pw-help-button").click();
         if (!$("#pw-help").open || !hidden($(".pw-help-activity"))) {
           throw new Error("L’aide de la question seule parle du pourcentage.");
+        }
+        frame.remove();
+      });
+
+      await test("les formules $…$ et $$…$$ d’une question sans « apres » sont composées par MathJax", async () => {
+        const fields = {
+          title: "Formules", layout: "STD", avant: "s = 0",
+          enonce: "Calculer $x^2$ pour $$y = 3$$ {% input_text 'r' solution=s %}"
+        };
+        const draws = [{ seed: 0, context: {}, dimensions: {}, solutions: { r: "9" }, explication: null }];
+        const { role, frame } = await openExercise(fields, draws, {});
+        await waitFor(() => role("prompt").querySelectorAll("mjx-container").length === 2, "composition des deux formules", 20000);
+        if (role("prompt").querySelector("mjx-container[display='true']") === null) {
+          throw new Error("La formule $$…$$ n’est pas composée en mode centré.");
         }
         frame.remove();
       });

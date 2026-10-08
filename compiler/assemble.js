@@ -126,12 +126,44 @@ ${renderDrawData(draws)}
     return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
   }
 
+  // MathJax compose les formules TeX des énoncés et des retours, en SVG : un tracé vectoriel, net à
+  // toute taille d’écran et à tout zoom. Script bloquant dans <head> : il est prêt quand les
+  // questions s’affichent. String.raw garde les barres obliques telles quelles (« \\( » en JS).
+  const mathJaxMarkup = String.raw`<script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [["$", "$"], ["\\(", "\\)"]],
+        displayMath: [["$$", "$$"], ["\\[", "\\]"]],
+        processEscapes: true
+      },
+      startup: { typeset: false }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js"></script>`;
+
+  // Une feuille a besoin de MathJax (≈ 600 Ko) si elle peut afficher une formule (SPECIFICATION.md,
+  // § 5.1) : un délimiteur dans un énoncé, une valeur, un choix ou une explication d’un tirage, ou
+  // une question qui a un « apres », dont le retour, calculé chez l’élève, peut en contenir une.
+  // Un « $ » qui n’ouvre pas de formule fait seulement charger MathJax pour rien.
+  function needsMathJax(questions) {
+    const delimiter = /\$|\\\(|\\\[/;
+    return questions.some(({ fields, draws }) =>
+      fields.apres !== undefined ||
+      delimiter.test(fields.enonce) ||
+      draws.some(draw => [
+        ...Object.values(draw.context ?? {}),
+        ...Object.values(draw.choices ?? {}).flat(),
+        draw.explication ?? ""
+      ].some(text => delimiter.test(String(text)))));
+  }
+
   // Assemble le HTML autonome à partir des textes des fichiers du projet, sans accès au disque.
   // Pyodide, MathJax et MathLive sont chargés une seule fois, quel que soit le nombre de questions.
   function assembleSheet({ title, kind, questions }, resources) {
     const sections = questions.map(({ fields, draws }, index) => renderQuestionSection(fields, draws, index));
     const usesMathWidget = neededResources(questions.map(({ fields }) => fields)).includes("mathWidget");
     const replacements = {
+      MATHJAX: needsMathJax(questions) ? mathJaxMarkup : "",
       TITLE: escapeHtml(title),
       SHEET_KIND: kind,
       // Seule une activité garde sa progression : une question seule n’a pas d’empreinte.

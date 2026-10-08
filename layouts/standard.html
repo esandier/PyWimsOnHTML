@@ -9,19 +9,9 @@
   <style>
 @@CSS@@
   </style>
-  <!-- MathJax compose les formules TeX des énoncés et des retours, en SVG : un tracé vectoriel,
-       net à toute taille d’écran et à tout zoom. -->
-  <script>
-    window.MathJax = {
-      tex: {
-        inlineMath: [["$", "$"], ["\\(", "\\)"]],
-        displayMath: [["$$", "$$"], ["\\[", "\\]"]],
-        processEscapes: true
-      },
-      startup: { typeset: false }
-    };
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js"></script>
+  <!-- MathJax (configuration et chargement), seulement si la feuille peut afficher une formule
+       (voir mathJaxMarkup dans compiler/assemble.js) ; vide sinon. -->
+  @@MATHJAX@@
   <!-- Charge MathLive uniquement si une question contient un champ mathématique. -->
   <script>@@MATHLIVE_LOADER@@</script>
 </head>
