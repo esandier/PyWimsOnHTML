@@ -30,7 +30,8 @@
     matrixWidget: "widgets/input-matrix.js",
     choiceWidget: "widgets/input-choice.js",
     fields: "runtime/fields.js",
-    runner: "runtime/runner.js",
+    question: "runtime/question.js",
+    sheet: "runtime/sheet.js",
     python: "runtime/python.js",
     pywims: "runtime/pywims.py"
   };
@@ -49,7 +50,7 @@
     );
   }
 
-  // Section d’une question : ses champs et ses tirages en texte échappé, lus par runner.js.
+  // Section d’une question : ses champs et ses tirages en texte échappé, lus par question.js.
   function renderQuestionSection(fields, draws, index) {
     if (!Array.isArray(draws) || !draws.length) {
       throw new Error(`Les tirages de « ${fields.title} » doivent être calculés avant l’assemblage.`);
@@ -88,7 +89,7 @@ ${renderDrawData(draws)}
   // Emplacements de la mise en page qui reçoivent du code tel quel, avec la balise qui l’entoure.
   const inlinedPlaceholders = {
     CSS: "style", TEMPLATE: "script", CORRECTION: "script", WIDGETS: "script", MATHLIVE_LOADER: "script",
-    PYWIMS: "script", PYTHON_RUNTIME: "script", RUNNER: "script"
+    PYWIMS: "script", PYTHON_RUNTIME: "script", FIELDS: "script", QUESTION: "script", SHEET: "script"
   };
 
   // Refuse un code qui fermerait sa balise : « </script » au milieu d’un script termine la balise
@@ -150,7 +151,8 @@ window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
       PYTHON_RUNTIME: resources.python,
       QUESTIONS: sections.join("\n"),
       FIELDS: resources.fields,
-      RUNNER: resources.runner
+      QUESTION: resources.question,
+      SHEET: resources.sheet
     };
     return resources.layout.replace(/@@([A-Z_]+)@@/g, (_match, name) => {
       if (!Object.hasOwn(replacements, name)) {

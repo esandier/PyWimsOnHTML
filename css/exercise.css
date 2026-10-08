@@ -167,7 +167,7 @@ body {
 }
 
 /* Une question seule n’a pas de progression ni de note d’activité, donc rien à réinitialiser. L’aide
-   ne parle de la note que si une question est notée (data-scored, posé par runner.js). */
+   ne parle de la note que si une question est notée (data-scored, posé par sheet.js). */
 [data-sheet="single"] .pw-completion,
 [data-sheet="single"] .pw-restart-button,
 [data-sheet="single"] .pw-progress,
@@ -478,7 +478,7 @@ body:not([data-scored]) .pw-help-score {
 }
 
 /* Écran étroit : le retour passe sous l’énoncé et la carte s’agrandit en douceur à son apparition
-   (hauteur --fb-h calculée par runner.js). */
+   (hauteur --fb-h calculée par question.js). */
 @media (max-width: 820px) {
   [data-sheet="activity"] .pw-question {
     grid-template-columns: 2.25rem minmax(0, 1fr);
@@ -808,7 +808,7 @@ body:not([data-scored]) .pw-help-score {
    - la part d’une colonne parmi n (écarts déduits), pour qu’« auto-fill » ne crée jamais plus de
      n colonnes sur grand écran.
    Avec une colonne, ce minimum vaut toute la largeur : les choix sont empilés. Ce calcul ne connaît
-   pas la largeur des textes ; runner.js (fitChoiceColumns) retire ensuite des colonnes tant qu’un
+   pas la largeur des textes ; le widget de choix (fitChoiceColumns) retire ensuite des colonnes tant qu’un
    choix ne tient pas. */
 .pw-choices {
   display: grid;
@@ -844,7 +844,7 @@ body:not([data-scored]) .pw-help-score {
 
 /* Un mot ou une formule n’est jamais coupé. « overflow-wrap: normal » annule le
    « overflow-wrap: anywhere » de l’énoncé, qui coupait les mots n’importe où (« dérivabl/e ») ;
-   il garde aussi le débordement mesurable par runner.js, qui retire alors des colonnes.
+   il garde aussi le débordement mesurable par le widget de choix, qui retire alors des colonnes.
    « overflow-x: auto » ne sert qu’en dernier recours, sur une seule colonne : une formule plus
    large que l’écran défile dans son choix au lieu de passer sous l’icône du verdict. */
 .pw-choice-text {

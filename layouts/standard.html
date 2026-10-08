@@ -58,7 +58,7 @@
       une réussite reste acquise après un nouvel énoncé.
     </p>
   </div>
-  <!-- Une section par question ; chacune contient ses données, et runner.js y place le modèle ci-dessous. -->
+  <!-- Une section par question ; chacune contient ses données, et question.js y place le modèle ci-dessous. -->
   <main class="pw-sheet">
 @@QUESTIONS@@
   </main>
@@ -143,8 +143,9 @@
        empêche le navigateur de l’exécuter. Vide si aucune question n’a d’« apres ». -->
   <script type="text/x-python" id="pywims-module">@@PYWIMS@@</script>
   <script>@@PYTHON_RUNTIME@@</script>
-  <!-- Outils sur les champs, puis les questions et la feuille, qui les utilisent. -->
+  <!-- Outils sur les champs, la classe des questions, puis la feuille, qui crée les questions. -->
   <script>@@FIELDS@@</script>
-  <script>@@RUNNER@@</script>
+  <script>@@QUESTION@@</script>
+  <script>@@SHEET@@</script>
 </body>
 </html>

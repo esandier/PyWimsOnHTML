@@ -642,6 +642,13 @@ window.PyWimsPython = (() => {
         const text = $("#q1-form_txt_t");
         const cell = (i, j) => $(`[id='q1-form_txt_m[${i}][${j}]']`);
         await waitFor(() => text && cell(0, 0), "affichage des champs");
+        // La question rendue a activé la poignée de la matrice : elle répond aux flèches du clavier.
+        const viewport = $("#q1 .pw-vmatrix-viewport");
+        $("#q1 .pw-vmatrix-resize").dispatchEvent(new frameWindow.KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+        if (viewport.dataset.visibleColumns !== "3") {
+          throw new Error("La poignée de la matrice ne répond pas : la question n’a pas activé le redimensionnement.");
+        }
+        frameWindow.PyWimsWidgets.resizeVariableMatrix(viewport, 2, 2);
         // La grille commence à 2 × 2 alors que la solution est 1 × 2 : toutes les cases sont fausses.
         type(text, "1+x^2");
         type(cell(0, 0), "1");

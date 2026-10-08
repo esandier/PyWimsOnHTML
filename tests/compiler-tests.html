@@ -217,7 +217,7 @@
     // Ressources minimales pour assembler une feuille : la mise en page réelle, des scripts vides.
     const sheetResources = layout => ({
       layout, brandCss: "", exerciseCss: "", template: "", correction: "", textWidget: "", mathWidget: "",
-      matrixWidget: "", choiceWidget: "", python: "", pywims: "", fields: "", runner: ""
+      matrixWidget: "", choiceWidget: "", python: "", pywims: "", fields: "", question: "", sheet: ""
     });
     const sheetQuestion = (title, enonce) => ({
       fields: { title, keywords: "", layout: "STD", avant: "a = 1", enonce, apres: "ok_answer['r'] = True" },
@@ -274,7 +274,9 @@
         // Les chaînes sont coupées : écrites d’un seul tenant, elles fermeraient le script de cette page.
         const close = element => "</" + element;
         for (const [key, code, fragment] of [
-          ["runner", `const fin = '${close("SCRIPT")}>';`, "@@RUNNER@@"],
+          ["sheet", `const fin = '${close("SCRIPT")}>';`, "@@SHEET@@"],
+          ["question", `const fin = '${close("script")}>';`, "@@QUESTION@@"],
+          ["fields", `const fin = '${close("script")}>';`, "@@FIELDS@@"],
           ["python", `x = '${close("script")}'`, "@@PYTHON_RUNTIME@@"],
           ["exerciseCss", `/* ${close("style")}> */`, "@@CSS@@"]
         ]) {
@@ -291,7 +293,7 @@
         }
         // Une chaîne coupée, elle, est acceptée.
         PyWimsCompiler.assembleExercise(sheetQuestion("A", "x").fields, sheetQuestion("A", "x").draws,
-          { ...sheetResources(layout), runner: "const fin = '</' + 'script>';" });
+          { ...sheetResources(layout), sheet: "const fin = '</' + 'script>';" });
       });
     }
     test("l’archive des pages séparées est un fichier ZIP", () => {
@@ -689,7 +691,6 @@
       fetch("../layouts/standard.html").then(response => response.text()),
         fetch("../css/brand.css").then(response => response.text()),
         fetch("../css/exercise.css").then(response => response.text()),
-        fetch("../runtime/runner.js").then(response => response.text()),
         fetch("../widgets/input-text.js").then(response => response.text()),
           fetch("../widgets/input-matrix.js").then(response => response.text()),
         fetch("../widgets/input-math.js").then(response => response.text()),
@@ -697,7 +698,7 @@
         fetch("../exercises/dérivée-polynôme.pwq").then(response => response.text()),
         fetch("../exercises/produit-matrices.pwq").then(response => response.text())
         ])
-          .then(([compilerPage, compilerScript, layout, brandCss, exerciseCss, runner, inputWidget, matrixWidget, mathWidget, pythonRuntime, derivativeExercise, matrixProductExercise]) => {
+          .then(([compilerPage, compilerScript, layout, brandCss, exerciseCss, inputWidget, matrixWidget, mathWidget, pythonRuntime, derivativeExercise, matrixProductExercise]) => {
           // Les contrôles suivants couvrent l’interface, le runtime et les exercices fournis.
           test("la page du compilateur propose deux panneaux et une prévisualisation", () => {
             if (!compilerPage.includes('id="folder-name"') ||
@@ -808,9 +809,6 @@
                 !matrixWidget.includes("setPointerCapture") ||
                 !matrixWidget.includes("ArrowRight") ||
                 !matrixWidget.includes("viewport.dataset.visibleColumns") ||
-              !runner.includes("viewport.dataset.visibleColumns") ||
-              !runner.includes("viewport.dataset.visibleRows") ||
-              !runner.includes("PyWimsWidgets.enableVariableMatrixResize(promptElement)") ||
               !exerciseCss.includes(".pw-vmatrix-viewport") ||
               !exerciseCss.includes("overflow: clip") ||
               !exerciseCss.includes(".pw-vmatrix-resize")) {
@@ -940,8 +938,7 @@
             if (square.attributes.size !== 3 ||
                 rectangular.attributes.rows !== "m" ||
                 rectangular.attributes.cols !== 2 ||
-                [...variables].sort().join(",") !== "A,m,n,p" ||
-                !runner.includes("python.setMatrix(name, matrix)")) {
+                [...variables].sort().join(",") !== "A,m,n,p") {
               throw new Error("Les dimensions littérales ou nommées des matrices sont mal analysées.");
             }
             for (const invalid of [
@@ -958,7 +955,7 @@
               if (!rejected) throw new Error(`Dimensions incohérentes acceptées : ${invalid}`);
             }
           });
-          // Modèle d’une question, tel que runner.js le recopie dans chaque section.
+          // Modèle d’une question, tel que question.js le recopie dans chaque section.
           const questionTemplate = new DOMParser().parseFromString(layout, "text/html")
             .getElementById("pw-question-template")?.content;
           test("un élément de statut vide ne crée pas de bandeau de validation", () => {
