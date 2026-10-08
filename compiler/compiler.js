@@ -2,7 +2,7 @@
 // Le format, les tirages, l’assemblage et l’archive sont dans les autres scripts de ce dossier.
 (() => {
   // Fonctions des modules du compilateur (format.js, draws.js, assemble.js, zip.js).
-  const { assembleActivity, assembleExercise, computeDraws, createExerciseFilename, createZip, fieldKindsLabel, neededResources, parseExerciseSource, previewPlaceholderDraw, resourcePaths } = PyWimsCompiler;
+  const { assembleActivity, assembleExercise, computeDraws, createExerciseFilename, createZip, fieldKindsLabel, neededResources, parseExerciseSource, previewPlaceholderDraw, resourcePaths, templateWarnings } = PyWimsCompiler;
 
   const chooseFolderButton = document.getElementById("choose-folder");
   const filePicker = document.getElementById("project-folder");
@@ -130,8 +130,9 @@
         return;
       }
       await renderPreviewFrame(fields, draw);
-      // Aperçu prêt : le titre du panneau suffit, la ligne d’état disparaît.
-      showPreviewNotice("");
+      // Aperçu prêt : la ligne d’état ne garde que les avertissements sur l’écriture de l’énoncé.
+      const warnings = templateWarnings(fields);
+      showPreviewNotice(warnings.join(" "), warnings.length ? "warning" : "muted");
     } catch (error) {
       if (generation === previewGeneration) {
         showPreviewNotice(`Le tirage n’a pas pu être calculé : ${error.message}`, "error");
@@ -385,7 +386,13 @@
         }
         downloadBlob(createZip(archiveEntries), `${questions.length}-questions.zip`);
       }
-      showMessage(messages, "La compilation a été téléchargée.", "success", 3000);
+      // Les avertissements ne bloquent pas la compilation ; ils restent affichés pour être lus.
+      const warnings = questions.flatMap(({ fields, path }) => templateWarnings(fields).map(text => `${path} : ${text}`));
+      if (warnings.length) {
+        showMessage(messages, `La compilation a été téléchargée. Avertissement : ${warnings.join(" ")}`, "warning");
+      } else {
+        showMessage(messages, "La compilation a été téléchargée.", "success", 3000);
+      }
     } catch (error) {
       showMessage(messages, error.message, "error");
     } finally {

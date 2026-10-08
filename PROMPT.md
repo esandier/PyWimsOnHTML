@@ -94,6 +94,8 @@ français, séparés par des virgules.
 ## Énoncé et champs de saisie
 
 - Dans `enonce`, utilise `{{variable}}` pour afficher une valeur de `avant`.
+  Dans une commande TeX, sépare la variable des accolades de TeX par des
+  espaces : `\frac{ {{n}} }{ {{m}} }`, et non `\frac{{{n}}}{{{m}}}`.
   Les objets SymPy s’affichent en LaTeX. Écris les formules TeX avec `$...$`, `$$...$$`,
   `\(...\)` ou `\[...\]`. Le HTML est autorisé.
 - Champs pris en charge ; `solution=` est obligatoire et désigne une variable

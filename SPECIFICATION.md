@@ -140,6 +140,11 @@ Le compilateur refuse l’exercice, avec un message précis, si :
   (§ 3, « Cohérence ») ;
 - une question à choix ne respecte pas les règles du § 10.6.
 
+Il **avertit** sans refuser, dans la ligne d’état de l’aperçu et après la
+compilation, si l’énoncé contient trois accolades de suite
+(`\frac{{{n}}}{{{m}}}`) : cela fonctionne, mais se relit mal ; on écrit
+`\frac{ {{n}} }{ {{m}} }`, avec le même résultat.
+
 ### 2.5 Exemple
 
 ```

@@ -85,9 +85,22 @@
     return kinds.length ? kinds.join(" · ") : "aucun champ de réponse";
   }
 
+  // Avertissements sur l’écriture de l’énoncé, qui n’empêchent pas la compilation (SPECIFICATION.md,
+  // § 2.4). Trois accolades de suite, comme dans \frac{{{n}}}{{{m}}}, fonctionnent (la variable est
+  // {{n}}, entourée des accolades de TeX), mais se relisent mal et se corrigent avec erreur.
+  function templateWarnings(fields) {
+    const warnings = [];
+    if (/\{\{\{|\}\}\}/.test(fields.enonce)) {
+      warnings.push("L’énoncé contient trois accolades de suite (par exemple \\frac{{{n}}}{{{m}}}) : " +
+        "écrivez \\frac{ {{n}} }{ {{m}} }, plus lisible, avec le même résultat.");
+    }
+    return warnings;
+  }
+
   window.PyWimsCompiler = Object.freeze({
     ...window.PyWimsCompiler,
     parseExerciseSource,
-    fieldKindsLabel
+    fieldKindsLabel,
+    templateWarnings
   });
 })();

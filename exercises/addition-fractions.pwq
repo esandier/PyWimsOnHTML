@@ -43,7 +43,7 @@ explication_solution = (
 Additionnez ces fractions et donnez le résultat sous forme d’une fraction
 irréductible, avec un dénominateur positif :
 <br>
-$\displaystyle \frac{{{n}}}{{{m}}} + \frac{{{p}}}{{{q}}} =$ {% input_text 'resultat' solution=somme style='width:7em' %}
+$\displaystyle \frac{ {{n}} }{ {{m}} } + \frac{ {{p}} }{ {{q}} } =$ {% input_text 'resultat' solution=somme style='width:7em' %}
 %
 % apres
 %

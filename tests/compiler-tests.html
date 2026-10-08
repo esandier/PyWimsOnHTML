@@ -626,6 +626,13 @@
       }
       if (fields.length !== 3) throw new Error(`${fields.length} champs au lieu de 3`);
     });
+    test("trois accolades de suite donnent un avertissement, pas une erreur", () => {
+      const warned = PyWimsCompiler.templateWarnings({ enonce: "$\\frac{{{n}}}{{{m}}}$" });
+      const clean = PyWimsCompiler.templateWarnings({ enonce: "$\\frac{ {{n}} }{ {{m}} }$ et {{x}}" });
+      if (warned.length !== 1 || !warned[0].includes("\\frac{ {{n}} }{ {{m}} }") || clean.length) {
+        throw new Error(`Avertissements inattendus : ${JSON.stringify([warned, clean])}`);
+      }
+    });
     test("la liste des exercices nomme les types de champs de réponse, dans l’ordre, sans répétition", () => {
       const label = PyWimsCompiler.fieldKindsLabel(
         "{% input_radio 'a' choices=c solution=s %} {% input_text 'b' solution=s %} " +
