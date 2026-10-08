@@ -142,6 +142,9 @@
   <!-- Module Python « pywims » (runtime/pywims.py), lu par le runtime Python : le type text/x-python
        empêche le navigateur de l’exécuter. Vide si aucune question n’a d’« apres ». -->
   <script type="text/x-python" id="pywims-module">@@PYWIMS@@</script>
+  <!-- Script du Worker de Python (runtime/python-worker.js), dont python.js fait le script du Worker :
+       le type text/x-worker empêche le navigateur de l’exécuter dans la page. Vide sans « apres ». -->
+  <script type="text/x-worker" id="pywims-worker">@@PYTHON_WORKER@@</script>
   <script>@@PYTHON_RUNTIME@@</script>
   <!-- Outils sur les champs, la classe des questions, puis la feuille, qui crée les questions. -->
   <script>@@FIELDS@@</script>

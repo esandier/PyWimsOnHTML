@@ -33,17 +33,19 @@
     question: "runtime/question.js",
     sheet: "runtime/sheet.js",
     python: "runtime/python.js",
-    pywims: "runtime/pywims.py"
+    pywims: "runtime/pywims.py",
+    pythonWorker: "runtime/python-worker.js"
   };
 
   // Indique quels fichiers du projet utilisent une question ou l’ensemble des questions d’une feuille.
   function neededResources(fieldsOrList) {
     const list = Array.isArray(fieldsOrList) ? fieldsOrList : [fieldsOrList];
     const tagTypes = new Set(list.flatMap(fields => [...PyWimsTemplate.tagTypes(fields.enonce)]));
-    // Le module pywims ne sert qu’aux questions qui ont un « apres » : elles seules chargent Python.
+    // Le module pywims et le script du Worker ne servent qu’aux questions qui ont un « apres » : elles
+    // seules chargent Python.
     const usesPython = list.some(fields => fields.apres !== undefined);
     return Object.keys(resourcePaths).filter(key =>
-      (key !== "pywims" || usesPython) &&
+      (!["pywims", "pythonWorker"].includes(key) || usesPython) &&
       (key !== "mathWidget" || tagTypes.has("input_math")) &&
       (key !== "matrixWidget" || tagTypes.has("input_matrix") || tagTypes.has("input_vmatrix")) &&
       (key !== "choiceWidget" || tagTypes.has("input_radio") || tagTypes.has("input_checkbox"))
@@ -89,7 +91,7 @@ ${renderDrawData(draws)}
   // Emplacements de la mise en page qui reçoivent du code tel quel, avec la balise qui l’entoure.
   const inlinedPlaceholders = {
     CSS: "style", TEMPLATE: "script", CORRECTION: "script", WIDGETS: "script", MATHLIVE_LOADER: "script",
-    PYWIMS: "script", PYTHON_RUNTIME: "script", FIELDS: "script", QUESTION: "script", SHEET: "script"
+    PYWIMS: "script", PYTHON_WORKER: "script", PYTHON_RUNTIME: "script", FIELDS: "script", QUESTION: "script", SHEET: "script"
   };
 
   // Refuse un code qui fermerait sa balise : « </script » au milieu d’un script termine la balise
@@ -148,6 +150,7 @@ window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
         : "window.pyWimsMathLiveReady = Promise.resolve();",
       // Vide si aucune question n’a d’« apres » : Python n’est alors jamais chargé.
       PYWIMS: resources.pywims ?? "",
+      PYTHON_WORKER: resources.pythonWorker ?? "",
       PYTHON_RUNTIME: resources.python,
       QUESTIONS: sections.join("\n"),
       FIELDS: resources.fields,

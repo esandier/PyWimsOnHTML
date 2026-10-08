@@ -4,304 +4,13 @@
 // arrêté (SPECIFICATION.md, § 5.1). Chaque appel de l’interface publiée devient un message au Worker,
 // et sa réponse revient comme une promesse.
 window.PyWimsPython = (() => {
-  // ---------------------------------------------------------------------------------------------
-  // Code du Worker. Cette fonction n’est jamais appelée dans la page : son texte devient le script
-  // du Worker (Blob), ce qui évite un fichier de plus à publier et marche aussi en file://.
-  // Elle ne peut donc utiliser aucune variable de la page.
-  function pythonWorker() {
-    const indexURL = "https://cdn.jsdelivr.net/pyodide/v0.27.7/full/";
-    let pyodide;
-    let pyodidePromise;
-    let packageLoadQueue = Promise.resolve();
-    let pythonOperationQueue = Promise.resolve();
-    let pywimsModuleSource = null;
-    const sessions = new Map();
-    const sessionInitializations = new Map();
-
-    // Écrit le module dans les paquets du site, où un simple « import pywims » le trouve, et oublie
-    // la version déjà importée : les sessions suivantes importent la nouvelle.
-    function installModule(instance) {
-      const sitePackages = instance.runPython("import site; site.getsitepackages()[0]");
-      instance.FS.writeFile(`${sitePackages}/pywims.py`, pywimsModuleSource);
-      instance.runPython("import importlib, sys; sys.modules.pop('pywims', None); importlib.invalidate_caches()");
-    }
-
-    // Exécute les opérations Python l’une après l’autre : Pyodide n’a qu’un interpréteur, et deux
-    // questions qui l’utiliseraient en même temps mêleraient leurs graines et leurs variables. Un
-    // échec est renvoyé à l’appelant sans bloquer les opérations suivantes.
-    function enqueuePythonOperation(operation) {
-      const result = pythonOperationQueue.then(operation);
-      pythonOperationQueue = result.catch(() => {});
-      return result;
-    }
-
-    // Charge Pyodide une seule fois ; un échec permet de réessayer plus tard.
-    function ensurePyodide() {
-      if (pywimsModuleSource === null) {
-        throw new Error("Le module pywims n’est pas disponible : la page ne contient pas runtime/pywims.py.");
-      }
-      if (!pyodidePromise) {
-        pyodidePromise = (async () => {
-          // Script classique de Pyodide : un Worker créé depuis un Blob ne charge pas de module ES
-          // dans tous les navigateurs, alors qu’importScripts y est universel.
-          importScripts(`${indexURL}pyodide.js`);
-          const instance = await loadPyodide({
-            indexURL,
-            // Hachage des chaînes fixe : sinon il change à chaque chargement de Pyodide, et avec lui
-            // l’ordre d’un set de chaînes ; le tirage rejoué dans le navigateur différerait de celui
-            // de la compilation (mesuré sur Pyodide 0.27.7, SPECIFICATION.md § 3).
-            env: { PYTHONHASHSEED: "0" }
-          });
-          installModule(instance);
-          pyodide = instance;
-          return instance;
-        })().catch(error => {
-          pyodidePromise = undefined;
-          throw error;
-        });
-      }
-      return pyodidePromise;
-    }
-
-    // Charge les paquets Pyodide importés par le code de l’exercice. Le module pywims s’appuie sur
-    // SymPy : l’importer charge donc aussi SymPy.
-    async function ensurePackages(code) {
-      await ensurePyodide();
-      const loading = packageLoadQueue.then(() =>
-        enqueuePythonOperation(async () => {
-          const findImports = pyodide.pyimport("pyodide.code").find_imports;
-          const importsProxy = findImports(code);
-          const imports = importsProxy.toJs();
-          importsProxy.destroy();
-          const errors = [];
-          const errorCallback = message => errors.push(message);
-          if (imports.includes("pywims")) {
-            await pyodide.loadPackage("sympy", { errorCallback });
-          }
-          await pyodide.loadPackagesFromImports(code, { errorCallback });
-          if (errors.length) {
-            throw new Error(`Échec du chargement des bibliothèques Python : ${errors.join(" ")}`);
-          }
-        })
-      );
-      packageLoadQueue = loading.catch(() => {});
-      return loading;
-    }
-
-    // Espace de noms d’une session prête, ou erreur explicite.
-    function sessionGlobals(sessionId) {
-      const globals = sessions.get(sessionId);
-      if (!pyodide || !globals) {
-        throw new Error("L’environnement Python n’est pas prêt.");
-      }
-      return globals;
-    }
-
-    // Valeur Python renvoyée à la page : seules les valeurs simples traversent la frontière du
-    // Worker. Un objet Python (liste, dictionnaire) est converti en tableau ou en objet.
-    function toPage(value) {
-      if (value && typeof value.toJs === "function") {
-        try {
-          return value.toJs({ dict_converter: Object.fromEntries });
-        } finally {
-          value.destroy();
-        }
-      }
-      return value;
-    }
-
-    // Prévient la page qu’un appel limité dans le temps commence : elle lance alors son minuteur.
-    function notifyStart(callId) {
-      if (callId !== undefined) {
-        postMessage({ id: callId, started: true });
-      }
-    }
-
-    const operations = {
-      setModuleSource(source) {
-        pywimsModuleSource = source;
-        if (pyodide) {
-          return enqueuePythonOperation(() => installModule(pyodide));
-        }
-      },
-
-      // Charge Pyodide et les paquets importés, puis crée l’espace de noms vierge de la question.
-      async initialize(sessionId, code) {
-        if (sessions.has(sessionId)) {
-          return;
-        }
-        if (sessionInitializations.has(sessionId)) {
-          return sessionInitializations.get(sessionId);
-        }
-        const initialization = (async () => {
-          await ensurePackages(code);
-          let globals;
-          try {
-            // Rien n’est importé à la place de l’auteur : seul le dictionnaire des résultats est prédéfini.
-            await enqueuePythonOperation(async () => {
-              globals = pyodide.runPython("dict()");
-              await pyodide.runPythonAsync("ok_answer = {}", { globals });
-            });
-            sessions.set(sessionId, globals);
-          } catch (error) {
-            globals?.destroy();
-            throw error;
-          }
-        })();
-        sessionInitializations.set(sessionId, initialization);
-        try {
-          await initialization;
-        } finally {
-          sessionInitializations.delete(sessionId);
-        }
-      },
-
-      // Exécute le code Python d’initialisation ou de correction de l’exercice. callId : appel limité
-      // dans le temps ; la page est prévenue quand le calcul commence vraiment, après l’attente dans
-      // la file, pour ne compter que la durée du calcul.
-      run(sessionId, code, callId) {
-        const globals = sessionGlobals(sessionId);
-        return enqueuePythonOperation(async () => {
-          notifyStart(callId);
-          return toPage(await pyodide.runPythonAsync(code, { globals }));
-        });
-      },
-
-      // Initialise le hasard avec la graine du tirage puis exécute le code, en une seule opération :
-      // aucune autre question ne peut tirer de nombre aléatoire entre les deux.
-      runSeeded(sessionId, code, seed, callId) {
-        const globals = sessionGlobals(sessionId);
-        return enqueuePythonOperation(async () => {
-          notifyStart(callId);
-          // NumPy n’est initialisé que s’il a été chargé pour cet exercice.
-          pyodide.runPython(`
-import importlib.util, random
-random.seed(${seed})
-if importlib.util.find_spec("numpy") is not None:
-    import numpy
-    numpy.random.seed(${seed})
-`);
-          toPage(await pyodide.runPythonAsync(code, { globals }));
-        });
-      },
-
-      // Rassemble les données d’un tirage (valeurs affichées, solutions, explication) et les erreurs
-      // de l’auteur.
-      collectDraw(sessionId, spec) {
-        const globals = sessionGlobals(sessionId);
-        return enqueuePythonOperation(() => {
-          const collect = pyodide.runPython('__import__("pywims")._collect_draw');
-          try {
-            return JSON.parse(collect(globals, JSON.stringify(spec)));
-          } finally {
-            collect.destroy();
-          }
-        });
-      },
-
-      // Messages sur les chaînes abîmées d’un champ Python (voir _string_errors) ; utilisé par le
-      // compilateur avant de calculer les tirages. Le code est analysé, jamais exécuté.
-      async sourceErrors(code, field) {
-        await ensurePyodide();
-        return enqueuePythonOperation(() => {
-          const check = pyodide.runPython('__import__("pywims")._string_errors');
-          try {
-            return JSON.parse(check(code, field));
-          } finally {
-            check.destroy();
-          }
-        });
-      },
-
-      // Libère l’espace de noms d’une question ; un nouvel appel à initialize en recrée un vierge.
-      dispose(sessionId) {
-        const globals = sessions.get(sessionId);
-        sessions.delete(sessionId);
-        if (globals) {
-          return enqueuePythonOperation(() => globals.destroy());
-        }
-      },
-
-      // Transfère une saisie (texte, matrice ou choix) dans l’espace de noms de la question. Une
-      // liste devient une vraie liste Python : l’auteur peut la comparer, par exemple
-      // « reponse == bonnes ». null devient None (Pyodide en ferait « jsnull »).
-      set(sessionId, name, value) {
-        const globals = sessionGlobals(sessionId);
-        return enqueuePythonOperation(() => {
-          if (value === null) {
-            return pyodide.runPythonAsync(`${name} = None`, { globals });
-          }
-          if (!Array.isArray(value)) {
-            globals.set(name, value);
-            return;
-          }
-          const pythonValue = pyodide.toPy(value);
-          try {
-            globals.set(name, pythonValue);
-          } finally {
-            pythonValue.destroy();
-          }
-        });
-      },
-
-      // Textes des choix d’une liste de « avant », convertis comme à la compilation : le navigateur
-      // vérifie ainsi que le tirage rejoué affiche les mêmes choix.
-      getChoiceTexts(sessionId, name) {
-        const globals = sessionGlobals(sessionId);
-        return enqueuePythonOperation(() => {
-          if (!globals.has(name)) {
-            throw new Error(`Liste de choix inconnue : ${name}`);
-          }
-          return JSON.parse(pyodide.runPython(
-            `__import__("json").dumps(__import__("pywims")._choice_texts(${name}), ensure_ascii=False)`, { globals }
-          ));
-        });
-      },
-
-      // Réinitialise les résultats de correction avant chaque vérification.
-      resetAnswers(sessionId) {
-        const globals = sessionGlobals(sessionId);
-        return enqueuePythonOperation(async () => {
-          await pyodide.runPythonAsync("ok_answer = {}\nglobals().pop('feedback', None)", { globals });
-        });
-      },
-
-      // Convertit une variable Python en texte destiné aux substitutions du modèle.
-      getTemplateValue(sessionId, name) {
-        const globals = sessionGlobals(sessionId);
-        return enqueuePythonOperation(() => {
-          if (!globals.has(name)) {
-            throw new Error(`Variable d’exercice inconnue : ${name}`);
-          }
-          // __import__ évite d’ajouter le nom « pywims » à l’espace de noms de l’auteur.
-          return pyodide.runPython(`__import__("pywims")._template_value(${name})`, { globals });
-        });
-      },
-
-      // Évalue une condition de correction Python et renvoie sa valeur booléenne.
-      getBoolean(sessionId, expression) {
-        const globals = sessionGlobals(sessionId);
-        return enqueuePythonOperation(async () => Boolean(toPage(await pyodide.runPythonAsync(expression, { globals }))));
-      }
-    };
-
-    // Chaque message est un appel : { id, op, args } ; la réponse rappelle id, avec la valeur ou le
-    // message d’erreur (le traceback Python y figure : le compilateur en tire la ligne fautive).
-    self.onmessage = async ({ data: { id, op, args } }) => {
-      try {
-        const value = await operations[op](...args);
-        postMessage({ id, ok: true, value, loaded: Boolean(pyodide) });
-      } catch (error) {
-        postMessage({ id, ok: false, error: error?.message ?? String(error), loaded: Boolean(pyodide) });
-      }
-    };
-  }
-  // ---------------------------------------------------------------------------------------------
-
   // Source du module « pywims » (runtime/pywims.py, SPECIFICATION.md § 3). La page générée l’intègre
   // dans un bloc <script type="text/x-python" id="pywims-module">, que le navigateur n’exécute pas ;
   // le compilateur et les tests le fournissent avec setModuleSource, après l’avoir lu.
   let pywimsModuleSource = document.getElementById("pywims-module")?.textContent ?? null;
+  // Script du Worker (runtime/python-worker.js), par le même chemin : bloc non exécuté
+  // <script type="text/x-worker" id="pywims-worker"> de la page générée, ou setWorkerSource.
+  let workerSource = document.getElementById("pywims-worker")?.textContent || null;
   let worker = null;
   let loaded = false;
   let nextCallId = 0;
@@ -310,9 +19,9 @@ if importlib.util.find_spec("numpy") is not None:
   // compare cette valeur à celle de sa préparation pour savoir qu’elle doit se préparer de nouveau.
   let epoch = 0;
 
-  // Arrête le Worker, par exemple après un calcul trop long : c’est le seul moyen d’interrompre
-  // Pyodide sans les en-têtes HTTP que Moodle n’envoie pas (SharedArrayBuffer). Le calcul en cause
-  // échoue avec timedOut ; les autres appels en attente échouent avec une erreur « PyWimsRestart »,
+  // Arrête le Worker, après un calcul trop long (c’est le seul moyen d’interrompre Pyodide sans les
+  // en-têtes HTTP que Moodle n’envoie pas, SharedArrayBuffer) ou un changement de script. Le calcul
+  // en cause, s’il y en a un, échoue avec timedOut ; les autres appels en attente échouent avec « PyWimsRestart »,
   // que les questions savent taire. Le Worker suivant est créé au prochain appel.
   function restart(timedOutId, timedOut) {
     worker.terminate();
@@ -338,9 +47,13 @@ if importlib.util.find_spec("numpy") is not None:
     if (worker) {
       return worker;
     }
-    // L’adresse du Blob n’est pas révoquée : un navigateur peut lire le script du Worker après sa
-    // création, et ce petit texte ne coûte presque rien.
-    const url = URL.createObjectURL(new Blob([`(${pythonWorker.toString()})()`], { type: "text/javascript" }));
+    if (workerSource === null) {
+      throw new Error("Le moteur Python n’est pas disponible : la page ne contient pas runtime/python-worker.js.");
+    }
+    // Le Worker est créé depuis un Blob, ce qui marche aussi en file:// ; l’adresse n’est pas
+    // révoquée : un navigateur peut lire le script après la création du Worker, et ce texte ne coûte
+    // presque rien.
+    const url = URL.createObjectURL(new Blob([workerSource], { type: "text/javascript" }));
     const current = new Worker(url);
     worker = current;
     // Un Worker arrêté peut encore livrer un message déjà parti : seuls ceux du Worker actuel comptent.
@@ -396,8 +109,10 @@ if importlib.util.find_spec("numpy") is not None:
   function call(op, args, { timeoutMs } = {}) {
     const id = nextCallId++;
     return new Promise((resolve, reject) => {
+      // Le Worker d’abord : s’il ne peut pas être créé, l’appel échoue sans rester en attente.
+      const target = ensureWorker();
       pendingCalls.set(id, { resolve, reject, timeoutMs });
-      ensureWorker().postMessage({ id, op, args: timeoutMs ? [...args, id] : args });
+      target.postMessage({ id, op, args: timeoutMs ? [...args, id] : args });
     });
   }
 
@@ -412,6 +127,21 @@ if importlib.util.find_spec("numpy") is not None:
     }
     pywimsModuleSource = source;
     return worker ? call("setModuleSource", [source]) : Promise.resolve();
+  }
+
+  // Fournit le script du Worker lu dans le dossier du projet (compilateur, tests). Un Worker déjà
+  // lancé avec un autre script est arrêté, comme après un calcul trop long : le suivant, créé au
+  // prochain appel, utilise le nouveau script. Les tirages se calculent ainsi avec le script que le
+  // fichier généré intégrera.
+  function setWorkerSource(source) {
+    if (typeof source !== "string" || !source.trim()) {
+      throw new Error("Le script du Worker doit être un texte non vide.");
+    }
+    const changed = source !== workerSource;
+    workerSource = source;
+    if (worker && changed) {
+      restart(null, null);
+    }
   }
 
   function initialize(code, sessionId = "default") {
@@ -506,6 +236,7 @@ if importlib.util.find_spec("numpy") is not None:
 
   return Object.freeze({
     setModuleSource,
+    setWorkerSource,
     // Indique si Pyodide est déjà chargé (le compilateur adapte son message d’attente).
     isLoaded: () => loaded,
     // Nombre de relances du Worker (voir restart).

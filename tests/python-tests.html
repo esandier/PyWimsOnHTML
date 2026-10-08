@@ -55,8 +55,10 @@
     }
 
     (async () => {
-      // Le module pywims vient de runtime/pywims.py, comme dans le compilateur.
+      // Le module pywims et le script du Worker viennent du projet, comme dans le compilateur.
       const moduleSource = await (await fetch("../runtime/pywims.py", { cache: "no-store" })).text();
+      const workerSource = await (await fetch("../runtime/python-worker.js", { cache: "no-store" })).text();
+      PyWimsPython.setWorkerSource(workerSource);
       await PyWimsPython.setModuleSource(moduleSource);
       const exerciseFiles = await listExerciseFiles();
 
@@ -82,6 +84,19 @@
         await restored.initialize("import pywims");
         await expectPython(restored, "not hasattr(__import__('pywims'), 'MARQUE_ESSAI')", "Le module d’origine n’est pas rétabli");
         await restored.dispose();
+      });
+
+      await test("un script du Worker modifié relance le moteur, le même script ne le relance pas", async () => {
+        const before = PyWimsPython.epoch();
+        PyWimsPython.setWorkerSource(workerSource);
+        if (PyWimsPython.epoch() !== before) throw new Error("Le même script a relancé le moteur.");
+        PyWimsPython.setWorkerSource(`${workerSource}\n// essai\n`);
+        if (PyWimsPython.epoch() !== before + 1) throw new Error("Un script modifié n’a pas relancé le moteur.");
+        PyWimsPython.setWorkerSource(workerSource);
+        const session = PyWimsPython.createSession("worker-relance");
+        await session.initialize("x = 1");
+        await expectPython(session, "1 + 1 == 2", "Python ne marche plus après le changement de script");
+        await session.dispose();
       });
 
       await test("le module pywims analyse les saisies et refuse tout autre code", async () => {

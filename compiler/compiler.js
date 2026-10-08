@@ -178,13 +178,18 @@
       projectFiles.set(normalizedProjectPath(file), file);
     }
 
-    // Les tirages se calculent avec le module pywims du dossier, celui qui sera intégré au fichier
-    // généré : tirages calculés et rejoués utilisent le même code (SPECIFICATION.md, § 3).
+    // Les tirages se calculent avec le module pywims et le script du Worker du dossier, ceux qui
+    // seront intégrés au fichier généré : tirages calculés et rejoués utilisent le même code
+    // (SPECIFICATION.md, § 3).
     const moduleFile = projectFiles.get(resourcePaths.pywims);
-    if (!moduleFile) {
-      showMessage(projectStatus, `Le dossier ne contient pas « ${resourcePaths.pywims} » : ce n’est pas un dossier PyWimsOnHTML.`, "error");
+    const workerFile = projectFiles.get(resourcePaths.pythonWorker);
+    const missing = [[moduleFile, resourcePaths.pywims], [workerFile, resourcePaths.pythonWorker]]
+      .find(([file]) => !file);
+    if (missing) {
+      showMessage(projectStatus, `Le dossier ne contient pas « ${missing[1]} » : ce n’est pas un dossier PyWimsOnHTML.`, "error");
       return;
     }
+    PyWimsPython.setWorkerSource(await workerFile.text());
     await PyWimsPython.setModuleSource(await moduleFile.text());
 
     const sources = [...projectFiles.entries()]

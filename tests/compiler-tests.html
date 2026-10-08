@@ -217,7 +217,7 @@
     // Ressources minimales pour assembler une feuille : la mise en page réelle, des scripts vides.
     const sheetResources = layout => ({
       layout, brandCss: "", exerciseCss: "", template: "", correction: "", textWidget: "", mathWidget: "",
-      matrixWidget: "", choiceWidget: "", python: "", pywims: "", fields: "", question: "", sheet: ""
+      matrixWidget: "", choiceWidget: "", python: "", pywims: "", pythonWorker: "", fields: "", question: "", sheet: ""
     });
     const sheetQuestion = (title, enonce) => ({
       fields: { title, keywords: "", layout: "STD", avant: "a = 1", enonce, apres: "ok_answer['r'] = True" },
@@ -277,6 +277,7 @@
           ["sheet", `const fin = '${close("SCRIPT")}>';`, "@@SHEET@@"],
           ["question", `const fin = '${close("script")}>';`, "@@QUESTION@@"],
           ["fields", `const fin = '${close("script")}>';`, "@@FIELDS@@"],
+          ["pythonWorker", `const fin = '${close("script")}>';`, "@@PYTHON_WORKER@@"],
           ["python", `x = '${close("script")}'`, "@@PYTHON_RUNTIME@@"],
           ["exerciseCss", `/* ${close("style")}> */`, "@@CSS@@"]
         ]) {
@@ -694,11 +695,12 @@
         fetch("../widgets/input-text.js").then(response => response.text()),
           fetch("../widgets/input-matrix.js").then(response => response.text()),
         fetch("../widgets/input-math.js").then(response => response.text()),
-        fetch("../runtime/python.js").then(response => response.text()),
+        // Script du Worker : c’est lui qui charge Pyodide.
+        fetch("../runtime/python-worker.js").then(response => response.text()),
         fetch("../exercises/dérivée-polynôme.pwq").then(response => response.text()),
         fetch("../exercises/produit-matrices.pwq").then(response => response.text())
         ])
-          .then(([compilerPage, compilerScript, layout, brandCss, exerciseCss, inputWidget, matrixWidget, mathWidget, pythonRuntime, derivativeExercise, matrixProductExercise]) => {
+          .then(([compilerPage, compilerScript, layout, brandCss, exerciseCss, inputWidget, matrixWidget, mathWidget, pythonWorker, derivativeExercise, matrixProductExercise]) => {
           // Les contrôles suivants couvrent l’interface, le runtime et les exercices fournis.
           test("la page du compilateur propose deux panneaux et une prévisualisation", () => {
             if (!compilerPage.includes('id="folder-name"') ||
@@ -754,7 +756,7 @@
             }
           });
           test("les bibliothèques en ligne sont figées sur une version exacte", () => {
-            const urls = [layout, compilerScript, pythonRuntime]
+            const urls = [layout, compilerScript, pythonWorker]
               .flatMap(source => source.match(/https:\/\/(?:cdn\.jsdelivr\.net|unpkg\.com)\/[^"'\s)]+/g) || []);
             const unpinned = urls.filter(url => !/(?:@|\/v)\d+\.\d+\.\d+(?:\/|$)/.test(url));
             // Chacune des trois bibliothèques doit être présente, quel que soit le nombre de ses URL.
