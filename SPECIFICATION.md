@@ -900,6 +900,32 @@ Une page `guide/` (« Créer »), en sections :
 5. **Mode d’emploi et modèles**, puis **page d’accueil et démonstrations**,
    publiés ensemble.
 
+### 11.8 Ordre des questions d’une activité
+
+Une activité suit l’ordre dans lequel les questions ont été cochées. Cet ordre
+était invisible, ne se changeait qu’en décochant et recochant, et « Relire » le
+remplaçait par l’ordre de la liste.
+
+- **Liste d’ordre.** En mode « Activité unique », le panneau d’aperçu montre,
+  sous sa ligne de titre et sur toute sa largeur, la liste numérotée des
+  questions cochées, une par ligne, avec deux boutons « ↑ » et « ↓ » (le
+  premier sans « ↑ », le dernier sans « ↓ »). La liste défile seule au-delà
+  d’une hauteur fixe (environ six lignes, quatre sur téléphone), pour laisser
+  la place à l’aperçu.
+  Après un déplacement, le focus suit la question déplacée : on la monte de
+  plusieurs rangs au clavier sans la perdre. On a écarté le glisser-déposer :
+  le glisser-déposer HTML ne marche pas au toucher, et le refaire avec les
+  événements de pointeur coûte beaucoup pour un gain faible.
+- **Aperçu.** Un clic sur le titre d’une question de la liste d’ordre affiche
+  son aperçu, comme dans la liste des exercices.
+- **Rang dans la liste des exercices.** En mode « Activité unique », chaque
+  question cochée porte son rang (1, 2, …) à côté de sa case.
+- **Ordre gardé.** Cocher ajoute la question à la fin, décocher la retire ;
+  « Tout sélectionner » ajoute les questions visibles non cochées à la fin,
+  dans l’ordre de la liste. « Relire » garde l’ordre (une question disparue
+  est retirée). L’ordre n’est pas retenu d’une visite à l’autre.
+- Pages séparées (ZIP) : l’ordre est sans effet, la liste d’ordre est masquée.
+
 ## 12. Points ouverts
 
 - **Banque de questions** (comme `\element` et `\restituegroupe` d’AMC) : une
@@ -918,8 +944,6 @@ Une page `guide/` (« Créer »), en sections :
 - **Clavier choisi par l’auteur** pour une case ou un champ (pavé numérique
   quand toutes les réponses sont des nombres positifs).
 - **Autres écritures des nombres** (notation scientifique pour la physique).
-- **Ordre des questions d’une activité**, choisi dans le compilateur ; il suit
-  aujourd’hui l’ordre des titres.
 - **KaTeX à la place de MathJax** : plus léger et plus rapide ; à étudier
   (couverture de l’écriture des exercices, par exemple `@{\;}` dans un
   `array`, rendu, MathLive). Mesure d’octobre 2026 : MathJax pèse 603 Ko, et

@@ -107,6 +107,39 @@ def dossier_memorise(page, fichiers):
         raise AssertionError("Le fichier compilé n’utilise pas le brand.css du dossier.")
     print("charte du dossier : annoncée et intégrée au fichier compilé")
 
+    # Ordre d’une activité (§ 11.8) : celui des cases cochées, changé par « ↓ », gardé par « Relire »,
+    # et suivi par le fichier compilé.
+    for case in page.query_selector_all(".exercise-selection"):
+        if case.is_checked():
+            case.uncheck()
+    page.click(".exercise-selection >> nth=1")  # PGCD, dans le sous-dossier
+    page.click(".exercise-selection >> nth=0")  # Decim3, à la racine
+    page.select_option("#output-mode", "activity")
+    page.fill("#activity-title", "Activité ordonnée")
+    ordre = "[...document.querySelectorAll('#activity-order-list .order-title')].map(b => b.textContent)"
+    rangs = "[...document.querySelectorAll('#exercise-list .exercise-rank')].map(r => r.textContent)"
+    if page.evaluate(ordre) != ["PGCD", "Titre compilé"] or page.evaluate(rangs) != ["2", "1"]:
+        raise AssertionError(f"ordre des cases cochées non suivi : {page.evaluate(ordre)}, rangs {page.evaluate(rangs)}")
+    page.click("[aria-label='Descendre « PGCD »']")
+    if page.evaluate(ordre) != ["Titre compilé", "PGCD"]:
+        raise AssertionError(f"« ↓ » n’a pas déplacé la question : {page.evaluate(ordre)}")
+    # Arrivée en fin, la question n’a plus de « ↓ » : le focus passe à son « ↑ ».
+    if page.evaluate("document.activeElement.getAttribute('aria-label')") != "Monter « PGCD »":
+        raise AssertionError("Le focus n’a pas suivi la question déplacée.")
+    page.click("#reload-folder")
+    page.wait_for_function("document.getElementById('project-status').textContent.includes('chargé')")
+    if page.evaluate(ordre) != ["Titre compilé", "PGCD"] or page.evaluate(rangs) != ["1", "2"]:
+        raise AssertionError(f"« Relire » n’a pas gardé l’ordre : {page.evaluate(ordre)}, rangs {page.evaluate(rangs)}")
+    with page.expect_download(timeout=180_000) as attente:
+        page.click("#compile-exercise")
+    activite = open(attente.value.path(), encoding="utf-8").read()
+    if not 0 <= activite.find("Titre compilé") < activite.find(">PGCD<"):
+        raise AssertionError("Le fichier compilé ne suit pas l’ordre choisi.")
+    page.select_option("#output-mode", "separate")
+    if page.is_visible("#activity-order") or any(page.evaluate(rangs)):
+        raise AssertionError("En pages séparées, la liste d’ordre et les rangs devraient être masqués.")
+    print("ordre d’une activité : cases cochées, « ↓ », gardé par « Relire », suivi à la compilation")
+
     # Visite suivante : le dossier se rouvre d’un clic.
     page.reload()
     page.wait_for_function("document.getElementById('choose-folder').textContent === 'Rouvrir « exercices-essai »'")

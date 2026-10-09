@@ -26,10 +26,17 @@
   const activityTitleInput = document.getElementById("activity-title");
   const activityTitleLabel = document.getElementById("activity-title-label");
   const messages = document.getElementById("messages");
+  const activityOrder = document.getElementById("activity-order");
+  const activityOrderList = document.getElementById("activity-order-list");
 
   let exercises = [];
   let selectedExercise;
-  const selectedExercises = new Set();
+  // Questions cochées, dans l’ordre de l’activité (SPECIFICATION.md, § 11.8) : un tableau, et non
+  // plus un Set, pour pouvoir déplacer une question.
+  let selectedExercises = [];
+  // Pastille de rang de chaque exercice affiché dans la liste, mise à jour sans reconstruire la
+  // liste : la reconstruire ferait perdre le focus à la case qu’on vient de cocher.
+  const rankBadges = new Map();
   // Exercices que la recherche laisse affichés et qu’on peut cocher : ceux de « Tout sélectionner ».
   let visibleExercises = [];
   const messageTimers = new WeakMap();
@@ -306,13 +313,14 @@
   // Lit les exercices du dossier choisi, sous-dossiers compris, et réinitialise l’interface.
   // sources : [{ path, read }] ; keepSelection garde la sélection d’une relecture du même dossier.
   async function loadFolder(name, sources, { keepSelection = false, brand = null } = {}) {
-    const selectedPaths = new Set([...selectedExercises].map(exercise => exercise.path));
+    // Chemins dans l’ordre de l’activité : « Relire » garde cet ordre.
+    const selectedPaths = selectedExercises.map(exercise => exercise.path);
     const shownPath = selectedExercise?.path;
     clearMessage(messages);
     clearMessage(projectStatus);
     exercises = [];
     selectedExercise = undefined;
-    selectedExercises.clear();
+    selectedExercises = [];
     if (!keepSelection) {
       outputMode.value = "separate";
       activityTitleInput.value = "";
@@ -345,9 +353,11 @@
         exercise.error = error;
       }
       exercises.push(exercise);
-      if (keepSelection && selectedPaths.has(path) && !exercise.error) {
-        selectedExercises.add(exercise);
-      }
+    }
+    if (keepSelection) {
+      selectedExercises = selectedPaths
+        .map(path => exercises.find(exercise => exercise.path === path && !exercise.error))
+        .filter(Boolean);
     }
 
     const count = exercises.length;
@@ -374,6 +384,7 @@
   function renderExerciseList() {
     const query = search.value.trim().toLocaleLowerCase();
     exerciseList.replaceChildren();
+    rankBadges.clear();
 
     const matches = exercises.filter(exercise => {
       const searchable = `${exercise.fields?.title || ""} ${exercise.fields?.keywords || ""} ${exercise.path}`.toLocaleLowerCase();
@@ -403,7 +414,7 @@
       const selection = document.createElement("input");
       selection.className = "exercise-selection";
       selection.type = "checkbox";
-      selection.checked = selectedExercises.has(exercise);
+      selection.checked = selectedExercises.includes(exercise);
       selection.disabled = Boolean(exercise.error);
       selection.setAttribute(
         "aria-label",
@@ -411,9 +422,9 @@
       );
       selection.addEventListener("change", () => {
         if (selection.checked) {
-          selectedExercises.add(exercise);
+          selectedExercises.push(exercise);
         } else {
-          selectedExercises.delete(exercise);
+          selectedExercises = selectedExercises.filter(other => other !== exercise);
         }
         updateCompilationControls();
         updateSelectVisibleButton();
@@ -424,7 +435,10 @@
       button.setAttribute("aria-current", String(exercise === selectedExercise));
       const title = document.createElement("span");
       title.className = "exercise-title";
-      title.textContent = exerciseLabel(exercise);
+      const rank = document.createElement("span");
+      rank.className = "exercise-rank";
+      rankBadges.set(exercise, rank);
+      title.append(rank, exerciseLabel(exercise));
       const kinds = document.createElement("span");
       kinds.className = "exercise-fields";
       kinds.textContent = exercise.error ? "fichier illisible" : fieldKindsLabel(exercise.fields.enonce);
@@ -437,6 +451,7 @@
     }
 
     visibleExercises = matches.filter(exercise => !exercise.error);
+    updateRanks();
     updateSelectVisibleButton();
     listEmpty.hidden = matches.length > 0;
     if (!exercises.length) {
@@ -449,7 +464,7 @@
   // « Tout sélectionner » tant qu’un exercice visible n’est pas coché, « Tout désélectionner » sinon ;
   // absent quand aucun exercice visible ne peut être coché.
   function updateSelectVisibleButton() {
-    const allSelected = visibleExercises.every(exercise => selectedExercises.has(exercise));
+    const allSelected = visibleExercises.every(exercise => selectedExercises.includes(exercise));
     selectVisibleButton.hidden = visibleExercises.length === 0;
     selectVisibleButton.textContent = allSelected ? "Tout désélectionner" : "Tout sélectionner";
   }
@@ -457,13 +472,12 @@
   // Coche ou décoche d’un coup les exercices visibles ; les exercices masqués par la recherche
   // gardent leur état (SPECIFICATION.md, § 11.3).
   function toggleVisibleSelection() {
-    const allSelected = visibleExercises.every(exercise => selectedExercises.has(exercise));
-    for (const exercise of visibleExercises) {
-      if (allSelected) {
-        selectedExercises.delete(exercise);
-      } else {
-        selectedExercises.add(exercise);
-      }
+    const allSelected = visibleExercises.every(exercise => selectedExercises.includes(exercise));
+    if (allSelected) {
+      selectedExercises = selectedExercises.filter(exercise => !visibleExercises.includes(exercise));
+    } else {
+      // Les questions visibles non cochées s’ajoutent à la fin, dans l’ordre de la liste.
+      selectedExercises.push(...visibleExercises.filter(exercise => !selectedExercises.includes(exercise)));
     }
     renderExerciseList();
     updateCompilationControls();
@@ -490,7 +504,7 @@
 
   // Adapte les options de compilation au nombre et au mode des questions choisies.
   function updateCompilationControls() {
-    const selected = [...selectedExercises].filter(exercise => !exercise.error);
+    const selected = selectedExercises.filter(exercise => !exercise.error);
     const multiple = selected.length > 1;
     const activityMode = multiple && outputMode.value === "activity";
     selectionCount.textContent = selected.length === 0
@@ -504,6 +518,73 @@
     compileButton.textContent = selected.length > 1
       ? `Compiler (${selected.length})`
       : "Compiler";
+    updateRanks();
+    renderActivityOrder();
+  }
+
+  // L’ordre ne compte que pour une activité unique : hors de ce mode, ni rang ni liste d’ordre.
+  function activityOrderShown() {
+    return selectedExercises.length > 1 && outputMode.value === "activity";
+  }
+
+  // Rang de chaque question cochée, à côté de sa case dans la liste des exercices.
+  function updateRanks() {
+    const shown = activityOrderShown();
+    for (const [exercise, badge] of rankBadges) {
+      const index = selectedExercises.indexOf(exercise);
+      badge.textContent = shown && index >= 0 ? String(index + 1) : "";
+    }
+  }
+
+  // Liste d’ordre de l’activité : rang, titre (qui affiche l’aperçu), « ↑ » et « ↓ ».
+  function renderActivityOrder() {
+    activityOrder.hidden = !activityOrderShown();
+    activityOrderList.replaceChildren();
+    if (activityOrder.hidden) {
+      return;
+    }
+    const last = selectedExercises.length - 1;
+    for (const [index, exercise] of selectedExercises.entries()) {
+      const label = exerciseLabel(exercise);
+      const item = document.createElement("li");
+      const rank = document.createElement("span");
+      rank.className = "order-rank";
+      rank.textContent = `${index + 1}.`;
+      const title = document.createElement("button");
+      title.className = "order-title";
+      title.type = "button";
+      title.textContent = label;
+      title.title = exercise.path;
+      title.setAttribute("aria-current", String(exercise === selectedExercise));
+      title.addEventListener("click", () => selectExercise(exercise));
+      const up = orderMoveButton("↑", `Monter « ${label} »`, index === 0, () => moveSelected(index, -1));
+      const down = orderMoveButton("↓", `Descendre « ${label} »`, index === last, () => moveSelected(index, 1));
+      item.append(rank, title, up, down);
+      activityOrderList.append(item);
+    }
+  }
+
+  function orderMoveButton(text, label, hidden, onClick) {
+    const button = document.createElement("button");
+    button.className = "order-move";
+    button.type = "button";
+    button.textContent = text;
+    button.setAttribute("aria-label", label);
+    button.hidden = hidden;
+    button.addEventListener("click", onClick);
+    return button;
+  }
+
+  // Déplace la question d’un rang, puis rend le focus à la même flèche de la question déplacée, ou à
+  // l’autre si celle-ci a disparu (arrivée en tête ou en fin) : on la monte de plusieurs rangs au
+  // clavier sans la perdre.
+  function moveSelected(index, step) {
+    const target = index + step;
+    [selectedExercises[index], selectedExercises[target]] = [selectedExercises[target], selectedExercises[index]];
+    updateCompilationControls();
+    const [up, down] = activityOrderList.children[target].querySelectorAll(".order-move");
+    const [same, other] = step < 0 ? [up, down] : [down, up];
+    (same.hidden ? other : same).focus();
   }
 
   // Fichiers dont Python a besoin pour calculer des tirages, qu’une question ait un « apres » ou non.
@@ -570,7 +651,7 @@
 
   // Compile les questions choisies, seules ou assemblées selon le mode demandé.
   async function downloadExercise() {
-    const selected = [...selectedExercises].filter(exercise => !exercise.error);
+    const selected = selectedExercises.filter(exercise => !exercise.error);
     if (!selected.length) {
       return;
     }

@@ -63,8 +63,9 @@ Coche une ou plusieurs questions, puis **Compiler** :
 
 - une question : un fichier HTML ;
 - plusieurs questions : soit une **activité**, un seul fichier HTML qui les
-  réunit sous un titre à indiquer, soit des **pages séparées**, une question
-  par fichier, réunies dans une archive ZIP.
+  réunit sous un titre à indiquer, dans l’ordre où elles ont été cochées (les
+  flèches « ↑ » et « ↓ » de la liste « Ordre des questions » le changent), soit
+  des **pages séparées**, une question par fichier, réunies dans une archive ZIP.
 
 La compilation calcule 20 tirages par question (graines 0 à 19), ou le nombre
 du champ `tirages`, et les intègre

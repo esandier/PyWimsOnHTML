@@ -267,6 +267,70 @@
     #multi-output-controls select,
     #activity-title { width: 100%; min-width: 0; padding: 0.4rem; }
 
+    /* Liste d’ordre : environ six lignes visibles, puis elle défile seule et l’aperçu garde sa place. */
+    #activity-order { flex: 0 0 auto; margin-top: 0.75rem; }
+    #activity-order h3 { margin: 0 0 0.3rem; font-size: 0.95rem; }
+    #activity-order-list {
+      max-height: 13.5rem;
+      overflow-y: auto;
+      margin: 0;
+      padding: 0;
+      border: 1px solid #e0e3e7;
+      border-radius: 0.35rem;
+      list-style: none;
+    }
+    #activity-order-list li {
+      display: grid;
+      grid-template-columns: 1.6rem minmax(0, 1fr) auto auto;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.1rem 0.35rem;
+    }
+    #activity-order-list li + li { border-top: 1px solid #eef0f2; }
+    .order-rank { color: #656b72; font-size: 0.85rem; text-align: right; }
+    .order-title {
+      overflow: hidden;
+      padding: 0.3rem 0.4rem;
+      border: 0;
+      border-radius: 0.3rem;
+      background: none;
+      text-align: left;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .order-title:hover { background: #f1f3f5; }
+    .order-title[aria-current="true"] { color: #633900; background: #fff0d8; font-weight: 600; }
+    .order-move {
+      width: 2rem;
+      height: 2rem;
+      padding: 0;
+      border: 1px solid #c9a06c;
+      border-radius: 0.3rem;
+      color: #8a4d00;
+      background: #fff;
+      cursor: pointer;
+    }
+    .order-move:hover { background: #fff0d8; }
+    /* Le premier n’a pas de « ↑ », le dernier pas de « ↓ » : la place reste, les flèches restent alignées. */
+    .order-move[hidden] { display: block !important; visibility: hidden; }
+
+    /* Rang d’une question cochée dans la liste des exercices, en mode « Activité unique ». */
+    .exercise-rank {
+      display: inline-block;
+      min-width: 1.35rem;
+      margin-right: 0.35rem;
+      padding: 0 0.3rem;
+      border-radius: 0.7rem;
+      color: #fff;
+      background: #a95f00;
+      font-size: 0.75rem;
+      font-weight: 600;
+      line-height: 1.35rem;
+      text-align: center;
+    }
+    .exercise-rank:empty { display: none; }
+
     #preview-notice { margin: 0.6rem 0 0; font-size: 0.85rem; }
     #preview-notice:empty { display: none; }
 
@@ -336,6 +400,8 @@
       .panel-heading { gap: 0.5rem; }
       #compile-exercise { flex: 0 0 auto; }
       #multi-output-controls { min-width: 100%; }
+      /* Environ quatre lignes : sous les réglages de l’activité, l’aperçu doit rester visible. */
+      #activity-order-list { max-height: 9.5rem; }
       .panel-heading { flex-wrap: wrap; }
     }
 
@@ -414,6 +480,11 @@
         </div>
         <button id="compile-exercise" type="button" disabled>Compiler</button>
       </div>
+      <!-- Ordre des questions d’une activité (SPECIFICATION.md, § 11.8), en mode « Activité unique ». -->
+      <section id="activity-order" aria-labelledby="activity-order-heading" hidden>
+        <h3 id="activity-order-heading">Ordre des questions</h3>
+        <ol id="activity-order-list"></ol>
+      </section>
       <!-- Ligne d’état : attente du tirage réel ou erreur ; vide une fois l’aperçu prêt. -->
       <p id="preview-notice" class="muted">Choisissez un exercice dans la liste pour afficher son aperçu.</p>
       <!-- La page réelle de l’exercice, isolée : sans « allow-same-origin », son HTML ne peut pas
