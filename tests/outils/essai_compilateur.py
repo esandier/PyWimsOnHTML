@@ -72,7 +72,7 @@ def dossier_memorise(page, fichiers):
 
     # Fichier modifié, puis « Relire » : le nouveau titre apparaît, la sélection est gardée.
     decim = fichiers["Decim3.pwq"]
-    ancien_titre = decim.split("% title\n%\n", 1)[1].split("\n", 1)[0]
+    ancien_titre = decim.split("% question_title\n%\n", 1)[1].split("\n", 1)[0]
     page.click(".question-selection >> nth=1")
     page.evaluate(ECRIRE_OPFS, ["questions-essai/Decim3.pwq", decim.replace(ancien_titre, "Titre relu")])
     page.click("#reload-folder")
@@ -269,7 +269,7 @@ def main():
                 page.click("#select-visible")
                 print("ordre : trois « ↓ » descendent trois fois la question choisie")
 
-                # Une question sans « apres » : la compilation lit le module pywims et le script du
+                # Une question sans « question_check » : la compilation lit le module pywims et le script du
                 # Worker pour ses tirages, mais le fichier n’en contient aucun (il ne charge pas Python).
                 page.fill("#question-search", "Valeur approchée")
                 page.click(".question-selection >> nth=0")
@@ -278,8 +278,8 @@ def main():
                 sans_python = open(attente.value.path(), encoding="utf-8").read()
                 if ('id="pywims-worker"></script>' not in sans_python or
                         'id="pywims-module"></script>' not in sans_python):
-                    raise AssertionError("Une question sans « apres » intègre le module ou le script du Worker.")
-                print(f"question sans « apres » : ni module ni Worker intégrés ({len(sans_python) // 1024} Ko)")
+                    raise AssertionError("Une question sans « question_check » intègre le module ou le script du Worker.")
+                print(f"question sans « question_check » : ni module ni Worker intégrés ({len(sans_python) // 1024} Ko)")
 
                 dossier_memorise(page, {nom: open(os.path.join(dossier, nom), encoding="utf-8").read()
                                         for nom in ("Decim3.pwq", "pgcd.pwq")})

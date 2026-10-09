@@ -1,11 +1,11 @@
 # Lance les tests du projet : page des tests rapides, cycle de vie avec un Python simulé, puis tests
 # Python avec le vrai Pyodide, qui comprennent le balayage des tirages de chaque question.
 # Prérequis : Edge, Python avec le paquet « playwright » (pilotage d’Edge, voir navigateur.py).
-# Usage : .\tests\outils\lancer-tests.ps1 [-SansPyodide] [-Tirages 200]
-#   -Tirages : tirages balayés par question (20 par défaut ; 200 pour un balayage complet, plus lent).
+# Usage : .\tests\outils\lancer-tests.ps1 [-SansPyodide] [-Draws 200]
+#   -Draws : tirages balayés par question (20 par défaut ; 200 pour un balayage complet, plus lent).
 param(
   [switch]$SansPyodide,
-  [int]$Tirages = 20
+  [int]$Draws = 20
 )
 
 $root = (Resolve-Path "$PSScriptRoot\..\..").Path
@@ -24,8 +24,8 @@ try {
   python -I -X utf8 "$PSScriptRoot\pilote_edge.py" "http://127.0.0.1:$port/tests/runtime-tests.html"
   if ($LASTEXITCODE) { $failed = $true }
   if (-not $SansPyodide) {
-    "== Tests Python avec Pyodide, balayage de $Tirages tirages par question (tests/python-tests.html)"
-    python -I -X utf8 "$PSScriptRoot\pilote_edge.py" "http://127.0.0.1:$port/tests/python-tests.html?tirages=$Tirages"
+    "== Tests Python avec Pyodide, balayage de $Draws tirages par question (tests/python-tests.html)"
+    python -I -X utf8 "$PSScriptRoot\pilote_edge.py" "http://127.0.0.1:$port/tests/python-tests.html?draws=$Draws"
     if ($LASTEXITCODE) { $failed = $true }
     # L’interface du compilateur, de bout en bout : elle aussi a besoin de Pyodide (aperçu, compilation).
     "== Interface du compilateur : dossier, liste, aperçu, compilation (tests/outils/essai_compilateur.py)"

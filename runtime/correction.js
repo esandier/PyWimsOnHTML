@@ -1,4 +1,4 @@
-// Correction par défaut, sans Python (SPECIFICATION.md, § 2.6) : sans « apres », l’élève doit
+// Correction par défaut, sans Python (SPECIFICATION.md, § 2.6) : sans « question_check », l’élève doit
 // donner ce qu’affiche le bouton « Solution ». Partagée par le fichier généré et par le compilateur
 // (contrôle de cohérence).
 window.PyWimsCorrection = (() => {
@@ -35,15 +35,15 @@ window.PyWimsCorrection = (() => {
   }
 
   // Verdict d’un champ, ou d’une case de matrice, d’après le type de sa balise et la solution du
-  // tirage (§ 2.3) ; une solution null est une valeur libre (LIBRE) : toute réponse non vide convient.
+  // tirage (§ 2.3) ; une solution null est une valeur libre (ANY) : toute réponse non vide convient.
   function isCorrect(type, input, solution) {
     if (choiceTypes.has(type)) {
       return sameChoice(input, solution);
     }
     if (type === "input_math") {
       // Une formule ne se compare pas à l’écriture de sa solution (§ 2.6) : SymPy en choisit la
-      // forme, et l’enseignant attend une expression égale. Le compilateur exige donc « apres ».
-      throw new Error("Un champ input_math n’a pas de correction par défaut : il exige un « apres ».");
+      // forme, et l’enseignant attend une expression égale. Le compilateur exige donc « question_check ».
+      throw new Error("Un champ input_math n’a pas de correction par défaut : il exige un « question_check ».");
     }
     if (solution === null) {
       return typeof input === "string" && input.trim() !== "";

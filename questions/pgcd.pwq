@@ -1,17 +1,17 @@
 %
-% title
+% question_title
 %
 PGCD
 %
-% keywords
+% question_keywords
 %
 arithmétique, PGCD, nombres entiers
 %
-% layout
+% question_layout
 %
 STD
 %
-% avant
+% question_setup
 %
 from random import randint
 from sympy import *
@@ -20,37 +20,38 @@ from pywims import py_wims, is_nombre
 # Tire deux entiers et calcule leur plus grand diviseur commun.
 x = randint(26,145)
 y = randint(23,252)
-resultat = gcd(x,y)
+result = gcd(x,y)
 
-# Détaille l’algorithme d’Euclide pour expliquer la solution.
-etapes = []
-dividende, diviseur = max(x, y), min(x, y)
-while diviseur:
-    etapes.append(r"${} = {} \times {} + {}$".format(dividende, dividende // diviseur, diviseur, dividende % diviseur))
-    dividende, diviseur = diviseur, dividende % diviseur
-explication_solution = (
-    "Algorithme d’Euclide : " + " ; ".join(etapes)
-    + ". Le dernier reste non nul est ${}$.".format(resultat)
-)
+# Détaille l’algorithme d’Euclide pour l’explication de la solution.
+steps = []
+dividend, divisor = max(x, y), min(x, y)
+while divisor:
+    steps.append(r"${} = {} \times {} + {}$".format(dividend, dividend // divisor, divisor, dividend % divisor))
+    dividend, divisor = divisor, dividend % divisor
+euclid_steps = " ; ".join(steps)
 %
-% enonce
+% question_statement
 %
 Quel est le plus grand diviseur commun de ${{x}}$ et ${{y}}$ ?
 <br>
-Réponse : {% input_text 'reponse' solution=resultat style='width :5em' %}
+Réponse : {% input_text 'answer' solution=result style='width :5em' %}
 %
-% apres
+% question_solution_explanation
+%
+Algorithme d’Euclide : {{euclid_steps}}. Le dernier reste non nul est ${{result}}$.
+%
+% question_check
 %
 # Convertit la saisie, puis explique l’erreur sans donner la réponse.
-valeur = py_wims(reponse)
-ok_answer['reponse'] = is_nombre(valeur) and valeur == resultat
+value = py_wims(answer)
+ok_answer['answer'] = is_nombre(value) and value == result
 
-if ok_answer['reponse']:
+if ok_answer['answer']:
     feedback = 'Bravo, c’est exact !'
-elif not is_nombre(valeur) or not valeur.is_Integer or valeur <= 0:
+elif not is_nombre(value) or not value.is_Integer or value <= 0:
     feedback = 'Saisissez un nombre entier positif.'
-elif x % valeur == 0 and y % valeur == 0:
-    feedback = '{} divise bien {} et {}, mais ce n’est pas le plus grand diviseur commun.'.format(valeur, x, y)
+elif x % value == 0 and y % value == 0:
+    feedback = '{} divise bien {} et {}, mais ce n’est pas le plus grand diviseur commun.'.format(value, x, y)
 else:
-    feedback = '{} ne divise pas {}.'.format(valeur, x if x % valeur else y)
+    feedback = '{} ne divise pas {}.'.format(value, x if x % value else y)
 %

@@ -82,10 +82,10 @@ async function ensurePackages(code) {
       }
       // Premier import de chaque bibliothèque, ici, hors de toute limite de temps : celui de SymPy
       // dure quelques secondes, et bien plus quand le navigateur exécute WebAssembly lentement
-      // (Edge en « sécurité renforcée » : plus de 30 s mesurées). Fait dans « avant », il était
+      // (Edge en « sécurité renforcée » : plus de 30 s mesurées). Fait dans « question_setup », il était
       // compté comme le calcul de la question et faisait refuser la compilation (SPECIFICATION.md,
       // § 3). Ensuite, l’import de la question retrouve le module déjà chargé. Un module introuvable
-      // est laissé à « avant », qui en donnera l’erreur avec sa ligne.
+      // est laissé à « question_setup », qui en donnera l’erreur avec sa ligne.
       for (const name of imports) {
         try {
           pyodide.pyimport(name).destroy?.();
@@ -255,7 +255,7 @@ if importlib.util.find_spec("numpy") is not None:
     });
   },
 
-  // Textes des choix d’une liste de « avant », convertis comme à la compilation : le navigateur
+  // Textes des choix d’une liste de « question_setup », convertis comme à la compilation : le navigateur
   // vérifie ainsi que le tirage rejoué affiche les mêmes choix.
   getChoiceTexts(sessionId, name) {
     const globals = sessionGlobals(sessionId);

@@ -40,10 +40,10 @@
   // Indique quels fichiers du projet utilisent une question ou l’ensemble des questions d’une feuille.
   function neededResources(fieldsOrList) {
     const list = Array.isArray(fieldsOrList) ? fieldsOrList : [fieldsOrList];
-    const tagTypes = new Set(list.flatMap(fields => [...PyWimsTemplate.tagTypes(fields.enonce)]));
-    // Le module pywims et le script du Worker ne servent qu’aux questions qui ont un « apres » : elles
+    const tagTypes = new Set(list.flatMap(fields => [...PyWimsTemplate.tagTypes(fields.question_statement)]));
+    // Le module pywims et le script du Worker ne servent qu’aux questions qui ont un « question_check » : elles
     // seules chargent Python.
-    const usesPython = list.some(fields => fields.apres !== undefined);
+    const usesPython = list.some(fields => fields.question_check !== undefined);
     return Object.keys(resourcePaths).filter(key =>
       (!["pywims", "pythonWorker"].includes(key) || usesPython) &&
       (key !== "mathWidget" || tagTypes.has("input_math")) &&
@@ -55,24 +55,24 @@
   // Section d’une question : ses champs et ses tirages en texte échappé, lus par question.js.
   function renderQuestionSection(fields, draws, index) {
     if (!Array.isArray(draws) || !draws.length) {
-      throw new Error(`Les tirages de « ${fields.title} » doivent être calculés avant l’assemblage.`);
+      throw new Error(`Les tirages de « ${fields.question_title} » doivent être calculés avant l’assemblage.`);
     }
-    if (fields.layout !== "STD") {
-      throw new Error(`La mise en page « ${fields.layout} » n’est pas prise en charge par ce prototype.`);
+    if (fields.question_layout !== "STD") {
+      throw new Error(`La mise en page « ${fields.question_layout} » n’est pas prise en charge par ce prototype.`);
     }
-    const tagErrors = PyWimsTemplate.validateTemplate(fields.enonce);
+    const tagErrors = PyWimsTemplate.validateTemplate(fields.question_statement);
     if (tagErrors.length) {
       throw new Error(tagErrors.join(" ; "));
     }
-    // Seule une question qui a un « apres » a besoin de Python ; les autres se corrigent par
+    // Seule une question qui a un « question_check » a besoin de Python ; les autres se corrigent par
     // comparaison avec leur solution (SPECIFICATION.md, § 2.6) et ne chargent pas Pyodide.
-    const python = fields.apres === undefined ? "false" : "true";
-    // Sans Python, « avant » ne servirait à rien : il ne sert qu’à rejouer un tirage. Les tirages
+    const python = fields.question_check === undefined ? "false" : "true";
+    // Sans Python, « question_setup » ne servirait à rien : il ne sert qu’à rejouer un tirage. Les tirages
     // suffisent, et la page s’allège d’autant (un quart d’une activité de QCM à variantes).
-    const { avant, ...withoutAvant } = fields;
+    const { question_setup, ...withoutSetup } = fields;
     return `<section class="pw-question" id="q${index + 1}" data-python="${python}">
 <div class="pw-question-data" hidden>
-${renderQuestionData(fields.apres === undefined ? withoutAvant : fields)}
+${renderQuestionData(fields.question_check === undefined ? withoutSetup : fields)}
 ${renderDrawData(draws)}
 </div>
 </section>`;
@@ -80,7 +80,7 @@ ${renderDrawData(draws)}
 
   // Assemble une question seule ; c’est une feuille d’une question avec la mise en page « question seule ».
   function assembleQuestion(fields, draws, resources) {
-    return assembleSheet({ title: fields.title, kind: "single", questions: [{ fields, draws }] }, resources);
+    return assembleSheet({ title: fields.question_title, kind: "single", questions: [{ fields, draws }] }, resources);
   }
 
   // Assemble une activité : une feuille de plusieurs questions dans un seul document.
@@ -142,18 +142,18 @@ ${renderDrawData(draws)}
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js"></script>`;
 
   // Une feuille a besoin de MathJax (≈ 600 Ko) si elle peut afficher une formule (SPECIFICATION.md,
-  // § 5.1) : un délimiteur dans un énoncé, une valeur, un choix ou une explication d’un tirage, ou
-  // une question qui a un « apres », dont le retour, calculé chez l’élève, peut en contenir une.
+  // § 5.1) : un délimiteur dans un énoncé ou une explication, une valeur ou un choix d’un tirage, ou
+  // une question qui a un « question_check », dont le retour, calculé chez l’élève, peut en contenir une.
   // Un « $ » qui n’ouvre pas de formule fait seulement charger MathJax pour rien.
   function needsMathJax(questions) {
     const delimiter = /\$|\\\(|\\\[/;
     return questions.some(({ fields, draws }) =>
-      fields.apres !== undefined ||
-      delimiter.test(fields.enonce) ||
+      fields.question_check !== undefined ||
+      delimiter.test(fields.question_statement) ||
+      delimiter.test(fields.question_solution_explanation ?? "") ||
       draws.some(draw => [
         ...Object.values(draw.context ?? {}),
-        ...Object.values(draw.choices ?? {}).flat(),
-        draw.explication ?? ""
+        ...Object.values(draw.choices ?? {}).flat()
       ].some(text => delimiter.test(String(text)))));
   }
 
@@ -183,7 +183,7 @@ window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
   document.head.append(script);
 });`
         : "window.pyWimsMathLiveReady = Promise.resolve();",
-      // Vide si aucune question n’a d’« apres » : Python n’est alors jamais chargé.
+      // Vide si aucune question n’a d’« question_check » : Python n’est alors jamais chargé.
       PYWIMS: resources.pywims ?? "",
       PYTHON_WORKER: resources.pythonWorker ?? "",
       PYTHON_RUNTIME: resources.python,

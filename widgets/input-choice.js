@@ -5,7 +5,7 @@ window.PyWimsWidgets = (() => {
 
   // Produit un groupe de choix : une ligne entière cliquable par choix, dans l’ordre du tirage.
   // Chaque choix garde son indice dans la liste de l’auteur (value, data-choice-index) : c’est lui
-  // que reçoit « apres ». Le préfixe distingue les questions d’une même feuille (« q2-… »).
+  // que reçoit « question_check ». Le préfixe distingue les questions d’une même feuille (« q2-… »).
   function inputChoice(name, { multiple = false, texts, order, columns = 1, idPrefix = "" } = {}) {
     if (!/^[A-Za-z_]\w*$/.test(name)) {
       throw new Error(`Nom invalide pour un champ à choix : ${name}`);

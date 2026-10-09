@@ -1,33 +1,29 @@
 %
-% title
+% question_title
 %
 Matrice triangulaire supérieure
 %
-% keywords
+% question_keywords
 %
 matrices, matrice triangulaire, zéros, algèbre linéaire
 %
-% layout
+% question_layout
 %
 STD
 %
-% avant
+% question_setup
 %
 from random import randint
 from sympy import Matrix
-from pywims import py_wims, LIBRE
+from pywims import py_wims, ANY
 
 # Choisit une petite dimension pour générer une nouvelle matrice à chaque essai.
 size = randint(2,4)
 
 # Plusieurs matrices conviennent : seuls les zéros sous la diagonale sont imposés.
-solution_matrice = Matrix(size, size, lambda i, j: 0 if i > j else LIBRE)
-explication_solution = (
-    "Les cases notées ∗ peuvent contenir n’importe quel nombre : "
-    "seules les cases situées sous la diagonale principale doivent être nulles."
-)
+solution_matrix = Matrix(size, size, lambda i, j: 0 if i > j else ANY)
 %
-% enonce
+% question_statement
 %
 Complétez cette matrice carrée de taille ${{ size }} \times {{ size }}$ pour
 qu’elle soit triangulaire supérieure. Toutes les cases situées sous la
@@ -35,22 +31,27 @@ diagonale principale doivent contenir zéro ; les autres cases peuvent
 contenir n’importe quel nombre.
 
 <div style="text-align:center">
-  {% input_matrix 'matrice' size=size solution=solution_matrice input_style='width:2em' %}
+  {% input_matrix 'matrix' size=size solution=solution_matrix input_style='width:2em' %}
 </div>
 %
-% apres
+% question_solution_explanation
+%
+Les cases notées ∗ peuvent contenir n’importe quel nombre : seules les cases situées sous la
+diagonale principale doivent être nulles.
+%
+% question_check
 %
 # Vérifie chaque case : toute valeur est numérique, et celles sous la diagonale sont nulles.
 feedback = "Bravo, cette matrice est triangulaire supérieure !"
 for i in range(size):
     for j in range(size):
-        valeur = py_wims(matrice[i][j])
-        correcte = (
-            valeur is not None
-            and getattr(valeur, "is_number", False)
-            and (i <= j or valeur == 0)
+        value = py_wims(matrix[i][j])
+        correct = (
+            value is not None
+            and getattr(value, "is_number", False)
+            and (i <= j or value == 0)
         )
-        ok_answer["matrice[{}][{}]".format(i, j)] = correcte
-        if not correcte:
+        ok_answer["matrix[{}][{}]".format(i, j)] = correct
+        if not correct:
             feedback = "Chaque case doit contenir un nombre et celles sous la diagonale doivent être égales à zéro."
 %

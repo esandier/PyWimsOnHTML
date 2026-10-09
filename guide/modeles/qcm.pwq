@@ -1,17 +1,17 @@
 %
-% title
+% question_title
 %
 Modèle : QCM
 %
-% keywords
+% question_keywords
 %
 modèle, QCM, fractions
 %
-% layout
+% question_layout
 %
 STD
 %
-% avant
+% question_setup
 %
 # Modèle de QCM. Copiez ce fichier dans votre dossier de questions, puis remplacez le titre, les
 # mots-clés, l’énoncé, les choix et l’explication. Les lignes qui commencent par # sont des
@@ -19,16 +19,17 @@ STD
 
 # Les choix, dans votre ordre : le compilateur les mélange à chaque tirage. Une formule s’écrit
 # entre $…$ ; mettez alors r devant les guillemets, à cause des barres obliques de \frac.
-choix = [r"$\frac{1}{2}$", r"$\frac{2}{3}$", r"$\frac{3}{4}$", "Aucune de ces réponses"]
+choices = [r"$\frac{1}{2}$", r"$\frac{2}{3}$", r"$\frac{3}{4}$", "Aucune de ces réponses"]
 
 # Le numéro du bon choix, en comptant à partir de 0 : ici le premier, 1/2.
-bonne = 0
-
-# Facultatif : une explication, affichée avec la solution.
-explication_solution = r"On divise le numérateur et le dénominateur par $3$ : $\frac{3}{6}=\frac{1}{2}$."
+correct = 0
 %
-% enonce
+% question_statement
 %
 Quelle est la forme irréductible de $\frac{3}{6}$ ?
-{% input_radio 'reponse' choices=choix solution=bonne columns=4 fixed_last=1 %}
+{% input_radio 'answer' choices=choices solution=correct columns=4 fixed_last=1 %}
+%
+% question_solution_explanation
+%
+On divise le numérateur et le dénominateur par $3$ : $\frac{3}{6}=\frac{1}{2}$.
 %

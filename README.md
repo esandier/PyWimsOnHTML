@@ -56,7 +56,7 @@ page de la question, aux boutons inactifs. Il apparaît tout de suite, avec chaq
 variable de l’énoncé sous son nom, puis il est remplacé par un tirage réel dès
 que Python l’a calculé, environ une seconde par question. Python se charge dès
 l’ouverture du compilateur, en arrière-plan (10 à 20 secondes) : le premier
-aperçu ne l’attend que s’il est demandé tout de suite. Une erreur dans `avant` est
+aperçu ne l’attend que s’il est demandé tout de suite. Une erreur dans `question_setup` est
 signalée au-dessus de l’aperçu, qui reste provisoire.
 
 Coche une ou plusieurs questions, puis **Compiler la sélection** :
@@ -68,11 +68,11 @@ Coche une ou plusieurs questions, puis **Compiler la sélection** :
   des **pages séparées**, une question par fichier, réunies dans une archive ZIP.
 
 La compilation calcule 20 tirages par question (graines 0 à 19), ou le nombre
-du champ `tirages`, et les intègre
+du champ `question_draws`, et les intègre
 au fichier ; les tirages identiques sont fusionnés. Elle s’arrête au premier
-problème, avec la graine en cause : erreur dans `avant`, variable de l’énoncé
+problème, avec la graine en cause : erreur dans `question_setup`, variable de l’énoncé
 non définie, solution absente ou de mauvaises dimensions, etc. Une exécution
-de `avant` ou de `apres` qui dépasse 30 s (boucle sans fin) arrête la
+de `question_setup` ou de `question_check` qui dépasse 30 s (boucle sans fin) arrête la
 compilation avec un message, sans bloquer le compilateur.
 
 Les fichiers du projet (mise en page, moteur, module `runtime/pywims.py`) sont
@@ -85,10 +85,10 @@ doit aussi être réservé dans `runtime/template.js`, ce que vérifient les tes
 ## Le fichier généré
 
 - **Affichage immédiat.** Un tirage précalculé est affiché dès l’ouverture.
-- **Python seulement si besoin.** Une question sans `apres` se corrige dans le
+- **Python seulement si besoin.** Une question sans `question_check` se corrige dans le
   navigateur, sans Python, par comparaison avec sa solution : c’est le cas
   courant des QCM, et une feuille qui n’a que de telles questions ne charge
-  jamais Pyodide. Pour une question qui a un `apres`, Python se charge en
+  jamais Pyodide. Pour une question qui a un `question_check`, Python se charge en
   arrière-plan au premier contact de l’élève avec elle (toucher, clic ou focus),
   puis rejoue le tirage pour vérifier qu’il retrouve les mêmes valeurs : un
   élève qui ne fait que lire la feuille ne télécharge pas Pyodide.
@@ -103,7 +103,7 @@ doit aussi être réservé dans `runtime/template.js`, ce que vérifient les tes
   recharger la page. Les boutons gardent leur place : rien ne bouge quand on
   clique.
 - **Activité.** Un seul document : Pyodide, MathJax et MathLive ne sont chargés
-  qu’une fois, et chaque question qui a un `apres` a sa propre session Python. L’en-tête affiche
+  qu’une fois, et chaque question qui a un `question_check` a sa propre session Python. L’en-tête affiche
   le pourcentage de questions réussies (une vérification entièrement juste ; une
   solution affichée ne compte pas) et une barre de progression ; le numéro d’une
   question réussie devient ✓, et des confettis saluent les 100 %.
@@ -131,8 +131,8 @@ doit aussi être réservé dans `runtime/template.js`, ce que vérifient les tes
 
 La vérification se fait dans le navigateur : elle sert à l’entraînement, pas à
 une évaluation sécurisée. Les champs de la question et ses tirages sont intégrés
-au HTML comme blocs de texte lisibles et échappés (sans `avant` pour une
-question sans `apres`, qui ne charge pas Python).
+au HTML comme blocs de texte lisibles et échappés (sans `question_setup` pour une
+question sans `question_check`, qui ne charge pas Python).
 
 Les couleurs, polices et couleurs de correction sont les variables CSS d’une
 charte : par défaut la charte neutre, `css/brand.css`. Pour celle de son
@@ -144,27 +144,28 @@ MathJax reconnaît `$...$`, `$$...$$`, `\(...\)` et `\[...\]`.
 
 ## Format des questions
 
-Un fichier `.pwq` contient les champs `title`, `keywords`, `layout` (`STD`),
-`avant` (tirage et calcul des solutions), `enonce` (modèle de l’énoncé, avec
-`{{variable}}` et des balises de saisie) et, facultativement, `apres`
-(correction) et `tirages` (nombre de tirages calculés, de 1 à 200 ; 20 par
-défaut). Chaque balise de saisie désigne sa solution
+Un fichier `.pwq` contient les champs `question_title`, `question_keywords`,
+`question_layout` (`STD`), `question_setup` (tirage et calcul des solutions),
+`question_statement` (modèle de l’énoncé, avec `{{variable}}` et des balises de
+saisie) et, facultativement, `question_solution_explanation` (explication affichée
+avec la solution, écrite comme l’énoncé), `question_check` (correction) et
+`question_draws` (nombre de tirages calculés, de 1 à 200 ; 20 par défaut). Tous les
+noms sont en anglais. Chaque balise de saisie désigne sa solution
 (`solution=variable`). La question importe elle-même ses bibliothèques, ainsi que
 les outils du module `pywims` (`py_wims`, `is_nombre`, `math_expression`,
-`decimal_fr`, `LIBRE`). `apres` peut définir la variable `feedback`, et `avant`
-la variable `explication_solution`.
+`decimal_comma`, `ANY`). `question_check` peut définir la variable `feedback`.
 
-**Sans `apres`, l’élève doit donner ce qu’affiche le bouton « Solution ».**
+**Sans `question_check`, l’élève doit donner ce qu’affiche le bouton « Solution ».**
 Seuls les espaces, le signe moins typographique et le codage des accents sont
 ignorés ; les majuscules, l’ordre des termes et le séparateur décimal comptent.
-On écrit donc `apres` quand plusieurs écritures sont justes, pour un retour
+On écrit donc `question_check` quand plusieurs écritures sont justes, pour un retour
 ciblé selon l’erreur, et toujours pour un champ MathLive (`input_math`), qui se
 corrige par une comparaison symbolique. Pour une réponse décimale écrite avec
-une virgule, `decimal_fr(x, 2)` donne la solution (`"1,41"`).
+une virgule, `decimal_comma(x, 2)` donne la solution (`"1,41"`).
 
 Les questions à choix unique (`input_radio`) ou multiple (`input_checkbox`)
-prennent leurs choix dans une liste de `avant` (`choices=`) et leur solution
-dans un indice ou une liste d’indices ; un barème facultatif (`bareme=`) suit la
+prennent leurs choix dans une liste de `question_setup` (`choices=`) et leur solution
+dans un indice ou une liste d’indices ; un barème facultatif (`scoring=`) suit la
 syntaxe d’AMC. Plutôt que d’analyser le LaTeX d’AMC, le projet confie la
 conversion d’une question AMC à un LLM : `PROMPT.md` contient la table de
 correspondance et un exemple complet.
@@ -178,13 +179,13 @@ dépôt :
 - [`dérivée-polynôme.pwq`](questions/dérivée-polynôme.pwq) — saisie MathLive et
   correction symbolique ;
 - [`matrice-triangulaire.pwq`](questions/matrice-triangulaire.pwq) — matrice de
-  taille fixe, valeurs libres (`LIBRE`) et explication de la solution ;
+  taille fixe, valeurs libres (`ANY`) et explication de la solution ;
 - [`produit-matrices.pwq`](questions/produit-matrices.pwq) — matrice
   redimensionnable ;
 - [`nombres-premiers.pwq`](questions/nombres-premiers.pwq) — choix multiple
   converti depuis AMC, avec « Aucun de ces nombres », un barème et des retours
-  ciblés (`apres`) ;
-- [`Decim3.pwq`](questions/Decim3.pwq) — choix unique sans `apres`, corrigé
+  ciblés (`question_check`) ;
+- [`Decim3.pwq`](questions/Decim3.pwq) — choix unique sans `question_check`, corrigé
   sans Python, avec un barème et une explication de la solution.
 
 Les matrices redimensionnables commencent à 2 × 2 ; la poignée ↘ ajoute ou
@@ -210,7 +211,7 @@ projet :
   et dans une activité), et balayage des tirages de chaque question : chaque
   tirage est exécuté deux fois, ses solutions converties, saisies comme par un
   élève et jugées justes. 20 tirages par question par défaut, quelques minutes ;
-  `?tirages=200` pour un balayage complet, plus long.
+  `?draws=200` pour un balayage complet, plus long.
 
 Sous Windows, `tests/outils/lancer-tests.ps1` lance tout automatiquement (Edge
 sans interface, profil vierge), puis `tests/outils/essai_compilateur.py`, qui
@@ -218,7 +219,7 @@ essaie l’interface du compilateur de bout en bout : ouverture du dossier, list
 aperçu, compilation et fichier téléchargé. Prérequis : Python avec le paquet
 `playwright` (`pip install playwright`), qui pilote l’Edge installé, sans autre
 navigateur à télécharger. L’option `-SansPyodide` saute les tests du vrai Pyodide, les
-plus longs ; `-Tirages 200` demande un balayage complet.
+plus longs ; `-Draws 200` demande un balayage complet.
 
 Pour vérifier un rendu, `python tests/outils/capture.py URL image.png --telephone`
 capture une page comme sur un téléphone (375 px de large) ; sans `--telephone`,

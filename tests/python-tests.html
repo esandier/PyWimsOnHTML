@@ -42,7 +42,7 @@
 
     // Nombre de tirages du balayage de chaque question : 20 par défaut, ?tirages=200 pour un balayage
     // complet (quelques minutes).
-    const sweepCount = Number(new URLSearchParams(location.search).get("tirages")) || 20;
+    const sweepCount = Number(new URLSearchParams(location.search).get("draws")) || 20;
 
     // Toutes les questions de la racine de questions/ et les modèles du mode d’emploi (guide/modeles/),
     // vérifiés de la même façon (SPECIFICATION.md, § 11.5), d’après la liste que le serveur de test
@@ -94,12 +94,12 @@
       });
 
       // Le premier import de SymPy (plusieurs secondes, plus de 30 s sur un navigateur lent) ne doit
-      // pas compter dans le temps limité de « avant » : il est fait à l’initialisation.
+      // pas compter dans le temps limité de « question_setup » : il est fait à l’initialisation.
       await test("les bibliothèques de la question sont importées à l’initialisation, hors du temps limité", async () => {
         const session = PyWimsPython.createSession("import-initial");
         await session.initialize("from sympy import Rational\nimport fractions");
         await expectPython(session, "all(m in __import__('sys').modules for m in ('sympy', 'fractions'))",
-          "SymPy n’est pas importé avant l’exécution de « avant »");
+          "SymPy n’est pas importé avant l’exécution de « question_setup »");
         await session.dispose();
       });
 
@@ -177,10 +177,10 @@
         if (!rejected) throw new Error("Une variable absente n’est pas signalée clairement.");
       });
 
-      await test("les solutions sont converties en saisie d’élève, avec LIBRE pour les valeurs quelconques", async () => {
+      await test("les solutions sont converties en saisie d’élève, avec ANY pour les valeurs quelconques", async () => {
         const session = PyWimsPython.createSession("solutions");
-        await session.initialize("from sympy import *\nfrom pywims import LIBRE");
-        await session.run("from sympy import *\nfrom pywims import LIBRE\nx = symbols('x')");
+        await session.initialize("from sympy import *\nfrom pywims import ANY");
+        await session.run("from sympy import *\nfrom pywims import ANY\nx = symbols('x')");
         const converted = JSON.parse(await session.run(`
 import json
 _pw = __import__("pywims")
@@ -188,9 +188,9 @@ json.dumps({
   "fraction": _pw._solution_text(Rational(19, 12)),
   "expression": _pw._solution_text(x**2 + 2*x),
   "entier": _pw._solution_text(7),
-  "libre": _pw._solution_text(LIBRE),
+  "libre": _pw._solution_text(ANY),
   "latex": _pw._solution_latex(3*x**2 - 1),
-  "cases": _pw._solution_cells(Matrix(2, 2, lambda i, j: 0 if i > j else LIBRE)),
+  "cases": _pw._solution_cells(Matrix(2, 2, lambda i, j: 0 if i > j else ANY)),
   "liste": _pw._solution_cells([[1, x], [Rational(1, 2), 0]]),
   "flottants": [_pw._solution_text(v) for v in (0.1 + 0.2, 2.0, -0.0, 1e-05, Float(2) / 3)],
   "texte": _pw._solution_text("0,3")
@@ -244,9 +244,9 @@ json.dumps({
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
           const fields = PyWimsCompiler.parseQuestionSource(await response.text(), file);
           const session = PyWimsPython.createSession(file.replace(/\W/g, "_"));
-          await session.initialize(`${fields.avant}\n${fields.apres ?? ""}`);
-          await session.run(fields.avant);
-          const names = [...PyWimsTemplate.templateVariables(fields.enonce)];
+          await session.initialize(`${fields.question_setup}\n${fields.question_check ?? ""}`);
+          await session.run(fields.question_setup);
+          const names = [...PyWimsTemplate.templateVariables(fields.question_statement)];
           const values = await Promise.all(names.map(name => session.getTemplateValue(name)));
           if (values.some(value => typeof value !== "string" || !value.trim())) {
             throw new Error(`Valeurs vides : ${JSON.stringify(Object.fromEntries(names.map((n, i) => [n, values[i]])))}`);
@@ -263,8 +263,8 @@ json.dumps({
               : `${converter}(${variable})`;
             return `__import__("json").dumps(__import__("pywims").${call})`;
           };
-          // Chaque champ désigne une variable de « avant » que le module sait convertir.
-          for (const tag of PyWimsTemplate.parseTags(fields.enonce)) {
+          // Chaque champ désigne une variable de « question_setup » que le module sait convertir.
+          for (const tag of PyWimsTemplate.parseTags(fields.question_statement)) {
             const variable = tag.attributes.solution;
             const converted = await session.run(solutionJson(tag));
             if (!converted || converted === "null") {
@@ -272,12 +272,12 @@ json.dumps({
             }
           }
 
-          // Sans « apres », la correction par défaut est en JavaScript : la question compilée, testée
-          // plus bas, la vérifie dans la page générée. Ici, « avant » et les solutions suffisent.
-          if (fields.apres === undefined) return;
+          // Sans « question_check », la correction par défaut est en JavaScript : la question compilée, testée
+          // plus bas, la vérifie dans la page générée. Ici, « question_setup » et les solutions suffisent.
+          if (fields.question_check === undefined) return;
 
           // Saisit la solution comme un élève (texte ASCII, « 1 » pour une case libre), puis corrige.
-          for (const tag of PyWimsTemplate.parseTags(fields.enonce)) {
+          for (const tag of PyWimsTemplate.parseTags(fields.question_statement)) {
             const variable = tag.attributes.solution;
             if (PyWimsTemplate.choiceTypes.has(tag.type)) {
               await session.setChoice(tag.name, JSON.parse(await session.run(solutionJson(tag))));
@@ -291,7 +291,7 @@ json.dumps({
             }
           }
           await session.resetAnswers();
-          await session.run(fields.apres);
+          await session.run(fields.question_check);
           const verdict = JSON.parse(await session.run(
             `__import__("json").dumps({"ok": {k: bool(v) for k, v in ok_answer.items()}, "feedback": str(feedback)})`
           ));
@@ -315,12 +315,15 @@ json.dumps({
       await test("le compilateur calcule des tirages complets et distincts pour chaque question", async () => {
         for (const [file, fields] of Object.entries(questionFields)) {
           const draws = await PyWimsCompiler.computeDraws(fields, { count: 10 });
-          const variables = [...PyWimsTemplate.templateVariables(fields.enonce)].sort().join(",");
-          const names = PyWimsTemplate.parseTags(fields.enonce).map(tag => tag.name).sort().join(",");
+          const variables = [...new Set([
+            ...PyWimsTemplate.templateVariables(fields.question_statement),
+            ...PyWimsTemplate.templateVariables(fields.question_solution_explanation ?? "")
+          ])].sort().join(",");
+          const names = PyWimsTemplate.parseTags(fields.question_statement).map(tag => tag.name).sort().join(",");
           // Mêmes éléments que la fusion du compilateur : deux tirages d’un QCM peuvent avoir le même
           // énoncé et la même solution, et ne différer que par leurs choix ou leur ordre.
           const keys = new Set(draws.map(draw =>
-            JSON.stringify([draw.context, draw.solutions, draw.choices, draw.orders, draw.explication])));
+            JSON.stringify([draw.context, draw.solutions, draw.choices, draw.orders])));
           if (!draws.length || keys.size !== draws.length ||
               draws.some(draw => Object.keys(draw.context).sort().join(",") !== variables ||
                 Object.keys(draw.solutions).sort().join(",") !== names)) {
@@ -328,9 +331,9 @@ json.dumps({
           }
         }
         const triangular = await PyWimsCompiler.computeDraws(questionFields["matrice-triangulaire.pwq"], { count: 3 });
-        const cells = triangular[0].solutions.matrice;
-        if (cells[0][0] !== null || cells.at(-1)[0] !== "0" || typeof triangular[0].explication !== "string") {
-          throw new Error(`Solution libre ou explication inattendue : ${JSON.stringify(triangular[0])}`);
+        const cells = triangular[0].solutions.matrix;
+        if (cells[0][0] !== null || cells.at(-1)[0] !== "0") {
+          throw new Error(`Solution libre inattendue : ${JSON.stringify(triangular[0])}`);
         }
       });
 
@@ -361,33 +364,33 @@ json.dumps({
         const second = JSON.stringify(await PyWimsCompiler.computeDraws(fields, { count: 5 }));
         if (first !== second) throw new Error("Deux compilations donnent des tirages différents.");
         const fixed = await PyWimsCompiler.computeDraws({
-          avant: "valeur = 4",
-          enonce: "Combien vaut {{ valeur }} ? {% input_text 'r' solution=valeur %}",
-          apres: "ok_answer['r'] = r == '4'"
+          question_setup: "valeur = 4",
+          question_statement: "Combien vaut {{ valeur }} ? {% input_text 'r' solution=valeur %}",
+          question_check: "ok_answer['r'] = r == '4'"
         }, { count: 5 });
         if (fixed.length !== 1 || fixed[0].solutions.r !== "4") {
           throw new Error(`Une question sans hasard devrait donner un seul tirage : ${JSON.stringify(fixed)}`);
         }
-        // Le champ « tirages » fixe le nombre de graines essayées : ici 3 (graines 0 à 2).
-        const three = await PyWimsCompiler.computeDraws({ ...fields, tirages: "3" });
+        // Le champ « question_draws » fixe le nombre de graines essayées : ici 3 (graines 0 à 2).
+        const three = await PyWimsCompiler.computeDraws({ ...fields, question_draws: "3" });
         if (!three.length || three.length > 3 || three.some(draw => draw.seed > 2)) {
-          throw new Error(`Le champ « tirages » n’est pas respecté : graines ${three.map(draw => draw.seed)}`);
+          throw new Error(`Le champ « question_draws » n’est pas respecté : graines ${three.map(draw => draw.seed)}`);
         }
       });
 
-      await test("decimal_fr écrit un nombre arrondi à la française, sans zéros finaux", async () => {
+      await test("decimal_comma écrit un nombre arrondi à la française, sans zéros finaux", async () => {
         const session = PyWimsPython.createSession("decimal-fr");
-        await session.initialize("from sympy import *\nfrom pywims import decimal_fr");
-        await session.run("from sympy import *\nfrom pywims import decimal_fr");
+        await session.initialize("from sympy import *\nfrom pywims import decimal_comma");
+        await session.run("from sympy import *\nfrom pywims import decimal_comma");
         const written = JSON.parse(await session.run(`__import__("json").dumps([
-  decimal_fr(sqrt(2), 2), decimal_fr(1.5, 2), decimal_fr(2, 2), decimal_fr(2.675, 2),
-  decimal_fr(-0.001, 2), decimal_fr(pi, 4), decimal_fr(Rational(1, 3), 3), decimal_fr(10**30, 2)])`));
+  decimal_comma(sqrt(2), 2), decimal_comma(1.5, 2), decimal_comma(2, 2), decimal_comma(2.675, 2),
+  decimal_comma(-0.001, 2), decimal_comma(pi, 4), decimal_comma(Rational(1, 3), 3), decimal_comma(10**30, 2)])`));
         // 2.675 donne 2,68 : l’arrondi porte sur l’écriture décimale, et non sur le flottant binaire.
         const expected = ["1,41", "1,5", "2", "2,68", "0", "3,1416", "0,333", "1000000000000000000000000000000"];
         if (JSON.stringify(written) !== JSON.stringify(expected)) {
           throw new Error(`Écritures inattendues : ${JSON.stringify(written)}`);
         }
-        for (const call of ["decimal_fr(symbols('x'), 2)", "decimal_fr(1.5, -1)", "decimal_fr('1,5', 1)"]) {
+        for (const call of ["decimal_comma(symbols('x'), 2)", "decimal_comma(1.5, -1)", "decimal_comma('1,5', 1)"]) {
           let rejected = false;
           try {
             await session.run(call);
@@ -399,25 +402,25 @@ json.dumps({
         await session.dispose();
       });
 
-      await test("une question sans « apres » se compile et se corrige par défaut", async () => {
+      await test("une question sans « question_check » se compile et se corrige par défaut", async () => {
         const qcm = await PyWimsCompiler.computeDraws({
-          avant: "from random import sample\nnombres = sample(range(2, 30), 3)\nchoix = [str(n) for n in nombres]\nbonne = 0",
-          enonce: "Lequel est le premier tiré ? {% input_radio 'r' choices=choix solution=bonne %}"
+          question_setup: "from random import sample\nnombres = sample(range(2, 30), 3)\nchoix = [str(n) for n in nombres]\nbonne = 0",
+          question_statement: "Lequel est le premier tiré ? {% input_radio 'r' choices=choix solution=bonne %}"
         }, { count: 3 });
         const decimal = await PyWimsCompiler.computeDraws({
-          avant: "from pywims import decimal_fr\nprix = 12.5 * 0.8\nracine = decimal_fr(2 ** 0.5, 2)\nsomme = 0.1 + 0.2",
-          enonce: "{% input_text 'a' solution=prix %} {% input_text 'b' solution=racine %} {% input_text 'c' solution=somme %}"
+          question_setup: "from pywims import decimal_comma\nprix = 12.5 * 0.8\nracine = decimal_comma(2 ** 0.5, 2)\nsomme = 0.1 + 0.2",
+          question_statement: "{% input_text 'a' solution=prix %} {% input_text 'b' solution=racine %} {% input_text 'c' solution=somme %}"
         }, { count: 1 });
         if (qcm.length < 2 || qcm.some(draw => draw.solutions.r !== 0) ||
             JSON.stringify(decimal[0].solutions) !== JSON.stringify({ a: "10", b: "1,41", c: "0.3" })) {
           throw new Error(`Tirages inattendus : ${JSON.stringify([qcm, decimal])}`);
         }
         for (const [fields, fragment] of [
-          [{ avant: "from sympy import symbols\nx = symbols('x')\nd = 2*x",
-             enonce: "{% input_math 'm' solution=d %}" }, "Le champ « m » (input_math) exige un « apres »"],
-          [{ avant: "s = '  '", enonce: "{% input_text 'r' solution=s %}" },
+          [{ question_setup: "from sympy import symbols\nx = symbols('x')\nd = 2*x",
+             question_statement: "{% input_math 'm' solution=d %}" }, "Le champ « m » (input_math) exige un « question_check »"],
+          [{ question_setup: "s = '  '", question_statement: "{% input_text 'r' solution=s %}" },
             "Graine 0 : la solution du champ « r » est vide"],
-          [{ avant: "M = [['1', ''], ['0', '2']]", enonce: "{% input_matrix 'm' size=2 solution=M %}" },
+          [{ question_setup: "M = [['1', ''], ['0', '2']]", question_statement: "{% input_matrix 'm' size=2 solution=M %}" },
             "la solution du champ « m » (case [0][1]) est vide"]
         ]) {
           let message = "";
@@ -442,10 +445,10 @@ json.dumps({
 
       await test("un champ à choix enregistre ses choix, sa solution et un ordre mélangé par tirage", async () => {
         const draws = await PyWimsCompiler.computeDraws({
-          avant: "from sympy import Rational\nchoix = ['$2$', Rational(1, 2), 'pair', 'Aucun de ces nombres']\nbonnes = [2, 0]",
-          enonce: "Lesquels ? {% input_checkbox 'r' choices=choix solution=bonnes fixed_last=1 %}",
+          question_setup: "from sympy import Rational\nchoix = ['$2$', Rational(1, 2), 'pair', 'Aucun de ces nombres']\nbonnes = [2, 0]",
+          question_statement: "Lesquels ? {% input_checkbox 'r' choices=choix solution=bonnes fixed_last=1 %}",
           // « bonnes » n’est pas croissante, alors que la saisie l’est : on compare les listes triées.
-          apres: "ok_answer['r'] = r == sorted(bonnes)"
+          question_check: "ok_answer['r'] = r == sorted(bonnes)"
         }, { count: 20 });
         const [draw] = draws;
         if (JSON.stringify(draw.choices.r) !== JSON.stringify(["$2$", "\\(\\frac{1}{2}\\)", "pair", "Aucun de ces nombres"]) ||
@@ -453,93 +456,94 @@ json.dumps({
             draws.some(other => other.orders.r.at(-1) !== 3 || [...other.orders.r].sort().join() !== "0,1,2,3")) {
           throw new Error(`Tirage inattendu : ${JSON.stringify(draw)}`);
         }
-        // Sans hasard dans « avant », seuls les ordres distinguent les tirages : 3! = 6 au plus.
+        // Sans hasard dans « question_setup », seuls les ordres distinguent les tirages : 3! = 6 au plus.
         if (draws.length < 2 || draws.length > 6) {
           throw new Error(`Les ordres mélangés devraient donner de 2 à 6 tirages : ${draws.length}`);
         }
         const [radio] = await PyWimsCompiler.computeDraws({
-          avant: "from sympy import Integer\nchoix = ['oui', 'non']\nbonne = Integer(1)",
-          enonce: "{% input_radio 'r' choices=choix solution=bonne %}",
-          apres: "ok_answer['r'] = r == bonne"
+          question_setup: "from sympy import Integer\nchoix = ['oui', 'non']\nbonne = Integer(1)",
+          question_statement: "{% input_radio 'r' choices=choix solution=bonne %}",
+          question_check: "ok_answer['r'] = r == bonne"
         }, { count: 1 });
         if (radio.solutions.r !== 1) throw new Error(`Solution d’un choix unique inattendue : ${JSON.stringify(radio)}`);
       });
 
       await test("les erreurs de l’auteur sont signalées avec leur graine et leur cause", async () => {
         const cases = [
-          [{ avant: "a = 1\nb = 1 / 0", enonce: "{% input_text 'r' solution=a %}" },
+          [{ question_setup: "a = 1\nb = 1 / 0", question_statement: "{% input_text 'r' solution=a %}" },
             ["graine 0", "ligne 2", "ZeroDivisionError"]],
-          [{ avant: "a = 1", enonce: "{% input_text 'r' solution=absente %}" },
-            ["La solution « absente » du champ « r » n’est pas définie par « avant »."]],
-          [{ avant: "r = 1", enonce: "{% input_text 'r' solution=r %}" },
-            ["Le champ « r » porte le nom d’une variable de « avant »"]],
-          [{ avant: "from sympy import eye\nM = eye(3)", enonce: "{% input_matrix 'm' size=2 solution=M %}" },
+          [{ question_setup: "a = 1", question_statement: "{% input_text 'r' solution=absente %}" },
+            ["La solution « absente » du champ « r » n’est pas définie par « question_setup »."]],
+          [{ question_setup: "r = 1", question_statement: "{% input_text 'r' solution=r %}" },
+            ["Le champ « r » porte le nom d’une variable de « question_setup »"]],
+          [{ question_setup: "from sympy import eye\nM = eye(3)", question_statement: "{% input_matrix 'm' size=2 solution=M %}" },
             ["est une matrice 3 × 3, alors que le champ est 2 × 2"]],
-          [{ avant: "from sympy import eye\nM = eye(2)", enonce: "{% input_text 'r' solution=M %}" },
+          [{ question_setup: "from sympy import eye\nM = eye(2)", question_statement: "{% input_text 'r' solution=M %}" },
             ["doit être une valeur simple, pas une matrice"]],
-          [{ avant: "n = 1.5\nM = [[1]]", enonce: "{% input_matrix 'm' size=n solution=M %}" },
+          [{ question_setup: "n = 1.5\nM = [[1]]", question_statement: "{% input_matrix 'm' size=n solution=M %}" },
             ["La dimension « n » doit être un entier"]],
-          [{ avant: "a = 1", enonce: "{{ inconnue }} {% input_text 'r' solution=a %}" },
-            ["La variable « inconnue » de l’énoncé n’est pas définie"]],
-          [{ avant: "a = 1\nexplication_solution = 3", enonce: "{% input_text 'r' solution=a %}" },
-            ["« explication_solution » doit être un texte"]],
-          [{ avant: "s = 0", enonce: "{% input_radio 'r' choices=absents solution=s %}" },
-            ["Les choix « absents » du champ « r » ne sont pas définis par « avant »."]],
-          [{ avant: "c = 'ab'\ns = 0", enonce: "{% input_radio 'r' choices=c solution=s %}" },
+          [{ question_setup: "a = 1", question_statement: "{{ inconnue }} {% input_text 'r' solution=a %}" },
+            ["La variable « inconnue » de l’énoncé ou de l’explication n’est pas définie"]],
+          [{ question_setup: "a = 1", question_statement: "{% input_text 'r' solution=a %}",
+             question_solution_explanation: "Car {{ absente }}." },
+            ["La variable « absente » de l’énoncé ou de l’explication n’est pas définie"]],
+          [{ question_setup: "s = 0", question_statement: "{% input_radio 'r' choices=absents solution=s %}" },
+            ["Les choix « absents » du champ « r » ne sont pas définis par « question_setup »."]],
+          [{ question_setup: "c = 'ab'\ns = 0", question_statement: "{% input_radio 'r' choices=c solution=s %}" },
             ["Les choix « c » du champ « r » : ce doit être une liste d’au moins deux choix."]],
-          [{ avant: "c = ['a', 'b']\ns = 2", enonce: "{% input_radio 'r' choices=c solution=s %}" },
+          [{ question_setup: "c = ['a', 'b']\ns = 2", question_statement: "{% input_radio 'r' choices=c solution=s %}" },
             ["La solution « s » du champ « r » : 2 n’est pas un indice de choix (de 0 à 1)."]],
-          [{ avant: "c = ['a', 'b']\ns = [0]", enonce: "{% input_radio 'r' choices=c solution=s %}" },
+          [{ question_setup: "c = ['a', 'b']\ns = [0]", question_statement: "{% input_radio 'r' choices=c solution=s %}" },
             ["ce doit être l’indice du bon choix, pas une liste"]],
-          [{ avant: "c = ['a', 'b']\ns = 0", enonce: "{% input_checkbox 'r' choices=c solution=s %}" },
+          [{ question_setup: "c = ['a', 'b']\ns = 0", question_statement: "{% input_checkbox 'r' choices=c solution=s %}" },
             ["ce doit être la liste des indices des bons choix"]],
-          [{ avant: "c = ['a', 'b']\ns = [1, 1]", enonce: "{% input_checkbox 'r' choices=c solution=s %}" },
+          [{ question_setup: "c = ['a', 'b']\ns = [1, 1]", question_statement: "{% input_checkbox 'r' choices=c solution=s %}" },
             ["un indice de choix est répété"]],
-          [{ avant: "c = ['a', 'b']\ns = [True]", enonce: "{% input_checkbox 'r' choices=c solution=s %}" },
+          [{ question_setup: "c = ['a', 'b']\ns = [True]", question_statement: "{% input_checkbox 'r' choices=c solution=s %}" },
             ["True n’est pas un indice de choix"]],
-          [{ avant: "c = ['a', 'b']\ns = []", enonce: "{% input_checkbox 'r' choices=c solution=s fixed_last=2 %}" },
+          [{ question_setup: "c = ['a', 'b']\ns = []", question_statement: "{% input_checkbox 'r' choices=c solution=s fixed_last=2 %}" },
             ["fixed_last=2 doit être inférieur au nombre de choix (2) du champ « r »"]],
           // Formule TeX dans une chaîne ordinaire : « \frac » contient un saut de page, « \times » une tabulation.
-          [{ avant: "a = 1\nt = '$\\frac{1}{2}$'", enonce: "{% input_text 'r' solution=a %}" },
-            ["« avant », ligne 2 : une chaîne contient un caractère de contrôle (\\f)", "r'…'"]],
-          [{ avant: "a = 1", enonce: "{% input_text 'r' solution=a %}",
-             apres: "ok_answer['r'] = True\nfeedback = f'{a} $\\times$ 2'" },
-            ["« apres », ligne 2", "(\\t)"]],
-          // Cohérence : la solution saisie comme par un élève doit être jugée juste par « apres ».
-          [{ avant: "a = 1", enonce: "{% input_text 'r' solution=a %}",
-             apres: "ok_answer['r'] = r == '2'\nfeedback = 'Ce n’est pas 2.'" },
-            ["Graine 0 : la solution du champ « r » est jugée fausse par « apres ».", "Retour obtenu : « Ce n’est pas 2. »"]],
-          [{ avant: "a = 1", enonce: "{% input_text 'r' solution=a %}", apres: "ok_answer['r'] = True\nx = 1 / 0" },
-            ["Graine 0 : « apres » lève une erreur quand on saisit la solution, ligne 2", "ZeroDivisionError"]],
-          [{ avant: "M = [[1, 2], [3, 4]]", enonce: "{% input_matrix 'm' size=2 solution=M %}",
-             apres: "ok_answer['m[0][0]'] = ok_answer['m[1][1]'] = True" },
-            ["la solution du champ « m » (cases [0][1], [1][0]) est jugée fausse par « apres »"]],
-          [{ avant: "c = ['a', 'b', 'c']\ns = [2, 0]", enonce: "{% input_checkbox 'r' choices=c solution=s %}",
-             apres: "ok_answer['r'] = r == s" },
-            ["la solution du champ « r » est jugée fausse par « apres »"]],
+          [{ question_setup: "a = 1\nt = '$\\frac{1}{2}$'", question_statement: "{% input_text 'r' solution=a %}" },
+            ["« question_setup », ligne 2 : une chaîne contient un caractère de contrôle (\\f)", "r'…'"]],
+          [{ question_setup: "a = 1", question_statement: "{% input_text 'r' solution=a %}",
+             question_check: "ok_answer['r'] = True\nfeedback = f'{a} $\\times$ 2'" },
+            ["« question_check », ligne 2", "(\\t)"]],
+          // Cohérence : la solution saisie comme par un élève doit être jugée juste par « question_check ».
+          [{ question_setup: "a = 1", question_statement: "{% input_text 'r' solution=a %}",
+             question_check: "ok_answer['r'] = r == '2'\nfeedback = 'Ce n’est pas 2.'" },
+            ["Graine 0 : la solution du champ « r » est jugée fausse par « question_check ».", "Retour obtenu : « Ce n’est pas 2. »"]],
+          [{ question_setup: "a = 1", question_statement: "{% input_text 'r' solution=a %}", question_check: "ok_answer['r'] = True\nx = 1 / 0" },
+            ["Graine 0 : « question_check » lève une erreur quand on saisit la solution, ligne 2", "ZeroDivisionError"]],
+          [{ question_setup: "M = [[1, 2], [3, 4]]", question_statement: "{% input_matrix 'm' size=2 solution=M %}",
+             question_check: "ok_answer['m[0][0]'] = ok_answer['m[1][1]'] = True" },
+            ["la solution du champ « m » (cases [0][1], [1][0]) est jugée fausse par « question_check »"]],
+          [{ question_setup: "c = ['a', 'b', 'c']\ns = [2, 0]", question_statement: "{% input_checkbox 'r' choices=c solution=s %}",
+             question_check: "ok_answer['r'] = r == s" },
+            ["la solution du champ « r » est jugée fausse par « question_check »"]],
           // Hasard que la graine ne fixe pas : un compteur gardé hors de l’espace de noms change à
           // chaque exécution, à coup sûr (l’heure le ferait presque toujours, mais pas toujours).
-          [{ avant: "import sys\nsys.compteur_essai = getattr(sys, 'compteur_essai', 0) + 1\na = sys.compteur_essai",
-             enonce: "{{ a }} {% input_text 'r' solution=a %}" },
-            ["Graine 0 : deux exécutions de « avant » avec la même graine donnent des tirages différents (les valeurs de l’énoncé, les solutions)"]]
+          [{ question_setup: "import sys\nsys.compteur_essai = getattr(sys, 'compteur_essai', 0) + 1\na = sys.compteur_essai",
+             question_statement: "{{ a }} {% input_text 'r' solution=a %}" },
+            ["Graine 0 : deux exécutions de « question_setup » avec la même graine donnent des tirages différents (les valeurs de l’énoncé, les solutions)"]]
         ];
         for (const [fields, fragments] of cases) {
           let message = "";
           try {
-            await PyWimsCompiler.computeDraws({ apres: "ok_answer['r'] = True", ...fields }, { count: 1 });
+            await PyWimsCompiler.computeDraws({ question_check: "ok_answer['r'] = True", ...fields }, { count: 1 });
           } catch (error) {
             message = error.message;
           }
           const missing = fragments.filter(fragment => !message.includes(fragment));
           if (missing.length) {
-            throw new Error(`Pour ${JSON.stringify(fields.avant)}, message « ${message} » sans : ${missing.join(" / ")}`);
+            throw new Error(`Pour ${JSON.stringify(fields.question_setup)}, message « ${message} » sans : ${missing.join(" / ")}`);
           }
         }
         // Les mêmes formules en chaînes brutes, et un retour à la ligne, sont acceptés.
         await PyWimsCompiler.computeDraws({
-          avant: "a = 1\nt = r'$\\frac{1}{2}$'",
-          enonce: "{% input_text 'r' solution=a %}",
-          apres: "ok_answer['r'] = True\nfeedback = rf'{a} $\\times$ 2' + '\\n'"
+          question_setup: "a = 1\nt = r'$\\frac{1}{2}$'",
+          question_statement: "{% input_text 'r' solution=a %}",
+          question_check: "ok_answer['r'] = True\nfeedback = rf'{a} $\\times$ 2' + '\\n'"
         }, { count: 1 });
       });
 
@@ -583,7 +587,7 @@ json.dumps({
         };
         const inputs = () => [...section.querySelectorAll("[data-name], [data-matrix-name]")];
         await waitFor(() => inputs().length, "affichage de l’énoncé", 5000);
-        if (PyWimsTemplate.tagTypes(fields.enonce).has("input_math")) {
+        if (PyWimsTemplate.tagTypes(fields.question_statement).has("input_math")) {
           await frameWindow.customElements.whenDefined("math-field");
         }
         for (const viewport of section.querySelectorAll(".pw-vmatrix-viewport")) {
@@ -630,12 +634,12 @@ json.dumps({
 
       await test("un QCM compilé affiche ses choix mélangés, rejoue le tirage et accepte sa solution", async () => {
         const fields = {
-          title: "Nombres premiers",
-          layout: "STD",
-          avant: "from random import sample\nfrom sympy import isprime\nnombres = sample(range(2, 30), 4)\n" +
+          question_title: "Nombres premiers",
+          question_layout: "STD",
+          question_setup: "from random import sample\nfrom sympy import isprime\nnombres = sample(range(2, 30), 4)\n" +
             "choix = [f'${k}$' for k in nombres]\nbonnes = [i for i, k in enumerate(nombres) if isprime(k)]",
-          enonce: "Lesquels sont premiers ? {% input_checkbox 'reponse' choices=choix solution=bonnes columns=2 %}",
-          apres: "ok_answer['reponse'] = reponse == bonnes\nfeedback = 'Bravo !' if ok_answer['reponse'] else 'Non.'"
+          question_statement: "Lesquels sont premiers ? {% input_checkbox 'reponse' choices=choix solution=bonnes columns=2 %}",
+          question_check: "ok_answer['reponse'] = reponse == bonnes\nfeedback = 'Bravo !' if ok_answer['reponse'] else 'Non.'"
         };
         const draws = (await PyWimsCompiler.computeDraws(fields, { count: 4 })).slice(-1);
         compiledQuestions.push({ fields, draws });
@@ -651,22 +655,22 @@ json.dumps({
         }
       });
 
-      await test("un QCM compilé sans « apres » se corrige sans que la page charge Pyodide", async () => {
+      await test("un QCM compilé sans « question_check » se corrige sans que la page charge Pyodide", async () => {
         const fields = {
-          title: "Nombres premiers, sans apres",
-          layout: "STD",
-          avant: "from random import sample\nfrom sympy import isprime\nnombres = sample(range(2, 30), 4)\n" +
+          question_title: "Nombres premiers, sans question_check",
+          question_layout: "STD",
+          question_setup: "from random import sample\nfrom sympy import isprime\nnombres = sample(range(2, 30), 4)\n" +
             "choix = [f'${k}$' for k in nombres]\nbonnes = [i for i, k in enumerate(nombres) if isprime(k)]",
-          enonce: "Lesquels sont premiers ? {% input_checkbox 'reponse' choices=choix solution=bonnes columns=2 %}"
+          question_statement: "Lesquels sont premiers ? {% input_checkbox 'reponse' choices=choix solution=bonnes columns=2 %}"
         };
         const draws = (await PyWimsCompiler.computeDraws(fields, { count: 4 })).slice(-1);
-        // L’activité suivante devient mixte : des questions avec et sans « apres ».
+        // L’activité suivante devient mixte : des questions avec et sans « question_check ».
         compiledQuestions.push({ fields, draws });
         const frame = await openCompiledSheet([{ fields, draws }]);
         try {
           await solveQuestion(frame, 1, fields, draws[0]);
           if (frame.contentWindow.PyWimsPython.isLoaded()) {
-            throw new Error("La page a chargé Pyodide pour une question sans « apres ».");
+            throw new Error("La page a chargé Pyodide pour une question sans « question_check ».");
           }
         } finally {
           frame.remove();
@@ -701,7 +705,7 @@ json.dumps({
           throw new Error(`Arrêt inattendu : ${error?.name} ${error?.message}, après ${Math.round(elapsed)} ms`);
         }
         // Le moteur relancé accepte de nouvelles sessions ; l’ancienne n’existe plus.
-        const fresh = PyWimsPython.createSession("apres-boucle");
+        const fresh = PyWimsPython.createSession("check-loop");
         await fresh.initialize("x = 1");
         if (await fresh.run("1 + 1") !== 2) throw new Error("Le moteur relancé ne calcule pas.");
         let lost = false;
@@ -709,17 +713,17 @@ json.dumps({
         if (!lost) throw new Error("La session d’avant la relance existe encore.");
       });
 
-      await test("une boucle sans fin dans « avant » arrête la compilation avec un message clair", async () => {
+      await test("une boucle sans fin dans « question_setup » arrête la compilation avec un message clair", async () => {
         let message = "";
         try {
           await PyWimsCompiler.computeDraws({
-            avant: "a = 1\nwhile True:\n    pass",
-            enonce: "{% input_text 'r' solution=a %}"
+            question_setup: "a = 1\nwhile True:\n    pass",
+            question_statement: "{% input_text 'r' solution=a %}"
           }, { count: 1, timeoutMs: 1500 });
         } catch (error) {
           message = error.message;
         }
-        if (!message.includes("« avant » n’a pas terminé en 1.5 s pour la graine 0 (boucle sans fin ?)")) {
+        if (!message.includes("« question_setup » n’a pas terminé en 1.5 s pour la graine 0 (boucle sans fin ?)")) {
           throw new Error(`Message inattendu : ${message}`);
         }
       });

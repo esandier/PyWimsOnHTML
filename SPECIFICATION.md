@@ -6,9 +6,9 @@ modification commence par lui, avant le code (§ 9).
 ## 1. Objectifs
 
 1. L’énoncé s’affiche dès l’ouverture du fichier, sans attendre Python.
-2. Une question sans `apres` se corrige sans Python, par comparaison avec sa
+2. Une question sans `question_check` se corrige sans Python, par comparaison avec sa
    solution (§ 2.6) : c’est le cas courant des questions à choix. Seules les
-   questions qui ont un `apres` chargent Pyodide, en arrière-plan, et leur
+   questions qui ont un `question_check` chargent Pyodide, en arrière-plan, et leur
    correction par Python reste complète.
 3. Une activité est une feuille de questions compacte dans une seule page :
    un seul chargement de Pyodide, MathJax et MathLive pour toutes les questions.
@@ -33,13 +33,34 @@ et une activité en réunit plusieurs.
 
 | Champ | Statut | Rôle |
 |---|---|---|
-| `title`, `keywords`, `layout` | obligatoire | titre, mots-clés (séparés par des virgules), mise en page (`STD`) |
-| `avant` | obligatoire | tirage et calcul des solutions |
-| `enonce` | obligatoire | modèle de l’énoncé |
-| `apres` | facultatif | correction ; sans lui, chaque champ est corrigé par comparaison avec sa solution (§ 2.6) |
-| `tirages` | facultatif | nombre de tirages calculés à la compilation, entier de 1 à 200 ; 20 par défaut (§ 3) |
+| `question_title`, `question_keywords`, `question_layout` | obligatoire | titre, mots-clés (séparés par des virgules), mise en page (`STD`) |
+| `question_setup` | obligatoire | tirage et calcul des solutions |
+| `question_statement` | obligatoire | modèle de l’énoncé |
+| `question_solution_explanation` | facultatif | explication affichée avec la solution (§ 5.2) : modèle écrit comme l’énoncé (HTML, formules, `{{variable}}`), sans champ de réponse |
+| `question_check` | facultatif | correction ; sans lui, chaque champ est corrigé par comparaison avec sa solution (§ 2.6) |
+| `question_draws` | facultatif | nombre de tirages calculés à la compilation, entier de 1 à 200 ; 20 par défaut (§ 3) |
 
-Le retour destiné à l’élève est la variable `feedback` de `apres` (§ 2.2).
+**Noms en anglais.** Tous les noms que l’auteur écrit sont en anglais, comme
+Python et HTML : champs (préfixés par `question_`), outils de `pywims`
+(`ANY`, `decimal_comma`), attributs des balises (`scoring`), et noms des
+exemples. Les anciens noms de PyWims (`avant`, `enonce`, `apres`, `tirages`,
+`bareme`, `LIBRE`, `decimal_fr`, `explication_solution`) sont refusés comme
+tout nom inconnu, sans compatibilité : un mélange des deux langues serait
+pire qu’une conversion, faite une fois.
+
+**Explication de la solution.** Elle s’écrit comme l’énoncé, et non plus en
+Python (variable `explication_solution`, avant octobre 2026) : ni chaîne
+`rf"…"`, ni accolades de LaTeX à doubler. Ses `{{variable}}` font partie des
+valeurs affichées du tirage (`context`, § 3). Une explication calculée (étapes
+d’un algorithme, dérivée de chaque terme) est préparée en texte dans
+`question_setup`, puis affichée par `{{variable}}`.
+
+**Valeurs affichées.** Une valeur `{{variable}}`, dans l’énoncé comme dans
+l’explication, admet les balises de mise en forme du retour (§ 2.2) : `<b>`,
+`<i>`, `<strong>`, `<em>`, `<sup>`, `<sub>`, `<br>`, sans attribut ; le reste
+est échappé (un `x < 3` s’affiche tel quel).
+
+Le retour destiné à l’élève est la variable `feedback` de `question_check` (§ 2.2).
 Les paquets Pyodide sont déduits des `import` du code. Un champ inconnu est
 refusé.
 
@@ -48,12 +69,12 @@ refusé.
 - Chaque question importe explicitement ce qu’elle utilise :
   `import sympy as sp`, `from sympy import …`, `import random`, etc.
 - Les outils PyWims viennent d’un module dédié :
-  `from pywims import py_wims, is_nombre, math_expression, decimal_fr`.
+  `from pywims import py_wims, is_nombre, math_expression, decimal_comma`.
   Ses fonctions internes ne sont pas visibles par l’auteur, qui ne peut donc
   pas les perturber (par exemple en écrivant `E = 3`).
-- `apres` partage l’espace de noms de `avant` et y trouve les saisies de
+- `question_check` partage l’espace de noms de `question_setup` et y trouve les saisies de
   l’élève sous le nom de chaque champ.
-- Contrat de sortie de `apres` : `ok_answer[nom_du_champ] = True/False` pour
+- Contrat de sortie de `question_check` : `ok_answer[nom_du_champ] = True/False` pour
   chaque champ (`"matrice[i][j]"` pour une case), et, facultativement, une
   variable `feedback` : un texte (formules TeX admises) qui explique l’erreur
   sans donner la réponse. Sans elle, le retour est générique : « Bravo, c’est
@@ -65,8 +86,6 @@ refusé.
   `<br>` ; un `x < 3` s’affiche donc tel quel, et aucune balise ne peut
   exécuter de script, même si le retour reprend la saisie de l’élève. Ses
   formules sont composées par MathJax.
-- Variable facultative de `avant` : `explication_solution`, un texte (formules
-  TeX admises) affiché avec la solution (§ 5.2).
 - Pour lire une saisie qui contient une expression (champ texte ou case de
   matrice), utiliser `math_expression` plutôt que `py_wims` : elle accepte
   l’écriture des élèves (`2x`, `x^2`, `sin x`, `ln(x)`) et renvoie `None` pour
@@ -81,21 +100,21 @@ refusé.
 ### 2.3 Balises de saisie
 
 Chaque balise porte obligatoirement `solution=variable`, le nom d’une variable
-définie par `avant` :
+définie par `question_setup` :
 
 ```
-{% input_text 'resultat' solution=somme style='width:7em' %}
-{% input_math 'derivee_eleve' solution=derivee %}
-{% input_matrix 'matrice' rows=m cols=p solution=produit input_style='width:2em' %}
-{% input_vmatrix 'matrice' max_rows=5 max_cols=5 solution=produit %}
-{% input_radio 'reponse' choices=choix solution=bonne %}
-{% input_checkbox 'reponses' choices=choix solution=bonnes columns=2 %}
+{% input_text 'result' solution=total style='width:7em' %}
+{% input_math 'student_derivative' solution=derivative %}
+{% input_matrix 'matrix' rows=m cols=p solution=product input_style='width:2em' %}
+{% input_vmatrix 'matrix' max_rows=5 max_cols=5 solution=product %}
+{% input_radio 'answer' choices=choices solution=correct %}
+{% input_checkbox 'answers' choices=choices solution=correct columns=2 %}
 ```
 
 Les questions à choix (`input_radio`, `input_checkbox`) sont décrites au § 10.
 
 **Conversion de la solution.** À la compilation, pour chaque tirage, la
-valeur Python de la variable de solution (calculée par `avant`) est convertie
+valeur Python de la variable de solution (calculée par `question_setup`) est convertie
 en la valeur que le bouton « Solution » écrit dans le champ. Cette valeur
 convertie est enregistrée dans le tirage (`solutions`, § 3) ; le navigateur
 n’a pas besoin de Python pour l’afficher.
@@ -109,11 +128,11 @@ n’a pas besoin de Python pour l’afficher.
 | `input_radio`, `input_checkbox` | indice, ou liste d’indices | les choix correspondants sont cochés (§ 10) |
 
 Quand plusieurs réponses sont justes, une valeur peut être déclarée libre avec
-`LIBRE` (fourni par `pywims`), y compris dans une `Matrix` :
+`ANY` (fourni par `pywims`), y compris dans une `Matrix` :
 
 ```python
-from pywims import LIBRE
-solution = Matrix(n, n, lambda i, j: 0 if i > j else LIBRE)
+from pywims import ANY
+solution = Matrix(n, n, lambda i, j: 0 if i > j else ANY)
 ```
 
 Une case libre affiche « ∗ » dans un style neutre (bordure en pointillés,
@@ -140,16 +159,16 @@ Les champs MathLive ont leur propre clavier virtuel et ne sont pas concernés.
 Le compilateur refuse la question, avec un message précis, si :
 - une balise n’a pas de `solution=` ou désigne une variable absente ;
 - la solution n’a pas la forme attendue par le champ (dimensions de matrice) ;
-- un nom de champ est déjà défini par `avant`, ou réservé (`ok_answer`,
+- un nom de champ est déjà défini par `question_setup`, ou réservé (`ok_answer`,
   `feedback`, noms du module `pywims`, mots-clés Python) ;
-- une chaîne de `avant` ou de `apres` contient un caractère de contrôle autre
+- une chaîne de `question_setup` ou de `question_check` contient un caractère de contrôle autre
   que le retour à la ligne : c’est presque toujours une formule TeX écrite dans
   une chaîne ordinaire (`'\frac'` contient un saut de page, `'\times'` une
   tabulation), qu’il faut écrire en chaîne brute `r'…'` (le champ et la ligne
   sont indiqués) ;
-- `avant` lève une exception pour l’un des tirages (la graine est indiquée) ;
+- `question_setup` lève une exception pour l’un des tirages (la graine est indiquée) ;
 - la question est incohérente pour l’un des tirages : la solution, saisie comme
-  par un élève, est jugée fausse par `apres`, ou `apres` lève une exception
+  par un élève, est jugée fausse par `question_check`, ou `question_check` lève une exception
   (§ 3, « Cohérence ») ;
 - une question à choix ne respecte pas les règles du § 10.6.
 
@@ -162,19 +181,19 @@ compilation, si l’énoncé contient trois accolades de suite
 
 ```
 %
-% title
+% question_title
 %
 Dérivée d’un polynôme
 %
-% keywords
+% question_keywords
 %
 dérivée, fonction polynomiale, calcul différentiel
 %
-% layout
+% question_layout
 %
 STD
 %
-% avant
+% question_setup
 %
 from random import choice, randint
 from sympy import symbols, expand, diff, simplify
@@ -183,20 +202,24 @@ from pywims import math_expression
 x = symbols("x")
 a = choice([-4, -3, -2, -1, 1, 2, 3, 4])
 b, c, d = randint(-5, 5), randint(-5, 5), randint(-5, 5)
-fonction = expand(a*x**3 + b*x**2 + c*x + d)
-derivee = diff(fonction, x)
+function = expand(a*x**3 + b*x**2 + c*x + d)
+derivative = diff(function, x)
 %
-% enonce
+% question_statement
 %
-Soit la fonction polynomiale $f(x) = {{ fonction }}$.
+Soit la fonction polynomiale $f(x) = {{ function }}$.
 Donnez sa dérivée $f'(x)$ :
-{% input_math 'derivee_eleve' solution=derivee %}
+{% input_math 'student_derivative' solution=derivative %}
 %
-% apres
+% question_solution_explanation
 %
-reponse_eleve = math_expression(derivee_eleve)
-ok_answer["derivee_eleve"] = reponse_eleve is not None and simplify(reponse_eleve - derivee) == 0
-if ok_answer["derivee_eleve"]:
+On dérive terme à terme avec $(x^n)' = n\,x^{n-1}$ : $f'(x) = {{ derivative }}$.
+%
+% question_check
+%
+answer = math_expression(student_derivative)
+ok_answer["student_derivative"] = answer is not None and simplify(answer - derivative) == 0
+if ok_answer["student_derivative"]:
     feedback = "Bravo, cette dérivée est correcte !"
 else:
     feedback = r"Ce n’est pas la bonne dérivée. Dérivez terme à terme avec $(x^n)' = n\,x^{n-1}$."
@@ -208,17 +231,17 @@ Le retour explique l’erreur sans donner la réponse : c’est le rôle du bout
 
 ### 2.6 Correction par défaut
 
-Chaque champ désigne sa solution : `apres` est facultatif. Sans lui, chaque
+Chaque champ désigne sa solution : `question_check` est facultatif. Sans lui, chaque
 saisie est comparée à la solution du tirage, en JavaScript, sans Python.
-`apres` ne sert qu’aux corrections particulières (plusieurs écritures justes,
+`question_check` ne sert qu’aux corrections particulières (plusieurs écritures justes,
 valeur numérique approchée) et aux retours ciblés.
 
-**Principe : sans `apres`, l’élève doit donner ce qu’affiche le bouton
+**Principe : sans `question_check`, l’élève doit donner ce qu’affiche le bouton
 « Solution ».** L’auteur le vérifie dans l’aperçu du compilateur.
 
-- **Avec `apres`** : `apres` décide seul de la réussite de chaque champ. Pas de correction partielle : `ok_answer` n’est pas pré-rempli
+- **Avec `question_check`** : `question_check` décide seul de la réussite de chaque champ. Pas de correction partielle : `ok_answer` n’est pas pré-rempli
   par la correction par défaut.
-- **Python** n’est chargé que par les questions qui ont un `apres` (§ 5.1).
+- **Python** n’est chargé que par les questions qui ont un `question_check` (§ 5.1).
 
 | Champ | Saisie juste si |
 |---|---|
@@ -227,11 +250,11 @@ valeur numérique approchée) et aux retours ciblés.
 | futur glisser-déposer | chaque élément est à la place de la solution |
 | `input_text`, case de matrice | le texte saisi est celui de la solution (§ 2.3), aux différences typographiques près (ci-dessous) |
 | `input_vmatrix` | la grille a les dimensions de la solution, et chaque case est juste ; avec d’autres dimensions, toutes les cases sont fausses |
-| valeur `LIBRE` | la saisie n’est pas vide |
-| `input_math` | pas de correction par défaut : `apres` est obligatoire (ci-dessous) |
+| valeur `ANY` | la saisie n’est pas vide |
+| `input_math` | pas de correction par défaut : `question_check` est obligatoire (ci-dessous) |
 
 Les questions à choix (et plus tard le glisser-déposer) sont le cas principal
-sans `apres` : la comparaison y est sans ambiguïté.
+sans `question_check` : la comparaison y est sans ambiguïté.
 
 - **Différences typographiques ignorées** pour un champ texte : les espaces
   (`x^2+1` est juste pour `x^2 + 1`, `1 000` pour `1000`), le signe moins
@@ -247,14 +270,14 @@ sans `apres` : la comparaison y est sans ambiguïté.
   arrondi à 12 chiffres significatifs, qui efface les artefacts de calcul
   (`0.1 + 0.2` donne `0.3`, et non `0.30000000000000004`). Pour une écriture
   française, l’auteur donne une solution texte, par exemple avec l’outil
-  `decimal_fr(x, 2)` du module `pywims`, qui renvoie `"1,41"`.
+  `decimal_comma(x, 2)` du module `pywims`, qui renvoie `"1,41"`.
 - **Plusieurs écritures justes** (ordre des termes, fraction non simplifiée,
-  valeur approchée) : l’auteur écrit `apres`. `PROMPT.md` le dit.
+  valeur approchée) : l’auteur écrit `question_check`. `PROMPT.md` le dit.
 - **Retour.** Le texte générique du § 2.2 (« Réponse incorrecte. » pour une
   question qui n’attend qu’une réponse). Un indice qui ne dépend pas de la
-  réponse de l’élève peut aller dans `explication_solution`, affichée avec la
-  solution.
-- **`input_math` exige un `apres`**, et le compilateur le dit. Une
+  réponse de l’élève peut aller dans `question_solution_explanation`,
+  affichée avec la solution.
+- **`input_math` exige un `question_check`**, et le compilateur le dit. Une
   formule ne se compare pas à l’écriture de sa solution ; essai fait sur 23
   cas, en passant la solution et une frappe d’élève par MathLive :
   - SymPy, et non l’auteur, choisit l’écriture de la solution : `(x+1)/2`
@@ -279,56 +302,55 @@ sans `apres` : la comparaison y est sans ambiguïté.
 - Le compilateur charge Pyodide (version **0.27.7**, la même que le fichier
   généré, pour que le rendu LaTeX soit identique).
 - Pour chaque question, il exécute **20 tirages**, ou le nombre du champ
-  `tirages` : moins pour une question peu variée (inutile de calculer 20 fois les
+  `question_draws` : moins pour une question peu variée (inutile de calculer 20 fois les
   mêmes valeurs), plus pour qu’un élève qui s’entraîne longtemps revoie moins
   souvent le même énoncé, au prix d’un fichier plus lourd. Chaque tirage part d’un
   espace de noms neuf, initialisé avec une graine (`random.seed`, et
-  `numpy.random.seed` si NumPy est importé), puis exécute `avant`.
+  `numpy.random.seed` si NumPy est importé), puis exécute `question_setup`.
 - **Hachage fixe.** Pyodide est lancé avec `PYTHONHASHSEED=0`, à la compilation
   comme dans le fichier généré. Sinon le hachage des chaînes change à chaque
   chargement de Pyodide, et avec lui l’ordre d’un `set` de chaînes (mesuré :
   `{"pomme", "poire", "kiwi", "figue"}` sort dans un ordre différent d’une
   instance à l’autre) : `choice(list(un_ensemble))` donnerait un autre tirage
   dans le navigateur qu’à la compilation.
-- **Calcul trop long.** Chaque exécution de `avant`, et de `apres` pour le
+- **Calcul trop long.** Chaque exécution de `question_setup`, et de `question_check` pour le
   contrôle de cohérence, est limitée à **30 s** (comptées comme au § 5.1).
-  Au-delà, la compilation s’arrête : « « avant » n’a pas terminé en 30 s pour
+  Au-delà, la compilation s’arrête : « « question_setup » n’a pas terminé en 30 s pour
   la graine 7 (boucle sans fin ?) ». Le compilateur garde la main et reste
   utilisable. Le premier import des bibliothèques de la question (SymPy :
   quelques secondes, bien plus sur un navigateur lent) n’est pas compté : il
   est fait au chargement des paquets, avant toute exécution limitée.
 - **Reproductibilité.** Chaque graine est exécutée deux fois, dans deux espaces
-  de noms neufs ; les deux tirages (`context`, `solutions`, choix,
-  explication) doivent être identiques. Sinon la compilation est refusée :
-  « avant » utilise un hasard que la graine ne fixe pas (heure,
+  de noms neufs ; les deux tirages (`context`, `solutions`, choix) doivent
+  être identiques. Sinon la compilation est refusée :
+  « question_setup » utilise un hasard que la graine ne fixe pas (heure,
   `numpy.random.default_rng()`, `secrets`…), et le navigateur ne pourrait pas
   rejouer le tirage. L’erreur apparaît ainsi chez l’auteur, et non chez
   l’élève (« … diffère », § 5.1).
 - Un tirage enregistre :
   - `seed` : la graine ;
   - `context` : la valeur affichée de chaque `{{variable}}` de l’énoncé et de
-    chaque dimension de matrice, en texte ; un objet SymPy est écrit en LaTeX
+    l’explication, et de chaque dimension de matrice, en texte ; un objet SymPy est écrit en LaTeX
     (matrices entre crochets), sans `\displaystyle` : l’auteur choisit la
     taille des formules (`$\displaystyle {{f}}$`, ou `$$ {{f}} $$`) ;
-  - `solutions` : la valeur convertie de chaque champ (§ 2.3) ;
-  - `explication` : le texte de `explication_solution`, s’il est défini.
+  - `solutions` : la valeur convertie de chaque champ (§ 2.3).
 - **Cohérence.** Pour chaque tirage, dans le même espace de noms, le
   compilateur saisit la solution de chaque champ comme le ferait un élève,
-  exécute `apres` (ou, sans `apres`, la correction par défaut du § 2.6) et
+  exécute `question_check` (ou, sans `question_check`, la correction par défaut du § 2.6) et
   exige `ok_answer` vrai pour chaque champ (et chaque case d’une matrice).
   Sinon la compilation est refusée avec la graine, le champ et
   le `feedback` obtenu, par exemple « Graine 7 : la solution du champ « r » est
-  jugée fausse par « apres » ». Ainsi le bouton « Solution » ne montre jamais
-  une réponse que la correction refuse, et `apres` ne plante pour aucun tirage.
+  jugée fausse par « question_check » ». Ainsi le bouton « Solution » ne montre jamais
+  une réponse que la correction refuse, et `question_check` ne plante pour aucun tirage.
   Saisie utilisée :
   - `input_text`, case de matrice : le texte de la solution (§ 2.3) ;
   - `input_math` : la solution écrite comme pour `input_text` (`x^2 + 1`),
     proche de ce que MathLive transmet ;
-  - valeur `LIBRE` : `1`, une valeur quelconque ;
+  - valeur `ANY` : `1`, une valeur quelconque ;
   - `input_vmatrix` : une grille aux dimensions de la solution ;
   - champ à choix : l’indice ou la liste des indices de la solution.
   Les tests appliquent ce contrôle aux exemples du dépôt, sur 20 tirages ou
-  plus (`?tirages=200`, § 8).
+  plus (`?draws=200`, § 8).
 - Les tirages identiques (même `context` et mêmes `solutions`) sont fusionnés.
   Une question sans aléatoire n’a donc qu’un tirage.
 - Les tirages sont intégrés au fichier généré en JSON, dans un bloc de texte
@@ -347,7 +369,7 @@ sans `apres` : la comparaison y est sans ambiguïté.
   début de chaque compilation, l’installe dans son Pyodide pour
   calculer les tirages, et l’intègre tel quel au fichier généré (bloc
   `<script type="text/x-python" id="pywims-module">`, que le navigateur
-  n’exécute pas), seulement si une question a un `apres`. Tirages calculés et
+  n’exécute pas), seulement si une question a un `question_check`. Tirages calculés et
   tirages rejoués utilisent donc le même module : une page du compilateur
   restée en cache ne peut plus les désaccorder. Un module modifié depuis la
   compilation précédente remplace le module déjà chargé.
@@ -358,7 +380,7 @@ sans `apres` : la comparaison y est sans ambiguïté.
   compilateur le lit en ligne avec les autres fichiers et le donne à `python.js`
   (`setWorkerSource`), les tests aussi, et le fichier généré l’intègre tel
   quel dans un bloc `<script type="text/x-worker" id="pywims-worker">`, que
-  le navigateur n’exécute pas, seulement si une question a un `apres`.
+  le navigateur n’exécute pas, seulement si une question a un `question_check`.
   `python.js` en fait le script du Worker (Blob), ce qui marche aussi en
   `file://`.
 - L’auteur peut ajouter ses propres outils à `pywims.py` ; tout nom exporté
@@ -377,9 +399,9 @@ sans `apres` : la comparaison y est sans ambiguïté.
 - Chaque question est une `<section>` ; ses identifiants sont préfixés
   (`q2-…`) et elle a sa propre session Python dans le Pyodide commun, qui
   tourne dans un Web Worker.
-- Une question sans `apres` n’intègre pas son champ `avant` : il ne sert qu’à
+- Une question sans `question_check` n’intègre pas son champ `question_setup` : il ne sert qu’à
   rejouer un tirage dans Python, et elle ne charge jamais Python. Ses tirages
-  suffisent (−25 % pour une activité de QCM dont `avant` contient toutes les
+  suffisent (−25 % pour une activité de QCM dont `question_setup` contient toutes les
   variantes).
 - Les styles de la feuille sont dans `css/question.css` et n’utilisent que les
   variables de la charte (§ 11.4).
@@ -394,15 +416,15 @@ sans `apres` : la comparaison y est sans ambiguïté.
    tout de suite à partir de `context`.
 2. MathJax compose les formules. Il n’est chargé (≈ 600 Ko) que si la feuille
    peut en afficher : un délimiteur de formule (`$`, `\(`, `\[`) dans un
-   énoncé, une valeur de l’énoncé, un choix ou une explication d’un tirage, ou
-   une question qui a un `apres`, dont le retour peut contenir une formule.
+   énoncé ou une explication, une valeur ou un choix d’un tirage, ou
+   une question qui a un `question_check`, dont le retour peut contenir une formule.
    MathLive n’est chargé que si une question en a besoin.
-3. Seulement pour une question qui a un `apres` (§ 2.6), et seulement au
+3. Seulement pour une question qui a un `question_check` (§ 2.6), et seulement au
    **premier contact** de l’élève avec elle (clic, toucher ou focus dans sa
    carte, ou « Vérifier ma réponse ») : chargement en arrière-plan de Pyodide
-   et des paquets détectés, puis exécution de `avant` avec la graine du
+   et des paquets détectés, puis exécution de `question_setup` avec la graine du
    tirage. Un élève qui ne fait que lire la feuille, ou ne travaille que les
-   questions sans `apres`, ne télécharge jamais Pyodide. Le chargement n’est
+   questions sans `question_check`, ne télécharge jamais Pyodide. Le chargement n’est
    pas lancé à l’apparition de la question à l’écran : il le serait aussi
    pour une question seulement regardée, alors que l’élève qui commence à
    répondre laisse de toute façon à Pyodide le temps de se charger.
@@ -413,14 +435,14 @@ sans `apres` : la comparaison y est sans ambiguïté.
 5. Si l’élève clique « Vérifier ma réponse » avant que Python soit prêt, la
    vérification attend la fin du chargement, avec un indicateur dans le bouton.
 6. **Calcul trop long.** Python tourne dans un Web Worker : la page garde la
-   main pendant ses calculs. L’exécution de `apres` par « Vérifier » est
+   main pendant ses calculs. L’exécution de `question_check` par « Vérifier » est
    limitée à **15 s**, comptées à partir du début réel du calcul (pas pendant
    une attente derrière le chargement d’une autre question). Au-delà, le Worker
    est arrêté et un Worker neuf le remplace (≈ 1,5 s, fichiers en cache) ; la
    question affiche « La correction a pris trop de temps : votre réponse est
    peut-être trop complexe. Modifiez-la et vérifiez de nouveau. », et ses champs
    restent modifiables. Toutes les sessions sont perdues : chaque question qui
-   a un `apres` se prépare de nouveau (Python, puis `avant` avec la graine) à
+   a un `question_check` se prépare de nouveau (Python, puis `question_setup` avec la graine) à
    sa prochaine vérification, sans message d’erreur pour celles qui se
    préparaient pendant l’arrêt. Le chargement de Pyodide et des paquets n’est
    pas limité : il dépend de la connexion de l’élève.
@@ -435,17 +457,18 @@ sans `apres` : la comparaison y est sans ambiguïté.
 | Solution affichée | Nouvel énoncé |
 
 - **Vérifier ma réponse** : les saisies sont transmises à Python (y compris
-  celles des champs déjà verts), `apres` est exécuté, puis chaque champ ouvert
+  celles des champs déjà verts), `question_check` est exécuté, puis chaque champ ouvert
   se colore et le retour s’affiche.
 - **Corriger ma réponse** : retour à la saisie sur le même tirage. Les champs
   justes restent verts et figés ; les champs faux sont rouverts avec la saisie
   de l’élève.
 - **Solution** : tous les champs, y compris ceux déjà justes, sont remplis avec
-  leur solution et passent au vert (ou « ∗ » neutre pour une valeur libre). Si le tirage a une
-  `explication_solution`, elle remplace le retour dans son emplacement, avec la
-  même animation et une couleur neutre (bleu marine de la charte) ; sinon
-  l’emplacement est vidé. Le texte suit la règle du retour (§ 2.2) ; ses
-  formules sont composées par MathJax.
+  leur solution et passent au vert (ou « ∗ » neutre pour une valeur libre). Si la
+  question a un `question_solution_explanation`, il est rendu avec les valeurs
+  du tirage et remplace le retour dans son emplacement, avec la même animation
+  et une couleur neutre (bleu marine de la charte) ; sinon l’emplacement est
+  vidé. C’est du HTML de l’auteur, comme l’énoncé ; ses formules sont composées
+  par MathJax.
 - **Nouvel énoncé** : un autre tirage (différent du tirage courant si possible)
   remplace l’énoncé instantanément ; la session Python correspondante est
   recalculée en arrière-plan.
@@ -578,7 +601,7 @@ un sous-projet distinct, traité plus tard.
   (chaque tirage exécuté, ses solutions converties, saisies comme par un élève
   et jugées justes) passe par lui et par le vrai Pyodide, dans
   `tests/python-tests.html` : 20 tirages par question par défaut,
-  `?tirages=200` pour un balayage complet, plus lent (quelques minutes). Un
+  `?draws=200` pour un balayage complet, plus lent (quelques minutes). Un
   balayage rapide hors du navigateur demandera Node.js, plus tard.
 
 ## 9. Méthode de travail
@@ -597,31 +620,31 @@ un sous-projet distinct, traité plus tard.
 ## 10. Questions à choix
 
 Les questions à choix unique ou multiple suivent le modèle des autres champs :
-les choix et la solution sont calculés par `avant`, la correction est écrite
-dans `apres`. Le compilateur n’analyse pas le LaTeX d’AMC : la conversion d’une
+les choix et la solution sont calculés par `question_setup`, la correction est écrite
+dans `question_check`. Le compilateur n’analyse pas le LaTeX d’AMC : la conversion d’une
 question AMC en fichier `.pwq` est confiée à un LLM, guidé par `PROMPT.md`
 (§ 10.8).
 
 ### 10.1 Balises
 
 ```
-{% input_radio 'reponse' choices=choix solution=bonne %}
-{% input_checkbox 'reponses' choices=choix solution=bonnes columns=2 fixed_last=1 bareme='b=1,m=-0.5' %}
+{% input_radio 'answer' choices=choices solution=correct %}
+{% input_checkbox 'answers' choices=choices solution=correct columns=2 fixed_last=1 scoring='b=1,m=-0.5' %}
 ```
 
 | Attribut | Statut | Rôle |
 |---|---|---|
-| `choices` | obligatoire | variable de `avant` : liste des choix, dans l’ordre de l’auteur |
+| `choices` | obligatoire | variable de `question_setup` : liste des choix, dans l’ordre de l’auteur |
 | `solution` | obligatoire | `input_radio` : indice du bon choix ; `input_checkbox` : liste des indices des bons choix, vide si aucun choix n’est bon |
 | `columns` | facultatif | nombre de colonnes sur grand écran, de 1 (par défaut) à 6 |
 | `fixed_last` | facultatif | nombre de derniers choix qui restent à la fin, non mélangés (par défaut 0) |
-| `bareme` | facultatif | barème à la manière d’AMC (§ 10.5) |
+| `scoring` | facultatif | barème à la manière d’AMC (§ 10.5) |
 
 Les indices commencent à 0, dans l’ordre de la liste `choices`.
 
 Un choix est un texte (formules TeX admises), échappé comme une valeur
 `{{variable}}`, ou un objet SymPy, affiché comme une formule. L’énoncé de la
-question s’écrit dans `enonce`, avant la balise, comme pour les autres champs.
+question s’écrit dans `question_statement`, avant la balise, comme pour les autres champs.
 
 Aucun choix n’est ajouté automatiquement. Le concepteur qui veut un choix
 « Aucune de ces réponses » l’écrit lui-même en dernier, avec `fixed_last=1` ;
@@ -635,20 +658,20 @@ c’est un choix comme les autres, qui n’exclut pas les autres cases.
   la fin, dans leur ordre.
 - Les textes des choix font partie des valeurs affichées : le navigateur les
   recalcule et les compare comme le `context` (§ 5.1), quand la question a
-  un `apres`.
+  un `question_check`.
 - Deux tirages qui ne diffèrent que par l’ordre des choix restent distincts :
   « Nouvel énoncé » mélange alors les choix d’une question sans aléatoire.
 
 ### 10.3 Correction
 
-- `apres` reçoit sous le nom du champ l’indice choisi (`input_radio`) ou la
+- `question_check` reçoit sous le nom du champ l’indice choisi (`input_radio`) ou la
   liste croissante des indices cochés (`input_checkbox`, `[]` si rien n’est
   coché), dans l’ordre de l’auteur : le mélange est invisible pour lui.
-- `apres` décide de la réussite par `ok_answer['nom']`, comme pour les autres
+- `question_check` décide de la réussite par `ok_answer['nom']`, comme pour les autres
   champs. Un choix multiple est juste en tout ou rien.
-- `apres` est facultatif (§ 2.6) : sans lui, la saisie est comparée à la
+- `question_check` est facultatif (§ 2.6) : sans lui, la saisie est comparée à la
   solution, sans Python. On ne l’écrit que pour des retours ciblés.
-- `explication_solution` joue le rôle de `\explain` d’AMC.
+- `question_solution_explanation` joue le rôle de `\explain` d’AMC.
 
 ### 10.4 Cycle de vie
 
@@ -671,7 +694,7 @@ c’est un choix comme les autres, qui n’exclut pas les autres cases.
 ### 10.5 Barème et note
 
 Il n’y a pas de barème par défaut (pas d’équivalent de `\baremeDefautS` ou
-`\baremeDefautM`) : sans attribut `bareme`, aucune note n’est affichée. Le
+`\baremeDefautM`) : sans attribut `scoring`, aucune note n’est affichée. Le
 barème reprend la syntaxe et le sens des directives d’AMC
 ([documentation](https://www.auto-multiple-choice.net/fr/doc/scoring/)). Une
 directive absente d’un barème donné prend la valeur indiquée :
@@ -743,10 +766,10 @@ En plus du § 2.4, le compilateur refuse la question si, pour l’un des tirages
   d’AMC → un dernier choix écrit explicitement, avec `fixed_last`, qui fait
   partie de la solution quand aucun autre choix n’est bon ;
 - `\lastchoices` → `fixed_last`, `reponseshoriz` → `columns`, `\explain` →
-  `explication_solution`, `\bareme{…}` → `bareme='…'` ; un barème par défaut
+  `question_solution_explanation`, `\bareme{…}` → `scoring='…'` ; un barème par défaut
   (`\baremeDefautS`, `\baremeDefautM`) est recopié dans chaque question
   concernée ;
-- calculs (`\FPeval`, macros) → Python dans `avant` ;
+- calculs (`\FPeval`, macros) → Python dans `question_setup` ;
 - transposition du texte (`\textbf` → `<b>`, `\og…\fg` → « … », formules
   conservées) ;
 - une question AMC par fichier `.pwq` ;
@@ -860,10 +883,10 @@ Une page `guide/` (« Créer »), en sections :
   « Voir » (le fichier déplié dans un cadre, comme le prompt) : un QCM sans
   Python (`guide/modeles/qcm.pwq`) et une question à données aléatoires et
   réponse calculée (`guide/modeles/calcul.pwq`).
-- **Structure d’un fichier** : tableau des champs, puis `avant`, `enonce` et
-  `apres` ; pas d’exemple recopié, les modèles se déplient juste au-dessus.
+- **Structure d’un fichier** : tableau des champs, puis `question_setup`, `question_statement` et
+  `question_check` ; pas d’exemple recopié, les modèles se déplient juste au-dessus.
 - **Les champs de réponse** : syntaxe commune, puis un élément dépliable par
-  type de champ, le barème et `LIBRE`.
+  type de champ, le barème et `ANY`.
 - **Compiler et publier**, **Bon à savoir** (entraînement seulement, poids de
   Python, renvoi à `PROMPT.md`, référence complète du format).
 - Les modèles sont des questions vérifiées par les tests, comme celles de la
@@ -964,7 +987,7 @@ remplaçait par l’ordre de la liste.
 - **Glisser-déposer** (balises PyWims `input_drag` / `input_drop`). Chantier
   ultérieur.
 - **Figures interactives** avec GeoGebra et/ou JSXGraph. Chantier ultérieur.
-- **Outils SymPy pour `apres`** (comparer une expression saisie en une ligne),
+- **Outils SymPy pour `question_check`** (comparer une expression saisie en une ligne),
   et une seule façon de lire les saisies : `py_wims` passe par `sympify`, sans
   le filtre de `math_expression`, et n’évalue pas la saisie.
 - **Tests hors du navigateur** (Node.js) et intégration continue sur GitHub,

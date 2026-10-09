@@ -98,7 +98,7 @@
     <div class="pw-q-head">
       <h2 class="pw-q-title" data-role="title"></h2>
       <!-- Barre d’outils : les boutons gardent leur place ; un bouton absent reste invisible. -->
-      <div class="validation-enonce pw-actions">
+      <div class="validation-statement pw-actions">
         <button class="pw-act is-primary" data-role="check" type="button" disabled data-action="check" aria-label="Vérifier ma réponse">
           <svg class="pw-icon-check" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg>
           <svg class="pw-icon-fix" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>
@@ -115,7 +115,7 @@
         </button>
       </div>
     </div>
-    <div class="form-enonce" data-role="prompt"></div>
+    <div class="form-statement" data-role="prompt"></div>
     <div class="pw-status" data-role="status" role="status" aria-live="polite" hidden></div>
     <!-- Emplacement du retour : colonne de droite sur grand écran, sous l’énoncé sur téléphone. -->
     <div class="pw-q-slot" data-role="slot">
@@ -126,14 +126,14 @@
   </template>
   <!-- La grammaire des balises précède les widgets, qui utilisent son échappement. -->
   <script>@@TEMPLATE@@</script>
-  <!-- Correction par défaut des questions sans « apres », sans Python. -->
+  <!-- Correction par défaut des questions sans « question_check », sans Python. -->
   <script>@@CORRECTION@@</script>
   <script>@@WIDGETS@@</script>
   <!-- Module Python « pywims » (runtime/pywims.py), lu par le runtime Python : le type text/x-python
-       empêche le navigateur de l’exécuter. Vide si aucune question n’a d’« apres ». -->
+       empêche le navigateur de l’exécuter. Vide si aucune question n’a d’« question_check ». -->
   <script type="text/x-python" id="pywims-module">@@PYWIMS@@</script>
   <!-- Script du Worker de Python (runtime/python-worker.js), dont python.js fait le script du Worker :
-       le type text/x-worker empêche le navigateur de l’exécuter dans la page. Vide sans « apres ». -->
+       le type text/x-worker empêche le navigateur de l’exécuter dans la page. Vide sans « question_check ». -->
   <script type="text/x-worker" id="pywims-worker">@@PYTHON_WORKER@@</script>
   <script>@@PYTHON_RUNTIME@@</script>
   <!-- Outils sur les champs, la classe des questions, puis la feuille, qui crée les questions. -->

@@ -380,7 +380,7 @@
 
   // Nom d’une question dans la liste : son titre, ou le nom du fichier s’il est illisible.
   function questionLabel(question) {
-    return question.fields?.title || question.path.split("/").pop();
+    return question.fields?.question_title || question.path.split("/").pop();
   }
 
   // Filtre et trie les questions, puis reconstruit leur liste accessible.
@@ -390,7 +390,7 @@
     rankBadges.clear();
 
     const matches = questions.filter(question => {
-      const searchable = `${question.fields?.title || ""} ${question.fields?.keywords || ""} ${question.path}`.toLocaleLowerCase();
+      const searchable = `${question.fields?.question_title || ""} ${question.fields?.question_keywords || ""} ${question.path}`.toLocaleLowerCase();
       return searchable.includes(query);
     });
 
@@ -444,7 +444,7 @@
       title.append(rank, questionLabel(question));
       const kinds = document.createElement("span");
       kinds.className = "question-fields";
-      kinds.textContent = question.error ? "fichier illisible" : fieldKindsLabel(question.fields.enonce);
+      kinds.textContent = question.error ? "fichier illisible" : fieldKindsLabel(question.fields.question_statement);
       // Le chemin reste accessible au survol : deux questions peuvent porter le même titre.
       button.title = question.path;
       button.append(title, kinds);
@@ -586,7 +586,7 @@
     }
   }
 
-  // Fichiers dont Python a besoin pour calculer des tirages, qu’une question ait un « apres » ou non.
+  // Fichiers dont Python a besoin pour calculer des tirages, qu’une question ait un « question_check » ou non.
   const pythonResources = ["pywims", "pythonWorker"];
 
   // Lit les fichiers du projet à côté de cette page (« ../ » depuis compiler/). « no-cache » les fait
@@ -627,7 +627,7 @@
   // Assemble la feuille avec les fichiers du projet lus au début de la compilation : une question
   // seule si le titre est absent, une activité sinon.
   // Seuls les fichiers dont ces questions ont besoin sont intégrés : la compilation lit aussi le
-  // module pywims et le script du Worker pour calculer les tirages, mais une feuille sans « apres »
+  // module pywims et le script du Worker pour calculer les tirages, mais une feuille sans « question_check »
   // ne charge jamais Python et n’a pas à les contenir.
   function compileSheet(questions, resources, activityTitle = null) {
     const needed = Object.fromEntries(
@@ -676,12 +676,12 @@
       const compiled = [];
       for (const [index, question] of selected.entries()) {
         const label = selected.length > 1 ? `question ${index + 1}/${selected.length}, ` : "";
-        showMessage(messages, `Chargement de Python et calcul des tirages (${label}« ${question.fields.title} »)…`);
-        // Les tirages valident la question en exécutant « avant », puis sont intégrés au fichier.
+        showMessage(messages, `Chargement de Python et calcul des tirages (${label}« ${question.fields.question_title} »)…`);
+        // Les tirages valident la question en exécutant « question_setup », puis sont intégrés au fichier.
         const draws = await computeDraws(question.fields, {
           onProgress: (done, total) => showMessage(
             messages,
-            `Calcul des tirages (${label}« ${question.fields.title} ») : ${done}/${total}…`
+            `Calcul des tirages (${label}« ${question.fields.question_title} ») : ${done}/${total}…`
           )
         }).catch(error => {
           throw new Error(`${question.path} : ${error.message}`);
@@ -690,7 +690,7 @@
       }
       const html = content => new Blob([content], { type: "text/html;charset=utf-8" });
       if (compiled.length === 1) {
-        downloadBlob(html(compileSheet(compiled, resources)), createQuestionFilename(compiled[0].fields.title));
+        downloadBlob(html(compileSheet(compiled, resources)), createQuestionFilename(compiled[0].fields.question_title));
       } else if (outputMode.value === "activity") {
         const title = activityTitleInput.value.trim();
         if (!title) {

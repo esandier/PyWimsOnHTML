@@ -1,17 +1,17 @@
 %
-% title
+% question_title
 %
 Modèle : réponse calculée
 %
-% keywords
+% question_keywords
 %
 modèle, calcul, aléatoire
 %
-% layout
+% question_layout
 %
 STD
 %
-% avant
+% question_setup
 %
 # Modèle de question à réponse calculée, avec des valeurs tirées au hasard. Copiez ce fichier
 # dans votre dossier de questions, puis remplacez le titre, les mots-clés, le calcul et l’énoncé.
@@ -23,15 +23,21 @@ from random import randint
 a = randint(2, 9)
 b = randint(11, 19)
 
-# La réponse attendue. Sans champ « apres », l’élève doit l’écrire exactement ainsi (un entier
-# ici) ; pour accepter plusieurs écritures (fractions équivalentes, expressions), voir PROMPT.md.
-produit = a * b
+# La réponse attendue. Sans champ « question_check », l’élève doit l’écrire exactement ainsi (un
+# entier ici) ; pour accepter plusieurs écritures (fractions équivalentes, expressions), voir PROMPT.md.
+product = a * b
 
-# Facultatif : une explication, affichée avec la solution. rf"…" : formule et valeurs de Python.
-explication_solution = rf"${a}\times {b} = {a}\times 10 + {a}\times {b - 10} = {10 * a} + {a * (b - 10)} = {produit}$."
+# Valeurs intermédiaires, affichées par l’explication de la solution (champ plus bas).
+units = b - 10
+tens_product = 10 * a
+units_product = a * units
 %
-% enonce
+% question_statement
 %
 Calculez ${{a}} \times {{b}}$ :
-{% input_text 'reponse' solution=produit style='width:4em' %}
+{% input_text 'answer' solution=product style='width:4em' %}
+%
+% question_solution_explanation
+%
+${{a}} \times {{b}} = {{a}} \times 10 + {{a}} \times {{units}} = {{tens_product}} + {{units_product}} = {{product}}$.
 %

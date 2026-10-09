@@ -289,14 +289,14 @@ body:not([data-scored]) .pw-help-score {
 }
 
 /* Zone d’énoncé et barre des actions de réponse. */
-.form-enonce {
+.form-statement {
   min-height: 3rem;
   margin-left: 2em;
   text-align: left;
   font-size: 12pt;
 }
 
-.validation-enonce {
+.validation-statement {
   margin-top: 1em;
   padding: 0.3em;
   background: var(--pw-action-background);
@@ -402,11 +402,11 @@ body:not([data-scored]) .pw-help-score {
   flex-direction: column;
 }
 
-[data-sheet="single"] .form-enonce {
+[data-sheet="single"] .form-statement {
   order: 1;
 }
 
-[data-sheet="single"] .validation-enonce {
+[data-sheet="single"] .validation-statement {
   order: 2;
 }
 
@@ -452,7 +452,7 @@ body:not([data-scored]) .pw-help-score {
   grid-template-columns: 2.25rem minmax(0, 1fr) minmax(14rem, 19rem);
   grid-template-areas:
     "badge head head"
-    "badge enonce feedback"
+    "badge question_statement feedback"
     ". status status";
   gap: 0.35rem 1rem;
   padding: 0.8rem 1rem;
@@ -512,7 +512,7 @@ body:not([data-scored]) .pw-help-score {
 }
 
 /* Dans la carte, la barre d’outils est une simple rangée de boutons, sans bandeau. */
-[data-sheet="activity"] .validation-enonce {
+[data-sheet="activity"] .validation-statement {
   flex: 0 0 auto;
   flex-wrap: nowrap;
   margin: 0;
@@ -521,8 +521,8 @@ body:not([data-scored]) .pw-help-score {
   background: none;
 }
 
-[data-sheet="activity"] .form-enonce {
-  grid-area: enonce;
+[data-sheet="activity"] .form-statement {
+  grid-area: question_statement;
   min-width: 0;
   margin: 0;
   line-height: 1.6;
@@ -561,7 +561,7 @@ body:not([data-scored]) .pw-help-score {
 @media (max-width: 820px) {
   [data-sheet="activity"] .pw-question {
     grid-template-columns: 2.25rem minmax(0, 1fr);
-    grid-template-areas: "badge head" "badge enonce" ". status" ". feedback";
+    grid-template-areas: "badge head" "badge question_statement" ". status" ". feedback";
   }
 
   [data-sheet="activity"] .pw-q-slot {
@@ -622,7 +622,7 @@ body:not([data-scored]) .pw-help-score {
     display: none;
   }
 
-  [data-sheet="single"] .form-enonce,
+  [data-sheet="single"] .form-statement,
   [data-sheet="single"] .pw-status,
   [data-sheet="single"] .pw-q-slot {
     margin-right: 0.75em;
@@ -1367,14 +1367,14 @@ body:not([data-scored]) .pw-help-score {
 }
 
 /* Zone d’énoncé et barre des actions de réponse. */
-.form-enonce {
+.form-statement {
   min-height: 3rem;
   margin-left: 2em;
   text-align: left;
   font-size: 12pt;
 }
 
-.validation-enonce {
+.validation-statement {
   margin-top: 1em;
   padding: 0.3em;
   background: var(--pw-action-background);
@@ -1480,11 +1480,11 @@ body:not([data-scored]) .pw-help-score {
   flex-direction: column;
 }
 
-[data-sheet="single"] .form-enonce {
+[data-sheet="single"] .form-statement {
   order: 1;
 }
 
-[data-sheet="single"] .validation-enonce {
+[data-sheet="single"] .validation-statement {
   order: 2;
 }
 
@@ -1530,7 +1530,7 @@ body:not([data-scored]) .pw-help-score {
   grid-template-columns: 2.25rem minmax(0, 1fr) minmax(14rem, 19rem);
   grid-template-areas:
     "badge head head"
-    "badge enonce feedback"
+    "badge question_statement feedback"
     ". status status";
   gap: 0.35rem 1rem;
   padding: 0.8rem 1rem;
@@ -1590,7 +1590,7 @@ body:not([data-scored]) .pw-help-score {
 }
 
 /* Dans la carte, la barre d’outils est une simple rangée de boutons, sans bandeau. */
-[data-sheet="activity"] .validation-enonce {
+[data-sheet="activity"] .validation-statement {
   flex: 0 0 auto;
   flex-wrap: nowrap;
   margin: 0;
@@ -1599,8 +1599,8 @@ body:not([data-scored]) .pw-help-score {
   background: none;
 }
 
-[data-sheet="activity"] .form-enonce {
-  grid-area: enonce;
+[data-sheet="activity"] .form-statement {
+  grid-area: question_statement;
   min-width: 0;
   margin: 0;
   line-height: 1.6;
@@ -1639,7 +1639,7 @@ body:not([data-scored]) .pw-help-score {
 @media (max-width: 820px) {
   [data-sheet="activity"] .pw-question {
     grid-template-columns: 2.25rem minmax(0, 1fr);
-    grid-template-areas: "badge head" "badge enonce" ". status" ". feedback";
+    grid-template-areas: "badge head" "badge question_statement" ". status" ". feedback";
   }
 
   [data-sheet="activity"] .pw-q-slot {
@@ -1700,7 +1700,7 @@ body:not([data-scored]) .pw-help-score {
     display: none;
   }
 
-  [data-sheet="single"] .form-enonce,
+  [data-sheet="single"] .form-statement,
   [data-sheet="single"] .pw-status,
   [data-sheet="single"] .pw-q-slot {
     margin-right: 0.75em;
@@ -2179,7 +2179,7 @@ mjx-assistive-mml {
 </head>
 <!-- data-sheet : « single » pour une question seule, « activity » pour une feuille de plusieurs questions. -->
 <!-- data-sheet-id : empreinte d’une activité, clé de la mémoire de sa progression (absente pour une question seule). -->
-<body data-sheet="activity" data-sheet-id="1nf8zpdvvev">
+<body data-sheet="activity" data-sheet-id="7q1iaey0yy">
   <!-- En-tête : titre, progression (activité seulement), aide et logo. Il reste visible au défilement d’une activité. -->
   <div class="pw-top">
     <!-- Le logo de marque est décoratif ; son image et son style sont définis dans brand.css. -->
@@ -2214,86 +2214,83 @@ mjx-assistive-mml {
   <main class="pw-sheet">
 <section class="pw-question" id="q1" data-python="true">
 <div class="pw-question-data" hidden>
-<pre data-field="title">Reconnaître des nombres premiers</pre>
-<pre data-field="keywords">arithmétique, nombres premiers, QCM</pre>
-<pre data-field="layout">STD</pre>
-<pre data-field="avant">from random import sample
+<pre data-field="question_title">Reconnaître des nombres premiers</pre>
+<pre data-field="question_keywords">arithmétique, nombres premiers, QCM</pre>
+<pre data-field="question_layout">STD</pre>
+<pre data-field="question_setup">from random import sample
 from sympy import isprime
 
 # Quatre entiers distincts ; « Aucun de ces nombres » reste le dernier choix (fixed_last=1).
-nombres = sample(range(2, 50), 4)
-choix = [f&quot;${n}$&quot; for n in nombres] + [&quot;Aucun de ces nombres&quot;]
-bonnes = [i for i, n in enumerate(nombres) if isprime(n)]
-if not bonnes:
-    bonnes = [4]
-explication_solution = &quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;</pre>
-<pre data-field="enonce">Parmi les nombres suivants, lesquels sont &lt;b&gt;premiers&lt;/b&gt; ?
-{% input_checkbox &#39;reponse&#39; choices=choix solution=bonnes columns=5 fixed_last=1 bareme=&#39;b=1,m=-0.5,p=0&#39; %}</pre>
-<pre data-field="apres"># « apres » ne sert qu’aux retours ciblés : sans lui, la correction par défaut jugerait déjà la
-# réponse en tout ou rien. La saisie et « bonnes » sont des listes croissantes d’indices.
-ok_answer[&#39;reponse&#39;] = reponse == bonnes
-if ok_answer[&#39;reponse&#39;]:
+numbers = sample(range(2, 50), 4)
+choices = [f&quot;${n}$&quot; for n in numbers] + [&quot;Aucun de ces nombres&quot;]
+correct = [i for i, n in enumerate(numbers) if isprime(n)]
+if not correct:
+    correct = [4]</pre>
+<pre data-field="question_statement">Parmi les nombres suivants, lesquels sont &lt;b&gt;premiers&lt;/b&gt; ?
+{% input_checkbox &#39;answer&#39; choices=choices solution=correct columns=5 fixed_last=1 scoring=&#39;b=1,m=-0.5,p=0&#39; %}</pre>
+<pre data-field="question_solution_explanation">Un nombre premier a exactement deux diviseurs : $1$ et lui-même.</pre>
+<pre data-field="question_check"># « question_check » ne sert qu’aux retours ciblés : sans lui, la correction par défaut jugerait déjà la
+# réponse en tout ou rien. La saisie et « correct » sont des listes croissantes d’indices.
+ok_answer[&#39;answer&#39;] = answer == correct
+if ok_answer[&#39;answer&#39;]:
     feedback = &#39;Bravo, c’est exact !&#39;
-elif 4 in reponse and len(reponse) &gt; 1:
+elif 4 in answer and len(answer) &gt; 1:
     feedback = &#39;« Aucun de ces nombres » contredit les autres cases cochées.&#39;
-elif any(i &lt; 4 and not isprime(nombres[i]) for i in reponse):
+elif any(i &lt; 4 and not isprime(numbers[i]) for i in answer):
     feedback = &#39;Au moins un nombre coché a un diviseur autre que $1$ et lui-même.&#39;
 else:
     feedback = &#39;Il manque au moins un nombre premier.&#39;</pre>
-<pre data-draws>[{&quot;seed&quot;:0,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;reponse&quot;:[4]},&quot;choices&quot;:{&quot;reponse&quot;:[&quot;$26$&quot;,&quot;$28$&quot;,&quot;$4$&quot;,&quot;$18$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;reponse&quot;:[0,3,1,2,4]},&quot;explication&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;},{&quot;seed&quot;:1,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;reponse&quot;:[4]},&quot;choices&quot;:{&quot;reponse&quot;:[&quot;$10$&quot;,&quot;$38$&quot;,&quot;$6$&quot;,&quot;$18$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;reponse&quot;:[3,2,0,1,4]},&quot;explication&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;},{&quot;seed&quot;:2,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;reponse&quot;:[0,1]},&quot;choices&quot;:{&quot;reponse&quot;:[&quot;$5$&quot;,&quot;$7$&quot;,&quot;$25$&quot;,&quot;$12$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;reponse&quot;:[3,2,1,0,4]},&quot;explication&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;},{&quot;seed&quot;:3,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;reponse&quot;:[0]},&quot;choices&quot;:{&quot;reponse&quot;:[&quot;$17$&quot;,&quot;$39$&quot;,&quot;$36$&quot;,&quot;$10$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;reponse&quot;:[2,3,0,1,4]},&quot;explication&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;},{&quot;seed&quot;:4,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;reponse&quot;:[0]},&quot;choices&quot;:{&quot;reponse&quot;:[&quot;$17$&quot;,&quot;$21$&quot;,&quot;$8$&quot;,&quot;$48$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;reponse&quot;:[0,1,2,3,4]},&quot;explication&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;},{&quot;seed&quot;:5,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;reponse&quot;:[0]},&quot;choices&quot;:{&quot;reponse&quot;:[&quot;$41$&quot;,&quot;$18$&quot;,&quot;$49$&quot;,&quot;$24$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;reponse&quot;:[3,2,1,0,4]},&quot;explication&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;},{&quot;seed&quot;:6,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;reponse&quot;:[1]},&quot;choices&quot;:{&quot;reponse&quot;:[&quot;$38$&quot;,&quot;$7$&quot;,&quot;$33$&quot;,&quot;$18$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;reponse&quot;:[3,0,1,2,4]},&quot;explication&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;},{&quot;seed&quot;:7,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;reponse&quot;:[1,3]},&quot;choices&quot;:{&quot;reponse&quot;:[&quot;$22$&quot;,&quot;$11$&quot;,&quot;$27$&quot;,&quot;$43$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;reponse&quot;:[1,3,0,2,4]},&quot;explication&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;},{&quot;seed&quot;:8,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;reponse&quot;:[4]},&quot;choices&quot;:{&quot;reponse&quot;:[&quot;$16$&quot;,&quot;$25$&quot;,&quot;$26$&quot;,&quot;$10$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;reponse&quot;:[1,0,2,3,4]},&quot;explication&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;},{&quot;seed&quot;:9,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;reponse&quot;:[0,1,3]},&quot;choices&quot;:{&quot;reponse&quot;:[&quot;$31$&quot;,&quot;$41$&quot;,&quot;$25$&quot;,&quot;$19$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;reponse&quot;:[2,3,0,1,4]},&quot;explication&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;},{&quot;seed&quot;:10,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;reponse&quot;:[2]},&quot;choices&quot;:{&quot;reponse&quot;:[&quot;$38$&quot;,&quot;$4$&quot;,&quot;$29$&quot;,&quot;$32$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;reponse&quot;:[0,2,1,3,4]},&quot;explication&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;},{&quot;seed&quot;:11,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;reponse&quot;:[1,2]},&quot;choices&quot;:{&quot;reponse&quot;:[&quot;$30$&quot;,&quot;$37$&quot;,&quot;$31$&quot;,&quot;$34$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;reponse&quot;:[1,3,0,2,4]},&quot;explication&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;},{&quot;seed&quot;:12,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;reponse&quot;:[1]},&quot;choices&quot;:{&quot;reponse&quot;:[&quot;$32$&quot;,&quot;$19$&quot;,&quot;$44$&quot;,&quot;$35$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;reponse&quot;:[0,1,2,3,4]},&quot;explication&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;},{&quot;seed&quot;:13,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;reponse&quot;:[3]},&quot;choices&quot;:{&quot;reponse&quot;:[&quot;$18$&quot;,&quot;$20$&quot;,&quot;$45$&quot;,&quot;$13$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;reponse&quot;:[2,0,1,3,4]},&quot;explication&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;},{&quot;seed&quot;:14,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;reponse&quot;:[1,3]},&quot;choices&quot;:{&quot;reponse&quot;:[&quot;$8$&quot;,&quot;$41$&quot;,&quot;$46$&quot;,&quot;$43$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;reponse&quot;:[1,0,3,2,4]},&quot;explication&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;},{&quot;seed&quot;:15,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;reponse&quot;:[1]},&quot;choices&quot;:{&quot;reponse&quot;:[&quot;$15$&quot;,&quot;$2$&quot;,&quot;$35$&quot;,&quot;$49$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;reponse&quot;:[0,1,3,2,4]},&quot;explication&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;},{&quot;seed&quot;:16,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;reponse&quot;:[4]},&quot;choices&quot;:{&quot;reponse&quot;:[&quot;$25$&quot;,&quot;$32$&quot;,&quot;$20$&quot;,&quot;$28$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;reponse&quot;:[3,0,1,2,4]},&quot;explication&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;},{&quot;seed&quot;:17,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;reponse&quot;:[4]},&quot;choices&quot;:{&quot;reponse&quot;:[&quot;$35$&quot;,&quot;$28$&quot;,&quot;$21$&quot;,&quot;$25$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;reponse&quot;:[1,2,3,0,4]},&quot;explication&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;},{&quot;seed&quot;:18,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;reponse&quot;:[0]},&quot;choices&quot;:{&quot;reponse&quot;:[&quot;$13$&quot;,&quot;$9$&quot;,&quot;$44$&quot;,&quot;$30$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;reponse&quot;:[3,1,0,2,4]},&quot;explication&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;},{&quot;seed&quot;:19,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;reponse&quot;:[4]},&quot;choices&quot;:{&quot;reponse&quot;:[&quot;$45$&quot;,&quot;$4$&quot;,&quot;$35$&quot;,&quot;$9$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;reponse&quot;:[0,2,1,3,4]},&quot;explication&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;}]</pre>
+<pre data-draws>[{&quot;seed&quot;:0,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[4]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$26$&quot;,&quot;$28$&quot;,&quot;$4$&quot;,&quot;$18$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[1,3,2,0,4]}},{&quot;seed&quot;:1,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[4]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$10$&quot;,&quot;$38$&quot;,&quot;$6$&quot;,&quot;$18$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[1,0,2,3,4]}},{&quot;seed&quot;:2,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[0,1]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$5$&quot;,&quot;$7$&quot;,&quot;$25$&quot;,&quot;$12$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[1,3,0,2,4]}},{&quot;seed&quot;:3,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[0]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$17$&quot;,&quot;$39$&quot;,&quot;$36$&quot;,&quot;$10$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[0,3,1,2,4]}},{&quot;seed&quot;:4,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[0]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$17$&quot;,&quot;$21$&quot;,&quot;$8$&quot;,&quot;$48$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[0,1,2,3,4]}},{&quot;seed&quot;:5,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[0]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$41$&quot;,&quot;$18$&quot;,&quot;$49$&quot;,&quot;$24$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[3,0,2,1,4]}},{&quot;seed&quot;:6,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[1]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$38$&quot;,&quot;$7$&quot;,&quot;$33$&quot;,&quot;$18$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[0,3,2,1,4]}},{&quot;seed&quot;:7,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[1,3]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$22$&quot;,&quot;$11$&quot;,&quot;$27$&quot;,&quot;$43$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[1,3,2,0,4]}},{&quot;seed&quot;:8,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[4]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$16$&quot;,&quot;$25$&quot;,&quot;$26$&quot;,&quot;$10$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[3,1,0,2,4]}},{&quot;seed&quot;:9,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[0,1,3]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$31$&quot;,&quot;$41$&quot;,&quot;$25$&quot;,&quot;$19$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[2,1,3,0,4]}},{&quot;seed&quot;:10,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[2]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$38$&quot;,&quot;$4$&quot;,&quot;$29$&quot;,&quot;$32$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[1,2,3,0,4]}},{&quot;seed&quot;:11,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[1,2]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$30$&quot;,&quot;$37$&quot;,&quot;$31$&quot;,&quot;$34$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[1,3,2,0,4]}},{&quot;seed&quot;:12,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[1]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$32$&quot;,&quot;$19$&quot;,&quot;$44$&quot;,&quot;$35$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[3,1,0,2,4]}},{&quot;seed&quot;:13,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[3]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$18$&quot;,&quot;$20$&quot;,&quot;$45$&quot;,&quot;$13$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[3,1,0,2,4]}},{&quot;seed&quot;:14,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[1,3]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$8$&quot;,&quot;$41$&quot;,&quot;$46$&quot;,&quot;$43$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[2,1,3,0,4]}},{&quot;seed&quot;:15,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[1]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$15$&quot;,&quot;$2$&quot;,&quot;$35$&quot;,&quot;$49$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[0,1,2,3,4]}},{&quot;seed&quot;:16,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[4]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$25$&quot;,&quot;$32$&quot;,&quot;$20$&quot;,&quot;$28$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[1,0,3,2,4]}},{&quot;seed&quot;:17,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[4]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$35$&quot;,&quot;$28$&quot;,&quot;$21$&quot;,&quot;$25$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[2,3,0,1,4]}},{&quot;seed&quot;:18,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[0]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$13$&quot;,&quot;$9$&quot;,&quot;$44$&quot;,&quot;$30$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[3,2,1,0,4]}},{&quot;seed&quot;:19,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[4]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$45$&quot;,&quot;$4$&quot;,&quot;$35$&quot;,&quot;$9$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[2,1,3,0,4]}}]</pre>
 </div>
 </section>
 <section class="pw-question" id="q2" data-python="true">
 <div class="pw-question-data" hidden>
-<pre data-field="title">Addition de fractions</pre>
-<pre data-field="keywords">fractions, addition, dénominateur commun, fraction irréductible</pre>
-<pre data-field="layout">STD</pre>
-<pre data-field="avant">from random import choice
+<pre data-field="question_title">Addition de fractions</pre>
+<pre data-field="question_keywords">fractions, addition, dénominateur commun, fraction irréductible</pre>
+<pre data-field="question_layout">STD</pre>
+<pre data-field="question_setup">from random import choice
 from sympy import *
 from pywims import py_wims
 
 # Choisit deux fractions irréductibles, numérateurs et dénominateurs entre 2 et 5.
-fractions_irreductibles = [(a, b) for a in range(2, 6) for b in range(2, 6) if gcd(a, b) == 1]
-n, m = choice(fractions_irreductibles)
-p, q = choice(fractions_irreductibles)
-somme = Rational(n, m) + Rational(p, q)
+irreducible_fractions = [(a, b) for a in range(2, 6) for b in range(2, 6) if gcd(a, b) == 1]
+n, m = choice(irreducible_fractions)
+p, q = choice(irreducible_fractions)
+total = Rational(n, m) + Rational(p, q)
 
-# Détaille la réduction au même dénominateur pour expliquer la solution.
-def fraction_tex(numerateur, denominateur):
-    return r&quot;\frac{%d}{%d}&quot; % (numerateur, denominateur)
-
-commun = ilcm(m, q)
-total = n * (commun // m) + p * (commun // q)
-explication_solution = (
-    &quot;On réduit au même dénominateur $&quot; + str(commun) + r&quot;$ : $\displaystyle &quot;
-    + fraction_tex(n, m) + &quot; + &quot; + fraction_tex(p, q) + &quot; = &quot;
-    + fraction_tex(n * (commun // m), commun) + &quot; + &quot; + fraction_tex(p * (commun // q), commun)
-    + &quot; = &quot; + fraction_tex(total, commun)
-    + (&quot;&quot; if somme.q == commun else &quot; = &quot; + latex(somme))
-    + &quot;$.&quot;
-)</pre>
-<pre data-field="enonce">Additionnez ces fractions et donnez le résultat sous forme d’une fraction
+# Réduction au même dénominateur, pour l’explication de la solution.
+common = ilcm(m, q)
+n_common = n * (common // m)
+p_common = p * (common // q)
+numerator_sum = n_common + p_common
+# Dernière égalité, seulement si la fraction obtenue se simplifie.
+simplified = &quot;&quot; if total.q == common else &quot; = &quot; + latex(total)</pre>
+<pre data-field="question_statement">Additionnez ces fractions et donnez le résultat sous forme d’une fraction
 irréductible, avec un dénominateur positif :
 &lt;br&gt;
-$\displaystyle \frac{ {{n}} }{ {{m}} } + \frac{ {{p}} }{ {{q}} } =$ {% input_text &#39;resultat&#39; solution=somme style=&#39;width:7em&#39; %}</pre>
-<pre data-field="apres"># Interprète la réponse, puis vérifie la valeur avant la forme irréductible.
-reponse = py_wims(resultat)
-ok_answer[&#39;resultat&#39;] = False
+$\displaystyle \frac{ {{n}} }{ {{m}} } + \frac{ {{p}} }{ {{q}} } =$ {% input_text &#39;result&#39; solution=total style=&#39;width:7em&#39; %}</pre>
+<pre data-field="question_solution_explanation">On réduit au même dénominateur ${{common}}$ :
+$\displaystyle \frac{ {{n}} }{ {{m}} } + \frac{ {{p}} }{ {{q}} }
+= \frac{ {{n_common}} }{ {{common}} } + \frac{ {{p_common}} }{ {{common}} }
+= \frac{ {{numerator_sum}} }{ {{common}} }{{simplified}}$.</pre>
+<pre data-field="question_check"># Interprète la réponse, puis vérifie la valeur avant la forme irréductible.
+answer = py_wims(result)
+ok_answer[&#39;result&#39;] = False
 
-if reponse is None:
+if answer is None:
     feedback = &quot;Saisissez une fraction d’entiers, par exemple 7/12.&quot;
 else:
-    numerateur, denominateur = fraction(reponse)
-    if not (numerateur.is_Integer and denominateur.is_Integer and denominateur != 0):
+    numerator, denominator = fraction(answer)
+    if not (numerator.is_Integer and denominator.is_Integer and denominator != 0):
         feedback = &quot;Saisissez une fraction d’entiers, par exemple 7/12.&quot;
-    elif simplify(reponse - somme) != 0:
+    elif simplify(answer - total) != 0:
         feedback = &quot;Ce n’est pas la bonne somme : réduisez d’abord les deux fractions au même dénominateur.&quot;
-    elif denominateur &lt; 0 or gcd(numerateur, denominateur) != 1:
+    elif denominator &lt; 0 or gcd(numerator, denominator) != 1:
         feedback = &quot;La valeur est juste, mais la fraction n’est pas irréductible avec un dénominateur positif : simplifiez-la.&quot;
     else:
-        ok_answer[&#39;resultat&#39;] = True
+        ok_answer[&#39;result&#39;] = True
         feedback = &quot;Bravo, c’est exact !&quot;</pre>
-<pre data-draws>[{&quot;seed&quot;:0,&quot;context&quot;:{&quot;n&quot;:&quot;4&quot;,&quot;m&quot;:&quot;5&quot;,&quot;p&quot;:&quot;4&quot;,&quot;q&quot;:&quot;5&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;resultat&quot;:&quot;8/5&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{},&quot;explication&quot;:&quot;On réduit au même dénominateur $5$ : $\\displaystyle \\frac{4}{5} + \\frac{4}{5} = \\frac{4}{5} + \\frac{4}{5} = \\frac{8}{5}$.&quot;},{&quot;seed&quot;:1,&quot;context&quot;:{&quot;n&quot;:&quot;3&quot;,&quot;m&quot;:&quot;2&quot;,&quot;p&quot;:&quot;5&quot;,&quot;q&quot;:&quot;4&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;resultat&quot;:&quot;11/4&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{},&quot;explication&quot;:&quot;On réduit au même dénominateur $4$ : $\\displaystyle \\frac{3}{2} + \\frac{5}{4} = \\frac{6}{4} + \\frac{5}{4} = \\frac{11}{4}$.&quot;},{&quot;seed&quot;:2,&quot;context&quot;:{&quot;n&quot;:&quot;2&quot;,&quot;m&quot;:&quot;3&quot;,&quot;p&quot;:&quot;2&quot;,&quot;q&quot;:&quot;5&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;resultat&quot;:&quot;16/15&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{},&quot;explication&quot;:&quot;On réduit au même dénominateur $15$ : $\\displaystyle \\frac{2}{3} + \\frac{2}{5} = \\frac{10}{15} + \\frac{6}{15} = \\frac{16}{15}$.&quot;},{&quot;seed&quot;:3,&quot;context&quot;:{&quot;n&quot;:&quot;3&quot;,&quot;m&quot;:&quot;4&quot;,&quot;p&quot;:&quot;5&quot;,&quot;q&quot;:&quot;4&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;resultat&quot;:&quot;2&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{},&quot;explication&quot;:&quot;On réduit au même dénominateur $4$ : $\\displaystyle \\frac{3}{4} + \\frac{5}{4} = \\frac{3}{4} + \\frac{5}{4} = \\frac{8}{4} = 2$.&quot;},{&quot;seed&quot;:4,&quot;context&quot;:{&quot;n&quot;:&quot;3&quot;,&quot;m&quot;:&quot;4&quot;,&quot;p&quot;:&quot;3&quot;,&quot;q&quot;:&quot;5&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;resultat&quot;:&quot;27/20&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{},&quot;explication&quot;:&quot;On réduit au même dénominateur $20$ : $\\displaystyle \\frac{3}{4} + \\frac{3}{5} = \\frac{15}{20} + \\frac{12}{20} = \\frac{27}{20}$.&quot;},{&quot;seed&quot;:5,&quot;context&quot;:{&quot;n&quot;:&quot;5&quot;,&quot;m&quot;:&quot;4&quot;,&quot;p&quot;:&quot;3&quot;,&quot;q&quot;:&quot;5&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;resultat&quot;:&quot;37/20&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{},&quot;explication&quot;:&quot;On réduit au même dénominateur $20$ : $\\displaystyle \\frac{5}{4} + \\frac{3}{5} = \\frac{25}{20} + \\frac{12}{20} = \\frac{37}{20}$.&quot;},{&quot;seed&quot;:6,&quot;context&quot;:{&quot;n&quot;:&quot;5&quot;,&quot;m&quot;:&quot;4&quot;,&quot;p&quot;:&quot;2&quot;,&quot;q&quot;:&quot;5&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;resultat&quot;:&quot;33/20&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{},&quot;explication&quot;:&quot;On réduit au même dénominateur $20$ : $\\displaystyle \\frac{5}{4} + \\frac{2}{5} = \\frac{25}{20} + \\frac{8}{20} = \\frac{33}{20}$.&quot;},{&quot;seed&quot;:7,&quot;context&quot;:{&quot;n&quot;:&quot;4&quot;,&quot;m&quot;:&quot;3&quot;,&quot;p&quot;:&quot;3&quot;,&quot;q&quot;:&quot;2&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;resultat&quot;:&quot;17/6&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{},&quot;explication&quot;:&quot;On réduit au même dénominateur $6$ : $\\displaystyle \\frac{4}{3} + \\frac{3}{2} = \\frac{8}{6} + \\frac{9}{6} = \\frac{17}{6}$.&quot;},{&quot;seed&quot;:8,&quot;context&quot;:{&quot;n&quot;:&quot;3&quot;,&quot;m&quot;:&quot;4&quot;,&quot;p&quot;:&quot;4&quot;,&quot;q&quot;:&quot;3&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;resultat&quot;:&quot;25/12&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{},&quot;explication&quot;:&quot;On réduit au même dénominateur $12$ : $\\displaystyle \\frac{3}{4} + \\frac{4}{3} = \\frac{9}{12} + \\frac{16}{12} = \\frac{25}{12}$.&quot;},{&quot;seed&quot;:9,&quot;context&quot;:{&quot;n&quot;:&quot;5&quot;,&quot;m&quot;:&quot;2&quot;,&quot;p&quot;:&quot;5&quot;,&quot;q&quot;:&quot;4&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;resultat&quot;:&quot;15/4&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{},&quot;explication&quot;:&quot;On réduit au même dénominateur $4$ : $\\displaystyle \\frac{5}{2} + \\frac{5}{4} = \\frac{10}{4} + \\frac{5}{4} = \\frac{15}{4}$.&quot;},{&quot;seed&quot;:10,&quot;context&quot;:{&quot;n&quot;:&quot;5&quot;,&quot;m&quot;:&quot;4&quot;,&quot;p&quot;:&quot;2&quot;,&quot;q&quot;:&quot;3&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;resultat&quot;:&quot;23/12&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{},&quot;explication&quot;:&quot;On réduit au même dénominateur $12$ : $\\displaystyle \\frac{5}{4} + \\frac{2}{3} = \\frac{15}{12} + \\frac{8}{12} = \\frac{23}{12}$.&quot;},{&quot;seed&quot;:11,&quot;context&quot;:{&quot;n&quot;:&quot;5&quot;,&quot;m&quot;:&quot;2&quot;,&quot;p&quot;:&quot;5&quot;,&quot;q&quot;:&quot;3&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;resultat&quot;:&quot;25/6&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{},&quot;explication&quot;:&quot;On réduit au même dénominateur $6$ : $\\displaystyle \\frac{5}{2} + \\frac{5}{3} = \\frac{15}{6} + \\frac{10}{6} = \\frac{25}{6}$.&quot;},{&quot;seed&quot;:12,&quot;context&quot;:{&quot;n&quot;:&quot;5&quot;,&quot;m&quot;:&quot;2&quot;,&quot;p&quot;:&quot;3&quot;,&quot;q&quot;:&quot;5&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;resultat&quot;:&quot;31/10&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{},&quot;explication&quot;:&quot;On réduit au même dénominateur $10$ : $\\displaystyle \\frac{5}{2} + \\frac{3}{5} = \\frac{25}{10} + \\frac{6}{10} = \\frac{31}{10}$.&quot;},{&quot;seed&quot;:13,&quot;context&quot;:{&quot;n&quot;:&quot;3&quot;,&quot;m&quot;:&quot;5&quot;,&quot;p&quot;:&quot;3&quot;,&quot;q&quot;:&quot;5&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;resultat&quot;:&quot;6/5&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{},&quot;explication&quot;:&quot;On réduit au même dénominateur $5$ : $\\displaystyle \\frac{3}{5} + \\frac{3}{5} = \\frac{3}{5} + \\frac{3}{5} = \\frac{6}{5}$.&quot;},{&quot;seed&quot;:14,&quot;context&quot;:{&quot;n&quot;:&quot;2&quot;,&quot;m&quot;:&quot;5&quot;,&quot;p&quot;:&quot;5&quot;,&quot;q&quot;:&quot;4&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;resultat&quot;:&quot;33/20&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{},&quot;explication&quot;:&quot;On réduit au même dénominateur $20$ : $\\displaystyle \\frac{2}{5} + \\frac{5}{4} = \\frac{8}{20} + \\frac{25}{20} = \\frac{33}{20}$.&quot;},{&quot;seed&quot;:15,&quot;context&quot;:{&quot;n&quot;:&quot;3&quot;,&quot;m&quot;:&quot;4&quot;,&quot;p&quot;:&quot;2&quot;,&quot;q&quot;:&quot;3&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;resultat&quot;:&quot;17/12&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{},&quot;explication&quot;:&quot;On réduit au même dénominateur $12$ : $\\displaystyle \\frac{3}{4} + \\frac{2}{3} = \\frac{9}{12} + \\frac{8}{12} = \\frac{17}{12}$.&quot;},{&quot;seed&quot;:16,&quot;context&quot;:{&quot;n&quot;:&quot;4&quot;,&quot;m&quot;:&quot;3&quot;,&quot;p&quot;:&quot;5&quot;,&quot;q&quot;:&quot;2&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;resultat&quot;:&quot;23/6&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{},&quot;explication&quot;:&quot;On réduit au même dénominateur $6$ : $\\displaystyle \\frac{4}{3} + \\frac{5}{2} = \\frac{8}{6} + \\frac{15}{6} = \\frac{23}{6}$.&quot;},{&quot;seed&quot;:17,&quot;context&quot;:{&quot;n&quot;:&quot;5&quot;,&quot;m&quot;:&quot;3&quot;,&quot;p&quot;:&quot;4&quot;,&quot;q&quot;:&quot;5&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;resultat&quot;:&quot;37/15&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{},&quot;explication&quot;:&quot;On réduit au même dénominateur $15$ : $\\displaystyle \\frac{5}{3} + \\frac{4}{5} = \\frac{25}{15} + \\frac{12}{15} = \\frac{37}{15}$.&quot;},{&quot;seed&quot;:18,&quot;context&quot;:{&quot;n&quot;:&quot;3&quot;,&quot;m&quot;:&quot;2&quot;,&quot;p&quot;:&quot;2&quot;,&quot;q&quot;:&quot;5&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;resultat&quot;:&quot;19/10&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{},&quot;explication&quot;:&quot;On réduit au même dénominateur $10$ : $\\displaystyle \\frac{3}{2} + \\frac{2}{5} = \\frac{15}{10} + \\frac{4}{10} = \\frac{19}{10}$.&quot;},{&quot;seed&quot;:19,&quot;context&quot;:{&quot;n&quot;:&quot;2&quot;,&quot;m&quot;:&quot;3&quot;,&quot;p&quot;:&quot;5&quot;,&quot;q&quot;:&quot;3&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;resultat&quot;:&quot;7/3&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{},&quot;explication&quot;:&quot;On réduit au même dénominateur $3$ : $\\displaystyle \\frac{2}{3} + \\frac{5}{3} = \\frac{2}{3} + \\frac{5}{3} = \\frac{7}{3}$.&quot;}]</pre>
+<pre data-draws>[{&quot;seed&quot;:0,&quot;context&quot;:{&quot;n&quot;:&quot;4&quot;,&quot;m&quot;:&quot;5&quot;,&quot;p&quot;:&quot;4&quot;,&quot;q&quot;:&quot;5&quot;,&quot;common&quot;:&quot;5&quot;,&quot;n_common&quot;:&quot;4&quot;,&quot;p_common&quot;:&quot;4&quot;,&quot;numerator_sum&quot;:&quot;8&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;8/5&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:1,&quot;context&quot;:{&quot;n&quot;:&quot;3&quot;,&quot;m&quot;:&quot;2&quot;,&quot;p&quot;:&quot;5&quot;,&quot;q&quot;:&quot;4&quot;,&quot;common&quot;:&quot;4&quot;,&quot;n_common&quot;:&quot;6&quot;,&quot;p_common&quot;:&quot;5&quot;,&quot;numerator_sum&quot;:&quot;11&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;11/4&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:2,&quot;context&quot;:{&quot;n&quot;:&quot;2&quot;,&quot;m&quot;:&quot;3&quot;,&quot;p&quot;:&quot;2&quot;,&quot;q&quot;:&quot;5&quot;,&quot;common&quot;:&quot;15&quot;,&quot;n_common&quot;:&quot;10&quot;,&quot;p_common&quot;:&quot;6&quot;,&quot;numerator_sum&quot;:&quot;16&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;16/15&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:3,&quot;context&quot;:{&quot;n&quot;:&quot;3&quot;,&quot;m&quot;:&quot;4&quot;,&quot;p&quot;:&quot;5&quot;,&quot;q&quot;:&quot;4&quot;,&quot;common&quot;:&quot;4&quot;,&quot;n_common&quot;:&quot;3&quot;,&quot;p_common&quot;:&quot;5&quot;,&quot;numerator_sum&quot;:&quot;8&quot;,&quot;simplified&quot;:&quot; = 2&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;2&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:4,&quot;context&quot;:{&quot;n&quot;:&quot;3&quot;,&quot;m&quot;:&quot;4&quot;,&quot;p&quot;:&quot;3&quot;,&quot;q&quot;:&quot;5&quot;,&quot;common&quot;:&quot;20&quot;,&quot;n_common&quot;:&quot;15&quot;,&quot;p_common&quot;:&quot;12&quot;,&quot;numerator_sum&quot;:&quot;27&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;27/20&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:5,&quot;context&quot;:{&quot;n&quot;:&quot;5&quot;,&quot;m&quot;:&quot;4&quot;,&quot;p&quot;:&quot;3&quot;,&quot;q&quot;:&quot;5&quot;,&quot;common&quot;:&quot;20&quot;,&quot;n_common&quot;:&quot;25&quot;,&quot;p_common&quot;:&quot;12&quot;,&quot;numerator_sum&quot;:&quot;37&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;37/20&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:6,&quot;context&quot;:{&quot;n&quot;:&quot;5&quot;,&quot;m&quot;:&quot;4&quot;,&quot;p&quot;:&quot;2&quot;,&quot;q&quot;:&quot;5&quot;,&quot;common&quot;:&quot;20&quot;,&quot;n_common&quot;:&quot;25&quot;,&quot;p_common&quot;:&quot;8&quot;,&quot;numerator_sum&quot;:&quot;33&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;33/20&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:7,&quot;context&quot;:{&quot;n&quot;:&quot;4&quot;,&quot;m&quot;:&quot;3&quot;,&quot;p&quot;:&quot;3&quot;,&quot;q&quot;:&quot;2&quot;,&quot;common&quot;:&quot;6&quot;,&quot;n_common&quot;:&quot;8&quot;,&quot;p_common&quot;:&quot;9&quot;,&quot;numerator_sum&quot;:&quot;17&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;17/6&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:8,&quot;context&quot;:{&quot;n&quot;:&quot;3&quot;,&quot;m&quot;:&quot;4&quot;,&quot;p&quot;:&quot;4&quot;,&quot;q&quot;:&quot;3&quot;,&quot;common&quot;:&quot;12&quot;,&quot;n_common&quot;:&quot;9&quot;,&quot;p_common&quot;:&quot;16&quot;,&quot;numerator_sum&quot;:&quot;25&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;25/12&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:9,&quot;context&quot;:{&quot;n&quot;:&quot;5&quot;,&quot;m&quot;:&quot;2&quot;,&quot;p&quot;:&quot;5&quot;,&quot;q&quot;:&quot;4&quot;,&quot;common&quot;:&quot;4&quot;,&quot;n_common&quot;:&quot;10&quot;,&quot;p_common&quot;:&quot;5&quot;,&quot;numerator_sum&quot;:&quot;15&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;15/4&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:10,&quot;context&quot;:{&quot;n&quot;:&quot;5&quot;,&quot;m&quot;:&quot;4&quot;,&quot;p&quot;:&quot;2&quot;,&quot;q&quot;:&quot;3&quot;,&quot;common&quot;:&quot;12&quot;,&quot;n_common&quot;:&quot;15&quot;,&quot;p_common&quot;:&quot;8&quot;,&quot;numerator_sum&quot;:&quot;23&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;23/12&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:11,&quot;context&quot;:{&quot;n&quot;:&quot;5&quot;,&quot;m&quot;:&quot;2&quot;,&quot;p&quot;:&quot;5&quot;,&quot;q&quot;:&quot;3&quot;,&quot;common&quot;:&quot;6&quot;,&quot;n_common&quot;:&quot;15&quot;,&quot;p_common&quot;:&quot;10&quot;,&quot;numerator_sum&quot;:&quot;25&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;25/6&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:12,&quot;context&quot;:{&quot;n&quot;:&quot;5&quot;,&quot;m&quot;:&quot;2&quot;,&quot;p&quot;:&quot;3&quot;,&quot;q&quot;:&quot;5&quot;,&quot;common&quot;:&quot;10&quot;,&quot;n_common&quot;:&quot;25&quot;,&quot;p_common&quot;:&quot;6&quot;,&quot;numerator_sum&quot;:&quot;31&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;31/10&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:13,&quot;context&quot;:{&quot;n&quot;:&quot;3&quot;,&quot;m&quot;:&quot;5&quot;,&quot;p&quot;:&quot;3&quot;,&quot;q&quot;:&quot;5&quot;,&quot;common&quot;:&quot;5&quot;,&quot;n_common&quot;:&quot;3&quot;,&quot;p_common&quot;:&quot;3&quot;,&quot;numerator_sum&quot;:&quot;6&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;6/5&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:14,&quot;context&quot;:{&quot;n&quot;:&quot;2&quot;,&quot;m&quot;:&quot;5&quot;,&quot;p&quot;:&quot;5&quot;,&quot;q&quot;:&quot;4&quot;,&quot;common&quot;:&quot;20&quot;,&quot;n_common&quot;:&quot;8&quot;,&quot;p_common&quot;:&quot;25&quot;,&quot;numerator_sum&quot;:&quot;33&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;33/20&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:15,&quot;context&quot;:{&quot;n&quot;:&quot;3&quot;,&quot;m&quot;:&quot;4&quot;,&quot;p&quot;:&quot;2&quot;,&quot;q&quot;:&quot;3&quot;,&quot;common&quot;:&quot;12&quot;,&quot;n_common&quot;:&quot;9&quot;,&quot;p_common&quot;:&quot;8&quot;,&quot;numerator_sum&quot;:&quot;17&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;17/12&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:16,&quot;context&quot;:{&quot;n&quot;:&quot;4&quot;,&quot;m&quot;:&quot;3&quot;,&quot;p&quot;:&quot;5&quot;,&quot;q&quot;:&quot;2&quot;,&quot;common&quot;:&quot;6&quot;,&quot;n_common&quot;:&quot;8&quot;,&quot;p_common&quot;:&quot;15&quot;,&quot;numerator_sum&quot;:&quot;23&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;23/6&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:17,&quot;context&quot;:{&quot;n&quot;:&quot;5&quot;,&quot;m&quot;:&quot;3&quot;,&quot;p&quot;:&quot;4&quot;,&quot;q&quot;:&quot;5&quot;,&quot;common&quot;:&quot;15&quot;,&quot;n_common&quot;:&quot;25&quot;,&quot;p_common&quot;:&quot;12&quot;,&quot;numerator_sum&quot;:&quot;37&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;37/15&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:18,&quot;context&quot;:{&quot;n&quot;:&quot;3&quot;,&quot;m&quot;:&quot;2&quot;,&quot;p&quot;:&quot;2&quot;,&quot;q&quot;:&quot;5&quot;,&quot;common&quot;:&quot;10&quot;,&quot;n_common&quot;:&quot;15&quot;,&quot;p_common&quot;:&quot;4&quot;,&quot;numerator_sum&quot;:&quot;19&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;19/10&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:19,&quot;context&quot;:{&quot;n&quot;:&quot;2&quot;,&quot;m&quot;:&quot;3&quot;,&quot;p&quot;:&quot;5&quot;,&quot;q&quot;:&quot;3&quot;,&quot;common&quot;:&quot;3&quot;,&quot;n_common&quot;:&quot;2&quot;,&quot;p_common&quot;:&quot;5&quot;,&quot;numerator_sum&quot;:&quot;7&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;7/3&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}}]</pre>
 </div>
 </section>
   </main>
@@ -2343,7 +2340,7 @@ else:
     <div class="pw-q-head">
       <h2 class="pw-q-title" data-role="title"></h2>
       <!-- Barre d’outils : les boutons gardent leur place ; un bouton absent reste invisible. -->
-      <div class="validation-enonce pw-actions">
+      <div class="validation-statement pw-actions">
         <button class="pw-act is-primary" data-role="check" type="button" disabled data-action="check" aria-label="Vérifier ma réponse">
           <svg class="pw-icon-check" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg>
           <svg class="pw-icon-fix" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>
@@ -2360,7 +2357,7 @@ else:
         </button>
       </div>
     </div>
-    <div class="form-enonce" data-role="prompt"></div>
+    <div class="form-statement" data-role="prompt"></div>
     <div class="pw-status" data-role="status" role="status" aria-live="polite" hidden></div>
     <!-- Emplacement du retour : colonne de droite sur grand écran, sous l’énoncé sur téléphone. -->
     <div class="pw-q-slot" data-role="slot">
@@ -2390,14 +2387,14 @@ window.PyWimsTemplate = (() => {
     },
     input_radio: {
       choices: "variable", solution: "variable",
-      columns: "integer", fixed_last: "integer", bareme: "text"
+      columns: "integer", fixed_last: "integer", scoring: "text"
     },
     input_checkbox: {
       choices: "variable", solution: "variable",
-      columns: "integer", fixed_last: "integer", bareme: "text"
+      columns: "integer", fixed_last: "integer", scoring: "text"
     }
   };
-  // Champs à choix : leurs choix viennent d’une liste de « avant » et peuvent porter un barème.
+  // Champs à choix : leurs choix viennent d’une liste de « question_setup » et peuvent porter un barème.
   const choiceTypes = new Set(["input_radio", "input_checkbox"]);
   // Directives de barème d’AMC prises en charge. « e » est acceptée sans effet, car une saisie
   // incohérente est impossible ici : un barème d’AMC se recopie ainsi tel quel.
@@ -2407,8 +2404,8 @@ window.PyWimsTemplate = (() => {
   // Un champ porte le nom de la variable Python qui reçoit la saisie : il ne doit pas
   // écraser une variable du contrat de question, un outil pywims ni un mot-clé Python.
   const reservedNames = new Set([
-    "ok_answer", "feedback", "explication_solution",
-    "py_wims", "is_nombre", "math_expression", "decimal_fr", "LIBRE", "pywims",
+    "ok_answer", "feedback",
+    "py_wims", "is_nombre", "math_expression", "decimal_comma", "ANY", "pywims",
     "False", "None", "True", "and", "as", "assert", "async", "await", "break",
     "class", "continue", "def", "del", "elif", "else", "except", "finally", "for",
     "from", "global", "if", "import", "in", "is", "lambda", "nonlocal", "not",
@@ -2563,7 +2560,7 @@ window.PyWimsTemplate = (() => {
       rest = rest.slice(match[0].length);
     }
 
-    // Chaque champ désigne la variable de « avant » qui contient sa solution.
+    // Chaque champ désigne la variable de « question_setup » qui contient sa solution.
     if (!Object.hasOwn(attributes, "solution")) {
       throw new Error(`Le champ « ${name} » doit indiquer sa solution, par exemple solution=variable, dans {% ${tagSource} %}`);
     }
@@ -2586,9 +2583,9 @@ window.PyWimsTemplate = (() => {
       if (Object.hasOwn(attributes, "columns") && !(attributes.columns >= 1 && attributes.columns <= 6)) {
         throw new Error(`L’attribut « columns » doit être compris entre 1 et 6 dans {% ${tagSource} %}`);
       }
-      if (Object.hasOwn(attributes, "bareme")) {
+      if (Object.hasOwn(attributes, "scoring")) {
         try {
-          parseScoring(attributes.bareme);
+          parseScoring(attributes.scoring);
         } catch (error) {
           throw new Error(`${error.message} dans {% ${tagSource} %}`);
         }
@@ -2622,7 +2619,7 @@ window.PyWimsTemplate = (() => {
       }
     }
     // La note porte sur toute la question : elle n’a de sens que pour un champ à choix seul.
-    const scored = tags.find(tag => Object.hasOwn(tag.attributes, "bareme"));
+    const scored = tags.find(tag => Object.hasOwn(tag.attributes, "scoring"));
     if (scored && tags.length > 1) {
       errors.push(`Le barème du champ « ${scored.name} » n’est admis que si c’est le seul champ de la question.`);
     }
@@ -2646,14 +2643,17 @@ window.PyWimsTemplate = (() => {
     return names;
   }
 
-  // Remplace chaque balise par le rendu fourni, puis chaque variable par sa valeur échappée.
+  // Remplace chaque balise par le rendu fourni, puis chaque variable par sa valeur échappée. Une
+  // valeur admet les balises de mise en forme du retour (<b>, <br>…), comme une explication calculée
+  // dans « question_setup » et affichée par {{variable}} (SPECIFICATION.md, § 2.1) ; le reste est
+  // échappé, et un « x < 3 » s’affiche tel quel.
   function renderTemplate(template, context, renderTag) {
     const withTags = template.replace(tagPattern, (_match, source) => renderTag(parseTag(source)));
     return withTags.replace(variablePattern, (_match, name) => {
       if (!Object.hasOwn(context, name)) {
         throw new Error(`Variable de question inconnue : ${name}`);
       }
-      return escapeHtml(context[name]);
+      return limitedHtml(context[name]);
     });
   }
 
@@ -2677,8 +2677,8 @@ window.PyWimsTemplate = (() => {
   });
 })();
 </script>
-  <!-- Correction par défaut des questions sans « apres », sans Python. -->
-  <script>// Correction par défaut, sans Python (SPECIFICATION.md, § 2.6) : sans « apres », l’élève doit
+  <!-- Correction par défaut des questions sans « question_check », sans Python. -->
+  <script>// Correction par défaut, sans Python (SPECIFICATION.md, § 2.6) : sans « question_check », l’élève doit
 // donner ce qu’affiche le bouton « Solution ». Partagée par le fichier généré et par le compilateur
 // (contrôle de cohérence).
 window.PyWimsCorrection = (() => {
@@ -2715,15 +2715,15 @@ window.PyWimsCorrection = (() => {
   }
 
   // Verdict d’un champ, ou d’une case de matrice, d’après le type de sa balise et la solution du
-  // tirage (§ 2.3) ; une solution null est une valeur libre (LIBRE) : toute réponse non vide convient.
+  // tirage (§ 2.3) ; une solution null est une valeur libre (ANY) : toute réponse non vide convient.
   function isCorrect(type, input, solution) {
     if (choiceTypes.has(type)) {
       return sameChoice(input, solution);
     }
     if (type === "input_math") {
       // Une formule ne se compare pas à l’écriture de sa solution (§ 2.6) : SymPy en choisit la
-      // forme, et l’enseignant attend une expression égale. Le compilateur exige donc « apres ».
-      throw new Error("Un champ input_math n’a pas de correction par défaut : il exige un « apres ».");
+      // forme, et l’enseignant attend une expression égale. Le compilateur exige donc « question_check ».
+      throw new Error("Un champ input_math n’a pas de correction par défaut : il exige un « question_check ».");
     }
     if (solution === null) {
       return typeof input === "string" && input.trim() !== "";
@@ -2761,7 +2761,7 @@ window.PyWimsWidgets = (() => {
 
   // Produit un groupe de choix : une ligne entière cliquable par choix, dans l’ordre du tirage.
   // Chaque choix garde son indice dans la liste de l’auteur (value, data-choice-index) : c’est lui
-  // que reçoit « apres ». Le préfixe distingue les questions d’une même feuille (« q2-… »).
+  // que reçoit « question_check ». Le préfixe distingue les questions d’une même feuille (« q2-… »).
   function inputChoice(name, { multiple = false, texts, order, columns = 1, idPrefix = "" } = {}) {
     if (!/^[A-Za-z_]\w*$/.test(name)) {
       throw new Error(`Nom invalide pour un champ à choix : ${name}`);
@@ -2816,8 +2816,8 @@ window.PyWimsWidgets = (() => {
 })();
 </script>
   <!-- Module Python « pywims » (runtime/pywims.py), lu par le runtime Python : le type text/x-python
-       empêche le navigateur de l’exécuter. Vide si aucune question n’a d’« apres ». -->
-  <script type="text/x-python" id="pywims-module">"""Outils PyWims : from pywims import py_wims, is_nombre, math_expression, decimal_fr, LIBRE"""
+       empêche le navigateur de l’exécuter. Vide si aucune question n’a d’« question_check ». -->
+  <script type="text/x-python" id="pywims-module">"""Outils PyWims : from pywims import py_wims, is_nombre, math_expression, decimal_comma, ANY"""
 # Module installé dans Pyodide par runtime/python.js, à la compilation comme dans le fichier généré,
 # qui l’intègre tel quel : les tirages calculés et rejoués utilisent ainsi le même code
 # (SPECIFICATION.md, § 3). Les fonctions dont le nom commence par « _ » servent au compilateur et à
@@ -2826,19 +2826,19 @@ window.PyWimsWidgets = (() => {
 import re as _re
 import sys as _sys
 
-__all__ = ["py_wims", "is_nombre", "math_expression", "decimal_fr", "LIBRE"]
+__all__ = ["py_wims", "is_nombre", "math_expression", "decimal_comma", "ANY"]
 
 _libre = None
 
 
 def __getattr__(name):
-    """Crée LIBRE à la demande : SymPy n’est importé que par les questions qui l’utilisent."""
+    """Crée ANY à la demande : SymPy n’est importé que par les questions qui l’utilisent."""
     global _libre
-    if name == "LIBRE":
+    if name == "ANY":
         if _libre is None:
             import sympy
             # Symbole unique, utilisable dans une Matrix, qui marque une valeur de solution libre.
-            _libre = sympy.Dummy("LIBRE")
+            _libre = sympy.Dummy("ANY")
         return _libre
     raise AttributeError(f"module 'pywims' has no attribute {name!r}")
 
@@ -2977,7 +2977,7 @@ def _collect_draw(namespace, spec):
         if name in namespace:
             context[name] = _template_value(namespace[name])
         else:
-            errors.append("La variable « {} » de l’énoncé n’est pas définie par « avant ».".format(name))
+            errors.append("La variable « {} » de l’énoncé ou de l’explication n’est pas définie par « question_setup ».".format(name))
     dimensions = {}
     for name in spec["dimensions"]:
         value = namespace.get(name)
@@ -2986,21 +2986,21 @@ def _collect_draw(namespace, spec):
                 raise ValueError
             dimensions[name] = int(value)
         except (TypeError, ValueError):
-            errors.append("La dimension « {} » doit être un entier défini par « avant ».".format(name))
+            errors.append("La dimension « {} » doit être un entier défini par « question_setup ».".format(name))
     solutions = {}
     choices = {}
     for field in spec["fields"]:
         name, kind, variable = field["name"], field["type"], field["solution"]
         if name in namespace:
-            errors.append("Le champ « {} » porte le nom d’une variable de « avant » : renommez l’un des deux.".format(name))
+            errors.append("Le champ « {} » porte le nom d’une variable de « question_setup » : renommez l’un des deux.".format(name))
         if variable not in namespace:
-            errors.append("La solution « {} » du champ « {} » n’est pas définie par « avant ».".format(variable, name))
+            errors.append("La solution « {} » du champ « {} » n’est pas définie par « question_setup ».".format(variable, name))
             continue
         value = namespace[variable]
         if kind in ("input_radio", "input_checkbox"):
             source = field["choices"]
             if source not in namespace:
-                errors.append("Les choix « {} » du champ « {} » ne sont pas définis par « avant ».".format(source, name))
+                errors.append("Les choix « {} » du champ « {} » ne sont pas définis par « question_setup ».".format(source, name))
                 continue
             try:
                 choices[name] = _choice_texts(namespace[source])
@@ -3023,13 +3023,9 @@ def _collect_draw(namespace, spec):
                 solutions[name] = _solution_cells(value)
             except TypeError as error:
                 errors.append("La solution « {} » du champ « {} » : {}".format(variable, name, error))
-    explication = namespace.get("explication_solution")
-    if explication is not None and not isinstance(explication, str):
-        errors.append("« explication_solution » doit être un texte.")
-        explication = None
     return json.dumps({
         "context": context, "dimensions": dimensions, "solutions": solutions,
-        "choices": choices, "explication": explication, "errors": errors,
+        "choices": choices, "errors": errors,
     }, ensure_ascii=False)
 
 
@@ -3050,7 +3046,7 @@ def _string_errors(source, field):
     try:
         tree = ast.parse(source)
     except SyntaxError:
-        # L’erreur de syntaxe est signalée à l’exécution de « avant », avec sa ligne.
+        # L’erreur de syntaxe est signalée à l’exécution de « question_setup », avec sa ligne.
         return json.dumps([])
     errors = []
     for node in ast.walk(tree):
@@ -3074,10 +3070,10 @@ def py_wims(value):
         return None
 
 
-def decimal_fr(value, digits):
+def decimal_comma(value, digits):
     """Écriture française d’un nombre arrondi à digits décimales, sans zéros finaux.
 
-    decimal_fr(sqrt(2), 2) → "1,41" ; decimal_fr(1.5, 2) → "1,5" ; decimal_fr(2, 2) → "2".
+    decimal_comma(sqrt(2), 2) → "1,41" ; decimal_comma(1.5, 2) → "1,5" ; decimal_comma(2, 2) → "2".
     Sert de solution quand la réponse attendue s’écrit avec une virgule : la correction par défaut
     ne confond pas la virgule et le point (SPECIFICATION.md, § 2.6).
 
@@ -3087,10 +3083,10 @@ def decimal_fr(value, digits):
     """
     import decimal
     if isinstance(digits, bool) or not isinstance(digits, int) or digits < 0:
-        raise TypeError("decimal_fr : le nombre de décimales doit être un entier positif ou nul.")
+        raise TypeError("decimal_comma : le nombre de décimales doit être un entier positif ou nul.")
     sympy = _sys.modules.get("sympy")
     if isinstance(value, bool):
-        raise TypeError("decimal_fr : {!r} n’est pas un nombre.".format(value))
+        raise TypeError("decimal_comma : {!r} n’est pas un nombre.".format(value))
     if isinstance(value, int):
         exact = decimal.Decimal(value)
     elif isinstance(value, float):
@@ -3100,7 +3096,7 @@ def decimal_fr(value, digits):
         # Assez de chiffres pour que l’arrondi demandé soit exact (sqrt(2), pi, 1/3…).
         exact = decimal.Decimal(str(sympy.N(value, digits + 30)))
     else:
-        raise TypeError("decimal_fr : {!r} n’est pas un nombre réel.".format(value))
+        raise TypeError("decimal_comma : {!r} n’est pas un nombre réel.".format(value))
     # La précision par défaut (28 chiffres) ferait échouer quantize sur un grand nombre (10**30).
     with decimal.localcontext() as context:
         context.prec = len(exact.as_tuple().digits) + digits + 10
@@ -3134,7 +3130,7 @@ def _template_value(value):
 # évalue la saisie par eval ; le filtre ne laisse passer que l’écriture mathématique : sans « _ »,
 # guillemets, crochets ni virgule, sans mot-clé Python ni point entre deux noms, une saisie ne peut
 # appeler que les fonctions de _FUNCTIONS. Tout autre nom devient un symbole, que l’analyse soit faite
-# dans l’espace de noms de l’auteur ou non (E = 3 dans « avant » ne change rien).
+# dans l’espace de noms de l’auteur ou non (E = 3 dans « question_setup » ne change rien).
 # Solution écartée : une grammaire écrite pour le projet (opérateurs, priorités, produit implicite) ;
 # elle refaisait moins bien ce que fait SymPy (« sin x », « sqrt 2 » étaient lus comme des produits).
 _FUNCTIONS = ("cos", "exp", "log", "sin", "sqrt", "tan")
@@ -3173,7 +3169,7 @@ def math_expression(value):
     return result if isinstance(result, sympy.Expr) else None
 </script>
   <!-- Script du Worker de Python (runtime/python-worker.js), dont python.js fait le script du Worker :
-       le type text/x-worker empêche le navigateur de l’exécuter dans la page. Vide sans « apres ». -->
+       le type text/x-worker empêche le navigateur de l’exécuter dans la page. Vide sans « question_check ». -->
   <script type="text/x-worker" id="pywims-worker">// Script du Web Worker de Python (SPECIFICATION.md, § 3) : une instance Pyodide unique, où chaque
 // question a sa propre session. python.js en fait le script du Worker (Blob) : le compilateur et
 // les tests le lui donnent après l’avoir lu (setWorkerSource), et le fichier généré l’intègre dans
@@ -3258,10 +3254,10 @@ async function ensurePackages(code) {
       }
       // Premier import de chaque bibliothèque, ici, hors de toute limite de temps : celui de SymPy
       // dure quelques secondes, et bien plus quand le navigateur exécute WebAssembly lentement
-      // (Edge en « sécurité renforcée » : plus de 30 s mesurées). Fait dans « avant », il était
+      // (Edge en « sécurité renforcée » : plus de 30 s mesurées). Fait dans « question_setup », il était
       // compté comme le calcul de la question et faisait refuser la compilation (SPECIFICATION.md,
       // § 3). Ensuite, l’import de la question retrouve le module déjà chargé. Un module introuvable
-      // est laissé à « avant », qui en donnera l’erreur avec sa ligne.
+      // est laissé à « question_setup », qui en donnera l’erreur avec sa ligne.
       for (const name of imports) {
         try {
           pyodide.pyimport(name).destroy?.();
@@ -3431,7 +3427,7 @@ if importlib.util.find_spec("numpy") is not None:
     });
   },
 
-  // Textes des choix d’une liste de « avant », convertis comme à la compilation : le navigateur
+  // Textes des choix d’une liste de « question_setup », convertis comme à la compilation : le navigateur
   // vérifie ainsi que le tirage rejoué affiche les mêmes choix.
   getChoiceTexts(sessionId, name) {
     const globals = sessionGlobals(sessionId);
@@ -3774,7 +3770,7 @@ window.PyWimsFields = (() => {
   const isSingleAnswer = field => field.dataset.matrixName === undefined &&
     !(isChoiceGroup(field) && field.dataset.multiple === "true");
 
-  // Indices cochés, dans l’ordre de l’auteur : le mélange de l’affichage est invisible pour « apres ».
+  // Indices cochés, dans l’ordre de l’auteur : le mélange de l’affichage est invisible pour « question_check ».
   function checkedIndices(group) {
     return choiceInputs(group).filter(input => input.checked).map(choiceIndex).sort((a, b) => a - b);
   }
@@ -3846,14 +3842,14 @@ window.PyWimsQuestion = (() => {
     checkedIndices, isFilled, lock, animateFields
   } = PyWimsFields;
   const freeValue = "∗";
-  // Durée maximale de « apres » à la vérification (SPECIFICATION.md, § 5.1) : au-delà, le moteur
+  // Durée maximale de « question_check » à la vérification (SPECIFICATION.md, § 5.1) : au-delà, le moteur
   // Python est arrêté et relancé, et l’élève est invité à modifier sa réponse.
   const checkTimeoutMs = 15000;
   const checkTimeoutMessage =
     "La correction a pris trop de temps : votre réponse est peut-être trop complexe. Modifiez-la et vérifiez de nouveau.";
   // Nombre de relances du moteur Python ; le Python simulé des tests peut ne pas le fournir.
   const pythonEpoch = () => PyWimsPython.epoch?.() ?? 0;
-  // Retour générique, quand « apres » ne définit pas « feedback » ou n’existe pas. Une question qui
+  // Retour générique, quand « question_check » ne définit pas « feedback » ou n’existe pas. Une question qui
   // n’attend qu’une réponse (un champ texte, MathLive ou à choix unique) dit « Réponse incorrecte » :
   // le pluriel n’a de sens qu’avec plusieurs champs, un choix multiple ou une matrice.
   const defaultFeedback = {
@@ -3906,17 +3902,17 @@ window.PyWimsQuestion = (() => {
       this.index = index;
       // Préfixe des identifiants des champs : deux questions peuvent nommer un champ de la même façon.
       this.idPrefix = `${section.id}-`;
-      // Sans « apres », la question se corrige par comparaison avec sa solution, sans Python
+      // Sans « question_check », la question se corrige par comparaison avec sa solution, sans Python
       // (SPECIFICATION.md, § 2.6) : elle ne crée aucune session, donc ne charge jamais Pyodide.
       // Une section sans marque vient d’un fichier compilé avant cette règle : elle garde Python.
       this.usesPython = section.dataset.python !== "false";
       this.python = this.usesPython ? PyWimsPython.createSession(section.id) : null;
-      const tags = PyWimsTemplate.parseTags(this.definition.enonce);
+      const tags = PyWimsTemplate.parseTags(this.definition.question_statement);
       this.tagTypes = new Set(tags.map(tag => tag.type));
       // Type de la balise de chaque champ, d’après son nom : la correction par défaut en dépend.
       this.typeOf = new Map(tags.map(tag => [tag.name, tag.type]));
       this.choiceTags = tags.filter(tag => PyWimsTemplate.choiceTypes.has(tag.type));
-      this.pythonCode = `${this.definition.avant}\n${this.definition.apres ?? ""}`;
+      this.pythonCode = `${this.definition.question_setup}\n${this.definition.question_check ?? ""}`;
 
       section.append(questionTemplate.content.cloneNode(true));
       const element = role => section.querySelector(`[data-role="${role}"]`);
@@ -3932,7 +3928,7 @@ window.PyWimsQuestion = (() => {
       this.newDrawButton = element("new-draw");
       this.titleElement.id = `${section.id}-title`;
       // Le numéro est affiché par la pastille, décorative : le titre le donne aux lecteurs d’écran.
-      this.titleElement.innerHTML = `<span class="pw-sr-only">Question ${index + 1} : </span>${PyWimsTemplate.escapeHtml(this.definition.title)}`;
+      this.titleElement.innerHTML = `<span class="pw-sr-only">Question ${index + 1} : </span>${PyWimsTemplate.escapeHtml(this.definition.question_title)}`;
       this.badgeElement.textContent = String(index + 1);
       // Une question seule porte déjà son titre dans l’en-tête de la page.
       section.setAttribute("aria-labelledby", singleQuestion ? "question-title" : this.titleElement.id);
@@ -3943,8 +3939,8 @@ window.PyWimsQuestion = (() => {
       // Barème : seul un champ à choix, seul dans sa question, peut en avoir un (contrôlé à la
       // compilation). La note est celle de la dernière vérification du tirage affiché, 0 sinon ;
       // son maximum dépend du tirage (nombre de choix, solution).
-      this.scoredTag = this.choiceTags.find(tag => Object.hasOwn(tag.attributes, "bareme")) ?? null;
-      this.scoring = this.scoredTag && PyWimsTemplate.parseScoring(this.scoredTag.attributes.bareme);
+      this.scoredTag = this.choiceTags.find(tag => Object.hasOwn(tag.attributes, "scoring")) ?? null;
+      this.scoring = this.scoredTag && PyWimsTemplate.parseScoring(this.scoredTag.attributes.scoring);
       this.score = 0;
       this.scoreMax = 0;
       this.onScoreChange = onScoreChange;
@@ -3999,7 +3995,7 @@ window.PyWimsQuestion = (() => {
       }
     }
 
-    // Premier contact avec une question qui a un « apres » : prépare la session Python du tirage
+    // Premier contact avec une question qui a un « question_check » : prépare la session Python du tirage
     // affiché. Ensuite, chaque nouvel énoncé prépare la sienne (newDraw).
     activatePython() {
       if (!this.usesPython || this.pythonActivated) {
@@ -4142,10 +4138,12 @@ window.PyWimsQuestion = (() => {
     }
 
     // Affiche un retour (juste, faux) ou l’explication de la solution, avec l’animation habituelle.
-    async showFeedback(text, kind) {
+    // html : HTML de l’auteur, déjà composé (explication de la solution, écrite comme l’énoncé) ;
+    // sinon le texte du retour de « question_check », qui peut reprendre la saisie de l’élève.
+    async showFeedback(text, kind, { html = false } = {}) {
       this.hideFeedback();
       // Quelques balises de mise en forme sont admises (<b>, <i>, <br>…) ; le reste est échappé.
-      this.feedbackElement.innerHTML = PyWimsTemplate.limitedHtml(text);
+      this.feedbackElement.innerHTML = html ? text : PyWimsTemplate.limitedHtml(text);
       this.feedbackElement.classList.add(kind);
       await typeset(this.feedbackElement);
       this.feedbackElement.classList.add("is-visible");
@@ -4210,7 +4208,7 @@ window.PyWimsQuestion = (() => {
       this.onSuccess?.(this);
     }
 
-    // Prépare la session Python d’un tirage : espace vierge, « avant » rejoué avec la graine,
+    // Prépare la session Python d’un tirage : espace vierge, « question_setup » rejoué avec la graine,
     // puis contrôle que les valeurs affichées sont bien celles que Python recalcule.
     preparePython(selected) {
       this.drawGeneration += 1;
@@ -4225,7 +4223,7 @@ window.PyWimsQuestion = (() => {
         }
         await python.dispose();
         await python.initialize(this.pythonCode);
-        await python.runSeeded(definition.avant, selected.seed);
+        await python.runSeeded(definition.question_setup, selected.seed);
         for (const [name, expected] of Object.entries(selected.context)) {
           if (await python.getTemplateValue(name) !== expected) {
             throw new Error(`Le tirage n’a pas pu être reproduit (« ${name} » diffère) : la vérification est indisponible.`);
@@ -4279,7 +4277,7 @@ window.PyWimsQuestion = (() => {
       this.draw = selected;
       window.MathJax?.typesetClear?.([promptElement]);
       promptElement.innerHTML = PyWimsTemplate.renderTemplate(
-        this.definition.enonce,
+        this.definition.question_statement,
         selected.context,
         tag => this.renderWidget(tag, selected)
       );
@@ -4331,7 +4329,7 @@ window.PyWimsQuestion = (() => {
       });
     }
 
-    // Transmet toutes les saisies à Python et exécute « apres ». Renvoie les verdicts, un par champ de
+    // Transmet toutes les saisies à Python et exécute « question_check ». Renvoie les verdicts, un par champ de
     // fields(), et le retour de l’auteur (null s’il n’a pas défini « feedback »).
     async pythonVerdicts(inputs) {
       const { python } = this;
@@ -4372,7 +4370,7 @@ window.PyWimsQuestion = (() => {
         await python.setMatrix(name, matrix);
       }
       await python.resetAnswers();
-      await python.run(this.definition.apres, { timeoutMs: checkTimeoutMs }).catch(error => {
+      await python.run(this.definition.question_check, { timeoutMs: checkTimeoutMs }).catch(error => {
         throw error.name === "PyWimsTimeout" ? new Error(checkTimeoutMessage) : error;
       });
 
@@ -4388,7 +4386,7 @@ window.PyWimsQuestion = (() => {
       return { answerResults, feedback };
     }
 
-    // Corrige les saisies (avec « apres » ou par défaut), colore les champs ouverts et affiche le retour.
+    // Corrige les saisies (avec « question_check » ou par défaut), colore les champs ouverts et affiche le retour.
     async check() {
       this.busy = true;
       this.updateButtons();
@@ -4399,7 +4397,7 @@ window.PyWimsQuestion = (() => {
           ? await this.pythonVerdicts(inputs)
           : { answerResults: this.defaultVerdicts(inputs), feedback: null };
         const allCorrect = inputs.length > 0 && answerResults.every(Boolean);
-        // La variable « feedback » de « apres » est facultative : sans elle, un retour générique s’affiche.
+        // La variable « feedback » de « question_check » est facultative : sans elle, un retour générique s’affiche.
         const singleAnswer = inputs.length === 1 && isSingleAnswer(inputs[0]);
         const feedback = authorFeedback ?? (allCorrect ? defaultFeedback.correct
           : singleAnswer ? defaultFeedback.incorrectSingle : defaultFeedback.incorrect);
@@ -4438,7 +4436,7 @@ window.PyWimsQuestion = (() => {
       return new Set(Array.isArray(solution) ? solution : [solution]);
     }
 
-    // Vérification d’un groupe de choix : le groupe prend le verdict de « apres » (réussi ou non),
+    // Vérification d’un groupe de choix : le groupe prend le verdict de « question_check » (réussi ou non),
     // et seuls les choix cochés se colorent, d’après la solution du tirage. Un choix déjà vert
     // (coché juste lors d’une vérification précédente) ne s’anime pas de nouveau.
     colorChoices(group, correct) {
@@ -4541,8 +4539,11 @@ window.PyWimsQuestion = (() => {
           ...fields.filter(isChoiceGroup).map(group => this.showChoiceSolution(group))
         ]);
         this.setState("solution");
-        if (this.draw.explication) {
-          await this.showFeedback(this.draw.explication, "is-explanation");
+        // L’explication est un modèle, comme l’énoncé : ses {{variable}} prennent les valeurs du tirage.
+        const explanation = this.definition.question_solution_explanation;
+        if (explanation) {
+          const html = PyWimsTemplate.renderTemplate(explanation, this.draw.context, () => "");
+          await this.showFeedback(html, "is-explanation", { html: true });
         }
       } catch (error) {
         this.reportError(error);

@@ -7,14 +7,14 @@ window.PyWimsQuestion = (() => {
     checkedIndices, isFilled, lock, animateFields
   } = PyWimsFields;
   const freeValue = "∗";
-  // Durée maximale de « apres » à la vérification (SPECIFICATION.md, § 5.1) : au-delà, le moteur
+  // Durée maximale de « question_check » à la vérification (SPECIFICATION.md, § 5.1) : au-delà, le moteur
   // Python est arrêté et relancé, et l’élève est invité à modifier sa réponse.
   const checkTimeoutMs = 15000;
   const checkTimeoutMessage =
     "La correction a pris trop de temps : votre réponse est peut-être trop complexe. Modifiez-la et vérifiez de nouveau.";
   // Nombre de relances du moteur Python ; le Python simulé des tests peut ne pas le fournir.
   const pythonEpoch = () => PyWimsPython.epoch?.() ?? 0;
-  // Retour générique, quand « apres » ne définit pas « feedback » ou n’existe pas. Une question qui
+  // Retour générique, quand « question_check » ne définit pas « feedback » ou n’existe pas. Une question qui
   // n’attend qu’une réponse (un champ texte, MathLive ou à choix unique) dit « Réponse incorrecte » :
   // le pluriel n’a de sens qu’avec plusieurs champs, un choix multiple ou une matrice.
   const defaultFeedback = {
@@ -67,17 +67,17 @@ window.PyWimsQuestion = (() => {
       this.index = index;
       // Préfixe des identifiants des champs : deux questions peuvent nommer un champ de la même façon.
       this.idPrefix = `${section.id}-`;
-      // Sans « apres », la question se corrige par comparaison avec sa solution, sans Python
+      // Sans « question_check », la question se corrige par comparaison avec sa solution, sans Python
       // (SPECIFICATION.md, § 2.6) : elle ne crée aucune session, donc ne charge jamais Pyodide.
       // Une section sans marque vient d’un fichier compilé avant cette règle : elle garde Python.
       this.usesPython = section.dataset.python !== "false";
       this.python = this.usesPython ? PyWimsPython.createSession(section.id) : null;
-      const tags = PyWimsTemplate.parseTags(this.definition.enonce);
+      const tags = PyWimsTemplate.parseTags(this.definition.question_statement);
       this.tagTypes = new Set(tags.map(tag => tag.type));
       // Type de la balise de chaque champ, d’après son nom : la correction par défaut en dépend.
       this.typeOf = new Map(tags.map(tag => [tag.name, tag.type]));
       this.choiceTags = tags.filter(tag => PyWimsTemplate.choiceTypes.has(tag.type));
-      this.pythonCode = `${this.definition.avant}\n${this.definition.apres ?? ""}`;
+      this.pythonCode = `${this.definition.question_setup}\n${this.definition.question_check ?? ""}`;
 
       section.append(questionTemplate.content.cloneNode(true));
       const element = role => section.querySelector(`[data-role="${role}"]`);
@@ -93,7 +93,7 @@ window.PyWimsQuestion = (() => {
       this.newDrawButton = element("new-draw");
       this.titleElement.id = `${section.id}-title`;
       // Le numéro est affiché par la pastille, décorative : le titre le donne aux lecteurs d’écran.
-      this.titleElement.innerHTML = `<span class="pw-sr-only">Question ${index + 1} : </span>${PyWimsTemplate.escapeHtml(this.definition.title)}`;
+      this.titleElement.innerHTML = `<span class="pw-sr-only">Question ${index + 1} : </span>${PyWimsTemplate.escapeHtml(this.definition.question_title)}`;
       this.badgeElement.textContent = String(index + 1);
       // Une question seule porte déjà son titre dans l’en-tête de la page.
       section.setAttribute("aria-labelledby", singleQuestion ? "question-title" : this.titleElement.id);
@@ -104,8 +104,8 @@ window.PyWimsQuestion = (() => {
       // Barème : seul un champ à choix, seul dans sa question, peut en avoir un (contrôlé à la
       // compilation). La note est celle de la dernière vérification du tirage affiché, 0 sinon ;
       // son maximum dépend du tirage (nombre de choix, solution).
-      this.scoredTag = this.choiceTags.find(tag => Object.hasOwn(tag.attributes, "bareme")) ?? null;
-      this.scoring = this.scoredTag && PyWimsTemplate.parseScoring(this.scoredTag.attributes.bareme);
+      this.scoredTag = this.choiceTags.find(tag => Object.hasOwn(tag.attributes, "scoring")) ?? null;
+      this.scoring = this.scoredTag && PyWimsTemplate.parseScoring(this.scoredTag.attributes.scoring);
       this.score = 0;
       this.scoreMax = 0;
       this.onScoreChange = onScoreChange;
@@ -160,7 +160,7 @@ window.PyWimsQuestion = (() => {
       }
     }
 
-    // Premier contact avec une question qui a un « apres » : prépare la session Python du tirage
+    // Premier contact avec une question qui a un « question_check » : prépare la session Python du tirage
     // affiché. Ensuite, chaque nouvel énoncé prépare la sienne (newDraw).
     activatePython() {
       if (!this.usesPython || this.pythonActivated) {
@@ -303,10 +303,12 @@ window.PyWimsQuestion = (() => {
     }
 
     // Affiche un retour (juste, faux) ou l’explication de la solution, avec l’animation habituelle.
-    async showFeedback(text, kind) {
+    // html : HTML de l’auteur, déjà composé (explication de la solution, écrite comme l’énoncé) ;
+    // sinon le texte du retour de « question_check », qui peut reprendre la saisie de l’élève.
+    async showFeedback(text, kind, { html = false } = {}) {
       this.hideFeedback();
       // Quelques balises de mise en forme sont admises (<b>, <i>, <br>…) ; le reste est échappé.
-      this.feedbackElement.innerHTML = PyWimsTemplate.limitedHtml(text);
+      this.feedbackElement.innerHTML = html ? text : PyWimsTemplate.limitedHtml(text);
       this.feedbackElement.classList.add(kind);
       await typeset(this.feedbackElement);
       this.feedbackElement.classList.add("is-visible");
@@ -371,7 +373,7 @@ window.PyWimsQuestion = (() => {
       this.onSuccess?.(this);
     }
 
-    // Prépare la session Python d’un tirage : espace vierge, « avant » rejoué avec la graine,
+    // Prépare la session Python d’un tirage : espace vierge, « question_setup » rejoué avec la graine,
     // puis contrôle que les valeurs affichées sont bien celles que Python recalcule.
     preparePython(selected) {
       this.drawGeneration += 1;
@@ -386,7 +388,7 @@ window.PyWimsQuestion = (() => {
         }
         await python.dispose();
         await python.initialize(this.pythonCode);
-        await python.runSeeded(definition.avant, selected.seed);
+        await python.runSeeded(definition.question_setup, selected.seed);
         for (const [name, expected] of Object.entries(selected.context)) {
           if (await python.getTemplateValue(name) !== expected) {
             throw new Error(`Le tirage n’a pas pu être reproduit (« ${name} » diffère) : la vérification est indisponible.`);
@@ -440,7 +442,7 @@ window.PyWimsQuestion = (() => {
       this.draw = selected;
       window.MathJax?.typesetClear?.([promptElement]);
       promptElement.innerHTML = PyWimsTemplate.renderTemplate(
-        this.definition.enonce,
+        this.definition.question_statement,
         selected.context,
         tag => this.renderWidget(tag, selected)
       );
@@ -492,7 +494,7 @@ window.PyWimsQuestion = (() => {
       });
     }
 
-    // Transmet toutes les saisies à Python et exécute « apres ». Renvoie les verdicts, un par champ de
+    // Transmet toutes les saisies à Python et exécute « question_check ». Renvoie les verdicts, un par champ de
     // fields(), et le retour de l’auteur (null s’il n’a pas défini « feedback »).
     async pythonVerdicts(inputs) {
       const { python } = this;
@@ -533,7 +535,7 @@ window.PyWimsQuestion = (() => {
         await python.setMatrix(name, matrix);
       }
       await python.resetAnswers();
-      await python.run(this.definition.apres, { timeoutMs: checkTimeoutMs }).catch(error => {
+      await python.run(this.definition.question_check, { timeoutMs: checkTimeoutMs }).catch(error => {
         throw error.name === "PyWimsTimeout" ? new Error(checkTimeoutMessage) : error;
       });
 
@@ -549,7 +551,7 @@ window.PyWimsQuestion = (() => {
       return { answerResults, feedback };
     }
 
-    // Corrige les saisies (avec « apres » ou par défaut), colore les champs ouverts et affiche le retour.
+    // Corrige les saisies (avec « question_check » ou par défaut), colore les champs ouverts et affiche le retour.
     async check() {
       this.busy = true;
       this.updateButtons();
@@ -560,7 +562,7 @@ window.PyWimsQuestion = (() => {
           ? await this.pythonVerdicts(inputs)
           : { answerResults: this.defaultVerdicts(inputs), feedback: null };
         const allCorrect = inputs.length > 0 && answerResults.every(Boolean);
-        // La variable « feedback » de « apres » est facultative : sans elle, un retour générique s’affiche.
+        // La variable « feedback » de « question_check » est facultative : sans elle, un retour générique s’affiche.
         const singleAnswer = inputs.length === 1 && isSingleAnswer(inputs[0]);
         const feedback = authorFeedback ?? (allCorrect ? defaultFeedback.correct
           : singleAnswer ? defaultFeedback.incorrectSingle : defaultFeedback.incorrect);
@@ -599,7 +601,7 @@ window.PyWimsQuestion = (() => {
       return new Set(Array.isArray(solution) ? solution : [solution]);
     }
 
-    // Vérification d’un groupe de choix : le groupe prend le verdict de « apres » (réussi ou non),
+    // Vérification d’un groupe de choix : le groupe prend le verdict de « question_check » (réussi ou non),
     // et seuls les choix cochés se colorent, d’après la solution du tirage. Un choix déjà vert
     // (coché juste lors d’une vérification précédente) ne s’anime pas de nouveau.
     colorChoices(group, correct) {
@@ -702,8 +704,11 @@ window.PyWimsQuestion = (() => {
           ...fields.filter(isChoiceGroup).map(group => this.showChoiceSolution(group))
         ]);
         this.setState("solution");
-        if (this.draw.explication) {
-          await this.showFeedback(this.draw.explication, "is-explanation");
+        // L’explication est un modèle, comme l’énoncé : ses {{variable}} prennent les valeurs du tirage.
+        const explanation = this.definition.question_solution_explanation;
+        if (explanation) {
+          const html = PyWimsTemplate.renderTemplate(explanation, this.draw.context, () => "");
+          await this.showFeedback(html, "is-explanation", { html: true });
         }
       } catch (error) {
         this.reportError(error);

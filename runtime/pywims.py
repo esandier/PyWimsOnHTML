@@ -1,4 +1,4 @@
-"""Outils PyWims : from pywims import py_wims, is_nombre, math_expression, decimal_fr, LIBRE"""
+"""Outils PyWims : from pywims import py_wims, is_nombre, math_expression, decimal_comma, ANY"""
 # Module installé dans Pyodide par runtime/python.js, à la compilation comme dans le fichier généré,
 # qui l’intègre tel quel : les tirages calculés et rejoués utilisent ainsi le même code
 # (SPECIFICATION.md, § 3). Les fonctions dont le nom commence par « _ » servent au compilateur et à
@@ -7,19 +7,19 @@
 import re as _re
 import sys as _sys
 
-__all__ = ["py_wims", "is_nombre", "math_expression", "decimal_fr", "LIBRE"]
+__all__ = ["py_wims", "is_nombre", "math_expression", "decimal_comma", "ANY"]
 
 _libre = None
 
 
 def __getattr__(name):
-    """Crée LIBRE à la demande : SymPy n’est importé que par les questions qui l’utilisent."""
+    """Crée ANY à la demande : SymPy n’est importé que par les questions qui l’utilisent."""
     global _libre
-    if name == "LIBRE":
+    if name == "ANY":
         if _libre is None:
             import sympy
             # Symbole unique, utilisable dans une Matrix, qui marque une valeur de solution libre.
-            _libre = sympy.Dummy("LIBRE")
+            _libre = sympy.Dummy("ANY")
         return _libre
     raise AttributeError(f"module 'pywims' has no attribute {name!r}")
 
@@ -158,7 +158,7 @@ def _collect_draw(namespace, spec):
         if name in namespace:
             context[name] = _template_value(namespace[name])
         else:
-            errors.append("La variable « {} » de l’énoncé n’est pas définie par « avant ».".format(name))
+            errors.append("La variable « {} » de l’énoncé ou de l’explication n’est pas définie par « question_setup ».".format(name))
     dimensions = {}
     for name in spec["dimensions"]:
         value = namespace.get(name)
@@ -167,21 +167,21 @@ def _collect_draw(namespace, spec):
                 raise ValueError
             dimensions[name] = int(value)
         except (TypeError, ValueError):
-            errors.append("La dimension « {} » doit être un entier défini par « avant ».".format(name))
+            errors.append("La dimension « {} » doit être un entier défini par « question_setup ».".format(name))
     solutions = {}
     choices = {}
     for field in spec["fields"]:
         name, kind, variable = field["name"], field["type"], field["solution"]
         if name in namespace:
-            errors.append("Le champ « {} » porte le nom d’une variable de « avant » : renommez l’un des deux.".format(name))
+            errors.append("Le champ « {} » porte le nom d’une variable de « question_setup » : renommez l’un des deux.".format(name))
         if variable not in namespace:
-            errors.append("La solution « {} » du champ « {} » n’est pas définie par « avant ».".format(variable, name))
+            errors.append("La solution « {} » du champ « {} » n’est pas définie par « question_setup ».".format(variable, name))
             continue
         value = namespace[variable]
         if kind in ("input_radio", "input_checkbox"):
             source = field["choices"]
             if source not in namespace:
-                errors.append("Les choix « {} » du champ « {} » ne sont pas définis par « avant ».".format(source, name))
+                errors.append("Les choix « {} » du champ « {} » ne sont pas définis par « question_setup ».".format(source, name))
                 continue
             try:
                 choices[name] = _choice_texts(namespace[source])
@@ -204,13 +204,9 @@ def _collect_draw(namespace, spec):
                 solutions[name] = _solution_cells(value)
             except TypeError as error:
                 errors.append("La solution « {} » du champ « {} » : {}".format(variable, name, error))
-    explication = namespace.get("explication_solution")
-    if explication is not None and not isinstance(explication, str):
-        errors.append("« explication_solution » doit être un texte.")
-        explication = None
     return json.dumps({
         "context": context, "dimensions": dimensions, "solutions": solutions,
-        "choices": choices, "explication": explication, "errors": errors,
+        "choices": choices, "errors": errors,
     }, ensure_ascii=False)
 
 
@@ -231,7 +227,7 @@ def _string_errors(source, field):
     try:
         tree = ast.parse(source)
     except SyntaxError:
-        # L’erreur de syntaxe est signalée à l’exécution de « avant », avec sa ligne.
+        # L’erreur de syntaxe est signalée à l’exécution de « question_setup », avec sa ligne.
         return json.dumps([])
     errors = []
     for node in ast.walk(tree):
@@ -255,10 +251,10 @@ def py_wims(value):
         return None
 
 
-def decimal_fr(value, digits):
+def decimal_comma(value, digits):
     """Écriture française d’un nombre arrondi à digits décimales, sans zéros finaux.
 
-    decimal_fr(sqrt(2), 2) → "1,41" ; decimal_fr(1.5, 2) → "1,5" ; decimal_fr(2, 2) → "2".
+    decimal_comma(sqrt(2), 2) → "1,41" ; decimal_comma(1.5, 2) → "1,5" ; decimal_comma(2, 2) → "2".
     Sert de solution quand la réponse attendue s’écrit avec une virgule : la correction par défaut
     ne confond pas la virgule et le point (SPECIFICATION.md, § 2.6).
 
@@ -268,10 +264,10 @@ def decimal_fr(value, digits):
     """
     import decimal
     if isinstance(digits, bool) or not isinstance(digits, int) or digits < 0:
-        raise TypeError("decimal_fr : le nombre de décimales doit être un entier positif ou nul.")
+        raise TypeError("decimal_comma : le nombre de décimales doit être un entier positif ou nul.")
     sympy = _sys.modules.get("sympy")
     if isinstance(value, bool):
-        raise TypeError("decimal_fr : {!r} n’est pas un nombre.".format(value))
+        raise TypeError("decimal_comma : {!r} n’est pas un nombre.".format(value))
     if isinstance(value, int):
         exact = decimal.Decimal(value)
     elif isinstance(value, float):
@@ -281,7 +277,7 @@ def decimal_fr(value, digits):
         # Assez de chiffres pour que l’arrondi demandé soit exact (sqrt(2), pi, 1/3…).
         exact = decimal.Decimal(str(sympy.N(value, digits + 30)))
     else:
-        raise TypeError("decimal_fr : {!r} n’est pas un nombre réel.".format(value))
+        raise TypeError("decimal_comma : {!r} n’est pas un nombre réel.".format(value))
     # La précision par défaut (28 chiffres) ferait échouer quantize sur un grand nombre (10**30).
     with decimal.localcontext() as context:
         context.prec = len(exact.as_tuple().digits) + digits + 10
@@ -315,7 +311,7 @@ def _template_value(value):
 # évalue la saisie par eval ; le filtre ne laisse passer que l’écriture mathématique : sans « _ »,
 # guillemets, crochets ni virgule, sans mot-clé Python ni point entre deux noms, une saisie ne peut
 # appeler que les fonctions de _FUNCTIONS. Tout autre nom devient un symbole, que l’analyse soit faite
-# dans l’espace de noms de l’auteur ou non (E = 3 dans « avant » ne change rien).
+# dans l’espace de noms de l’auteur ou non (E = 3 dans « question_setup » ne change rien).
 # Solution écartée : une grammaire écrite pour le projet (opérateurs, priorités, produit implicite) ;
 # elle refaisait moins bien ce que fait SymPy (« sin x », « sqrt 2 » étaient lus comme des produits).
 _FUNCTIONS = ("cos", "exp", "log", "sin", "sqrt", "tan")

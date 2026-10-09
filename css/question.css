@@ -214,14 +214,14 @@ body:not([data-scored]) .pw-help-score {
 }
 
 /* Zone d’énoncé et barre des actions de réponse. */
-.form-enonce {
+.form-statement {
   min-height: 3rem;
   margin-left: 2em;
   text-align: left;
   font-size: 12pt;
 }
 
-.validation-enonce {
+.validation-statement {
   margin-top: 1em;
   padding: 0.3em;
   background: var(--pw-action-background);
@@ -327,11 +327,11 @@ body:not([data-scored]) .pw-help-score {
   flex-direction: column;
 }
 
-[data-sheet="single"] .form-enonce {
+[data-sheet="single"] .form-statement {
   order: 1;
 }
 
-[data-sheet="single"] .validation-enonce {
+[data-sheet="single"] .validation-statement {
   order: 2;
 }
 
@@ -377,7 +377,7 @@ body:not([data-scored]) .pw-help-score {
   grid-template-columns: 2.25rem minmax(0, 1fr) minmax(14rem, 19rem);
   grid-template-areas:
     "badge head head"
-    "badge enonce feedback"
+    "badge question_statement feedback"
     ". status status";
   gap: 0.35rem 1rem;
   padding: 0.8rem 1rem;
@@ -437,7 +437,7 @@ body:not([data-scored]) .pw-help-score {
 }
 
 /* Dans la carte, la barre d’outils est une simple rangée de boutons, sans bandeau. */
-[data-sheet="activity"] .validation-enonce {
+[data-sheet="activity"] .validation-statement {
   flex: 0 0 auto;
   flex-wrap: nowrap;
   margin: 0;
@@ -446,8 +446,8 @@ body:not([data-scored]) .pw-help-score {
   background: none;
 }
 
-[data-sheet="activity"] .form-enonce {
-  grid-area: enonce;
+[data-sheet="activity"] .form-statement {
+  grid-area: question_statement;
   min-width: 0;
   margin: 0;
   line-height: 1.6;
@@ -486,7 +486,7 @@ body:not([data-scored]) .pw-help-score {
 @media (max-width: 820px) {
   [data-sheet="activity"] .pw-question {
     grid-template-columns: 2.25rem minmax(0, 1fr);
-    grid-template-areas: "badge head" "badge enonce" ". status" ". feedback";
+    grid-template-areas: "badge head" "badge question_statement" ". status" ". feedback";
   }
 
   [data-sheet="activity"] .pw-q-slot {
@@ -547,7 +547,7 @@ body:not([data-scored]) .pw-help-score {
     display: none;
   }
 
-  [data-sheet="single"] .form-enonce,
+  [data-sheet="single"] .form-statement,
   [data-sheet="single"] .pw-status,
   [data-sheet="single"] .pw-q-slot {
     margin-right: 0.75em;

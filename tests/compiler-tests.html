@@ -35,10 +35,10 @@
       results.append(item);
     }
     // Petite question source partagée par les tests du format et des champs facultatifs.
-    const source = `%\n% title\n%\nEssai\n%\n% keywords\n%\nmathématiques, PGCD\n%\n% layout\n%\nSTD\n%\n% avant\n%\nx = 3\n%\n% enonce\n%\nBonjour {{x}} {% input_text 'reponse' solution=x style='width:5em' %}\n%\n% apres\n%\nok_answer['reponse'] = reponse == '3'\nfeedback = 'Fini'\n%`;
+    const source = `%\n% question_title\n%\nEssai\n%\n% question_keywords\n%\nmathématiques, PGCD\n%\n% question_layout\n%\nSTD\n%\n% question_setup\n%\nx = 3\n%\n% question_statement\n%\nBonjour {{x}} {% input_text 'reponse' solution=x style='width:5em' %}\n%\n% question_check\n%\nok_answer['reponse'] = reponse == '3'\nfeedback = 'Fini'\n%`;
     test("analyse le format des champs", () => {
       const fields = PyWimsCompiler.parseQuestionSource(source);
-      if (fields.title !== "Essai" || fields.keywords !== "mathématiques, PGCD") throw new Error("Les valeurs des champs sont différentes.");
+      if (fields.question_title !== "Essai" || fields.question_keywords !== "mathématiques, PGCD") throw new Error("Les valeurs des champs sont différentes.");
     });
     // Grammaire unique des balises (runtime/template.js).
     const expectTagError = (source, fragment) => {
@@ -83,36 +83,36 @@
       }
     });
     test("les champs à choix exigent leurs choix et vérifient colonnes et barème", () => {
-      const radio = PyWimsTemplate.parseTag("input_radio 'r' choices=choix solution=bonne columns=2 fixed_last=1 bareme='b=2, m=-0.5'");
+      const radio = PyWimsTemplate.parseTag("input_radio 'r' choices=choix solution=bonne columns=2 fixed_last=1 scoring='b=2, m=-0.5'");
       if (radio.attributes.choices !== "choix" || radio.attributes.columns !== 2 || radio.attributes.fixed_last !== 1 ||
           !PyWimsTemplate.choiceTypes.has("input_checkbox")) {
         throw new Error(`Attributs mal lus : ${JSON.stringify(radio.attributes)}`);
       }
       expectTagError("input_checkbox 'r' solution=bonnes", "doit indiquer ses choix");
       expectTagError("input_radio 'r' choices=c solution=s columns=7", "« columns » doit être compris entre 1 et 6");
-      expectTagError("input_radio 'r' choices=c solution=s bareme='b=1,formula=NBC'", "« formula » d’AMC n’est pas prise en charge");
-      expectTagError("input_radio 'r' choices=c solution=s bareme='set.X=1'", "« set.X » d’AMC n’est pas prise en charge");
-      expectTagError("input_radio 'r' choices=c solution=s bareme='z=1'", "Directive de barème inconnue « z »");
-      expectTagError("input_radio 'r' choices=c solution=s bareme='b=un'", "« b » doit être un nombre");
-      expectTagError("input_radio 'r' choices=c solution=s bareme='-2'", "barème propre à une réponse");
-      expectTagError("input_radio 'r' choices=c solution=s bareme='b=1,b=2'", "« b » répétée");
+      expectTagError("input_radio 'r' choices=c solution=s scoring='b=1,formula=NBC'", "« formula » d’AMC n’est pas prise en charge");
+      expectTagError("input_radio 'r' choices=c solution=s scoring='set.X=1'", "« set.X » d’AMC n’est pas prise en charge");
+      expectTagError("input_radio 'r' choices=c solution=s scoring='z=1'", "Directive de barème inconnue « z »");
+      expectTagError("input_radio 'r' choices=c solution=s scoring='b=un'", "« b » doit être un nombre");
+      expectTagError("input_radio 'r' choices=c solution=s scoring='-2'", "barème propre à une réponse");
+      expectTagError("input_radio 'r' choices=c solution=s scoring='b=1,b=2'", "« b » répétée");
     });
     test("le barème suit la syntaxe d’AMC et n’est admis que pour un champ seul", () => {
       const scoring = PyWimsTemplate.parseScoring("b=2,m=-0.5, v=0,e=-1,mz=3,haut=4,MAX=5,p=0,P=6,d=.5");
       if (JSON.stringify(scoring) !== JSON.stringify({ b: 2, m: -0.5, v: 0, e: -1, mz: 3, haut: 4, MAX: 5, p: 0, P: 6, d: 0.5 })) {
         throw new Error(`Barème mal lu : ${JSON.stringify(scoring)}`);
       }
-      const alone = PyWimsTemplate.validateTemplate("{% input_checkbox 'r' choices=c solution=s bareme='mz=1' %}");
+      const alone = PyWimsTemplate.validateTemplate("{% input_checkbox 'r' choices=c solution=s scoring='mz=1' %}");
       const shared = PyWimsTemplate.validateTemplate(
-        "{% input_checkbox 'r' choices=c solution=s bareme='mz=1' %} {% input_text 't' solution=a %}"
+        "{% input_checkbox 'r' choices=c solution=s scoring='mz=1' %} {% input_text 't' solution=a %}"
       );
       if (alone.length || shared.length !== 1 || !shared[0].includes("seul champ de la question")) {
         throw new Error(`Règle du champ seul mal appliquée : ${JSON.stringify([alone, shared])}`);
       }
     });
     test("la note suit le barème d’AMC, y compris les exemples de sa documentation", () => {
-      const note = (bareme, multiple, checked, solution, count = 4) =>
-        PyWimsTemplate.scoreChoice(PyWimsTemplate.parseScoring(bareme), { multiple, count, checked, solution });
+      const note = (scoring, multiple, checked, solution, count = 4) =>
+        PyWimsTemplate.scoreChoice(PyWimsTemplate.parseScoring(scoring), { multiple, count, checked, solution });
       const cases = [
         // Documentation d’AMC : Ami et Autre sont justes ; la copie coche Ami et Otarie.
         [note("b=2,m=-0.5", true, [0, 3], [0, 2]), { score: 3, max: 8 }],
@@ -149,7 +149,7 @@
       }
     });
     test("l’aperçu provisoire d’un champ à choix nomme ses choix d’après leur liste", () => {
-      const draw = PyWimsCompiler.previewPlaceholderDraw({ enonce: "{% input_radio 'r' choices=choix solution=s %}" });
+      const draw = PyWimsCompiler.previewPlaceholderDraw({ question_statement: "{% input_radio 'r' choices=choix solution=s %}" });
       if (draw.choices.r.join() !== "choix[0],choix[1]" || draw.orders.r.join() !== "0,1") {
         throw new Error(`Tirage provisoire inattendu : ${JSON.stringify(draw)}`);
       }
@@ -188,13 +188,14 @@
         if (!rejected) throw new Error(`Choix invalides acceptés : ${JSON.stringify(options)}`);
       }
     });
+    // Une valeur admet les balises de mise en forme (SPECIFICATION.md, § 2.1) ; le reste est échappé.
     test("le rendu du modèle remplace balises et variables en échappant les valeurs", () => {
       const html = PyWimsTemplate.renderTemplate(
         "Calcul {{ x }} : {% input_text 'r' solution=s style='width:3em' %}",
-        { x: "<b>&</b>" },
+        { x: "<b>&</b> <script>x < 3</scr" + "ipt>" },
         tag => `[${tag.type}:${tag.name}:${tag.attributes.style}]`
       );
-      if (html !== "Calcul &lt;b&gt;&amp;&lt;/b&gt; : [input_text:r:width:3em]" ||
+      if (html !== "Calcul <b>&amp;</b> &lt;script&gt;x &lt; 3&lt;/scr" + "ipt&gt; : [input_text:r:width:3em]" ||
           PyWimsTemplate.escapeHtml(`"'`) !== "&quot;&#39;") {
         throw new Error(`Rendu inattendu : ${html}`);
       }
@@ -219,9 +220,9 @@
       layout, brandCss: "", questionCss: "", template: "", correction: "", textWidget: "", mathWidget: "",
       matrixWidget: "", choiceWidget: "", python: "", pywims: "", pythonWorker: "", fields: "", question: "", sheet: ""
     });
-    const sheetQuestion = (title, enonce) => ({
-      fields: { title, keywords: "", layout: "STD", avant: "a = 1", enonce, apres: "ok_answer['r'] = True" },
-      draws: [{ seed: 0, context: {}, dimensions: {}, solutions: { r: "1" }, explication: null }]
+    const sheetQuestion = (title, question_statement) => ({
+      fields: { question_title: title, question_keywords: "", question_layout: "STD", question_setup: "a = 1", question_statement, question_check: "ok_answer['r'] = True" },
+      draws: [{ seed: 0, context: {}, dimensions: {}, solutions: { r: "1" } }]
     });
     function testSheetAssembly(layout) {
       test("une activité est un seul document avec une section par question", () => {
@@ -235,8 +236,8 @@
         if (page.title !== "Activité & révision" || page.body.dataset.sheet !== "activity" ||
             page.querySelector("iframe") ||
             sections.map(section => section.id).join() !== "q1,q2" ||
-            field(sections[0], "title") !== "Question <1>" ||
-            field(sections[1], "enonce") !== "Deux {% input_text 'r' solution=a %}" ||
+            field(sections[0], "question_title") !== "Question <1>" ||
+            field(sections[1], "question_statement") !== "Deux {% input_text 'r' solution=a %}" ||
             JSON.parse(sections[0].querySelector("pre[data-draws]").textContent)[0].solutions.r !== "1" ||
             !page.getElementById("pw-question-template")) {
           throw new Error("L’activité n’assemble pas ses questions dans un seul document.");
@@ -258,39 +259,40 @@
           throw new Error("Une question seule n’est pas une feuille d’une question.");
         }
       });
-      test("seule une question qui a un « apres » est marquée comme ayant besoin de Python", () => {
+      test("seule une question qui a un « question_check » est marquée comme ayant besoin de Python", () => {
         const withoutApres = sheetQuestion("Sans", "Un {% input_text 'r' solution=a %}");
-        delete withoutApres.fields.apres;
+        delete withoutApres.fields.question_check;
         const page = new DOMParser().parseFromString(PyWimsCompiler.assembleActivity("Mixte", [
           sheetQuestion("Avec", "Un {% input_text 'r' solution=a %}"), withoutApres
         ], sheetResources(layout)), "text/html");
         const marks = [...page.querySelectorAll(".pw-question")].map(section => section.dataset.python);
         if (marks.join() !== "true,false" ||
-            page.querySelectorAll(".pw-question")[1].querySelector('pre[data-field="apres"]')) {
+            page.querySelectorAll(".pw-question")[1].querySelector('pre[data-field="question_check"]')) {
           throw new Error(`Marques inattendues : ${marks.join()}`);
         }
-        // « avant » ne sert qu’à rejouer un tirage dans Python : absent de la question sans « apres ».
+        // « question_setup » ne sert qu’à rejouer un tirage dans Python : absent de la question sans « question_check ».
         const [withPython, withoutPython] = page.querySelectorAll(".pw-question");
-        if (!withPython.querySelector('pre[data-field="avant"]') || withoutPython.querySelector('pre[data-field="avant"]') ||
-            !withoutPython.querySelector('pre[data-field="enonce"]')) {
-          throw new Error("« avant » doit être intégré seulement à la question qui a un « apres ».");
+        if (!withPython.querySelector('pre[data-field="question_setup"]') || withoutPython.querySelector('pre[data-field="question_setup"]') ||
+            !withoutPython.querySelector('pre[data-field="question_statement"]')) {
+          throw new Error("« question_setup » doit être intégré seulement à la question qui a un « question_check ».");
         }
       });
       test("MathJax n’est intégré qu’à une feuille qui peut afficher une formule", () => {
-        const question = ({ enonce = "Un {% input_text 'r' solution=a %}", apres = false, draw = {} }) => {
-          const built = sheetQuestion("Q", enonce);
-          if (!apres) delete built.fields.apres;
+        const question = ({ question_statement = "Un {% input_text 'r' solution=a %}", question_check = false, explanation, draw = {} }) => {
+          const built = sheetQuestion("Q", question_statement);
+          if (!question_check) delete built.fields.question_check;
+          if (explanation) built.fields.question_solution_explanation = explanation;
           built.draws = [{ ...built.draws[0], ...draw }];
           return built;
         };
         const hasMathJax = built => /mathjax@/.test(PyWimsCompiler.assembleQuestion(built.fields, built.draws, sheetResources(layout)));
         const cases = [
-          ["sans formule ni « apres »", question({}), false],
-          ["formule dans l’énoncé", question({ enonce: "Calculer $x^2$ : {% input_text 'r' solution=a %}" }), true],
+          ["sans formule ni « question_check »", question({}), false],
+          ["formule dans l’énoncé", question({ question_statement: "Calculer $x^2$ : {% input_text 'r' solution=a %}" }), true],
           ["formule \\( \\) dans une valeur", question({ draw: { context: { f: "\\(x\\)" } } }), true],
           ["formule dans un choix", question({ draw: { choices: { c: ["$1$", "deux"] } } }), true],
-          ["formule dans l’explication", question({ draw: { explication: "Car $2+2=4$." } }), true],
-          ["« apres » sans formule", question({ apres: true }), true]
+          ["formule dans l’explication", question({ explanation: "Car $2+2=4$." }), true],
+          ["« question_check » sans formule", question({ question_check: true }), true]
         ];
         const wrong = cases.filter(([, built, expected]) => hasMathJax(built) !== expected).map(([name]) => name);
         if (wrong.length) throw new Error(`MathJax mal décidé : ${wrong.join(", ")}`);
@@ -364,7 +366,7 @@
     test("rejette les champs en double", () => {
       let rejected = false;
       try {
-        PyWimsCompiler.parseQuestionSource(source.replace("%\n% keywords", "%\n% title"));
+        PyWimsCompiler.parseQuestionSource(source.replace("%\n% question_keywords", "%\n% question_title"));
       } catch {
         rejected = true;
       }
@@ -372,8 +374,8 @@
     });
     test("rejette un champ obligatoire absent ou vide", () => {
       for (const [variant, name] of [
-        [source.replace("Essai", " "), "title"],
-        [source.replace("x = 3", "  "), "avant"]
+        [source.replace("Essai", " "), "question_title"],
+        [source.replace("x = 3", "  "), "question_setup"]
       ]) {
         let rejected = false;
         try {
@@ -384,11 +386,11 @@
         if (!rejected) throw new Error(`L’absence du champ « ${name} » n’a pas été signalée.`);
       }
     });
-    test("le champ facultatif « tirages » est un entier de 1 à 200", () => {
-      const withCount = count => source.replace("%\n% apres", `%\n% tirages\n%\n${count}\n%\n% apres`);
-      if (PyWimsCompiler.parseQuestionSource(withCount(" 5 ")).tirages !== "5" ||
-          Object.hasOwn(PyWimsCompiler.parseQuestionSource(source), "tirages")) {
-        throw new Error("Le champ « tirages » est mal lu.");
+    test("le champ facultatif « question_draws » est un entier de 1 à 200", () => {
+      const withCount = count => source.replace("%\n% question_check", `%\n% question_draws\n%\n${count}\n%\n% question_check`);
+      if (PyWimsCompiler.parseQuestionSource(withCount(" 5 ")).question_draws !== "5" ||
+          Object.hasOwn(PyWimsCompiler.parseQuestionSource(source), "question_draws")) {
+        throw new Error("Le champ « question_draws » est mal lu.");
       }
       for (const count of ["0", "201", "2.5", "vingt"]) {
         let message = "";
@@ -397,17 +399,17 @@
         } catch (error) {
           message = error.message;
         }
-        if (!message.includes("le champ « tirages » doit être un entier de 1 à 200")) {
+        if (!message.includes("le champ « question_draws » doit être un entier de 1 à 200")) {
           throw new Error(`« ${count} » accepté, ou message inattendu : ${message}`);
         }
       }
     });
-    test("« apres » est facultatif ; vide, il équivaut à son absence", () => {
-      const absent = PyWimsCompiler.parseQuestionSource(source.replace(/%\n% apres\n%\n[^%]*/, ""));
-      const empty = PyWimsCompiler.parseQuestionSource(source.replace(/(% apres\n%\n)[^%]*/, "$1  \n"));
+    test("« question_check » est facultatif ; vide, il équivaut à son absence", () => {
+      const absent = PyWimsCompiler.parseQuestionSource(source.replace(/%\n% question_check\n%\n[^%]*/, ""));
+      const empty = PyWimsCompiler.parseQuestionSource(source.replace(/(% question_check\n%\n)[^%]*/, "$1  \n"));
       for (const fields of [absent, empty]) {
-        if (Object.hasOwn(fields, "apres") || fields.enonce !== PyWimsCompiler.parseQuestionSource(source).enonce) {
-          throw new Error(`Question sans « apres » mal lue : ${JSON.stringify(fields)}`);
+        if (Object.hasOwn(fields, "question_check") || fields.question_statement !== PyWimsCompiler.parseQuestionSource(source).question_statement) {
+          throw new Error(`Question sans « question_check » mal lue : ${JSON.stringify(fields)}`);
         }
       }
     });
@@ -452,12 +454,12 @@
       } catch {
         rejected = true;
       }
-      if (!rejected) throw new Error("Un champ input_math a été jugé sans « apres ».");
+      if (!rejected) throw new Error("Un champ input_math a été jugé sans « question_check ».");
     });
     test("refuse un champ inconnu", () => {
       let message = "";
       try {
-        PyWimsCompiler.parseQuestionSource(source.replace("%\n% apres", "%\n% libraries"));
+        PyWimsCompiler.parseQuestionSource(source.replace("%\n% question_check", "%\n% libraries"));
       } catch (error) {
         message = error.message;
       }
@@ -468,8 +470,7 @@
         seed: 3,
         context: { f: "\\displaystyle \\frac{3}{4}", piege: "</pre><scr" + "ipt>bad()</scr" + "ipt> & \"'" },
         dimensions: { n: 2 },
-        solutions: { m: [[null, "1/2"], ["0", null]] },
-        explication: "Les cases ∗ sont libres : $x^2$."
+        solutions: { m: [[null, "1/2"], ["0", null]] }
       }];
       const host = document.createElement("div");
       host.innerHTML = PyWimsCompiler.renderDrawData(draws);
@@ -482,7 +483,7 @@
     test("rejette un champ inconnu", () => {
       let rejected = false;
       try {
-        PyWimsCompiler.parseQuestionSource(source.replace("%\n% keywords", "%\n% made_up"));
+        PyWimsCompiler.parseQuestionSource(source.replace("%\n% question_keywords", "%\n% made_up"));
       } catch (error) {
         rejected = error.message.includes('champ inconnu « made_up »');
       }
@@ -490,8 +491,8 @@
     });
     test("affiche les champs de la question sous forme de texte HTML lisible et échappé", () => {
       const fields = {
-        avant: "x = randint(1, 10)\nprint('</pre><scr" + "ipt>bad</scr" + "ipt>')",
-        enonce: "Calcule {{x}}"
+        question_setup: "x = randint(1, 10)\nprint('</pre><scr" + "ipt>bad</scr" + "ipt>')",
+        question_statement: "Calcule {{x}}"
       };
       const host = document.createElement("div");
       host.innerHTML = PyWimsCompiler.renderQuestionData(fields);
@@ -503,8 +504,8 @@
       );
       if (!host.innerHTML.includes("randint(1, 10)") ||
           !host.innerHTML.includes("Calcule {{x}}") ||
-          rendered.avant !== fields.avant ||
-          rendered.enonce !== fields.enonce ||
+          rendered.question_setup !== fields.question_setup ||
+          rendered.question_statement !== fields.question_statement ||
           host.querySelector("script")) {
         throw new Error("Le contenu de la question n’est pas lisible, préservé et échappé.");
       }
@@ -517,10 +518,10 @@
       .then(text => {
         const fields = PyWimsCompiler.parseQuestionSource(text, "pgcd.pwq");
         test("analyse la question PGCD réelle", () => {
-          if (fields.title !== "PGCD" ||
-              fields.keywords !== "arithmétique, PGCD, nombres entiers" ||
-              fields.layout !== "STD" ||
-              !fields.apres.includes("ok_answer")) {
+          if (fields.question_title !== "PGCD" ||
+              fields.question_keywords !== "arithmétique, PGCD, nombres entiers" ||
+              fields.question_layout !== "STD" ||
+              !fields.question_check.includes("ok_answer")) {
             throw new Error("Les champs de la question PGCD sont inattendus.");
           }
         });
@@ -539,13 +540,14 @@
       .then(text => {
         const fields = PyWimsCompiler.parseQuestionSource(text, "addition-fractions.pwq");
         test("analyse la nouvelle question d’addition de fractions", () => {
-          if (fields.title !== "Addition de fractions" ||
-              fields.keywords !== "fractions, addition, dénominateur commun, fraction irréductible" ||
-              fields.layout !== "STD" ||
-              PyWimsTemplate.validateTemplate(fields.enonce).length ||
-              !fields.enonce.includes("{% input_text 'resultat' solution=somme") ||
-              !fields.apres.includes("irréductible") ||
-              !fields.apres.includes("py_wims(resultat)")) {
+          if (fields.question_title !== "Addition de fractions" ||
+              fields.question_keywords !== "fractions, addition, dénominateur commun, fraction irréductible" ||
+              fields.question_layout !== "STD" ||
+              PyWimsTemplate.validateTemplate(fields.question_statement).length ||
+              !fields.question_statement.includes("{% input_text 'result' solution=total") ||
+              !fields.question_solution_explanation.includes("{{common}}") ||
+              !fields.question_check.includes("irréductible") ||
+              !fields.question_check.includes("py_wims(result)")) {
             throw new Error("Les champs de la question d’addition de fractions sont inattendus.");
           }
         });
@@ -564,14 +566,14 @@
       .then(text => {
         const fields = PyWimsCompiler.parseQuestionSource(text, "matrice-triangulaire.pwq");
         test("analyse la question réelle de matrice triangulaire", () => {
-          if (fields.title !== "Matrice triangulaire supérieure" ||
-              fields.layout !== "STD" ||
-              PyWimsTemplate.validateTemplate(fields.enonce).length ||
-              !fields.avant.includes("LIBRE") ||
-              !fields.avant.includes("explication_solution") ||
-              !fields.enonce.includes("{% input_matrix 'matrice' size=size solution=solution_matrice") ||
-              !fields.apres.includes('ok_answer["matrice[{}][{}]".format(i, j)]') ||
-              !fields.apres.includes('getattr(valeur, "is_number", False)')) {
+          if (fields.question_title !== "Matrice triangulaire supérieure" ||
+              fields.question_layout !== "STD" ||
+              PyWimsTemplate.validateTemplate(fields.question_statement).length ||
+              !fields.question_setup.includes("ANY") ||
+              !fields.question_solution_explanation.includes("∗") ||
+              !fields.question_statement.includes("{% input_matrix 'matrix' size=size solution=solution_matrix") ||
+              !fields.question_check.includes('ok_answer["matrix[{}][{}]".format(i, j)]') ||
+              !fields.question_check.includes('getattr(value, "is_number", False)')) {
             throw new Error("Les champs de la question matricielle sont inattendus.");
           }
         });
@@ -687,8 +689,8 @@
       }
     });
     test("trois accolades de suite donnent un avertissement, pas une erreur", () => {
-      const warned = PyWimsCompiler.templateWarnings({ enonce: "$\\frac{{{n}}}{{{m}}}$" });
-      const clean = PyWimsCompiler.templateWarnings({ enonce: "$\\frac{ {{n}} }{ {{m}} }$ et {{x}}" });
+      const warned = PyWimsCompiler.templateWarnings({ question_statement: "$\\frac{{{n}}}{{{m}}}$" });
+      const clean = PyWimsCompiler.templateWarnings({ question_statement: "$\\frac{ {{n}} }{ {{m}} }$ et {{x}}" });
       if (warned.length !== 1 || !warned[0].includes("\\frac{ {{n}} }{ {{m}} }") || clean.length) {
         throw new Error(`Avertissements inattendus : ${JSON.stringify([warned, clean])}`);
       }
@@ -758,7 +760,7 @@
           test("l’aperçu est isolé et son tirage provisoire affiche chaque variable sous son nom", () => {
             const frame = new DOMParser().parseFromString(compilerPage, "text/html").getElementById("preview-frame");
             const draw = PyWimsCompiler.previewPlaceholderDraw({
-              enonce: "Soit {{ f }} et {% input_matrix 'm' rows=n cols=2 solution=s %} {% input_text 'r' solution=s %}"
+              question_statement: "Soit {{ f }} et {% input_matrix 'm' rows=n cols=2 solution=s %} {% input_text 'r' solution=s %}"
             });
             // Sans « allow-same-origin », le HTML de l’énoncé ne peut pas agir sur le compilateur.
             if (frame?.getAttribute("sandbox") !== "allow-scripts" ||
@@ -789,28 +791,28 @@
           // vrai Pyodide dans python-tests.html.
           test("la nouvelle question génère un polynôme et corrige sa dérivée symboliquement", () => {
             const fields = PyWimsCompiler.parseQuestionSource(derivativeQuestion, "dérivée-polynôme.pwq");
-            if (fields.title !== "Dérivée d’un polynôme" ||
-                PyWimsTemplate.validateTemplate(fields.enonce).length ||
-                !fields.avant.includes("derivee = diff(fonction, x)") ||
-                !fields.enonce.includes("{% input_math 'derivee_eleve' solution=derivee %}") ||
-                !fields.avant.includes("from pywims import math_expression") ||
-                !fields.apres.includes("math_expression(derivee_eleve)") ||
-                !fields.apres.includes("simplify(reponse_eleve - derivee) == 0")) {
+            if (fields.question_title !== "Dérivée d’un polynôme" ||
+                PyWimsTemplate.validateTemplate(fields.question_statement).length ||
+                !fields.question_setup.includes("derivative = diff(function, x)") ||
+                !fields.question_statement.includes("{% input_math 'student_derivative' solution=derivative %}") ||
+                !fields.question_setup.includes("from pywims import math_expression") ||
+                !fields.question_check.includes("math_expression(student_derivative)") ||
+                !fields.question_check.includes("simplify(answer - derivative) == 0")) {
               throw new Error("La question de dérivation ne génère pas ou ne corrige pas la réponse attendue.");
             }
           });
           test("la question de produit de matrices génère et corrige un produit rectangulaire", () => {
             const fields = PyWimsCompiler.parseQuestionSource(matrixProductQuestion, "produit-matrices.pwq");
-            if (fields.title !== "Produit de matrices" ||
-                PyWimsTemplate.validateTemplate(fields.enonce).length ||
-              !fields.avant.includes("A = Matrix(m, n") ||
-              !fields.avant.includes("B = Matrix(n, p") ||
-              !fields.avant.includes("produit = A * B") ||
-              !fields.enonce.includes("input_vmatrix 'matrice' max_rows=5 max_cols=5") ||
-              !fields.enonce.includes("solution=produit") ||
-              !fields.apres.includes("nombre_lignes != m") ||
-              !fields.apres.includes("nombre_colonnes != p") ||
-              !fields.apres.includes("simplify(valeur - produit[i, j]) == 0")) {
+            if (fields.question_title !== "Produit de matrices" ||
+                PyWimsTemplate.validateTemplate(fields.question_statement).length ||
+              !fields.question_setup.includes("A = Matrix(m, n") ||
+              !fields.question_setup.includes("B = Matrix(n, p") ||
+              !fields.question_setup.includes("product = A * B") ||
+              !fields.question_statement.includes("input_vmatrix 'matrix' max_rows=5 max_cols=5") ||
+              !fields.question_statement.includes("solution=product") ||
+              !fields.question_check.includes("row_count != m") ||
+              !fields.question_check.includes("column_count != p") ||
+              !fields.question_check.includes("simplify(value - product[i, j]) == 0")) {
               throw new Error("La question ne génère pas ou ne corrige pas le produit de matrices attendu.");
             }
     });
@@ -996,7 +998,7 @@
           test("un élément de statut vide ne crée pas de bandeau de validation", () => {
             const status = questionTemplate?.querySelector('[data-role="status"]');
             if (!status || !status.hidden || status.getAttribute("role") !== "status" ||
-                status.closest(".validation-enonce") || status.classList.contains("validation-enonce")) {
+                status.closest(".validation-statement") || status.classList.contains("validation-statement")) {
               throw new Error("L’élément de statut vide est absent ou stylé comme un bandeau de validation.");
             }
           });

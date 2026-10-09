@@ -1,17 +1,17 @@
 %
-% title
+% question_title
 %
 Produit de matrices
 %
-% keywords
+% question_keywords
 %
 matrices, produit matriciel, algèbre linéaire
 %
-% layout
+% question_layout
 %
 STD
 %
-% avant
+% question_setup
 %
 from random import randint
 from sympy import *
@@ -23,62 +23,62 @@ n = randint(2, 3)
 p = randint(1, 4)
 A = Matrix(m, n, lambda i, j: randint(-1, 1))
 B = Matrix(n, p, lambda i, j: randint(-1, 1))
-produit = A * B
+product = A * B
 
-# Détaille le calcul du premier coefficient pour expliquer la solution.
-def entre_parentheses(valeur):
-    return "({})".format(valeur) if valeur < 0 else str(valeur)
+# Calcul détaillé du premier coefficient, pour l’explication de la solution.
+def parenthesized(value):
+    return "({})".format(value) if value < 0 else str(value)
 
-calcul = " + ".join(
-    entre_parentheses(A[0, k]) + r" \times " + entre_parentheses(B[k, 0]) for k in range(n)
-)
-explication_solution = (
-    "Le coefficient $(AB)_{ij}$ est la somme des produits des coefficients de la ligne $i$ "
-    "de $A$ par ceux de la colonne $j$ de $B$ ; par exemple $(AB)_{11} = "
-    + calcul + " = " + str(produit[0, 0]) + "$."
-)
+first_coefficient = " + ".join(
+    parenthesized(A[0, k]) + r" \times " + parenthesized(B[k, 0]) for k in range(n)
+) + " = " + str(product[0, 0])
 %
-% enonce
+% question_statement
 %
 Calculez le produit des matrices suivantes :
 $$ A = {{ A }},\quad B = {{ B }}.$$
 Entrez le résultat ci-dessous :
 <div style="text-align:center">
   $AB = $
-  {% input_vmatrix 'matrice' max_rows=5 max_cols=5 input_style='width:2em' solution=produit %}
+  {% input_vmatrix 'matrix' max_rows=5 max_cols=5 input_style='width:2em' solution=product %}
 </div>
 %
-% apres
+% question_solution_explanation
+%
+Le coefficient $(AB)_{ij}$ est la somme des produits des coefficients de la ligne $i$ de $A$ par
+ceux de la colonne $j$ de $B$ ; par exemple $(AB)_{11} = {{first_coefficient}}$.
+%
+% question_check
 %
 # Vérifie d’abord les dimensions, puis compare exactement les coefficients.
-nombre_lignes = len(matrice)
-nombre_colonnes = len(matrice[0]) if matrice else 0
+row_count = len(matrix)
+column_count = len(matrix[0]) if matrix else 0
 feedback = ""
 
-if nombre_lignes != m:
+if row_count != m:
     feedback += "Votre matrice n’a pas le bon nombre de lignes. "
-if nombre_colonnes != p:
+if column_count != p:
     feedback += "Votre matrice n’a pas le bon nombre de colonnes."
 
-if nombre_lignes == m and nombre_colonnes == p:
-    incorrects = 0
+if row_count == m and column_count == p:
+    errors = 0
     for i in range(m):
         for j in range(p):
-            valeur = py_wims(matrice[i][j])
-            correcte = (
-                valeur is not None
-                and getattr(valeur, "is_number", False)
-                and simplify(valeur - produit[i, j]) == 0
+            value = py_wims(matrix[i][j])
+            correct = (
+                value is not None
+                and getattr(value, "is_number", False)
+                and simplify(value - product[i, j]) == 0
             )
-            ok_answer["matrice[{}][{}]".format(i, j)] = correcte
-            if not correcte:
-                incorrects += 1
-    if incorrects == 0:
+            ok_answer["matrix[{}][{}]".format(i, j)] = correct
+            if not correct:
+                errors += 1
+    if errors == 0:
         feedback = "Bravo, le produit des matrices est correct !"
     else:
         # Compte les erreurs et rappelle la méthode, sans donner les coefficients.
         feedback = "{} coefficient{} sur {} {}. ".format(
-            incorrects, "s" if incorrects > 1 else "", m * p,
-            "sont incorrects" if incorrects > 1 else "est incorrect"
+            errors, "s" if errors > 1 else "", m * p,
+            "sont incorrects" if errors > 1 else "est incorrect"
         ) + "Le coefficient $(i, j)$ de $AB$ s’obtient avec la ligne $i$ de $A$ et la colonne $j$ de $B$."
 %

@@ -18,14 +18,14 @@ window.PyWimsTemplate = (() => {
     },
     input_radio: {
       choices: "variable", solution: "variable",
-      columns: "integer", fixed_last: "integer", bareme: "text"
+      columns: "integer", fixed_last: "integer", scoring: "text"
     },
     input_checkbox: {
       choices: "variable", solution: "variable",
-      columns: "integer", fixed_last: "integer", bareme: "text"
+      columns: "integer", fixed_last: "integer", scoring: "text"
     }
   };
-  // Champs à choix : leurs choix viennent d’une liste de « avant » et peuvent porter un barème.
+  // Champs à choix : leurs choix viennent d’une liste de « question_setup » et peuvent porter un barème.
   const choiceTypes = new Set(["input_radio", "input_checkbox"]);
   // Directives de barème d’AMC prises en charge. « e » est acceptée sans effet, car une saisie
   // incohérente est impossible ici : un barème d’AMC se recopie ainsi tel quel.
@@ -35,8 +35,8 @@ window.PyWimsTemplate = (() => {
   // Un champ porte le nom de la variable Python qui reçoit la saisie : il ne doit pas
   // écraser une variable du contrat de question, un outil pywims ni un mot-clé Python.
   const reservedNames = new Set([
-    "ok_answer", "feedback", "explication_solution",
-    "py_wims", "is_nombre", "math_expression", "decimal_fr", "LIBRE", "pywims",
+    "ok_answer", "feedback",
+    "py_wims", "is_nombre", "math_expression", "decimal_comma", "ANY", "pywims",
     "False", "None", "True", "and", "as", "assert", "async", "await", "break",
     "class", "continue", "def", "del", "elif", "else", "except", "finally", "for",
     "from", "global", "if", "import", "in", "is", "lambda", "nonlocal", "not",
@@ -191,7 +191,7 @@ window.PyWimsTemplate = (() => {
       rest = rest.slice(match[0].length);
     }
 
-    // Chaque champ désigne la variable de « avant » qui contient sa solution.
+    // Chaque champ désigne la variable de « question_setup » qui contient sa solution.
     if (!Object.hasOwn(attributes, "solution")) {
       throw new Error(`Le champ « ${name} » doit indiquer sa solution, par exemple solution=variable, dans {% ${tagSource} %}`);
     }
@@ -214,9 +214,9 @@ window.PyWimsTemplate = (() => {
       if (Object.hasOwn(attributes, "columns") && !(attributes.columns >= 1 && attributes.columns <= 6)) {
         throw new Error(`L’attribut « columns » doit être compris entre 1 et 6 dans {% ${tagSource} %}`);
       }
-      if (Object.hasOwn(attributes, "bareme")) {
+      if (Object.hasOwn(attributes, "scoring")) {
         try {
-          parseScoring(attributes.bareme);
+          parseScoring(attributes.scoring);
         } catch (error) {
           throw new Error(`${error.message} dans {% ${tagSource} %}`);
         }
@@ -250,7 +250,7 @@ window.PyWimsTemplate = (() => {
       }
     }
     // La note porte sur toute la question : elle n’a de sens que pour un champ à choix seul.
-    const scored = tags.find(tag => Object.hasOwn(tag.attributes, "bareme"));
+    const scored = tags.find(tag => Object.hasOwn(tag.attributes, "scoring"));
     if (scored && tags.length > 1) {
       errors.push(`Le barème du champ « ${scored.name} » n’est admis que si c’est le seul champ de la question.`);
     }
@@ -274,14 +274,17 @@ window.PyWimsTemplate = (() => {
     return names;
   }
 
-  // Remplace chaque balise par le rendu fourni, puis chaque variable par sa valeur échappée.
+  // Remplace chaque balise par le rendu fourni, puis chaque variable par sa valeur échappée. Une
+  // valeur admet les balises de mise en forme du retour (<b>, <br>…), comme une explication calculée
+  // dans « question_setup » et affichée par {{variable}} (SPECIFICATION.md, § 2.1) ; le reste est
+  // échappé, et un « x < 3 » s’affiche tel quel.
   function renderTemplate(template, context, renderTag) {
     const withTags = template.replace(tagPattern, (_match, source) => renderTag(parseTag(source)));
     return withTags.replace(variablePattern, (_match, name) => {
       if (!Object.hasOwn(context, name)) {
         throw new Error(`Variable de question inconnue : ${name}`);
       }
-      return escapeHtml(context[name]);
+      return limitedHtml(context[name]);
     });
   }
 

@@ -1,4 +1,4 @@
-// Tirages : exécution de « avant » avec chaque graine, contrôles de l’auteur, cohérence de la
+// Tirages : exécution de « question_setup » avec chaque graine, contrôles de l’auteur, cohérence de la
 // correction, ordre des choix, et tirage provisoire de l’aperçu.
 // Script classique (et non module ES), pour que le compilateur marche aussi ouvert depuis le
 // disque ; il ajoute ses fonctions à window.PyWimsCompiler, que les autres scripts complètent.
@@ -10,7 +10,7 @@
     const dimensions = {};
     const choices = {};
     const orders = {};
-    for (const tag of PyWimsTemplate.parseTags(fields.enonce)) {
+    for (const tag of PyWimsTemplate.parseTags(fields.question_statement)) {
       for (const key of ["size", "rows", "cols"]) {
         if (typeof tag.attributes[key] === "string") {
           dimensions[tag.attributes[key]] = 2;
@@ -21,19 +21,26 @@
         orders[tag.name] = [0, 1];
       }
     }
-    const context = Object.fromEntries(
-      [...PyWimsTemplate.templateVariables(fields.enonce)].map(name => [name, name])
-    );
-    return { seed: 0, context, dimensions, solutions: {}, choices, orders, explication: null };
+    const context = Object.fromEntries(displayedVariables(fields).map(name => [name, name]));
+    return { seed: 0, context, dimensions, solutions: {}, choices, orders };
+  }
+
+  // Variables affichées par la question : celles de l’énoncé et de l’explication de la solution,
+  // qui s’écrit comme l’énoncé (SPECIFICATION.md, § 2.1). Leurs valeurs forment le « context » du tirage.
+  function displayedVariables(fields) {
+    return [...new Set([
+      ...PyWimsTemplate.templateVariables(fields.question_statement),
+      ...PyWimsTemplate.templateVariables(fields.question_solution_explanation ?? "")
+    ])];
   }
 
   const drawCount = 20;
-  // Durée maximale d’une exécution de « avant », ou de « apres » pour le contrôle de cohérence
+  // Durée maximale d’une exécution de « question_setup », ou de « question_check » pour le contrôle de cohérence
   // (SPECIFICATION.md, § 3) : une boucle sans fin arrête la compilation au lieu de la bloquer.
   const drawTimeoutMs = 30000;
   let drawSessionCounter = 0;
 
-  // Résume une erreur Python : sa dernière ligne, précédée du numéro de ligne dans « avant ».
+  // Résume une erreur Python : sa dernière ligne, précédée du numéro de ligne dans « question_setup ».
   function pythonErrorSummary(message) {
     const lines = String(message).trim().split("\n");
     const lineNumbers = [...String(message).matchAll(/File "<exec>", line (\d+)/g)].map(match => match[1]);
@@ -73,15 +80,15 @@
   }
 
   // Contrôle de cohérence d’un tirage (SPECIFICATION.md, § 3) : la solution de chaque champ est
-  // saisie comme le ferait un élève, puis « apres » doit la juger juste. Sans ce contrôle, le bouton
+  // saisie comme le ferait un élève, puis « question_check » doit la juger juste. Sans ce contrôle, le bouton
   // « Solution » pourrait montrer une réponse que la correction refuse (fraction non simplifiée,
-  // indices dans un autre ordre…), ou « apres » planter pour un tirage rare. La session est celle
-  // du tirage, où « avant » vient d’être exécuté ; elle est jetée ensuite. Renvoie les messages.
-  async function coherenceErrors(session, tags, draw, apres, timeoutMs = drawTimeoutMs) {
-    if (apres === undefined) {
+  // indices dans un autre ordre…), ou « question_check » planter pour un tirage rare. La session est celle
+  // du tirage, où « question_setup » vient d’être exécuté ; elle est jetée ensuite. Renvoie les messages.
+  async function coherenceErrors(session, tags, draw, question_check, timeoutMs = drawTimeoutMs) {
+    if (question_check === undefined) {
       return defaultCoherenceErrors(tags, draw);
     }
-    // Une valeur LIBRE accepte n’importe quelle saisie : « 1 » en tient lieu.
+    // Une valeur ANY accepte n’importe quelle saisie : « 1 » en tient lieu.
     const typed = value => value ?? "1";
     for (const tag of tags) {
       const { name, type, attributes } = tag;
@@ -92,7 +99,7 @@
         await session.set(name, typed(solution));
       } else if (type === "input_math") {
         // MathLive transmet une expression en texte (« x^2 + 1 »), et non le LaTeX affiché par la
-        // solution : on saisit donc la forme texte, la plus proche de ce que reçoit « apres ».
+        // solution : on saisit donc la forme texte, la plus proche de ce que reçoit « question_check ».
         await session.set(name, typed(await session.run(`__import__("pywims")._solution_text(${attributes.solution})`)));
       } else {
         await session.setMatrix(name, solution.map(row => row.map(typed)));
@@ -100,12 +107,12 @@
     }
     await session.resetAnswers();
     try {
-      await session.run(apres, { timeoutMs });
+      await session.run(question_check, { timeoutMs });
     } catch (error) {
       if (error.name === "PyWimsTimeout") {
-        return [`« apres » n’a pas terminé en ${timeoutMs / 1000} s quand on saisit la solution (boucle sans fin ?).`];
+        return [`« question_check » n’a pas terminé en ${timeoutMs / 1000} s quand on saisit la solution (boucle sans fin ?).`];
       }
-      return [`« apres » lève une erreur quand on saisit la solution, ${pythonErrorSummary(error.message)}`];
+      return [`« question_check » lève une erreur quand on saisit la solution, ${pythonErrorSummary(error.message)}`];
     }
     const errors = [];
     for (const tag of tags) {
@@ -122,7 +129,7 @@
       }
       if (wrong.length) {
         const cells = matrix ? ` (case${wrong.length > 1 ? "s" : ""} ${wrong.map(key => key.slice(tag.name.length)).join(", ")})` : "";
-        errors.push(`la solution du champ « ${tag.name} »${cells} est jugée fausse par « apres ».`);
+        errors.push(`la solution du champ « ${tag.name} »${cells} est jugée fausse par « question_check ».`);
       }
     }
     // Le retour de l’auteur aide souvent à comprendre pourquoi la solution est refusée.
@@ -132,7 +139,7 @@
     return errors;
   }
 
-  // Cohérence sans « apres » : la solution, saisie comme le ferait un élève, doit être acceptée par
+  // Cohérence sans « question_check » : la solution, saisie comme le ferait un élève, doit être acceptée par
   // la correction par défaut (runtime/correction.js). C’est vrai par construction, sauf pour une
   // solution qu’aucun élève ne peut saisir : un texte vide (ou fait d’espaces) laisserait le champ
   // vide, et « Vérifier » resterait inactif. Le contrôle passe aussi par le même code que le
@@ -146,7 +153,7 @@
       if (PyWimsTemplate.choiceTypes.has(type)) {
         wrong = isCorrect(type, solution, solution) ? [] : [""];
       } else {
-        // Une valeur libre (null) se saisit « 1 », comme dans le contrôle avec « apres ».
+        // Une valeur libre (null) se saisit « 1 », comme dans le contrôle avec « question_check ».
         const cells = ["input_matrix", "input_vmatrix"].includes(type)
           ? solution.flatMap((row, i) => row.map((cell, j) => [`[${i}][${j}]`, cell]))
           : [["", solution]];
@@ -202,18 +209,18 @@
     return order;
   }
 
-  // Exécute « avant » pour plusieurs graines et garde les tirages distincts. Chaque tirage
-  // contient les valeurs de l’énoncé, les solutions converties, les choix et leur ordre
-  // d’affichage, et l’explication éventuelle.
+  // Exécute « question_setup » pour plusieurs graines et garde les tirages distincts. Chaque tirage
+  // contient les valeurs affichées (énoncé et explication), les solutions converties, les choix et
+  // leur ordre d’affichage.
   // La première erreur de l’auteur interrompt le calcul, avec la graine en cause.
-  // timeoutMs : durée maximale de chaque exécution de « avant » et de « apres » ; les tests la réduisent.
-  // count : nombre de tirages imposé (aperçu, tests) ; sinon le champ « tirages », ou 20.
+  // timeoutMs : durée maximale de chaque exécution de « question_setup » et de « question_check » ; les tests la réduisent.
+  // count : nombre de tirages imposé (aperçu, tests) ; sinon le champ « question_draws », ou 20.
   async function computeDraws(fields, { count: requested, onProgress, timeoutMs = drawTimeoutMs } = {}) {
-    const count = requested ?? (fields.tirages === undefined ? drawCount : Number(fields.tirages));
-    const tags = PyWimsTemplate.parseTags(fields.enonce);
+    const count = requested ?? (fields.question_draws === undefined ? drawCount : Number(fields.question_draws));
+    const tags = PyWimsTemplate.parseTags(fields.question_statement);
     const choiceTags = tags.filter(tag => PyWimsTemplate.choiceTypes.has(tag.type));
     const spec = {
-      variables: [...PyWimsTemplate.templateVariables(fields.enonce)],
+      variables: displayedVariables(fields),
       dimensions: [...new Set(tags
         .filter(tag => tag.type === "input_matrix")
         .flatMap(tag => ["size", "rows", "cols"].map(key => tag.attributes[key]))
@@ -224,33 +231,33 @@
     };
     // Une formule TeX dans une chaîne ordinaire passe sans erreur Python mais s’affiche abîmée :
     // on la refuse avant tout tirage, pour les deux champs Python.
-    // Une formule se corrige par une comparaison symbolique, donc par « apres » (SPECIFICATION.md, § 2.6).
-    const mathTag = fields.apres === undefined && tags.find(tag => tag.type === "input_math");
+    // Une formule se corrige par une comparaison symbolique, donc par « question_check » (SPECIFICATION.md, § 2.6).
+    const mathTag = fields.question_check === undefined && tags.find(tag => tag.type === "input_math");
     if (mathTag) {
-      throw new Error(`Le champ « ${mathTag.name} » (input_math) exige un « apres » : une formule se corrige par comparaison symbolique, par exemple simplify(math_expression(saisie) - solution) == 0.`);
+      throw new Error(`Le champ « ${mathTag.name} » (input_math) exige un « question_check » : une formule se corrige par comparaison symbolique, par exemple simplify(math_expression(saisie) - solution) == 0.`);
     }
     const stringErrors = [
-      ...await PyWimsPython.sourceErrors(fields.avant, "avant"),
-      ...(fields.apres === undefined ? [] : await PyWimsPython.sourceErrors(fields.apres, "apres"))
+      ...await PyWimsPython.sourceErrors(fields.question_setup, "question_setup"),
+      ...(fields.question_check === undefined ? [] : await PyWimsPython.sourceErrors(fields.question_check, "question_check"))
     ];
     if (stringErrors.length) {
       throw new Error(stringErrors.join(" "));
     }
-    // Exécute « avant » avec la graine dans une session neuve et renvoie la session et le tirage ;
+    // Exécute « question_setup » avec la graine dans une session neuve et renvoie la session et le tirage ;
     // l’appelant libère la session.
     async function runDraw(seed) {
       drawSessionCounter += 1;
       const session = PyWimsPython.createSession(`compilation-${drawSessionCounter}`);
       try {
         // Les paquets à charger sont déduits des imports de tout le code Python de la question.
-        await session.initialize(`${fields.avant}\n${fields.apres ?? ""}`);
+        await session.initialize(`${fields.question_setup}\n${fields.question_check ?? ""}`);
         try {
-          await session.runSeeded(fields.avant, seed, { timeoutMs });
+          await session.runSeeded(fields.question_setup, seed, { timeoutMs });
         } catch (error) {
           if (error.name === "PyWimsTimeout") {
-            throw new Error(`« avant » n’a pas terminé en ${timeoutMs / 1000} s pour la graine ${seed} (boucle sans fin ?).`);
+            throw new Error(`« question_setup » n’a pas terminé en ${timeoutMs / 1000} s pour la graine ${seed} (boucle sans fin ?).`);
           }
-          throw new Error(`Erreur dans « avant » pour la graine ${seed}, ${pythonErrorSummary(error.message)}`);
+          throw new Error(`Erreur dans « question_setup » pour la graine ${seed}, ${pythonErrorSummary(error.message)}`);
         }
         return { session, draw: await session.collectDraw(spec) };
       } catch (error) {
@@ -264,8 +271,7 @@
       context: "les valeurs de l’énoncé",
       dimensions: "les dimensions des matrices",
       solutions: "les solutions",
-      choices: "les choix",
-      explication: "l’explication"
+      choices: "les choix"
     };
 
     const draws = [];
@@ -284,10 +290,10 @@
         const differing = Object.keys(drawParts)
           .filter(part => JSON.stringify(draw[part]) !== JSON.stringify(twin.draw[part]));
         if (differing.length) {
-          throw new Error(`Graine ${seed} : deux exécutions de « avant » avec la même graine donnent des tirages différents (${differing.map(part => drawParts[part]).join(", ")}). Tirez le hasard uniquement avec le module random (ou numpy.random.seed) : le navigateur ne pourrait pas rejouer ce tirage.`);
+          throw new Error(`Graine ${seed} : deux exécutions de « question_setup » avec la même graine donnent des tirages différents (${differing.map(part => drawParts[part]).join(", ")}). Tirez le hasard uniquement avec le module random (ou numpy.random.seed) : le navigateur ne pourrait pas rejouer ce tirage.`);
         }
         // Les solutions ont la forme attendue : on peut les saisir et vérifier la correction.
-        const incoherences = await coherenceErrors(session, tags, draw, fields.apres, timeoutMs);
+        const incoherences = await coherenceErrors(session, tags, draw, fields.question_check, timeoutMs);
         if (incoherences.length) {
           throw new Error(`Graine ${seed} : ${incoherences.join(" ")}`);
         }
@@ -296,7 +302,7 @@
           choiceOrder(draw.choices[tag.name].length, tag.attributes.fixed_last ?? 0, seed, tag.name)
         ]));
         // L’ordre fait partie du tirage : deux tirages qui ne diffèrent que par lui restent distincts.
-        const key = JSON.stringify([draw.context, draw.solutions, draw.choices, orders, draw.explication]);
+        const key = JSON.stringify([draw.context, draw.solutions, draw.choices, orders]);
         if (!seen.has(key)) {
           seen.add(key);
           draws.push({
@@ -305,8 +311,7 @@
             dimensions: draw.dimensions,
             solutions: draw.solutions,
             choices: draw.choices,
-            orders,
-            explication: draw.explication
+            orders
           });
         }
       } finally {

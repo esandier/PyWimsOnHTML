@@ -89,64 +89,67 @@
       <table>
         <thead><tr><th>Champ</th><th>Statut</th><th>Contenu</th></tr></thead>
         <tbody>
-          <tr><td><code>title</code></td><td>obligatoire</td><td>titre de la question, affiché aux élèves</td></tr>
-          <tr><td><code>keywords</code></td><td>obligatoire</td><td>mots-clés séparés par des virgules (recherche dans le compilateur)</td></tr>
-          <tr><td><code>layout</code></td><td>obligatoire</td><td>toujours <code>STD</code></td></tr>
-          <tr><td><code>avant</code></td><td>obligatoire</td><td>code Python : tirage des valeurs et calcul des solutions</td></tr>
-          <tr><td><code>enonce</code></td><td>obligatoire</td><td>énoncé en HTML, avec formules, valeurs <code>{{variable}}</code> et champs de réponse</td></tr>
-          <tr><td><code>apres</code></td><td>facultatif</td><td>code Python de correction, pour accepter plusieurs écritures ou donner un retour ciblé</td></tr>
-          <tr><td><code>tirages</code></td><td>facultatif</td><td>nombre de tirages préparés, de 1 à 200 (20 par défaut)</td></tr>
+          <tr><td><code>question_title</code></td><td>obligatoire</td><td>titre de la question, affiché aux élèves</td></tr>
+          <tr><td><code>question_keywords</code></td><td>obligatoire</td><td>mots-clés séparés par des virgules (recherche dans le compilateur)</td></tr>
+          <tr><td><code>question_layout</code></td><td>obligatoire</td><td>toujours <code>STD</code></td></tr>
+          <tr><td><code>question_setup</code></td><td>obligatoire</td><td>code Python : tirage des valeurs et calcul des solutions</td></tr>
+          <tr><td><code>question_statement</code></td><td>obligatoire</td><td>énoncé en HTML, avec formules, valeurs <code>{{variable}}</code> et champs de réponse</td></tr>
+          <tr><td><code>question_solution_explanation</code></td><td>facultatif</td><td>explication affichée avec la solution, écrite comme l’énoncé, sans champ de réponse</td></tr>
+          <tr><td><code>question_check</code></td><td>facultatif</td><td>code Python de correction, pour accepter plusieurs écritures ou donner un retour ciblé</td></tr>
+          <tr><td><code>question_draws</code></td><td>facultatif</td><td>nombre de tirages préparés, de 1 à 200 (20 par défaut)</td></tr>
         </tbody>
       </table>
     </div>
 
-    <h3>Le champ <code>avant</code></h3>
+    <h3>Le champ <code>question_setup</code></h3>
     <ol class="lettres">
       <li>C’est du Python. Importez ce dont vous avez besoin (<code>from random import randint</code>,
         <code>from sympy import *</code>…). Utilisez le module <code>random</code> pour des données
         aléatoires.</li>
-      <li>Une chaîne qui contient une formule s’écrit avec <code>r</code> devant les guillemets :
-        <code>r"$\frac{1}{2}$"</code>. C’est indispensable dès qu’elle contient une barre oblique inverse
-        <code>\</code>, que Python interpréterait sinon. Pour y insérer la valeur d’une variable, ajoutez
-        <code>f</code> et mettez la variable entre accolades : avec <code>a = 3</code> et <code>b = 17</code>,
-        <code>rf"${a}\times {b}$"</code> donne le texte <code>$3\times 17$</code>, affiché 3 × 17. Les
-        accolades de LaTeX se doublent alors : <code>rf"$\frac{{1}}{{{a}}}$"</code> donne
-        <code>$\frac{1}{3}$</code>.</li>
-      <li>On peut fournir un texte <code>explication_solution</code>, affiché avec la solution (formules
-        admises entre <code>$</code>, ainsi que les balises HTML <code>&lt;b&gt;</code>,
-        <code>&lt;i&gt;</code>, <code>&lt;br&gt;</code>).</li>
+      <li>Une chaîne qui contient une formule (un choix, un retour) s’écrit avec <code>r</code> devant les
+        guillemets : <code>r"$\frac{1}{2}$"</code>. C’est indispensable dès qu’elle contient une barre
+        oblique inverse <code>\</code>, que Python interpréterait sinon.</li>
+      <li>Tous les noms sont en anglais, comme ceux de Python : <code>choices</code>, <code>correct</code>,
+        <code>answer</code>…</li>
     </ol>
 
-    <h3>Le champ <code>enonce</code></h3>
+    <h3>Le champ <code>question_statement</code></h3>
     <ol class="lettres">
       <li>C’est du HTML.</li>
       <li>Les formules s’écrivent en LaTeX entre <code>$…$</code> (dans la ligne) ou <code>$$…$$</code>
         (centrées).</li>
-      <li><code>{{nom}}</code> affiche la valeur d’une variable de <code>avant</code> : une expression SymPy
+      <li><code>{{nom}}</code> affiche la valeur d’une variable de <code>question_setup</code> : une expression SymPy
         s’affiche en LaTeX, à mettre donc dans une formule : <code>$f(x) = {{f}}$</code>. Dans une commande
         LaTeX, laissez des espaces autour : <code>\frac{ {{n}} }{ {{m}} }</code>.</li>
       <li>Les champs de réponse sont des balises <code>{% … %}</code>, détaillées ci-dessous ; chacune
         contient sa solution.</li>
     </ol>
 
-    <h3>Le champ <code>apres</code></h3>
+    <h3>Le champ <code>question_solution_explanation</code></h3>
+    <p>Facultatif, il est affiché quand l’élève demande la solution. Il s’écrit exactement comme l’énoncé
+      (HTML, formules, valeurs <code>{{variable}}</code>), sans champ de réponse :</p>
+<pre><code>On calcule ${{a}} \times {{b}} = {{product}}$.</code></pre>
+    <p>Une explication qui demande un calcul (les étapes d’un algorithme, par exemple) se prépare en
+      texte dans <code>question_setup</code>, puis s’affiche avec <code>{{variable}}</code>.</p>
+
+    <h3>Le champ <code>question_check</code></h3>
     <p>Si le champ n’est pas fourni, la réponse de l’élève est comparée à la solution, telle que l’affiche
       le bouton « Solution ». Cela convient pour un QCM, ou une saisie très simple. Mais attention :
       <code>7/12</code> est faux si la solution est <code>14/24</code>, <code>0,5</code> faux si c’est
       <code>0.5</code>. La comparaison de la réponse et de la solution est purement visuelle.</p>
-    <p>Le champ facultatif <code>apres</code> est du Python qui étudie la saisie de chaque champ de réponse
+    <p>Le champ facultatif <code>question_check</code> est du Python qui étudie la saisie de chaque champ de réponse
       (une variable de même nom que le champ), et décide <code>ok_answer['nom'] = True</code> ou
       <code>False</code> ; il peut aussi définir la variable <code>feedback</code>, un retour qui explique
       l’erreur sans donner la réponse. Il est nécessaire pour une formule (<code>input_math</code>), ou
       lorsque plusieurs réponses sont justes, par exemple.</p>
 
     <h2 id="champs">4. Les champs de réponse</h2>
-    <p>Un champ s’écrit dans <code>enonce</code>, à l’endroit où il doit apparaître :</p>
+    <p>Un champ s’écrit dans <code>question_statement</code>, à l’endroit où il doit apparaître :</p>
 <pre><code>{% type 'nom' paramètre=valeur paramètre=valeur … %}</code></pre>
     <ul>
       <li><code>'nom'</code> : un nom de variable Python (lettres, chiffres, <code>_</code>), différent des
-        variables de <code>avant</code> ; dans <code>apres</code>, la saisie arrive dans cette variable.</li>
-      <li>Une valeur est un nom de variable de <code>avant</code> (<code>solution=produit</code>), un
+        variables de <code>question_setup</code> ; dans <code>question_check</code>, la saisie arrive dans cette variable.</li>
+      <li>Une valeur est un nom de variable de <code>question_setup</code> (<code>solution=product</code>), un
         entier (<code>columns=4</code>) ou un texte entre apostrophes (<code>style='width:4em'</code>).</li>
       <li><code>solution=</code> est obligatoire pour tous les champs : la variable qui contient la bonne
         réponse.</li>
@@ -154,34 +157,34 @@
 
     <details class="champ">
       <summary><code>input_text</code> : réponse écrite</summary>
-<pre><code>{% input_text 'reponse' solution=produit style='width:4em' %}</code></pre>
+<pre><code>{% input_text 'answer' solution=product style='width:4em' %}</code></pre>
       <div class="tableau"><table>
         <thead><tr><th>Paramètre</th><th>Statut</th><th>Rôle</th></tr></thead>
         <tbody>
-          <tr><td><code>solution</code></td><td>obligatoire</td><td>nombre, expression SymPy ou texte ; affiché comme un élève l’écrirait (<code>19/12</code>, <code>x^2 + 1</code>). Pour un décimal à virgule, utilisez <code>decimal_fr</code> du module <code>pywims</code>.</td></tr>
+          <tr><td><code>solution</code></td><td>obligatoire</td><td>nombre, expression SymPy ou texte ; affiché comme un élève l’écrirait (<code>19/12</code>, <code>x^2 + 1</code>). Pour un décimal à virgule, utilisez <code>decimal_comma</code> du module <code>pywims</code>.</td></tr>
           <tr><td><code>style</code></td><td>facultatif</td><td>style CSS du champ, le plus souvent sa largeur : <code>'width:4em'</code></td></tr>
         </tbody>
       </table></div>
-      <p>Dans <code>apres</code>, la saisie arrive comme un texte.</p>
+      <p>Dans <code>question_check</code>, la saisie arrive comme un texte.</p>
     </details>
 
     <details class="champ">
       <summary><code>input_math</code> : formule, avec clavier mathématique</summary>
-<pre><code>{% input_math 'derivee' solution=f_prime %}</code></pre>
+<pre><code>{% input_math 'derivative' solution=f_prime %}</code></pre>
       <div class="tableau"><table>
         <thead><tr><th>Paramètre</th><th>Statut</th><th>Rôle</th></tr></thead>
         <tbody>
           <tr><td><code>solution</code></td><td>obligatoire</td><td>expression SymPy, affichée en formule</td></tr>
         </tbody>
       </table></div>
-      <p>L’élève écrit avec un clavier mathématique (MathLive). Ce champ exige un <code>apres</code> : la
+      <p>L’élève écrit avec un clavier mathématique (MathLive). Ce champ exige un <code>question_check</code> : la
         saisie y arrive en écriture texte (<code>x^2+1</code>), à lire avec <code>math_expression</code>
-        puis à comparer, par exemple <code>simplify(math_expression(derivee) - f_prime) == 0</code>.</p>
+        puis à comparer, par exemple <code>simplify(math_expression(derivative) - f_prime) == 0</code>.</p>
     </details>
 
     <details class="champ">
       <summary><code>input_matrix</code> : matrice de taille fixe</summary>
-<pre><code>{% input_matrix 'M' rows=2 cols=3 solution=produit input_style='width:2.5em' %}</code></pre>
+<pre><code>{% input_matrix 'M' rows=2 cols=3 solution=product input_style='width:2.5em' %}</code></pre>
       <div class="tableau"><table>
         <thead><tr><th>Paramètre</th><th>Statut</th><th>Rôle</th></tr></thead>
         <tbody>
@@ -191,14 +194,14 @@
           <tr><td><code>input_style</code></td><td>facultatif</td><td>style CSS de chaque case (largeur 2em par défaut)</td></tr>
         </tbody>
       </table></div>
-      <p>Les dimensions sont des entiers de 1 à 10, ou des variables de <code>avant</code>. Dans
-        <code>apres</code>, la saisie arrive comme une liste de lignes de textes ; chaque case se corrige à
+      <p>Les dimensions sont des entiers de 1 à 10, ou des variables de <code>question_setup</code>. Dans
+        <code>question_check</code>, la saisie arrive comme une liste de lignes de textes ; chaque case se corrige à
         part : <code>ok_answer["M[0][1]"] = …</code>.</p>
     </details>
 
     <details class="champ">
       <summary><code>input_vmatrix</code> : matrice dont l’élève choisit la taille</summary>
-<pre><code>{% input_vmatrix 'M' max_rows=5 max_cols=5 solution=produit %}</code></pre>
+<pre><code>{% input_vmatrix 'M' max_rows=5 max_cols=5 solution=product %}</code></pre>
       <div class="tableau"><table>
         <thead><tr><th>Paramètre</th><th>Statut</th><th>Rôle</th></tr></thead>
         <tbody>
@@ -209,25 +212,25 @@
         </tbody>
       </table></div>
       <p>L’élève agrandit ou réduit la grille avec une poignée (ou les flèches du clavier). Sans
-        <code>apres</code>, une grille aux mauvaises dimensions est fausse.</p>
+        <code>question_check</code>, une grille aux mauvaises dimensions est fausse.</p>
     </details>
 
     <details class="champ">
       <summary><code>input_radio</code> et <code>input_checkbox</code> : choix unique, choix multiple</summary>
-<pre><code>{% input_radio 'reponse' choices=choix solution=bonne columns=4 fixed_last=1 %}
-{% input_checkbox 'reponses' choices=choix solution=bonnes bareme='b=1,m=-0.5' %}</code></pre>
+<pre><code>{% input_radio 'answer' choices=choices solution=correct columns=4 fixed_last=1 %}
+{% input_checkbox 'answers' choices=choices solution=correct scoring='b=1,m=-0.5' %}</code></pre>
       <div class="tableau"><table>
         <thead><tr><th>Paramètre</th><th>Statut</th><th>Rôle</th></tr></thead>
         <tbody>
-          <tr><td><code>choices</code></td><td>obligatoire</td><td>liste de <code>avant</code> : au moins deux choix, dans votre ordre (textes avec formules, ou expressions SymPy)</td></tr>
+          <tr><td><code>choices</code></td><td>obligatoire</td><td>liste de <code>question_setup</code> : au moins deux choix, dans votre ordre (textes avec formules, ou expressions SymPy)</td></tr>
           <tr><td><code>solution</code></td><td>obligatoire</td><td><code>input_radio</code> : le numéro du bon choix ; <code>input_checkbox</code> : la liste des numéros des bons choix, éventuellement vide. Les numéros commencent à <strong>0</strong>.</td></tr>
           <tr><td><code>columns</code></td><td>facultatif</td><td>nombre de colonnes sur grand écran, de 1 (par défaut) à 6 ; réservé aux choix courts. Sur téléphone, les colonnes se réduisent d’elles-mêmes.</td></tr>
           <tr><td><code>fixed_last</code></td><td>facultatif</td><td>nombre de derniers choix laissés à la fin, non mélangés (0 par défaut) : pour « Aucune de ces réponses ».</td></tr>
-          <tr><td><code>bareme</code></td><td>facultatif</td><td>note indicative, dans la syntaxe d’AMC (voir « Le barème »)</td></tr>
+          <tr><td><code>scoring</code></td><td>facultatif</td><td>note indicative, dans la syntaxe d’AMC (voir « Le barème »)</td></tr>
         </tbody>
       </table></div>
       <p>Les choix sont mélangés à chaque tirage. Aucun choix n’est ajouté automatiquement : pour « Aucune de
-        ces réponses », écrivez-le en dernier, avec <code>fixed_last=1</code>. Dans <code>apres</code>, la
+        ces réponses », écrivez-le en dernier, avec <code>fixed_last=1</code>. Dans <code>question_check</code>, la
         saisie arrive comme le numéro choisi (choix unique) ou la liste croissante des numéros cochés.</p>
     </details>
 
@@ -235,7 +238,7 @@
       <summary>Le barème (questions à choix)</summary>
       <p>Il affiche une note indicative à chaque vérification, sans rien évaluer. La syntaxe est celle
         d’<a href="https://www.auto-multiple-choice.net/fr/doc/scoring/">AMC</a>, et un barème d’AMC se
-        recopie tel quel : <code>bareme='b=1,m=-0.5,p=0'</code>. Un barème n’est admis que si le champ à
+        recopie tel quel : <code>scoring='b=1,m=-0.5,p=0'</code>. Un barème n’est admis que si le champ à
         choix est le seul champ de la question.</p>
       <div class="tableau"><table>
         <thead><tr><th>Directive</th><th>Rôle</th></tr></thead>
@@ -252,10 +255,10 @@
     </details>
 
     <details class="champ">
-      <summary>Plusieurs réponses justes : <code>LIBRE</code></summary>
-      <p>Dans une solution, <code>LIBRE</code> (de <code>from pywims import LIBRE</code>) marque une valeur
+      <summary>Plusieurs réponses justes : <code>ANY</code></summary>
+      <p>Dans une solution, <code>ANY</code> (de <code>from pywims import ANY</code>) marque une valeur
         quelconque : toute réponse y est juste, et le bouton « Solution » y affiche « ∗ ». Par exemple, pour
-        une matrice triangulaire : <code>Matrix(n, n, lambda i, j: 0 if i &gt; j else LIBRE)</code>.</p>
+        une matrice triangulaire : <code>Matrix(n, n, lambda i, j: 0 if i &gt; j else ANY)</code>.</p>
     </details>
 
     <h2 id="publier">5. Compiler et publier</h2>
@@ -281,8 +284,8 @@
         transmise ni à Moodle ni à l’enseignant.</p>
     </div>
     <ul>
-      <li>Une question sans champ <code>apres</code> se corrige sans Python : la page reste légère. Une
-        question avec <code>apres</code> doit charger Python dans le navigateur de l’élève (environ
+      <li>Une question sans champ <code>question_check</code> se corrige sans Python : la page reste légère. Une
+        question avec <code>question_check</code> doit charger Python dans le navigateur de l’élève (environ
         10 Mo).</li>
       <li>La référence complète du format est le <a href="../PROMPT.md">prompt</a> : il s’adresse à une IA,
         mais se lit aussi très bien.</li>

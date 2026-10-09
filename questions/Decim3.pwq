@@ -1,28 +1,30 @@
 %
-% title
+% question_title
 %
 Valeur approchée au plus proche à 0,1 près
 %
-% keywords
+% question_keywords
 %
 décimaux, arrondis, valeur approchée, arrondi
 %
-% layout
+% question_layout
 %
 STD
 %
-% avant
+% question_setup
 %
 # Choix : la valeur approchée au dixième la plus proche (indice 0), puis des distracteurs ;
 # le compilateur les mélange à chaque tirage.
-choix = ["7,9", "8", "7,93", "8,01"]
-solution = 0
-# Pas de « apres » : la correction compare le choix à la solution, sans Python. L’indice ne
-# dépend pas de la réponse de l’élève : il est affiché avec la solution.
-explication_solution = r'Regardez le chiffre suivant ($3$) pour décider s’il faut arrondir par défaut ou par excès.'
+choices = ["7,9", "8", "7,93", "8,01"]
+correct = 0
+# Pas de « question_check » : la correction compare le choix à la solution, sans Python.
 %
-% enonce
+% question_statement
 %
 Soit $x=7,937253933$. Quelle est la valeur approchée de $x$ à $10^{-1}$ près <b>au plus proche</b> ?
-{% input_radio 'reponse' choices=choix solution=solution columns=4 bareme='e=-0.5,v=0,b=1,m=-0.5' %}
+{% input_radio 'answer' choices=choices solution=correct columns=4 scoring='e=-0.5,v=0,b=1,m=-0.5' %}
+%
+% question_solution_explanation
+%
+Regardez le chiffre suivant ($3$) pour décider s’il faut arrondir par défaut ou par excès.
 %

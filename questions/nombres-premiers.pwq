@@ -1,44 +1,47 @@
 %
-% title
+% question_title
 %
 Reconnaître des nombres premiers
 %
-% keywords
+% question_keywords
 %
 arithmétique, nombres premiers, QCM
 %
-% layout
+% question_layout
 %
 STD
 %
-% avant
+% question_setup
 %
 from random import sample
 from sympy import isprime
 
 # Quatre entiers distincts ; « Aucun de ces nombres » reste le dernier choix (fixed_last=1).
-nombres = sample(range(2, 50), 4)
-choix = [f"${n}$" for n in nombres] + ["Aucun de ces nombres"]
-bonnes = [i for i, n in enumerate(nombres) if isprime(n)]
-if not bonnes:
-    bonnes = [4]
-explication_solution = "Un nombre premier a exactement deux diviseurs : $1$ et lui-même."
+numbers = sample(range(2, 50), 4)
+choices = [f"${n}$" for n in numbers] + ["Aucun de ces nombres"]
+correct = [i for i, n in enumerate(numbers) if isprime(n)]
+if not correct:
+    correct = [4]
 %
-% enonce
+% question_statement
 %
 Parmi les nombres suivants, lesquels sont <b>premiers</b> ?
-{% input_checkbox 'reponse' choices=choix solution=bonnes columns=5 fixed_last=1 bareme='b=1,m=-0.5,p=0' %}
+{% input_checkbox 'answer' choices=choices solution=correct columns=5 fixed_last=1 scoring='b=1,m=-0.5,p=0' %}
 %
-% apres
+% question_solution_explanation
 %
-# « apres » ne sert qu’aux retours ciblés : sans lui, la correction par défaut jugerait déjà la
-# réponse en tout ou rien. La saisie et « bonnes » sont des listes croissantes d’indices.
-ok_answer['reponse'] = reponse == bonnes
-if ok_answer['reponse']:
+Un nombre premier a exactement deux diviseurs : $1$ et lui-même.
+%
+% question_check
+%
+# « question_check » ne sert qu’aux retours ciblés : sans lui, la correction par défaut jugerait déjà la
+# réponse en tout ou rien. La saisie et « correct » sont des listes croissantes d’indices.
+ok_answer['answer'] = answer == correct
+if ok_answer['answer']:
     feedback = 'Bravo, c’est exact !'
-elif 4 in reponse and len(reponse) > 1:
+elif 4 in answer and len(answer) > 1:
     feedback = '« Aucun de ces nombres » contredit les autres cases cochées.'
-elif any(i < 4 and not isprime(nombres[i]) for i in reponse):
+elif any(i < 4 and not isprime(numbers[i]) for i in answer):
     feedback = 'Au moins un nombre coché a un diviseur autre que $1$ et lui-même.'
 else:
     feedback = 'Il manque au moins un nombre premier.'

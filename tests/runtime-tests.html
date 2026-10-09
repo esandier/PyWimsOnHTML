@@ -29,7 +29,7 @@
       results.append(item);
     }
 
-    // Imitation de PyWimsPython, une session par question : « apres » compare chaque saisie à la réponse
+    // Imitation de PyWimsPython, une session par question : « question_check » compare chaque saisie à la réponse
     // attendue du tirage ({ choice: … } pour un champ à choix, comparé à l’indice ou à la liste reçue). Une saisie « sans retour » fait omettre la variable feedback ; mismatch simule
     // un tirage non reproduit. Le journal de chaque session est dans pythonLogs[identifiant].
     const fakePython = options => `
@@ -64,7 +64,7 @@ window.PyWimsPython = (() => {
           error.name = "PyWimsTimeout";
           throw error;
         }
-        log.push("apres");
+        log.push("question_check");
         const expected = question.answers[seed];
         let allOk = true;
         for (const [name, answer] of Object.entries(expected)) {
@@ -145,15 +145,16 @@ window.PyWimsPython = (() => {
     }
 
     const textQuestion = {
-      title: "Addition",
-      layout: "STD",
-      avant: "a = 2",
-      enonce: "Combien font {{ a }} plus {{ a }} ? {% input_text 'r' solution=s %}",
-      apres: "ok_answer['r'] = r == str(2 * a)"
+      question_title: "Addition",
+      question_layout: "STD",
+      question_setup: "a = 2",
+      question_statement: "Combien font {{ a }} plus {{ a }} ? {% input_text 'r' solution=s %}",
+      question_check: "ok_answer['r'] = r == str(2 * a)",
+      question_solution_explanation: "Car {{ a }} plus {{ a }}, c’est <b>le double</b> de {{ a }}."
     };
     const textDraws = [
-      { seed: 0, context: { a: "2" }, dimensions: {}, solutions: { r: "4" }, explication: "Car $2 + 2 = 4$." },
-      { seed: 1, context: { a: "3" }, dimensions: {}, solutions: { r: "6" }, explication: null }
+      { seed: 0, context: { a: "2" }, dimensions: {}, solutions: { r: "4" } },
+      { seed: 1, context: { a: "3" }, dimensions: {}, solutions: { r: "6" } }
     ];
     const textOptions = {
       contexts: { 0: { a: "2" }, 1: { a: "3" } },
@@ -230,7 +231,8 @@ window.PyWimsPython = (() => {
         const field = $("#q1-form_txt_r");
         if (field.value !== "4" || !field.classList.contains("is-correct") || !field.disabled ||
             !role("feedback").classList.contains("is-explanation") ||
-            !role("feedback").textContent.includes("Car") ||
+            role("feedback").textContent !== "Car 2 plus 2, c’est le double de 2." ||
+            !role("feedback").querySelector("b") ||
             !absent(role("check")) || !absent(role("solution")) || absent(role("new-draw"))) {
           throw new Error("La solution n’est pas affichée comme prévu.");
         }
@@ -294,13 +296,13 @@ window.PyWimsPython = (() => {
 
       await test("une valeur libre de la solution s’affiche « ∗ » sans couleur de correction", async () => {
         const fields = {
-          title: "Triangulaire",
-          layout: "STD",
-          avant: "M = 0",
-          enonce: "{% input_matrix 'm' size=2 solution=M %}",
-          apres: "pass"
+          question_title: "Triangulaire",
+          question_layout: "STD",
+          question_setup: "M = 0",
+          question_statement: "{% input_matrix 'm' size=2 solution=M %}",
+          question_check: "pass"
         };
-        const draws = [{ seed: 0, context: {}, dimensions: {}, solutions: { m: [[null, "1"], ["0", null]] }, explication: null }];
+        const draws = [{ seed: 0, context: {}, dimensions: {}, solutions: { m: [[null, "1"], ["0", null]] } }];
         const { $, role, frame } = await openQuestion(fields, draws, { contexts: { 0: {} }, answers: { 0: { m: [[null, "1"], ["0", null]] } } });
         const cell = (i, j) => $(`[id='q1-form_txt_m[${i}][${j}]']`);
         // Vérification d’abord : les cases libres et [0][1] sont justes, [1][0] est fausse.
@@ -323,15 +325,15 @@ window.PyWimsPython = (() => {
 
       // Choix multiple : solution [0, 2], affichée dans l’ordre 2, 0, 3, 1.
       const choiceQuestion = {
-        title: "Nombres premiers",
-        layout: "STD",
-        avant: "choix = ['2', '4', '5', '9']",
-        enonce: "Lesquels sont premiers ? {% input_checkbox 'r' choices=choix solution=bonnes columns=2 %}",
-        apres: "ok_answer['r'] = r == bonnes"
+        question_title: "Nombres premiers",
+        question_layout: "STD",
+        question_setup: "choix = ['2', '4', '5', '9']",
+        question_statement: "Lesquels sont premiers ? {% input_checkbox 'r' choices=choix solution=bonnes columns=2 %}",
+        question_check: "ok_answer['r'] = r == bonnes"
       };
       const choiceDraws = [{
         seed: 0, context: {}, dimensions: {}, solutions: { r: [0, 2] },
-        choices: { r: ["$2$", "$4$", "$5$", "$9$"] }, orders: { r: [2, 0, 3, 1] }, explication: null
+        choices: { r: ["$2$", "$4$", "$5$", "$9$"] }, orders: { r: [2, 0, 3, 1] }
       }];
       const choiceOptions = {
         contexts: { 0: {} },
@@ -394,7 +396,7 @@ window.PyWimsPython = (() => {
       });
 
       await test("un choix unique attend une réponse, puis se rouvre entièrement après une erreur", async () => {
-        const radioQuestion = { ...choiceQuestion, enonce: "Le plus petit ? {% input_radio 'r' choices=choix solution=bonne %}" };
+        const radioQuestion = { ...choiceQuestion, question_statement: "Le plus petit ? {% input_radio 'r' choices=choix solution=bonne %}" };
         const radioDraws = [{ ...choiceDraws[0], solutions: { r: 0 } }];
         const { $, role, frame, window: frameWindow } = await openQuestion(radioQuestion, radioDraws,
           { ...choiceOptions, answers: { 0: { r: { choice: 0 } } } });
@@ -434,7 +436,7 @@ window.PyWimsPython = (() => {
 
       await test("un groupe de choix perd des colonnes tant qu’un choix déborde, jamais au-delà", async () => {
         const draws = [{ ...choiceDraws[0], choices: { r: ["$2$", "x".repeat(80), "$5$", "$9$"] } }];
-        const question = { ...choiceQuestion, enonce: choiceQuestion.enonce.replace("columns=2", "columns=4") };
+        const question = { ...choiceQuestion, question_statement: choiceQuestion.question_statement.replace("columns=2", "columns=4") };
         const { $, frame } = await openQuestion(question, draws,
           { ...choiceOptions, choices: { 0: { choix: draws[0].choices.r } } });
         await waitFor(() => $("#q1 .pw-choices")?.style.getPropertyValue("--pw-choice-columns") === "1", "retrait des colonnes");
@@ -450,7 +452,7 @@ window.PyWimsPython = (() => {
       });
 
       await test("une question notée affiche sa note, et l’activité une note indicative", async () => {
-        const scoredQuestion = { ...choiceQuestion, enonce: choiceQuestion.enonce.replace("columns=2", "bareme='b=2,m=-0.5'") };
+        const scoredQuestion = { ...choiceQuestion, question_statement: choiceQuestion.question_statement.replace("columns=2", "scoring='b=2,m=-0.5'") };
         const scoredDraws = [choiceDraws[0], { ...choiceDraws[0], seed: 1, orders: { r: [0, 1, 2, 3] } }];
         const seedOptions = {
           contexts: { 0: {}, 1: {} },
@@ -503,7 +505,7 @@ window.PyWimsPython = (() => {
       });
 
       await test("une question seule notée affiche sa note, sans note d’activité ; sans barème, rien", async () => {
-        const scoredQuestion = { ...choiceQuestion, enonce: choiceQuestion.enonce.replace("columns=2", "bareme='mz=1'") };
+        const scoredQuestion = { ...choiceQuestion, question_statement: choiceQuestion.question_statement.replace("columns=2", "scoring='mz=1'") };
         const single = await openQuestion(scoredQuestion, choiceDraws, choiceOptions);
         await waitFor(() => single.$("#q1 .pw-choices"), "affichage des choix");
         single.$('#q1 .pw-choice[data-choice-index="0"] input').click();
@@ -547,8 +549,8 @@ window.PyWimsPython = (() => {
       });
 
       await test("une feuille de deux questions les garde indépendantes, même avec des champs de même nom", async () => {
-        const otherQuestion = { ...textQuestion, title: "Double", enonce: "Le double de {{ a }} ? {% input_text 'r' solution=s %}" };
-        const otherDraws = [{ seed: 5, context: { a: "7" }, dimensions: {}, solutions: { r: "14" }, explication: null }];
+        const otherQuestion = { ...textQuestion, question_title: "Double", question_statement: "Le double de {{ a }} ? {% input_text 'r' solution=s %}" };
+        const otherDraws = [{ seed: 5, context: { a: "7" }, dimensions: {}, solutions: { r: "14" } }];
         const options = {
           questions: {
             q1: textOptions,
@@ -574,7 +576,7 @@ window.PyWimsPython = (() => {
         if (role("feedback", 1).textContent || $("#q1-form_txt_r").classList.contains("is-correct") ||
             !$("#q2-form_txt_r").classList.contains("is-correct") ||
             $("#q1").dataset.state !== "open" || seeds(2).join() !== "5" ||
-            frameWindow.pythonLogs.q1.includes("apres") || !frameWindow.pythonLogs.q2.includes("apres")) {
+            frameWindow.pythonLogs.q1.includes("question_check") || !frameWindow.pythonLogs.q2.includes("question_check")) {
           throw new Error("La vérification de la question 2 a touché la question 1 ou sa session Python.");
         }
         // Progression : la question 2 réussie compte pour moitié ; une solution affichée ne compte pas.
@@ -601,11 +603,11 @@ window.PyWimsPython = (() => {
         frame.remove();
       });
 
-      // Sans « apres » (SPECIFICATION.md, § 2.6) : la section est marquée data-python="false", la
+      // Sans « question_check » (SPECIFICATION.md, § 2.6) : la section est marquée data-python="false", la
       // question se corrige par comparaison avec sa solution et ne crée aucune session Python.
-      const { apres: _apres, ...choiceWithoutApres } = choiceQuestion;
+      const { question_check: _apres, ...choiceWithoutApres } = choiceQuestion;
 
-      await test("une question à choix sans « apres » se corrige sans jamais créer de session Python", async () => {
+      await test("une question à choix sans « question_check » se corrige sans jamais créer de session Python", async () => {
         const { $, role, frame, window: frameWindow } = await openQuestion(choiceWithoutApres, choiceDraws, choiceOptions);
         await waitFor(() => $("#q1 .pw-choices"), "affichage des choix");
         if ($("#q1").dataset.python !== "false") throw new Error("La section n’est pas marquée sans Python.");
@@ -633,8 +635,8 @@ window.PyWimsPython = (() => {
         frame.remove();
       });
 
-      await test("un choix unique sans « apres » faux reçoit « Réponse incorrecte. »", async () => {
-        const radio = { ...choiceWithoutApres, enonce: "Le plus petit ? {% input_radio 'r' choices=choix solution=bonne %}" };
+      await test("un choix unique sans « question_check » faux reçoit « Réponse incorrecte. »", async () => {
+        const radio = { ...choiceWithoutApres, question_statement: "Le plus petit ? {% input_radio 'r' choices=choix solution=bonne %}" };
         const draws = [{ ...choiceDraws[0], solutions: { r: 0 } }];
         const { $, role, frame } = await openQuestion(radio, draws, {});
         await waitFor(() => $("#q1 .pw-choices"), "affichage des choix");
@@ -647,14 +649,14 @@ window.PyWimsPython = (() => {
         frame.remove();
       });
 
-      await test("sans « apres », un champ texte et une matrice se comparent à l’écriture de la solution", async () => {
+      await test("sans « question_check », un champ texte et une matrice se comparent à l’écriture de la solution", async () => {
         const fields = {
-          title: "Écritures", layout: "STD", avant: "s = 0",
-          enonce: "{% input_text 't' solution=s %} {% input_vmatrix 'm' max_rows=3 max_cols=3 solution=M %}"
+          question_title: "Écritures", question_layout: "STD", question_setup: "s = 0",
+          question_statement: "{% input_text 't' solution=s %} {% input_vmatrix 'm' max_rows=3 max_cols=3 solution=M %}"
         };
-        const draws = [{ seed: 0, context: {}, dimensions: {}, solutions: { t: "x^2 + 1", m: [["1", "-2"]] }, explication: null }];
+        const draws = [{ seed: 0, context: {}, dimensions: {}, solutions: { t: "x^2 + 1", m: [["1", "-2"]] } }];
         const { $, role, frame, window: frameWindow } = await openQuestion(fields, draws, {});
-        // Ni formule ni « apres » : la feuille n’intègre pas MathJax, et tout marche sans lui.
+        // Ni formule ni « question_check » : la feuille n’intègre pas MathJax, et tout marche sans lui.
         if (frameWindow.MathJax !== undefined) throw new Error("MathJax est chargé par une feuille sans formule.");
         const text = $("#q1-form_txt_t");
         const cell = (i, j) => $(`[id='q1-form_txt_m[${i}][${j}]']`);
@@ -686,7 +688,7 @@ window.PyWimsPython = (() => {
         frame.remove();
       });
 
-      await test("dans une feuille mixte, seule la question qui a un « apres » utilise Python", async () => {
+      await test("dans une feuille mixte, seule la question qui a un « question_check » utilise Python", async () => {
         const { $, role, frame, window: frameWindow } = await openSheet([
           { fields: textQuestion, draws: textDraws },
           { fields: choiceWithoutApres, draws: choiceDraws }
@@ -710,8 +712,8 @@ window.PyWimsPython = (() => {
       await test("une activité retrouve ses réussites à la réouverture, et le bouton ↺ les efface", async () => {
         const title = `Mémoire ${Date.now()}`;
         const sheet = [
-          { fields: { ...choiceWithoutApres, title: "Première" }, draws: choiceDraws },
-          { fields: { ...choiceWithoutApres, title: "Seconde" }, draws: choiceDraws }
+          { fields: { ...choiceWithoutApres, question_title: "Première" }, draws: choiceDraws },
+          { fields: { ...choiceWithoutApres, question_title: "Seconde" }, draws: choiceDraws }
         ];
         const solve = async ({ $, role }) => {
           await waitFor(() => $("#q2 .pw-choices"), "affichage des choix");
@@ -779,12 +781,12 @@ window.PyWimsPython = (() => {
         frame.remove();
       });
 
-      await test("les formules $…$ et $$…$$ d’une question sans « apres » sont composées par MathJax", async () => {
+      await test("les formules $…$ et $$…$$ d’une question sans « question_check » sont composées par MathJax", async () => {
         const fields = {
-          title: "Formules", layout: "STD", avant: "s = 0",
-          enonce: "Calculer $x^2$ pour $$y = 3$$ {% input_text 'r' solution=s %}"
+          question_title: "Formules", question_layout: "STD", question_setup: "s = 0",
+          question_statement: "Calculer $x^2$ pour $$y = 3$$ {% input_text 'r' solution=s %}"
         };
-        const draws = [{ seed: 0, context: {}, dimensions: {}, solutions: { r: "9" }, explication: null }];
+        const draws = [{ seed: 0, context: {}, dimensions: {}, solutions: { r: "9" } }];
         const { role, frame } = await openQuestion(fields, draws, {});
         await waitFor(() => role("prompt").querySelectorAll("mjx-container").length === 2, "composition des deux formules", 20000);
         if (role("prompt").querySelector("mjx-container[display='true']") === null) {
@@ -797,12 +799,12 @@ window.PyWimsPython = (() => {
       // hauteur minimale n’est fixée (mesurée trop tôt, elle laissait un espace vide sous les choix).
       await test("l’énoncé n’a pas de minimum au premier affichage, et ne rétrécit pas au nouvel énoncé", async () => {
         const fields = {
-          title: "Hauteurs", layout: "STD", avant: "t = ''",
-          enonce: "<p>{{ t }}</p> {% input_text 'r' solution=s %}"
+          question_title: "Hauteurs", question_layout: "STD", question_setup: "t = ''",
+          question_statement: "<p>{{ t }}</p> {% input_text 'r' solution=s %}"
         };
         const draws = [
-          { seed: 0, context: { t: "mot ".repeat(150) }, dimensions: {}, solutions: { r: "1" }, explication: null },
-          { seed: 1, context: { t: "court" }, dimensions: {}, solutions: { r: "1" }, explication: null }
+          { seed: 0, context: { t: "mot ".repeat(150) }, dimensions: {}, solutions: { r: "1" } },
+          { seed: 1, context: { t: "court" }, dimensions: {}, solutions: { r: "1" } }
         ];
         const { role, frame } = await openQuestion(fields, draws, {});
         const prompt = role("prompt");
@@ -821,15 +823,15 @@ window.PyWimsPython = (() => {
       });
 
       // Vrai MathLive, chargé en ligne comme dans un fichier généré : la feuille assemblée doit le
-      // charger, attendre qu’il soit prêt, puis transmettre à « apres » l’écriture ASCII (« x^2+1 »)
+      // charger, attendre qu’il soit prêt, puis transmettre à « question_check » l’écriture ASCII (« x^2+1 »)
       // et non le LaTeX affiché (« x^{2}+1 »).
-      await test("un champ MathLive est transmis à « apres » en écriture ASCII", async () => {
+      await test("un champ MathLive est transmis à « question_check » en écriture ASCII", async () => {
         const mathQuestion = {
-          title: "Formule", layout: "STD", avant: "a = 1",
-          enonce: "Écrire $x^2+1$ : {% input_math 'd' solution=s %}",
-          apres: "ok_answer['d'] = d == 'x^2+1'"
+          question_title: "Formule", question_layout: "STD", question_setup: "a = 1",
+          question_statement: "Écrire $x^2+1$ : {% input_math 'd' solution=s %}",
+          question_check: "ok_answer['d'] = d == 'x^2+1'"
         };
-        const draws = [{ seed: 0, context: {}, dimensions: {}, solutions: { d: "x^2+1" }, explication: null }];
+        const draws = [{ seed: 0, context: {}, dimensions: {}, solutions: { d: "x^2+1" } }];
         const { page, role, frame, window } = await openQuestion(mathQuestion, draws,
           { contexts: { 0: {} }, answers: { 0: { d: "x^2+1" } } });
         await waitFor(() => window.customElements.get("math-field"), "chargement de MathLive", 30000);
@@ -839,7 +841,7 @@ window.PyWimsPython = (() => {
         role("check").click();
         await waitFor(() => role("feedback").classList.contains("is-visible"), "retour de la vérification", 15000);
         if (!field.classList.contains("is-correct")) {
-          throw new Error("« apres » n’a pas reçu l’écriture ASCII x^2+1 de la formule.");
+          throw new Error("« question_check » n’a pas reçu l’écriture ASCII x^2+1 de la formule.");
         }
         frame.remove();
       });

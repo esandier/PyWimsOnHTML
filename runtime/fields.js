@@ -28,7 +28,7 @@ window.PyWimsFields = (() => {
   const isSingleAnswer = field => field.dataset.matrixName === undefined &&
     !(isChoiceGroup(field) && field.dataset.multiple === "true");
 
-  // Indices cochés, dans l’ordre de l’auteur : le mélange de l’affichage est invisible pour « apres ».
+  // Indices cochés, dans l’ordre de l’auteur : le mélange de l’affichage est invisible pour « question_check ».
   function checkedIndices(group) {
     return choiceInputs(group).filter(input => input.checked).map(choiceIndex).sort((a, b) => a - b);
   }
