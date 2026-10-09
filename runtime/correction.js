@@ -76,9 +76,11 @@ window.PyWimsCorrection = (() => {
 
   // Lit une saisie numérique : renvoie { value, kind, irreducible, scientific } ou null si ce n’est
   // pas un nombre. Virgule et point sont acceptés : un nombre seul est sans ambiguïté. Le
-  // multiplié de la notation scientifique s’écrit ×, *, x ou ·.
+  // multiplié de la notation scientifique s’écrit ×, *, x, ·, un point (« 7,7.10^4 », écriture
+  // française) ou une simple espace (« 7,7 10^4 »). L’espace est lue avant d’effacer les autres :
+  // sinon « 7,7 10^4 » devenait « 7,710^4 », illisible.
   function parseNumber(text) {
-    const source = normalizedText(text);
+    const source = normalizedText(String(text).replace(/(\d)\s+(10\s*\^)/g, "$1×$2"));
     let match = source.match(/^[+-]?\d+$/);
     if (match) {
       return { value: rational(BigInt(source)), kind: "integer" };
@@ -93,7 +95,7 @@ window.PyWimsCorrection = (() => {
       if (!value) return null;
       return { value, kind: "fraction", irreducible: BigInt(match[2]) > 1n && gcd(BigInt(match[1]), BigInt(match[2])) === 1n };
     }
-    match = source.match(/^([+-]?\d+(?:[.,]\d+)?)(?:[eE]([+-]?\d+)|[×*x·]10\^\(?([+-]?\d+)\)?)$/);
+    match = source.match(/^([+-]?\d+(?:[.,]\d+)?)(?:[eE]([+-]?\d+)|[×*x·.]10\^\(?([+-]?\d+)\)?)$/);
     if (match) {
       const mantissa = decimalRational(match[1]);
       const exponent = Number(match[2] ?? match[3]);

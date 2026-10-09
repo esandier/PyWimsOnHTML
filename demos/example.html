@@ -907,12 +907,17 @@ body:not([data-scored]) .pw-help-score {
   border: 0;
 }
 
-/* Sans « columns » : une seule colonne, de la largeur du plus long choix (fit-content), que tous
-   les choix prennent. Au moins 10em, cible facile à toucher, et au plus la largeur de l’énoncé :
-   un choix plus long y passe à la ligne. Solution écartée : chaque choix à sa propre largeur, des
-   boîtes inégales qui ne forment plus une colonne lisible (SPECIFICATION.md, § 10.7). */
+/* Sans « columns » : une grille dont toutes les cases ont la taille du plus grand choix, sur
+   autant de colonnes que possible (SPECIFICATION.md, § 10.7). Le widget de choix (fitChoiceColumns)
+   ne pose que le nombre de colonnes, « repeat(n, minmax(0, 1fr)) » ; la grille, ajustée à son
+   contenu (fit-content), donne alors à ses colonnes égales la largeur du plus grand choix, et la
+   suit si le contenu change. « 1fr » en hauteur donne à toutes les rangées celle de la plus haute.
+   Solution écartée : des colonnes en pixels mesurées par le script, plus fragiles et inutiles une
+   fois corrigée la largeur de la place de l’icône (.pw-choice-mark). */
 .pw-choices.is-compact {
-  grid-template-columns: minmax(min(10em, 100%), max-content);
+  width: fit-content;
+  max-width: 100%;
+  grid-auto-rows: 1fr;
 }
 
 .pw-choice {
@@ -978,8 +983,14 @@ mjx-assistive-mml {
 
 /* Verdict d’un choix coché : la couleur est doublée d’une icône, pour les élèves qui distinguent
    mal le vert du rouge. Sa place est toujours réservée : l’icône apparaît sans déplacer le texte. */
+/* La place est réservée par « width », et non par « flex-basis: 1.2em » : Firefox ne compte pas
+   une base flexible dans la largeur naturelle d’une case, tant que la place est vide (avant le
+   verdict). La case mesurée était trop étroite de 1,2em, et le texte, qui peut rétrécir, perdait
+   ces 19 px : un nombre court disparaissait, un mot passait à la ligne, une formule était coupée
+   et défilait (SPECIFICATION.md, § 10.7). Edge et Chrome comptaient les deux écritures. */
 .pw-choice-mark {
-  flex: 0 0 1.2em;
+  flex: 0 0 auto;
+  width: 1.2em;
   font-weight: 700;
   text-align: center;
 }
@@ -1004,19 +1015,21 @@ mjx-assistive-mml {
   content: "✗";
 }
 
-/* Liste déroulante d’un texte à trous (SPECIFICATION.md, § 2.9) : elle se fond dans le texte. Ni
-   cadre ni fond, la police et la taille du texte ; seuls un soulignement pointillé et une petite
-   flèche, de la couleur de la charte, signalent le trou. Solution écartée : l’aspect des autres
-   champs (cadre arrondi), qui coupe la phrase en morceaux. */
+/* Liste déroulante d’un texte à trous (SPECIFICATION.md, § 2.9) : elle se fond dans le texte.
+   Vide, c’est un trou de 4em souligné en pointillé, sans cadre, ni fond, ni flèche ; remplie, elle
+   prend la largeur du choix (réglée par fitSelects, widgets/input-choice.js), dans la police et la
+   taille du texte. Solution écartée : l’aspect des autres champs (cadre arrondi), qui coupe la
+   phrase en morceaux. */
 .pw-select {
   display: inline-block;
+  width: 4em;
   margin: 0 0.1em;
-  padding: 0 1.1em 0 0.15em;
+  padding: 0 0.15em;
   border: 0;
   border-bottom: 2px dotted var(--pw-brand-navy);
   border-radius: 0;
   color: var(--pw-brand-navy);
-  background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23888' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 0.2em center / 0.6em;
+  background: transparent;
   font: inherit;
   line-height: inherit;
   vertical-align: baseline;
@@ -2044,12 +2057,17 @@ body:not([data-scored]) .pw-help-score {
   border: 0;
 }
 
-/* Sans « columns » : une seule colonne, de la largeur du plus long choix (fit-content), que tous
-   les choix prennent. Au moins 10em, cible facile à toucher, et au plus la largeur de l’énoncé :
-   un choix plus long y passe à la ligne. Solution écartée : chaque choix à sa propre largeur, des
-   boîtes inégales qui ne forment plus une colonne lisible (SPECIFICATION.md, § 10.7). */
+/* Sans « columns » : une grille dont toutes les cases ont la taille du plus grand choix, sur
+   autant de colonnes que possible (SPECIFICATION.md, § 10.7). Le widget de choix (fitChoiceColumns)
+   ne pose que le nombre de colonnes, « repeat(n, minmax(0, 1fr)) » ; la grille, ajustée à son
+   contenu (fit-content), donne alors à ses colonnes égales la largeur du plus grand choix, et la
+   suit si le contenu change. « 1fr » en hauteur donne à toutes les rangées celle de la plus haute.
+   Solution écartée : des colonnes en pixels mesurées par le script, plus fragiles et inutiles une
+   fois corrigée la largeur de la place de l’icône (.pw-choice-mark). */
 .pw-choices.is-compact {
-  grid-template-columns: minmax(min(10em, 100%), max-content);
+  width: fit-content;
+  max-width: 100%;
+  grid-auto-rows: 1fr;
 }
 
 .pw-choice {
@@ -2115,8 +2133,14 @@ mjx-assistive-mml {
 
 /* Verdict d’un choix coché : la couleur est doublée d’une icône, pour les élèves qui distinguent
    mal le vert du rouge. Sa place est toujours réservée : l’icône apparaît sans déplacer le texte. */
+/* La place est réservée par « width », et non par « flex-basis: 1.2em » : Firefox ne compte pas
+   une base flexible dans la largeur naturelle d’une case, tant que la place est vide (avant le
+   verdict). La case mesurée était trop étroite de 1,2em, et le texte, qui peut rétrécir, perdait
+   ces 19 px : un nombre court disparaissait, un mot passait à la ligne, une formule était coupée
+   et défilait (SPECIFICATION.md, § 10.7). Edge et Chrome comptaient les deux écritures. */
 .pw-choice-mark {
-  flex: 0 0 1.2em;
+  flex: 0 0 auto;
+  width: 1.2em;
   font-weight: 700;
   text-align: center;
 }
@@ -2141,19 +2165,21 @@ mjx-assistive-mml {
   content: "✗";
 }
 
-/* Liste déroulante d’un texte à trous (SPECIFICATION.md, § 2.9) : elle se fond dans le texte. Ni
-   cadre ni fond, la police et la taille du texte ; seuls un soulignement pointillé et une petite
-   flèche, de la couleur de la charte, signalent le trou. Solution écartée : l’aspect des autres
-   champs (cadre arrondi), qui coupe la phrase en morceaux. */
+/* Liste déroulante d’un texte à trous (SPECIFICATION.md, § 2.9) : elle se fond dans le texte.
+   Vide, c’est un trou de 4em souligné en pointillé, sans cadre, ni fond, ni flèche ; remplie, elle
+   prend la largeur du choix (réglée par fitSelects, widgets/input-choice.js), dans la police et la
+   taille du texte. Solution écartée : l’aspect des autres champs (cadre arrondi), qui coupe la
+   phrase en morceaux. */
 .pw-select {
   display: inline-block;
+  width: 4em;
   margin: 0 0.1em;
-  padding: 0 1.1em 0 0.15em;
+  padding: 0 0.15em;
   border: 0;
   border-bottom: 2px dotted var(--pw-brand-navy);
   border-radius: 0;
   color: var(--pw-brand-navy);
-  background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23888' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 0.2em center / 0.6em;
+  background: transparent;
   font: inherit;
   line-height: inherit;
   vertical-align: baseline;
@@ -2898,9 +2924,11 @@ window.PyWimsCorrection = (() => {
 
   // Lit une saisie numérique : renvoie { value, kind, irreducible, scientific } ou null si ce n’est
   // pas un nombre. Virgule et point sont acceptés : un nombre seul est sans ambiguïté. Le
-  // multiplié de la notation scientifique s’écrit ×, *, x ou ·.
+  // multiplié de la notation scientifique s’écrit ×, *, x, ·, un point (« 7,7.10^4 », écriture
+  // française) ou une simple espace (« 7,7 10^4 »). L’espace est lue avant d’effacer les autres :
+  // sinon « 7,7 10^4 » devenait « 7,710^4 », illisible.
   function parseNumber(text) {
-    const source = normalizedText(text);
+    const source = normalizedText(String(text).replace(/(\d)\s+(10\s*\^)/g, "$1×$2"));
     let match = source.match(/^[+-]?\d+$/);
     if (match) {
       return { value: rational(BigInt(source)), kind: "integer" };
@@ -2915,7 +2943,7 @@ window.PyWimsCorrection = (() => {
       if (!value) return null;
       return { value, kind: "fraction", irreducible: BigInt(match[2]) > 1n && gcd(BigInt(match[1]), BigInt(match[2])) === 1n };
     }
-    match = source.match(/^([+-]?\d+(?:[.,]\d+)?)(?:[eE]([+-]?\d+)|[×*x·]10\^\(?([+-]?\d+)\)?)$/);
+    match = source.match(/^([+-]?\d+(?:[.,]\d+)?)(?:[eE]([+-]?\d+)|[×*x·.]10\^\(?([+-]?\d+)\)?)$/);
     if (match) {
       const mantissa = decimalRational(match[1]);
       const exponent = Number(match[2] ?? match[3]);
@@ -3158,10 +3186,9 @@ window.PyWimsWidgets = (() => {
   }
 
   // Liste déroulante d’un texte à trous (SPECIFICATION.md, § 2.9) : un <select> natif, dont le
-  // sélecteur du système s’ouvre sur téléphone. La première option, « … », montre le trou avant tout
+  // sélecteur du système s’ouvre sur téléphone. La première option, vide, montre le trou avant tout
   // choix ; masquée et inactive, elle ne peut pas être choisie de nouveau. Chaque option porte
-  // l’indice du choix dans la liste de l’auteur, que reçoit « question_check ». Le navigateur donne au
-  // champ la largeur de la plus longue option : choisir ne déplace pas le texte.
+  // l’indice du choix dans la liste de l’auteur, que reçoit « question_check ».
   function inputSelect(name, { texts, order, idPrefix = "" } = {}) {
     if (!/^[A-Za-z_]\w*$/.test(name)) {
       throw new Error(`Nom invalide pour une liste déroulante : ${name}`);
@@ -3174,7 +3201,52 @@ window.PyWimsWidgets = (() => {
     // Accolades échappées, comme pour les choix : le modèle ne doit pas toucher au texte d’une option.
     const options = order.map(index =>
       `<option value="${index}">${escapeHtml(texts[index]).replaceAll("{", "&#123;").replaceAll("}", "&#125;")}</option>`).join("");
-    return `<select class="pw-select" id="${idPrefix}form_select_${name}" data-name="${name}" aria-label="${escapeHtml(name)}"><option value="" selected disabled hidden>…</option>${options}</select>`;
+    return `<select class="pw-select" id="${idPrefix}form_select_${name}" data-name="${name}" aria-label="${escapeHtml(name)}"><option value="" selected disabled hidden></option>${options}</select>`;
+  }
+
+  // Règle la largeur de chaque liste déroulante sur le texte choisi (§ 2.9) : un <select> natif a
+  // toujours la largeur de sa plus longue option, alors qu’un trou rempli doit se lire comme une
+  // phrase. Le texte est mesuré dans un élément invisible de même police ; une liste vide reprend la
+  // largeur du trou (4em, question.css). Solution écartée : « field-sizing: content », que seuls
+  // Chrome et Edge connaissent. Appelée par la question à chaque saisie et après « Solution ».
+  function fitSelects(root) {
+    for (const select of root.querySelectorAll("select.pw-select")) {
+      const option = select.selectedOptions[0];
+      if (!option || option.value === "") {
+        select.style.width = "";
+        continue;
+      }
+      const style = getComputedStyle(select);
+      const probe = document.createElement("span");
+      probe.style.cssText = "position:absolute;visibility:hidden;white-space:pre";
+      for (const property of ["fontStyle", "fontWeight", "fontSize", "fontFamily", "letterSpacing"]) {
+        probe.style[property] = style[property];
+      }
+      probe.textContent = option.textContent;
+      document.body.append(probe);
+      const width = probe.getBoundingClientRect().width;
+      probe.remove();
+      // Quelques pixels de marge : le rendu du <select> arrondit autrement que celui du texte.
+      select.style.width = `calc(${width}px + ${style.paddingLeft} + ${style.paddingRight} + 4px)`;
+    }
+  }
+
+  // Groupe sans « columns » (SPECIFICATION.md, § 10.7) : toutes les cases ont la largeur du plus
+  // grand choix, sur le plus grand nombre de colonnes qui tienne dans l’énoncé ; c’est un
+  // « columns » calculé. Seul le nombre de colonnes est calculé ici : la largeur des colonnes
+  // égales vient de la grille elle-même (question.css), et suit le contenu. Pour ce nombre, on mesure
+  // le plus grand choix dans une colonne unique « max-content », où chaque choix prend la largeur
+  // du plus large ; la largeur disponible est celle du parent, car la grille s’ajuste à son contenu.
+  // offsetWidth, et non getBoundingClientRect, que fausserait l’animation (scaleX) d’un choix.
+  // Si le plus grand choix dépasse l’énoncé, une seule colonne : le texte y passe à la ligne.
+  function fitCompactChoices(group) {
+    const choices = [...group.querySelectorAll(".pw-choice")];
+    group.style.gridTemplateColumns = "max-content";
+    const widest = Math.max(...choices.map(choice => choice.offsetWidth)) + 1;
+    const available = group.parentElement.clientWidth;
+    const gap = Number.parseFloat(getComputedStyle(group).columnGap) || 0;
+    const columns = Math.max(1, Math.min(choices.length, Math.floor((available + gap) / (widest + gap))));
+    group.style.gridTemplateColumns = `repeat(${columns}, minmax(0, 1fr))`;
   }
 
   // Retire des colonnes à un groupe de choix tant qu’un choix déborde de sa colonne.
@@ -3194,6 +3266,10 @@ window.PyWimsWidgets = (() => {
   // Appelée par la question après la composition des formules, et au redimensionnement.
   function fitChoiceColumns(root) {
     for (const group of root.querySelectorAll(".pw-choices")) {
+      if (group.classList.contains("is-compact")) {
+        fitCompactChoices(group);
+        continue;
+      }
       for (let columns = Number(group.dataset.columns); columns >= 1; columns -= 1) {
         group.style.setProperty("--pw-choice-columns", String(columns));
         const overflowing = [...group.querySelectorAll(".pw-choice-text")]
@@ -3203,7 +3279,7 @@ window.PyWimsWidgets = (() => {
     }
   }
 
-  return Object.freeze({ ...existing, inputChoice, inputSelect, fitChoiceColumns });
+  return Object.freeze({ ...existing, inputChoice, inputSelect, fitSelects, fitChoiceColumns });
 })();
 </script>
   <!-- Module Python « pywims » (runtime/pywims.py), lu par le runtime Python : le type text/x-python
@@ -4484,7 +4560,11 @@ window.PyWimsQuestion = (() => {
         section.addEventListener("focusin", activate);
       }
 
-      this.promptElement.addEventListener("input", () => this.updateButtons());
+      this.promptElement.addEventListener("input", () => {
+        // Une liste déroulante remplie prend la largeur de son choix (SPECIFICATION.md, § 2.9).
+        if (this.tagTypes.has("input_select")) PyWimsWidgets.fitSelects(this.promptElement);
+        this.updateButtons();
+      });
       // Un bouton absent est inactif ; la garde protège aussi d’un clic déclenché par script.
       this.checkButton.addEventListener("click", () => {
         if (!this.checkButton.classList.contains("is-absent")) {
@@ -5087,6 +5167,7 @@ window.PyWimsQuestion = (() => {
           }),
           ...fields.filter(isChoiceGroup).map(group => this.showChoiceSolution(group))
         ]);
+        if (this.tagTypes.has("input_select")) PyWimsWidgets.fitSelects(this.promptElement);
         this.setState("solution");
         // L’explication est un modèle, comme l’énoncé : ses {{variable}} prennent les valeurs du tirage.
         const explanation = this.definition.question_solution_explanation;

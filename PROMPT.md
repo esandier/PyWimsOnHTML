@@ -137,6 +137,9 @@ français, séparés par des virgules.
   - `{% input_radio 'nom' choices=liste solution=indice %}` (choix unique) et
     `{% input_checkbox 'nom' choices=liste solution=indices %}` (choix
     multiple) : voir « Questions à choix » ci-dessous.
+- Une unité après un champ s’y attache par une espace insécable :
+  `{% input_value 'length' solution=bc %}&nbsp;cm`. Sinon, l’unité peut passer
+  seule à la ligne suivante, et l’élève est tenté de l’écrire dans le champ.
 - Le nom d’un champ est aussi le nom de la variable Python qui reçoit la
   saisie dans `question_check` (une chaîne, une liste de listes de chaînes pour une
   matrice, un indice ou une liste d’indices pour une question à choix). Il ne doit pas reprendre un nom de `question_setup`, ni `ok_answer`,
@@ -184,7 +187,8 @@ français, séparés par des virgules.
 - Deux choix ne doivent jamais avoir le même texte, pour aucun tirage : avec
   des choix calculés (erreurs types), vérifie qu’ils restent distincts, sinon
   la compilation est refusée.
-- Sans `columns`, les choix sont empilés, tous de la largeur du plus long.
+- Sans `columns`, les choix ont tous la taille du plus grand, sur autant de
+  colonnes que la largeur le permet.
   `columns=n` (de 1 à 6) les place sur n colonnes sur grand écran ; réserve-le
   aux choix courts (nombres, formules brèves). Sur téléphone, les colonnes se
   réduisent d’elles-mêmes.

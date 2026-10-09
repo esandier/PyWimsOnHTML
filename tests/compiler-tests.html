@@ -128,6 +128,9 @@
         ["abc", half, {}, "wrong"], ["1/0", half, {}, "wrong"], ["", half, {}, "wrong"],
         ["−2", { text: "-2", value: "-2/1" }, { form: "integer" }, "correct"], ["-2,0", { text: "-2", value: "-2/1" }, { form: "integer" }, "form"],
         ["1 500", { text: "1500", value: "1500/1" }, {}, "correct"], ["1,5x10^3", { text: "1500", value: "1500/1" }, { form: "scientific" }, "correct"],
+        ["1,5 10^3", { text: "1500", value: "1500/1" }, { form: "scientific" }, "correct"],
+        ["1,5.10^3", { text: "1500", value: "1500/1" }, { form: "scientific" }, "correct"],
+        ["1.10^3", { text: "1000", value: "1000/1" }, { form: "scientific" }, "correct"],
         ["0,3", { text: "0,3", value: "3/10" }, {}, "correct"]
       ];
       for (const [input, solution, attributes, expected] of cases) {
@@ -183,14 +186,14 @@
         if (sameText(input, solution, match) !== expected) throw new Error(`« ${input} » / « ${solution} » (${match}) : ${!expected}`);
       }
     });
-    test("une liste déroulante affiche « … », puis ses choix dans l’ordre du tirage, échappés", () => {
+    test("une liste déroulante est vide, puis montre ses choix dans l’ordre du tirage, échappés", () => {
       const html = PyWimsWidgets.inputSelect("verb", { texts: ["<b>", "{{ a }}", "est"], order: [2, 0, 1], idPrefix: "q2-" });
       const host = document.createElement("div");
       host.innerHTML = html;
       const select = host.querySelector("select.pw-select");
       const options = [...select.options].map(option => [option.value, option.textContent]);
       if (select.id !== "q2-form_select_verb" || select.dataset.name !== "verb" || select.value !== "" ||
-          JSON.stringify(options) !== JSON.stringify([["", "…"], ["2", "est"], ["0", "<b>"], ["1", "{{ a }}"]]) ||
+          JSON.stringify(options) !== JSON.stringify([["", ""], ["2", "est"], ["0", "<b>"], ["1", "{{ a }}"]]) ||
           !select.options[0].disabled) {
         throw new Error(`Rendu inattendu : ${html}`);
       }

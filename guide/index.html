@@ -154,6 +154,8 @@
         (<code>form=decimal</code>) ou un texte entre apostrophes (<code>style='width:4em'</code>).</li>
       <li><code>solution=</code> est obligatoire pour tous les champs : la variable qui contient la bonne
         réponse.</li>
+      <li>Une unité s’attache au champ par une espace insécable : <code>{% input_value 'length' solution=bc %}&amp;nbsp;cm</code>.
+        Sinon, « cm » peut passer seul à la ligne, et l’élève est tenté de l’écrire dans le champ.</li>
     </ul>
 
     <details class="field-item">
@@ -245,7 +247,7 @@
         <tbody>
           <tr><td><code>choices</code></td><td>obligatoire</td><td>liste de <code>question_setup</code> : au moins deux choix, dans votre ordre (textes avec formules, ou expressions SymPy)</td></tr>
           <tr><td><code>solution</code></td><td>obligatoire</td><td><code>input_radio</code> : le numéro du bon choix ; <code>input_checkbox</code> : la liste des numéros des bons choix, éventuellement vide. Les numéros commencent à <strong>0</strong>.</td></tr>
-          <tr><td><code>columns</code></td><td>facultatif</td><td>nombre de colonnes sur grand écran, de 1 à 6 ; réservé aux choix courts. Sur téléphone, les colonnes se réduisent d’elles-mêmes. Sans lui, les choix sont empilés, tous de la largeur du plus long.</td></tr>
+          <tr><td><code>columns</code></td><td>facultatif</td><td>nombre de colonnes sur grand écran, de 1 à 6 ; réservé aux choix courts. Sur téléphone, les colonnes se réduisent d’elles-mêmes. Sans lui, les choix ont tous la taille du plus grand, sur autant de colonnes que la largeur le permet.</td></tr>
           <tr><td><code>shuffle</code></td><td>facultatif</td><td><code>shuffle=0</code> garde vos choix dans votre ordre, quand il a un sens (« 1 », « 2 », « plus de 2 ») ; par défaut, ils sont mélangés.</td></tr>
           <tr><td><code>fixed_last</code></td><td>facultatif</td><td>nombre de derniers choix laissés à la fin, non mélangés (0 par défaut) : pour « Aucune de ces réponses ».</td></tr>
           <tr><td><code>scoring</code></td><td>facultatif</td><td>note indicative, dans la syntaxe d’AMC (voir « Le barème »)</td></tr>

@@ -453,6 +453,50 @@ window.PyWimsPython = (() => {
         short.frame.remove();
       });
 
+      await test("sans columns, les choix ont la taille du plus grand, sur autant de colonnes que possible", async () => {
+        // Choix calculés à formules, comme ceux de mcq : ni débordement, ni barre de défilement.
+        const formulas = ["$x^{2} + 5 x + 4$", "$x^{2} - 4$", "$x^{2} + 3 x - 4$", "$x^{2} + 3 x + 3$"];
+        const question = { ...choiceQuestion, question_statement: choiceQuestion.question_statement.replace(" columns=2", "") };
+        const open = texts => openQuestion(question, [{ ...choiceDraws[0], choices: { r: texts } }],
+          { ...choiceOptions, choices: { 0: { choix: texts } } });
+        const layout = $ => [...$("#q1 .pw-choices").querySelectorAll(".pw-choice")].map(choice => choice.getBoundingClientRect());
+        const short = await open(formulas);
+        await waitFor(() => short.$("#q1 .pw-choices").querySelectorAll("mjx-container").length === 4 &&
+          short.$("#q1 .pw-choices").style.gridTemplateColumns.startsWith("repeat(4"), "quatre colonnes", 20000);
+        const boxes = layout(short.$);
+        const overflowing = [...short.$("#q1 .pw-choices").querySelectorAll(".pw-choice-text")]
+          .filter(text => text.scrollWidth > text.clientWidth || text.scrollHeight > text.clientHeight);
+        if (new Set(boxes.map(box => Math.round(box.top))).size !== 1 ||
+            new Set(boxes.map(box => Math.round(box.width))).size !== 1 || overflowing.length) {
+          throw new Error(`Grille inattendue : ${JSON.stringify(boxes.map(box => [box.top, box.width]))}, ${overflowing.length} débordement(s)`);
+        }
+        // La place de l’icône est réservée par une largeur, que Firefox compte dans la largeur
+        // naturelle d’une case (une base flexible, non : le texte perdait 19 px).
+        const mark = getComputedStyle(short.$("#q1 .pw-choice-mark"));
+        if (mark.flexBasis !== "auto" || Math.abs(Number.parseFloat(mark.width) - 1.2 * Number.parseFloat(mark.fontSize)) > 0.5) {
+          throw new Error(`Place de l’icône : flex-basis ${mark.flexBasis}, largeur ${mark.width}`);
+        }
+        // Un contenu qui s’élargit après la mesure : les cases suivent, sans couper.
+        short.$("#q1 .pw-choices").style.fontSize = "120%";
+        await new Promise(resolve => setTimeout(resolve, 100));
+        const grown = [...short.$("#q1 .pw-choices").querySelectorAll(".pw-choice-text")]
+          .filter(text => text.scrollWidth > text.clientWidth);
+        const grownWidths = new Set(layout(short.$).map(box => Math.round(box.width)));
+        if (grown.length || grownWidths.size !== 1) {
+          throw new Error(`Après agrandissement : ${grown.length} débordement(s), largeurs ${[...grownWidths]}`);
+        }
+        // Un choix long réduit le nombre de colonnes ; toutes les cases gardent la même taille.
+        const long = await open(["$2$", "un choix nettement plus long que les autres, sur une seule ligne", "$5$", "$9$"]);
+        await waitFor(() => /^repeat\([12],/.test(long.$("#q1 .pw-choices").style.gridTemplateColumns), "moins de colonnes", 20000);
+        const longBoxes = layout(long.$);
+        if (new Set(longBoxes.map(box => Math.round(box.width))).size !== 1 ||
+            new Set(longBoxes.map(box => Math.round(box.height))).size !== 1) {
+          throw new Error(`Cases de tailles différentes : ${JSON.stringify(longBoxes.map(box => [box.width, box.height]))}`);
+        }
+        short.frame.remove();
+        long.frame.remove();
+      });
+
       await test("une question notée affiche sa note, et l’activité une note indicative", async () => {
         const scoredQuestion = { ...choiceQuestion, question_statement: choiceQuestion.question_statement.replace("columns=2", "scoring='b=2,m=-0.5'") };
         const scoredDraws = [choiceDraws[0], { ...choiceDraws[0], seed: 1, orders: { r: [0, 1, 2, 3] } }];

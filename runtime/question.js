@@ -144,7 +144,11 @@ window.PyWimsQuestion = (() => {
         section.addEventListener("focusin", activate);
       }
 
-      this.promptElement.addEventListener("input", () => this.updateButtons());
+      this.promptElement.addEventListener("input", () => {
+        // Une liste déroulante remplie prend la largeur de son choix (SPECIFICATION.md, § 2.9).
+        if (this.tagTypes.has("input_select")) PyWimsWidgets.fitSelects(this.promptElement);
+        this.updateButtons();
+      });
       // Un bouton absent est inactif ; la garde protège aussi d’un clic déclenché par script.
       this.checkButton.addEventListener("click", () => {
         if (!this.checkButton.classList.contains("is-absent")) {
@@ -747,6 +751,7 @@ window.PyWimsQuestion = (() => {
           }),
           ...fields.filter(isChoiceGroup).map(group => this.showChoiceSolution(group))
         ]);
+        if (this.tagTypes.has("input_select")) PyWimsWidgets.fitSelects(this.promptElement);
         this.setState("solution");
         // L’explication est un modèle, comme l’énoncé : ses {{variable}} prennent les valeurs du tirage.
         const explanation = this.definition.question_solution_explanation;

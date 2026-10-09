@@ -382,8 +382,9 @@ n’exigent plus un `question_check`.
 
 - **Lecture de la saisie.** La virgule et le point sont acceptés : un nombre
   seul est sans ambiguïté, contrairement à un texte (§ 2.6). Les espaces sont
-  ignorés (`1 000`), comme le signe moins typographique. Le multiplié s’écrit
-  `×`, `*`, `x` ou `·`.
+  ignorés (`1 000`), comme le signe moins typographique. Le multiplié de la
+  notation scientifique s’écrit `×`, `*`, `x`, `·`, un point (`7,7.10^4`,
+  écriture française) ou une simple espace (`7,7 10^4`).
 - **Comparaison exacte.** Saisie, solution et tolérance sont des fractions
   exactes (entiers de taille quelconque, `BigInt`) : `0,1 + 0,2` n’a pas
   d’erreur d’arrondi. Un flottant de Python est d’abord arrondi à 12 chiffres
@@ -429,12 +430,16 @@ $[0 ; +\infty[$. »
 | `shuffle` | facultatif | `shuffle=0` garde l’ordre de l’auteur (§ 10.2) |
 | `fixed_last` | facultatif | nombre de derniers choix non mélangés (§ 10.2) |
 
-- **Aspect : le champ se fond dans le texte.** Ni cadre, ni fond : le choix
-  s’écrit dans la police et la taille du texte, souligné en pointillé de la
-  couleur de la charte, suivi d’une petite flèche. Avant tout choix, le champ
-  montre « … ». La largeur est celle du plus long choix, dès l’affichage :
-  choisir ne déplace pas le texte. Après vérification, le texte et le
-  soulignement prennent la couleur du verdict, sur un fond léger.
+- **Aspect : le champ se fond dans le texte.** Avant tout choix, le trou est
+  un espace vide souligné en pointillé, de la couleur de la charte : ni cadre,
+  ni fond, ni flèche. Une fois rempli, le choix s’écrit dans la police et la
+  taille du texte, et le champ prend la largeur de son contenu : la suite de
+  la phrase se décale, ce qu’on accepte pour que le texte rempli se lise
+  comme une phrase ordinaire. Après vérification, le texte et le soulignement
+  prennent la couleur du verdict, sur un fond léger.
+- **Largeur.** Un `<select>` natif a toujours la largeur de son plus long
+  choix ; le script mesure donc le texte choisi et règle la largeur à chaque
+  changement, y compris quand « Solution » remplit le champ.
 - **Saisie.** C’est un `<select>` natif : sur téléphone, le sélecteur du
   système s’ouvre, plus facile au doigt qu’une liste dessinée par la page ; au
   clavier, il se manie comme tout champ. Le champ compte comme rempli dès
@@ -804,7 +809,7 @@ question AMC en fichier `.pwq` est confiée à un LLM, guidé par `PROMPT.md`
 |---|---|---|
 | `choices` | obligatoire | variable de `question_setup` : liste des choix, dans l’ordre de l’auteur |
 | `solution` | obligatoire | `input_radio` : indice du bon choix ; `input_checkbox` : liste des indices des bons choix, vide si aucun choix n’est bon |
-| `columns` | facultatif | grille de n colonnes de même largeur sur grand écran, de 1 à 6 ; sans lui, les choix sont empilés, tous de la largeur du plus long (§ 10.7) |
+| `columns` | facultatif | grille de n colonnes de même largeur sur grand écran, de 1 à 6 ; sans lui, les choix ont tous la taille du plus grand, sur autant de colonnes que possible (§ 10.7) |
 | `shuffle` | facultatif | `shuffle=0` garde l’ordre de l’auteur ; par défaut 1, les choix sont mélangés |
 | `fixed_last` | facultatif | nombre de derniers choix qui restent à la fin, non mélangés (par défaut 0) |
 | `scoring` | facultatif | barème à la manière d’AMC (§ 10.5) |
@@ -929,16 +934,31 @@ En plus du § 2.4, le compilateur refuse la question si, pour l’un des tirages
   après « Solution ». L’aide (§ 5.6) l’explique.
 - Chaque choix est une ligne entière cliquable d’au moins 44 px de haut, dans
   un `fieldset`.
-- **Sans `columns`**, les choix sont empilés et ont tous la largeur du plus
-  long, au moins 10 em (une cible facile à toucher) et au plus la largeur de
-  l’énoncé, où un choix trop long passe à la ligne. Avant octobre 2026, chaque
-  choix prenait toute la largeur de l’énoncé : sur grand écran, « 12 » ou
-  « vrai » se trouvait à l’extrémité gauche d’un long rectangle vide, loin de
-  l’icône du verdict, et la liste se lisait mal. On a écarté :
-  - la largeur propre de chaque choix : des boîtes de largeurs inégales ne
-    forment plus une colonne lisible ;
-  - plusieurs choix courts par ligne, automatiquement : c’est le rôle de
-    `columns`, que l’auteur choisit.
+- **Sans `columns`**, les choix restent alignés en grille : tous ont la
+  largeur et la hauteur du plus grand, et le nombre de colonnes est le plus
+  grand qui tienne dans la largeur de l’énoncé, sans autre limite que le
+  nombre de choix ; c’est un `columns` calculé. Il est recalculé quand la
+  largeur de la fenêtre change (rotation du téléphone). Si le plus grand choix
+  est plus large que l’énoncé, il n’y a qu’une colonne, de la largeur de
+  l’énoncé, où le texte passe à la ligne. Le script ne calcule que le nombre
+  de colonnes, en mesurant les choix une fois les formules composées ; la
+  grille, ajustée à son contenu, donne elle-même à ses colonnes égales la
+  largeur du plus grand choix.
+  Avant octobre 2026, chaque choix prenait toute la largeur de l’énoncé : sur
+  grand écran, « 12 » ou « vrai » se trouvait à l’extrémité gauche d’un long
+  rectangle vide, loin de l’icône du verdict. On a écarté :
+  - les choix empilés à la largeur du plus long (essayé en octobre 2026) :
+    une liste de nombres occupait toute la hauteur de l’écran pour rien ;
+  - les choix à la suite, chacun à sa largeur (essayé aussi) : des boîtes
+    inégales ne s’alignent pas.
+- **Place de l’icône du verdict.** Elle est réservée par une largeur
+  (`width: 1.2em`), et non par une base flexible (`flex-basis`) : Firefox ne
+  compte pas une base flexible dans la largeur naturelle d’une case tant que
+  la place est vide. La case était alors trop étroite de 19 px, et le texte
+  perdait ces 19 px : un nombre court disparaissait, un mot passait à la
+  ligne, une formule était coupée et défilait. Constaté par un essai comparant
+  Firefox et Edge (octobre 2026) ; le conteneur (`fieldset` ou `div`) et
+  l’écriture des colonnes (`1fr` ou `minmax(0, 1fr)`) n’y changeaient rien.
 - **Avec `columns=n`**, les choix forment une grille de n colonnes
   de même largeur ; sur écran étroit, le nombre de colonnes diminue pour que
   chaque choix garde une largeur minimale (environ 8 em), puis tant qu’un
@@ -1036,7 +1056,10 @@ liste par titre (§ 11.3) sont déjà en place dans le compilateur local.
   compilation recommence le chargement, et en donne l’erreur.
 - **Développement local** : `compiler/run-local.ps1` démarre un serveur
   local à la racine du projet et ouvre le compilateur dans le navigateur ; on
-  essaie ainsi une modification du moteur avant de la publier. Ouvert
+  essaie ainsi une modification du moteur avant de la publier. Le serveur
+  (`compiler/local-server.py`) interdit le cache (`Cache-Control: no-store`) :
+  avec le serveur de Python seul, le navigateur gardait d’anciennes versions
+  des scripts, et une modification n’apparaissait pas. Ouvert
   directement depuis le disque (`file://`), le compilateur ne peut pas lire
   ses fichiers : il le dit, et indique ce script.
 - Les questions ne sont jamais envoyées : la page les lit sur l’ordinateur.

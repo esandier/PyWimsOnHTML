@@ -3,7 +3,8 @@
 # publier ; pour compiler ses questions, la version en ligne suffit.
 # Pourquoi un serveur : ouvert depuis le disque (file://), le compilateur ne peut pas lire les
 # fichiers du projet, que le navigateur refuse de lui donner (SPECIFICATION.md, § 11.1).
-# Prérequis : Python (son module http.server). Usage : .\compiler\run-local.ps1 [-Port 8800]
+# Prérequis : Python. Le serveur, local-server.py, interdit le cache : sans cela, le navigateur
+# gardait d’anciennes versions des scripts après une modification. Usage : .\compiler\run-local.ps1 [-Port 8800]
 # Fichier enregistré en UTF-8 avec BOM : sans lui, Windows PowerShell 5.1 lit les accents de travers.
 param(
   [int]$Port = 8800
@@ -33,7 +34,7 @@ while (-not (Test-FreePort $Port)) {
 }
 
 $root = (Resolve-Path "$PSScriptRoot\..").Path
-$server = Start-Process python -ArgumentList "-m", "http.server", "$Port", "--bind", "127.0.0.1" `
+$server = Start-Process python -ArgumentList "`"$PSScriptRoot\local-server.py`"", "$Port", "`"$root`"" `
   -WorkingDirectory $root -PassThru -WindowStyle Hidden
 try {
   Start-Sleep -Milliseconds 800

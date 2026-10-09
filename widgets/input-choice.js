@@ -37,10 +37,9 @@ window.PyWimsWidgets = (() => {
   }
 
   // Liste déroulante d’un texte à trous (SPECIFICATION.md, § 2.9) : un <select> natif, dont le
-  // sélecteur du système s’ouvre sur téléphone. La première option, « … », montre le trou avant tout
+  // sélecteur du système s’ouvre sur téléphone. La première option, vide, montre le trou avant tout
   // choix ; masquée et inactive, elle ne peut pas être choisie de nouveau. Chaque option porte
-  // l’indice du choix dans la liste de l’auteur, que reçoit « question_check ». Le navigateur donne au
-  // champ la largeur de la plus longue option : choisir ne déplace pas le texte.
+  // l’indice du choix dans la liste de l’auteur, que reçoit « question_check ».
   function inputSelect(name, { texts, order, idPrefix = "" } = {}) {
     if (!/^[A-Za-z_]\w*$/.test(name)) {
       throw new Error(`Nom invalide pour une liste déroulante : ${name}`);
@@ -53,7 +52,52 @@ window.PyWimsWidgets = (() => {
     // Accolades échappées, comme pour les choix : le modèle ne doit pas toucher au texte d’une option.
     const options = order.map(index =>
       `<option value="${index}">${escapeHtml(texts[index]).replaceAll("{", "&#123;").replaceAll("}", "&#125;")}</option>`).join("");
-    return `<select class="pw-select" id="${idPrefix}form_select_${name}" data-name="${name}" aria-label="${escapeHtml(name)}"><option value="" selected disabled hidden>…</option>${options}</select>`;
+    return `<select class="pw-select" id="${idPrefix}form_select_${name}" data-name="${name}" aria-label="${escapeHtml(name)}"><option value="" selected disabled hidden></option>${options}</select>`;
+  }
+
+  // Règle la largeur de chaque liste déroulante sur le texte choisi (§ 2.9) : un <select> natif a
+  // toujours la largeur de sa plus longue option, alors qu’un trou rempli doit se lire comme une
+  // phrase. Le texte est mesuré dans un élément invisible de même police ; une liste vide reprend la
+  // largeur du trou (4em, question.css). Solution écartée : « field-sizing: content », que seuls
+  // Chrome et Edge connaissent. Appelée par la question à chaque saisie et après « Solution ».
+  function fitSelects(root) {
+    for (const select of root.querySelectorAll("select.pw-select")) {
+      const option = select.selectedOptions[0];
+      if (!option || option.value === "") {
+        select.style.width = "";
+        continue;
+      }
+      const style = getComputedStyle(select);
+      const probe = document.createElement("span");
+      probe.style.cssText = "position:absolute;visibility:hidden;white-space:pre";
+      for (const property of ["fontStyle", "fontWeight", "fontSize", "fontFamily", "letterSpacing"]) {
+        probe.style[property] = style[property];
+      }
+      probe.textContent = option.textContent;
+      document.body.append(probe);
+      const width = probe.getBoundingClientRect().width;
+      probe.remove();
+      // Quelques pixels de marge : le rendu du <select> arrondit autrement que celui du texte.
+      select.style.width = `calc(${width}px + ${style.paddingLeft} + ${style.paddingRight} + 4px)`;
+    }
+  }
+
+  // Groupe sans « columns » (SPECIFICATION.md, § 10.7) : toutes les cases ont la largeur du plus
+  // grand choix, sur le plus grand nombre de colonnes qui tienne dans l’énoncé ; c’est un
+  // « columns » calculé. Seul le nombre de colonnes est calculé ici : la largeur des colonnes
+  // égales vient de la grille elle-même (question.css), et suit le contenu. Pour ce nombre, on mesure
+  // le plus grand choix dans une colonne unique « max-content », où chaque choix prend la largeur
+  // du plus large ; la largeur disponible est celle du parent, car la grille s’ajuste à son contenu.
+  // offsetWidth, et non getBoundingClientRect, que fausserait l’animation (scaleX) d’un choix.
+  // Si le plus grand choix dépasse l’énoncé, une seule colonne : le texte y passe à la ligne.
+  function fitCompactChoices(group) {
+    const choices = [...group.querySelectorAll(".pw-choice")];
+    group.style.gridTemplateColumns = "max-content";
+    const widest = Math.max(...choices.map(choice => choice.offsetWidth)) + 1;
+    const available = group.parentElement.clientWidth;
+    const gap = Number.parseFloat(getComputedStyle(group).columnGap) || 0;
+    const columns = Math.max(1, Math.min(choices.length, Math.floor((available + gap) / (widest + gap))));
+    group.style.gridTemplateColumns = `repeat(${columns}, minmax(0, 1fr))`;
   }
 
   // Retire des colonnes à un groupe de choix tant qu’un choix déborde de sa colonne.
@@ -73,6 +117,10 @@ window.PyWimsWidgets = (() => {
   // Appelée par la question après la composition des formules, et au redimensionnement.
   function fitChoiceColumns(root) {
     for (const group of root.querySelectorAll(".pw-choices")) {
+      if (group.classList.contains("is-compact")) {
+        fitCompactChoices(group);
+        continue;
+      }
       for (let columns = Number(group.dataset.columns); columns >= 1; columns -= 1) {
         group.style.setProperty("--pw-choice-columns", String(columns));
         const overflowing = [...group.querySelectorAll(".pw-choice-text")]
@@ -82,5 +130,5 @@ window.PyWimsWidgets = (() => {
     }
   }
 
-  return Object.freeze({ ...existing, inputChoice, inputSelect, fitChoiceColumns });
+  return Object.freeze({ ...existing, inputChoice, inputSelect, fitSelects, fitChoiceColumns });
 })();
