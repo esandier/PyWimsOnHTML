@@ -18,11 +18,11 @@ window.PyWimsTemplate = (() => {
     },
     input_radio: {
       choices: "variable", solution: "variable",
-      columns: "integer", fixed_last: "integer", scoring: "text"
+      columns: "integer", shuffle: "integer", fixed_last: "integer", scoring: "text"
     },
     input_checkbox: {
       choices: "variable", solution: "variable",
-      columns: "integer", fixed_last: "integer", scoring: "text"
+      columns: "integer", shuffle: "integer", fixed_last: "integer", scoring: "text"
     }
   };
   // Champs à choix : leurs choix viennent d’une liste de « question_setup » et peuvent porter un barème.
@@ -213,6 +213,14 @@ window.PyWimsTemplate = (() => {
       }
       if (Object.hasOwn(attributes, "columns") && !(attributes.columns >= 1 && attributes.columns <= 6)) {
         throw new Error(`L’attribut « columns » doit être compris entre 1 et 6 dans {% ${tagSource} %}`);
+      }
+      if (Object.hasOwn(attributes, "shuffle") && ![0, 1].includes(attributes.shuffle)) {
+        throw new Error(`L’attribut « shuffle » doit valoir 0 ou 1 dans {% ${tagSource} %}`);
+      }
+      // Sans mélange, tous les choix restent à leur place : fixed_last ne dirait rien, et sa présence
+      // trahit presque toujours une confusion de l’auteur.
+      if (attributes.shuffle === 0 && Object.hasOwn(attributes, "fixed_last")) {
+        throw new Error(`fixed_last est sans effet avec shuffle=0, qui garde déjà tous les choix à leur place, dans {% ${tagSource} %}`);
       }
       if (Object.hasOwn(attributes, "scoring")) {
         try {

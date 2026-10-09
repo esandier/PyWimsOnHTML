@@ -216,6 +216,16 @@ def main():
                     timeout=180_000)
                 print("aperçu : tirage réel affiché")
 
+                # « Afficher la solution », cochée par défaut : l’aperçu s’ouvre sur la solution ;
+                # décochée, il montre la question vierge.
+                preview = page.frame_locator("#preview-frame")
+                preview.locator("#q1[data-state='solution']").wait_for(timeout=30_000)
+                page.uncheck("#preview-solution")
+                preview.locator("#q1[data-state='open']").wait_for(timeout=30_000)
+                page.check("#preview-solution")
+                preview.locator("#q1[data-state='solution']").wait_for(timeout=30_000)
+                print("aperçu : « Afficher la solution » montre la solution, décochée la question vierge")
+
                 # Compilation de cette question : un fichier HTML autonome est téléchargé.
                 page.click(".question-selection >> nth=0")
                 with page.expect_download(timeout=180_000) as waiting:

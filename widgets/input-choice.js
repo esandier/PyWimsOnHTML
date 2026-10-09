@@ -6,7 +6,9 @@ window.PyWimsWidgets = (() => {
   // Produit un groupe de choix : une ligne entière cliquable par choix, dans l’ordre du tirage.
   // Chaque choix garde son indice dans la liste de l’auteur (value, data-choice-index) : c’est lui
   // que reçoit « question_check ». Le préfixe distingue les questions d’une même feuille (« q2-… »).
-  function inputChoice(name, { multiple = false, texts, order, columns = 1, idPrefix = "" } = {}) {
+  // Sans columns (attribut absent), les choix sont empilés, tous de la largeur du plus long
+  // (SPECIFICATION.md, § 10.7) ; avec columns, ils forment une grille de colonnes égales.
+  function inputChoice(name, { multiple = false, texts, order, columns, idPrefix = "" } = {}) {
     if (!/^[A-Za-z_]\w*$/.test(name)) {
       throw new Error(`Nom invalide pour un champ à choix : ${name}`);
     }
@@ -15,7 +17,10 @@ window.PyWimsWidgets = (() => {
         order.length !== texts.length || [...order].sort((a, b) => a - b).some((index, rank) => index !== rank)) {
       throw new Error(`Choix invalides pour le champ « ${name} »`);
     }
-    if (!Number.isInteger(columns) || columns < 1 || columns > 6) {
+    const compact = columns === undefined;
+    if (compact) {
+      columns = 1;
+    } else if (!Number.isInteger(columns) || columns < 1 || columns > 6) {
       throw new Error(`Nombre de colonnes invalide pour le champ « ${name} » : ${columns}`);
     }
     const type = multiple ? "checkbox" : "radio";
@@ -27,7 +32,7 @@ window.PyWimsWidgets = (() => {
     }).join("");
     const legend = multiple ? "Cochez toutes les bonnes réponses" : "Choisissez une réponse";
     // data-columns garde le nombre de colonnes voulu par l’auteur ; fitChoiceColumns peut en retirer.
-    return `<fieldset class="pw-choices" data-name="${name}" data-multiple="${multiple}" data-columns="${columns}" style="--pw-choice-columns:${columns}"><legend class="pw-sr-only">${legend}</legend>${items}</fieldset>`;
+    return `<fieldset class="pw-choices${compact ? " is-compact" : ""}" data-name="${name}" data-multiple="${multiple}" data-columns="${columns}" style="--pw-choice-columns:${columns}"><legend class="pw-sr-only">${legend}</legend>${items}</fieldset>`;
   }
 
   // Retire des colonnes à un groupe de choix tant qu’un choix déborde de sa colonne.

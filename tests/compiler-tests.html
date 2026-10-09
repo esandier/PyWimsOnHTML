@@ -90,6 +90,11 @@
       }
       expectTagError("input_checkbox 'r' solution=bonnes", "doit indiquer ses choix");
       expectTagError("input_radio 'r' choices=c solution=s columns=7", "« columns » doit être compris entre 1 et 6");
+      expectTagError("input_radio 'r' choices=c solution=s shuffle=2", "« shuffle » doit valoir 0 ou 1");
+      expectTagError("input_radio 'r' choices=c solution=s shuffle=0 fixed_last=1", "fixed_last est sans effet avec shuffle=0");
+      if (PyWimsTemplate.parseTag("input_checkbox 'r' choices=c solution=s shuffle=0").attributes.shuffle !== 0) {
+        throw new Error("shuffle=0 mal lu.");
+      }
       expectTagError("input_radio 'r' choices=c solution=s scoring='b=1,formula=NBC'", "« formula » d’AMC n’est pas prise en charge");
       expectTagError("input_radio 'r' choices=c solution=s scoring='set.X=1'", "« set.X » d’AMC n’est pas prise en charge");
       expectTagError("input_radio 'r' choices=c solution=s scoring='z=1'", "Directive de barème inconnue « z »");
@@ -147,11 +152,19 @@
           PyWimsCompiler.choiceOrder(6, 0, 7, "reponse").join() === PyWimsCompiler.choiceOrder(6, 0, 7, "autre").join()) {
         throw new Error(`Ordre inattendu : ${first} (${orders.size} ordres distincts sur 20 graines)`);
       }
+      if (PyWimsCompiler.choiceOrder(5, 0, 7, "reponse", 0).join() !== "0,1,2,3,4") {
+        throw new Error("shuffle=0 doit garder l’ordre de l’auteur.");
+      }
     });
     test("l’aperçu provisoire d’un champ à choix nomme ses choix d’après leur liste", () => {
       const draw = PyWimsCompiler.previewPlaceholderDraw({ question_statement: "{% input_radio 'r' choices=choix solution=s %}" });
       if (draw.choices.r.join() !== "choix[0],choix[1]" || draw.orders.r.join() !== "0,1") {
         throw new Error(`Tirage provisoire inattendu : ${JSON.stringify(draw)}`);
+      }
+      // « Afficher la solution » : un champ texte montre le nom de sa variable de solution.
+      const text = PyWimsCompiler.previewPlaceholderDraw({ question_statement: "{% input_text 't' solution=total %}" });
+      if (text.solutions.t !== "total") {
+        throw new Error(`Solution provisoire inattendue : ${JSON.stringify(text.solutions)}`);
       }
     });
     test("un champ à choix affiche ses choix dans l’ordre du tirage, échappés et à l’abri du modèle", () => {
@@ -177,6 +190,10 @@
       const radio = PyWimsWidgets.inputChoice("q", { texts: ["a", "b"], order: [1, 0] });
       if (!radio.includes('type="radio"') || !radio.includes('data-multiple="false"')) {
         throw new Error("Un choix unique doit utiliser des boutons radio.");
+      }
+      // Sans columns, les choix sont empilés à la largeur du plus long ; avec, ils forment une grille.
+      if (!radio.includes('class="pw-choices is-compact"') || html.includes("is-compact")) {
+        throw new Error("Seul un champ sans columns doit être compact.");
       }
       for (const options of [{ texts: ["a"], order: [0] }, { texts: ["a", "b"], order: [0, 0] }, { texts: ["a", "b"], order: [0, 1], columns: 7 }]) {
         let rejected = false;
@@ -765,7 +782,7 @@
             // Sans « allow-same-origin », le HTML de l’énoncé ne peut pas agir sur le compilateur.
             if (frame?.getAttribute("sandbox") !== "allow-scripts" ||
                 JSON.stringify(draw.context) !== JSON.stringify({ f: "f", n: "n" }) ||
-                draw.dimensions.n !== 2 || Object.keys(draw.solutions).length) {
+                draw.dimensions.n !== 2 || JSON.stringify(draw.solutions) !== JSON.stringify({ r: "s" })) {
               throw new Error(`Cadre ou tirage provisoire inattendu : ${JSON.stringify(draw)}`);
             }
           });

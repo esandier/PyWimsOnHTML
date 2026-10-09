@@ -91,6 +91,13 @@ window.PyWimsQuestion = (() => {
       this.checkButton = element("check");
       this.solutionButton = element("solution");
       this.newDrawButton = element("new-draw");
+      // Une question à un seul tirage (sans aléatoire, choix non mélangés) : le bouton remet la
+      // question vierge, sous le nom « Recommencer » (SPECIFICATION.md, § 5.2). Il n’est pas masqué,
+      // car c’est le seul moyen de refaire la question après « Solution ».
+      if (this.draws.length === 1) {
+        this.newDrawButton.setAttribute("aria-label", "Recommencer");
+        this.newDrawButton.querySelector(".pw-act-label").textContent = "Recommencer";
+      }
       this.titleElement.id = `${section.id}-title`;
       // Le numéro est affiché par la pastille, décorative : le titre le donne aux lecteurs d’écran.
       this.titleElement.innerHTML = `<span class="pw-sr-only">Question ${index + 1} : </span>${PyWimsTemplate.escapeHtml(this.definition.question_title)}`;
@@ -148,15 +155,17 @@ window.PyWimsQuestion = (() => {
     }
 
     // Affiche un tirage au hasard ; Python attend le premier contact de l’élève (activatePython).
+    // Renvoie la promesse de l’affichage, résolue même en cas d’erreur (déjà signalée).
     start() {
       try {
         if (!this.draws.length) {
           throw new Error("Cette question ne contient aucun tirage : recompilez-la.");
         }
         const selected = this.draws[Math.floor(Math.random() * this.draws.length)];
-        this.renderDraw(selected).catch(error => this.reportError(error));
+        return this.renderDraw(selected).catch(error => this.reportError(error));
       } catch (error) {
         this.reportError(error);
+        return Promise.resolve();
       }
     }
 
@@ -215,7 +224,7 @@ window.PyWimsQuestion = (() => {
             multiple: tag.type === "input_checkbox",
             texts: draw.choices?.[tag.name],
             order: draw.orders?.[tag.name],
-            columns: attributes.columns ?? 1,
+            columns: attributes.columns,
             idPrefix
           });
         default:

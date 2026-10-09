@@ -224,12 +224,13 @@
         <tbody>
           <tr><td><code>choices</code></td><td>obligatoire</td><td>liste de <code>question_setup</code> : au moins deux choix, dans votre ordre (textes avec formules, ou expressions SymPy)</td></tr>
           <tr><td><code>solution</code></td><td>obligatoire</td><td><code>input_radio</code> : le numéro du bon choix ; <code>input_checkbox</code> : la liste des numéros des bons choix, éventuellement vide. Les numéros commencent à <strong>0</strong>.</td></tr>
-          <tr><td><code>columns</code></td><td>facultatif</td><td>nombre de colonnes sur grand écran, de 1 (par défaut) à 6 ; réservé aux choix courts. Sur téléphone, les colonnes se réduisent d’elles-mêmes.</td></tr>
+          <tr><td><code>columns</code></td><td>facultatif</td><td>nombre de colonnes sur grand écran, de 1 à 6 ; réservé aux choix courts. Sur téléphone, les colonnes se réduisent d’elles-mêmes. Sans lui, les choix sont empilés, tous de la largeur du plus long.</td></tr>
+          <tr><td><code>shuffle</code></td><td>facultatif</td><td><code>shuffle=0</code> garde vos choix dans votre ordre, quand il a un sens (« 1 », « 2 », « plus de 2 ») ; par défaut, ils sont mélangés.</td></tr>
           <tr><td><code>fixed_last</code></td><td>facultatif</td><td>nombre de derniers choix laissés à la fin, non mélangés (0 par défaut) : pour « Aucune de ces réponses ».</td></tr>
           <tr><td><code>scoring</code></td><td>facultatif</td><td>note indicative, dans la syntaxe d’AMC (voir « Le barème »)</td></tr>
         </tbody>
       </table></div>
-      <p>Les choix sont mélangés à chaque tirage. Aucun choix n’est ajouté automatiquement : pour « Aucune de
+      <p>Les choix sont mélangés à chaque tirage, et deux choix de même texte sont refusés. Aucun choix n’est ajouté automatiquement : pour « Aucune de
         ces réponses », écrivez-le en dernier, avec <code>fixed_last=1</code>. Dans <code>question_check</code>, la
         saisie arrive comme le numéro choisi (choix unique) ou la liste croissante des numéros cochés.</p>
     </details>

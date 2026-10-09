@@ -20,6 +20,7 @@
   const selectVisibleButton = document.getElementById("select-visible");
   const previewFrame = document.getElementById("preview-frame");
   const previewNotice = document.getElementById("preview-notice");
+  const previewSolution = document.getElementById("preview-solution");
   const compileButton = document.getElementById("compile-question");
   const multiOutputControls = document.getElementById("multi-output-controls");
   const outputMode = document.getElementById("output-mode");
@@ -266,13 +267,30 @@
     previewNotice.className = className;
   }
 
-  // Assemble la page de la question pour un tirage donné et l’affiche dans le cadre.
+  // Dernier aperçu affiché, que la case « Afficher la solution » réaffiche.
+  let shownPreview = null;
+
+  // Assemble la page de la question pour un tirage donné et l’affiche dans le cadre. Avec « Afficher
+  // la solution », la page s’ouvre dans l’état « Solution affichée » (data-preview-solution, lu par
+  // sheet.js) : l’auteur voit ce qu’attend la correction par défaut et l’explication de la solution.
   async function renderPreviewFrame(fields, draw) {
     const resources = await readProjectResources(neededResources([fields]));
     resources.python = previewPythonStub;
-    previewFrame.srcdoc = assembleQuestion(fields, [draw], resources).replace("</head>", `${previewHead}</head>`);
+    let page = assembleQuestion(fields, [draw], resources).replace("</head>", `${previewHead}</head>`);
+    if (previewSolution.checked) {
+      page = page.replace("<body", '<body data-preview-solution="true"');
+    }
+    previewFrame.srcdoc = page;
     previewFrame.hidden = false;
+    shownPreview = { fields, draw };
   }
+
+  previewSolution.addEventListener("change", () => {
+    if (shownPreview && !previewFrame.hidden) {
+      renderPreviewFrame(shownPreview.fields, shownPreview.draw)
+        .catch(error => showPreviewNotice(`Aperçu impossible : ${error.message}`, "error"));
+    }
+  });
 
   // Affiche l’aperçu provisoire tout de suite, puis le remplace par un tirage réel. Une question
   // choisi entre-temps annule la suite (previewGeneration).

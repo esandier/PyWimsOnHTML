@@ -347,6 +347,15 @@
     .question-rank:empty { display: none; }
 
     #preview-notice { margin: 0 0 0.6rem; font-size: 0.85rem; }
+    .preview-option {
+      display: inline-flex;
+      align-self: flex-start;
+      align-items: center;
+      gap: 0.4rem;
+      margin: 0 0 0.6rem;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
     .panel-questions .filter-row label { font-size: 0.9rem; }
     #preview-notice:empty { display: none; }
 
@@ -509,6 +518,8 @@
       </section>
 
       <section class="panel panel-preview" aria-label="Aperçu">
+        <!-- Cochée, l’aperçu montre la question dans l’état « Solution affichée » (SPECIFICATION.md, § 3). -->
+        <label class="preview-option"><input id="preview-solution" type="checkbox" checked> Afficher la solution</label>
         <!-- Ligne d’état : attente du tirage réel ou erreur ; vide une fois l’aperçu prêt. -->
         <p id="preview-notice" class="muted">Choisissez une question dans la liste pour afficher son aperçu.</p>
         <!-- La page réelle de la question, isolée : sans « allow-same-origin », son HTML ne peut pas

@@ -5,12 +5,18 @@
 (() => {
   // Tirage provisoire, sans Python : chaque variable de l’énoncé est affichée sous son nom,
   // chaque dimension de matrice nommée vaut 2, et un champ à choix montre deux choix nommés
-  // d’après leur liste (« choix[0] », « choix[1] »).
+  // d’après leur liste (« choices[0] », « choices[1] »). Pour « Afficher la solution »
+  // (SPECIFICATION.md, § 3), un champ texte ou formule montre le nom de sa variable de solution ;
+  // une matrice, sans solution, montre des « ∗ », et aucun choix n’est coché.
   function previewPlaceholderDraw(fields) {
     const dimensions = {};
     const choices = {};
     const orders = {};
+    const solutions = {};
     for (const tag of PyWimsTemplate.parseTags(fields.question_statement)) {
+      if (["input_text", "input_math"].includes(tag.type)) {
+        solutions[tag.name] = tag.attributes.solution;
+      }
       for (const key of ["size", "rows", "cols"]) {
         if (typeof tag.attributes[key] === "string") {
           dimensions[tag.attributes[key]] = 2;
@@ -22,7 +28,7 @@
       }
     }
     const context = Object.fromEntries(displayedVariables(fields).map(name => [name, name]));
-    return { seed: 0, context, dimensions, solutions: {}, choices, orders };
+    return { seed: 0, context, dimensions, solutions, choices, orders };
   }
 
   // Variables affichées par la question : celles de l’énoncé et de l’explication de la solution,
@@ -169,14 +175,28 @@
     return errors;
   }
 
-  // Vérifie que les derniers choix fixés laissent au moins un choix à mélanger.
+  // Vérifie que les derniers choix fixés laissent au moins un choix à mélanger, et que deux choix
+  // n’ont pas le même texte (SPECIFICATION.md, § 10.6). Des choix calculés coïncident facilement
+  // pour un tirage rare (deux erreurs types qui donnent la même valeur) : l’élève verrait deux
+  // choix identiques, dont un seul juste. Les textes sont comparés après la normalisation de la
+  // correction par défaut : « x^2+1 » et « x^2 + 1 » s’affichent pareil.
   function choiceErrors(tags, draw) {
     const errors = [];
     for (const tag of tags) {
       const texts = draw.choices?.[tag.name];
+      if (!Array.isArray(texts)) continue;
       const fixedLast = tag.attributes.fixed_last ?? 0;
-      if (Array.isArray(texts) && fixedLast >= texts.length) {
+      if (fixedLast >= texts.length) {
         errors.push(`fixed_last=${fixedLast} doit être inférieur au nombre de choix (${texts.length}) du champ « ${tag.name} ».`);
+      }
+      const seen = new Map();
+      for (const [index, text] of texts.entries()) {
+        const key = PyWimsCorrection.normalizedText(text);
+        if (seen.has(key)) {
+          errors.push(`Les choix ${seen.get(key)} et ${index} du champ « ${tag.name} » ont le même texte (« ${text} ») : l’élève ne peut pas les distinguer.`);
+          break;
+        }
+        seen.set(key, index);
       }
     }
     return errors;
@@ -186,7 +206,12 @@
   // (mulberry32), initialisé par la graine et le nom du champ. Le « random » de l’auteur n’est pas
   // touché, donc le tirage rejoué par le navigateur reste identique ; deux champs d’une même question
   // ne sont pas mélangés de la même façon. Les fixedLast derniers choix restent à la fin, dans l’ordre.
-  function choiceOrder(count, fixedLast, seed, name) {
+  // shuffle=0 garde l’ordre de l’auteur (§ 10.2) : l’ordre ne varie plus d’un tirage à l’autre, et
+  // les tirages identiques sont fusionnés.
+  function choiceOrder(count, fixedLast, seed, name, shuffle = 1) {
+    if (shuffle === 0) {
+      return Array.from({ length: count }, (_, index) => index);
+    }
     let state = seed >>> 0;
     for (const character of name) {
       state = Math.imul(state ^ character.codePointAt(0), 0x9e3779b1) >>> 0;
@@ -299,7 +324,7 @@
         }
         const orders = Object.fromEntries(choiceTags.map(tag => [
           tag.name,
-          choiceOrder(draw.choices[tag.name].length, tag.attributes.fixed_last ?? 0, seed, tag.name)
+          choiceOrder(draw.choices[tag.name].length, tag.attributes.fixed_last ?? 0, seed, tag.name, tag.attributes.shuffle ?? 1)
         ]));
         // L’ordre fait partie du tirage : deux tirages qui ne diffèrent que par lui restent distincts.
         const key = JSON.stringify([draw.context, draw.solutions, draw.choices, orders]);

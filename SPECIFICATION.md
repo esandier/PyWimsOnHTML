@@ -391,6 +391,15 @@ sans `question_check` : la comparaison y est sans ambiguïté.
   d’abord un tirage provisoire où chaque variable porte son nom, puis un tirage
   réel calculé par le Python de la page du compilateur, chargé une seule fois et
   gardé en mémoire pour chaque question.
+- **Afficher la solution.** Une case au-dessus de l’aperçu, cochée par défaut,
+  montre la question dans l’état « Solution affichée » (§ 5.2) : champs remplis
+  par leur solution et explication de la solution. L’auteur vérifie ainsi d’un
+  coup d’œil ce que la correction par défaut attendra (§ 2.6) et le rendu de
+  l’explication, que les boutons inactifs ne permettraient pas d’afficher.
+  Décochée, l’aperçu montre la question vierge, telle que l’élève la découvre.
+  Le choix vaut pour toutes les questions, jusqu’à la fermeture de la page.
+  Dans le tirage provisoire, chaque champ texte ou formule montre le nom de sa
+  variable de solution, et une matrice des « ∗ ».
 
 ## 4. Structure du fichier généré
 
@@ -471,7 +480,10 @@ sans `question_check` : la comparaison y est sans ambiguïté.
   par MathJax.
 - **Nouvel énoncé** : un autre tirage (différent du tirage courant si possible)
   remplace l’énoncé instantanément ; la session Python correspondante est
-  recalculée en arrière-plan.
+  recalculée en arrière-plan. Une question qui n’a qu’un tirage (sans
+  aléatoire, et `shuffle=0` s’il y a des choix) affiche le même bouton sous le
+  nom **Recommencer** : il remet la question vierge. On a écarté de le masquer,
+  car c’est le seul moyen de refaire la question après « Solution ».
 
 ### 5.3 Progression
 
@@ -636,7 +648,8 @@ question AMC en fichier `.pwq` est confiée à un LLM, guidé par `PROMPT.md`
 |---|---|---|
 | `choices` | obligatoire | variable de `question_setup` : liste des choix, dans l’ordre de l’auteur |
 | `solution` | obligatoire | `input_radio` : indice du bon choix ; `input_checkbox` : liste des indices des bons choix, vide si aucun choix n’est bon |
-| `columns` | facultatif | nombre de colonnes sur grand écran, de 1 (par défaut) à 6 |
+| `columns` | facultatif | grille de n colonnes de même largeur sur grand écran, de 1 à 6 ; sans lui, les choix sont empilés, tous de la largeur du plus long (§ 10.7) |
+| `shuffle` | facultatif | `shuffle=0` garde l’ordre de l’auteur ; par défaut 1, les choix sont mélangés |
 | `fixed_last` | facultatif | nombre de derniers choix qui restent à la fin, non mélangés (par défaut 0) |
 | `scoring` | facultatif | barème à la manière d’AMC (§ 10.5) |
 
@@ -656,11 +669,16 @@ c’est un choix comme les autres, qui n’exclut pas les autres cases.
   ordre d’affichage. L’ordre est mélangé avec la graine du tirage, sans
   utiliser le `random` de l’auteur ; les `fixed_last` derniers choix restent à
   la fin, dans leur ordre.
+- Avec `shuffle=0`, l’ordre d’affichage est celui de la liste `choices`, pour
+  tous les tirages : des choix ordonnés (« 1 », « 2 », « 3 », « plus de 3 »),
+  ou dont l’ordre porte un sens (« vrai », « faux »), ne sont pas mélangés.
+  `fixed_last` n’y a pas de sens, et il est refusé.
 - Les textes des choix font partie des valeurs affichées : le navigateur les
   recalcule et les compare comme le `context` (§ 5.1), quand la question a
   un `question_check`.
 - Deux tirages qui ne diffèrent que par l’ordre des choix restent distincts :
   « Nouvel énoncé » mélange alors les choix d’une question sans aléatoire.
+  Avec `shuffle=0`, une telle question n’a qu’un tirage (§ 5.2, « Recommencer »).
 
 ### 10.3 Correction
 
@@ -734,8 +752,12 @@ En plus du § 2.4, le compilateur refuse la question si, pour l’un des tirages
 - `choices` n’est pas une liste d’au moins deux choix ;
 - `solution` n’est pas un indice valide (`input_radio`) ou une liste
   d’indices valides et distincts (`input_checkbox`) ;
-- `fixed_last` est supérieur ou égal au nombre de choix, ou `columns` sort de
-  1 à 6 ;
+- deux choix ont le même texte, aux différences typographiques près (§ 2.6) :
+  l’élève ne pourrait pas les distinguer, et un seul serait juste. C’est
+  l’erreur ordinaire d’une liste de choix calculés (deux formules d’erreur qui
+  donnent la même valeur pour un tirage) ; la graine en cause est indiquée ;
+- `fixed_last` est supérieur ou égal au nombre de choix, ou donné avec
+  `shuffle=0`, `columns` sort de 1 à 6, ou `shuffle` ne vaut pas 0 ou 1 ;
 - le barème contient une directive inconnue ou refusée, ou une valeur non
   numérique, ou la question contient d’autres champs.
 
@@ -750,7 +772,18 @@ En plus du § 2.4, le compilateur refuse la question si, pour l’un des tirages
   avant toute vérification et revient à 0 après « Nouvel énoncé », mais pas
   après « Solution ». L’aide (§ 5.6) l’explique.
 - Chaque choix est une ligne entière cliquable d’au moins 44 px de haut, dans
-  un `fieldset`. Avec `columns=n`, les choix forment une grille de n colonnes
+  un `fieldset`.
+- **Sans `columns`**, les choix sont empilés et ont tous la largeur du plus
+  long, au moins 10 em (une cible facile à toucher) et au plus la largeur de
+  l’énoncé, où un choix trop long passe à la ligne. Avant octobre 2026, chaque
+  choix prenait toute la largeur de l’énoncé : sur grand écran, « 12 » ou
+  « vrai » se trouvait à l’extrémité gauche d’un long rectangle vide, loin de
+  l’icône du verdict, et la liste se lisait mal. On a écarté :
+  - la largeur propre de chaque choix : des boîtes de largeurs inégales ne
+    forment plus une colonne lisible ;
+  - plusieurs choix courts par ligne, automatiquement : c’est le rôle de
+    `columns`, que l’auteur choisit.
+- **Avec `columns=n`**, les choix forment une grille de n colonnes
   de même largeur ; sur écran étroit, le nombre de colonnes diminue pour que
   chaque choix garde une largeur minimale (environ 8 em), puis tant qu’un
   choix ne tient pas dans sa colonne : un mot ou une formule n’est jamais

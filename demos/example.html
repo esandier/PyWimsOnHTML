@@ -899,6 +899,14 @@ body:not([data-scored]) .pw-help-score {
   border: 0;
 }
 
+/* Sans « columns » : une seule colonne, de la largeur du plus long choix (fit-content), que tous
+   les choix prennent. Au moins 10em, cible facile à toucher, et au plus la largeur de l’énoncé :
+   un choix plus long y passe à la ligne. Solution écartée : chaque choix à sa propre largeur, des
+   boîtes inégales qui ne forment plus une colonne lisible (SPECIFICATION.md, § 10.7). */
+.pw-choices.is-compact {
+  grid-template-columns: minmax(min(10em, 100%), max-content);
+}
+
 .pw-choice {
   display: flex;
   min-height: 44px;
@@ -1977,6 +1985,14 @@ body:not([data-scored]) .pw-help-score {
   border: 0;
 }
 
+/* Sans « columns » : une seule colonne, de la largeur du plus long choix (fit-content), que tous
+   les choix prennent. Au moins 10em, cible facile à toucher, et au plus la largeur de l’énoncé :
+   un choix plus long y passe à la ligne. Solution écartée : chaque choix à sa propre largeur, des
+   boîtes inégales qui ne forment plus une colonne lisible (SPECIFICATION.md, § 10.7). */
+.pw-choices.is-compact {
+  grid-template-columns: minmax(min(10em, 100%), max-content);
+}
+
 .pw-choice {
   display: flex;
   min-height: 44px;
@@ -2387,11 +2403,11 @@ window.PyWimsTemplate = (() => {
     },
     input_radio: {
       choices: "variable", solution: "variable",
-      columns: "integer", fixed_last: "integer", scoring: "text"
+      columns: "integer", shuffle: "integer", fixed_last: "integer", scoring: "text"
     },
     input_checkbox: {
       choices: "variable", solution: "variable",
-      columns: "integer", fixed_last: "integer", scoring: "text"
+      columns: "integer", shuffle: "integer", fixed_last: "integer", scoring: "text"
     }
   };
   // Champs à choix : leurs choix viennent d’une liste de « question_setup » et peuvent porter un barème.
@@ -2583,6 +2599,14 @@ window.PyWimsTemplate = (() => {
       if (Object.hasOwn(attributes, "columns") && !(attributes.columns >= 1 && attributes.columns <= 6)) {
         throw new Error(`L’attribut « columns » doit être compris entre 1 et 6 dans {% ${tagSource} %}`);
       }
+      if (Object.hasOwn(attributes, "shuffle") && ![0, 1].includes(attributes.shuffle)) {
+        throw new Error(`L’attribut « shuffle » doit valoir 0 ou 1 dans {% ${tagSource} %}`);
+      }
+      // Sans mélange, tous les choix restent à leur place : fixed_last ne dirait rien, et sa présence
+      // trahit presque toujours une confusion de l’auteur.
+      if (attributes.shuffle === 0 && Object.hasOwn(attributes, "fixed_last")) {
+        throw new Error(`fixed_last est sans effet avec shuffle=0, qui garde déjà tous les choix à leur place, dans {% ${tagSource} %}`);
+      }
       if (Object.hasOwn(attributes, "scoring")) {
         try {
           parseScoring(attributes.scoring);
@@ -2762,7 +2786,9 @@ window.PyWimsWidgets = (() => {
   // Produit un groupe de choix : une ligne entière cliquable par choix, dans l’ordre du tirage.
   // Chaque choix garde son indice dans la liste de l’auteur (value, data-choice-index) : c’est lui
   // que reçoit « question_check ». Le préfixe distingue les questions d’une même feuille (« q2-… »).
-  function inputChoice(name, { multiple = false, texts, order, columns = 1, idPrefix = "" } = {}) {
+  // Sans columns (attribut absent), les choix sont empilés, tous de la largeur du plus long
+  // (SPECIFICATION.md, § 10.7) ; avec columns, ils forment une grille de colonnes égales.
+  function inputChoice(name, { multiple = false, texts, order, columns, idPrefix = "" } = {}) {
     if (!/^[A-Za-z_]\w*$/.test(name)) {
       throw new Error(`Nom invalide pour un champ à choix : ${name}`);
     }
@@ -2771,7 +2797,10 @@ window.PyWimsWidgets = (() => {
         order.length !== texts.length || [...order].sort((a, b) => a - b).some((index, rank) => index !== rank)) {
       throw new Error(`Choix invalides pour le champ « ${name} »`);
     }
-    if (!Number.isInteger(columns) || columns < 1 || columns > 6) {
+    const compact = columns === undefined;
+    if (compact) {
+      columns = 1;
+    } else if (!Number.isInteger(columns) || columns < 1 || columns > 6) {
       throw new Error(`Nombre de colonnes invalide pour le champ « ${name} » : ${columns}`);
     }
     const type = multiple ? "checkbox" : "radio";
@@ -2783,7 +2812,7 @@ window.PyWimsWidgets = (() => {
     }).join("");
     const legend = multiple ? "Cochez toutes les bonnes réponses" : "Choisissez une réponse";
     // data-columns garde le nombre de colonnes voulu par l’auteur ; fitChoiceColumns peut en retirer.
-    return `<fieldset class="pw-choices" data-name="${name}" data-multiple="${multiple}" data-columns="${columns}" style="--pw-choice-columns:${columns}"><legend class="pw-sr-only">${legend}</legend>${items}</fieldset>`;
+    return `<fieldset class="pw-choices${compact ? " is-compact" : ""}" data-name="${name}" data-multiple="${multiple}" data-columns="${columns}" style="--pw-choice-columns:${columns}"><legend class="pw-sr-only">${legend}</legend>${items}</fieldset>`;
   }
 
   // Retire des colonnes à un groupe de choix tant qu’un choix déborde de sa colonne.
@@ -3926,6 +3955,13 @@ window.PyWimsQuestion = (() => {
       this.checkButton = element("check");
       this.solutionButton = element("solution");
       this.newDrawButton = element("new-draw");
+      // Une question à un seul tirage (sans aléatoire, choix non mélangés) : le bouton remet la
+      // question vierge, sous le nom « Recommencer » (SPECIFICATION.md, § 5.2). Il n’est pas masqué,
+      // car c’est le seul moyen de refaire la question après « Solution ».
+      if (this.draws.length === 1) {
+        this.newDrawButton.setAttribute("aria-label", "Recommencer");
+        this.newDrawButton.querySelector(".pw-act-label").textContent = "Recommencer";
+      }
       this.titleElement.id = `${section.id}-title`;
       // Le numéro est affiché par la pastille, décorative : le titre le donne aux lecteurs d’écran.
       this.titleElement.innerHTML = `<span class="pw-sr-only">Question ${index + 1} : </span>${PyWimsTemplate.escapeHtml(this.definition.question_title)}`;
@@ -3983,15 +4019,17 @@ window.PyWimsQuestion = (() => {
     }
 
     // Affiche un tirage au hasard ; Python attend le premier contact de l’élève (activatePython).
+    // Renvoie la promesse de l’affichage, résolue même en cas d’erreur (déjà signalée).
     start() {
       try {
         if (!this.draws.length) {
           throw new Error("Cette question ne contient aucun tirage : recompilez-la.");
         }
         const selected = this.draws[Math.floor(Math.random() * this.draws.length)];
-        this.renderDraw(selected).catch(error => this.reportError(error));
+        return this.renderDraw(selected).catch(error => this.reportError(error));
       } catch (error) {
         this.reportError(error);
+        return Promise.resolve();
       }
     }
 
@@ -4050,7 +4088,7 @@ window.PyWimsQuestion = (() => {
             multiple: tag.type === "input_checkbox",
             texts: draw.choices?.[tag.name],
             order: draw.orders?.[tag.name],
-            columns: attributes.columns ?? 1,
+            columns: attributes.columns,
             idPrefix
           });
         default:
@@ -4798,8 +4836,12 @@ window.PyWimsQuestion = (() => {
       });
     });
   });
+  // Aperçu du compilateur avec « Afficher la solution » (SPECIFICATION.md, § 3) : chaque question
+  // s’affiche dans l’état « Solution affichée », une fois son énoncé rendu.
+  const showSolutions = document.body.dataset.previewSolution === "true";
   for (const question of questions) {
-    question.start();
+    const started = question.start();
+    if (showSolutions) started.then(() => question.draw && question.showSolution());
   }
 })();
 </script>

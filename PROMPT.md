@@ -136,10 +136,16 @@ français, séparés par des virgules.
   commencent à 0, dans l’ordre de `choices`.
 - Ne mélange pas les choix toi-même : le compilateur les mélange à chaque
   tirage. `fixed_last=n` garde les n derniers choix à la fin, dans ton ordre
-  (pour « Aucune de ces réponses », par exemple).
-- `columns=n` (de 1 à 6) place les choix sur n colonnes sur grand écran ;
-  réserve-le aux choix courts (nombres, formules brèves). Sur téléphone, les
-  colonnes se réduisent d’elles-mêmes.
+  (pour « Aucune de ces réponses », par exemple). `shuffle=0` garde tous les
+  choix dans ton ordre, quand cet ordre a un sens (« 1 », « 2 », « 3 »,
+  « plus de 3 ») ; il ne se combine pas avec `fixed_last`.
+- Deux choix ne doivent jamais avoir le même texte, pour aucun tirage : avec
+  des choix calculés (erreurs types), vérifie qu’ils restent distincts, sinon
+  la compilation est refusée.
+- Sans `columns`, les choix sont empilés, tous de la largeur du plus long.
+  `columns=n` (de 1 à 6) les place sur n colonnes sur grand écran ; réserve-le
+  aux choix courts (nombres, formules brèves). Sur téléphone, les colonnes se
+  réduisent d’elles-mêmes.
 - Aucun choix n’est ajouté automatiquement : pour proposer « Aucune de ces
   réponses », écris-le comme dernier choix, avec `fixed_last=1`, et mets son
   indice dans la solution quand aucun autre choix n’est bon.

@@ -205,7 +205,11 @@
       });
     });
   });
+  // Aperçu du compilateur avec « Afficher la solution » (SPECIFICATION.md, § 3) : chaque question
+  // s’affiche dans l’état « Solution affichée », une fois son énoncé rendu.
+  const showSolutions = document.body.dataset.previewSolution === "true";
   for (const question of questions) {
-    question.start();
+    const started = question.start();
+    if (showSolutions) started.then(() => question.draw && question.showSolution());
   }
 })();

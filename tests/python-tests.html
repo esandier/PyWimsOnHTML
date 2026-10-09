@@ -466,6 +466,14 @@ json.dumps({
           question_check: "ok_answer['r'] = r == bonne"
         }, { count: 1 });
         if (radio.solutions.r !== 1) throw new Error(`Solution d’un choix unique inattendue : ${JSON.stringify(radio)}`);
+        // shuffle=0 : l’ordre de l’auteur pour chaque tirage, donc un seul tirage sans hasard.
+        const fixed = await PyWimsCompiler.computeDraws({
+          question_setup: "choix = ['1', '2', '3', 'plus de 3']\nbonne = 1",
+          question_statement: "{% input_radio 'r' choices=choix solution=bonne shuffle=0 %}"
+        }, { count: 5 });
+        if (fixed.length !== 1 || fixed[0].orders.r.join() !== "0,1,2,3") {
+          throw new Error(`shuffle=0 : ${fixed.length} tirages, ordre ${fixed[0].orders.r}`);
+        }
       });
 
       await test("les erreurs de l’auteur sont signalées avec leur graine et leur cause", async () => {
@@ -503,6 +511,9 @@ json.dumps({
             ["True n’est pas un indice de choix"]],
           [{ question_setup: "c = ['a', 'b']\ns = []", question_statement: "{% input_checkbox 'r' choices=c solution=s fixed_last=2 %}" },
             ["fixed_last=2 doit être inférieur au nombre de choix (2) du champ « r »"]],
+          // Deux choix de même texte, aux espaces près : l’élève ne pourrait pas les distinguer.
+          [{ question_setup: "c = ['x+1', '2', 'x + 1']\ns = 0", question_statement: "{% input_radio 'r' choices=c solution=s %}" },
+            ["Graine 0", "Les choix 0 et 2 du champ « r » ont le même texte (« x + 1 »)"]],
           // Formule TeX dans une chaîne ordinaire : « \frac » contient un saut de page, « \times » une tabulation.
           [{ question_setup: "a = 1\nt = '$\\frac{1}{2}$'", question_statement: "{% input_text 'r' solution=a %}" },
             ["« question_setup », ligne 2 : une chaîne contient un caractère de contrôle (\\f)", "r'…'"]],

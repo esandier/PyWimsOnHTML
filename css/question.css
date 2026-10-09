@@ -824,6 +824,14 @@ body:not([data-scored]) .pw-help-score {
   border: 0;
 }
 
+/* Sans « columns » : une seule colonne, de la largeur du plus long choix (fit-content), que tous
+   les choix prennent. Au moins 10em, cible facile à toucher, et au plus la largeur de l’énoncé :
+   un choix plus long y passe à la ligne. Solution écartée : chaque choix à sa propre largeur, des
+   boîtes inégales qui ne forment plus une colonne lisible (SPECIFICATION.md, § 10.7). */
+.pw-choices.is-compact {
+  grid-template-columns: minmax(min(10em, 100%), max-content);
+}
+
 .pw-choice {
   display: flex;
   min-height: 44px;

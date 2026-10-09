@@ -57,7 +57,9 @@ variable de l’énoncé sous son nom, puis il est remplacé par un tirage réel
 que Python l’a calculé, environ une seconde par question. Python se charge dès
 l’ouverture du compilateur, en arrière-plan (10 à 20 secondes) : le premier
 aperçu ne l’attend que s’il est demandé tout de suite. Une erreur dans `question_setup` est
-signalée au-dessus de l’aperçu, qui reste provisoire.
+signalée au-dessus de l’aperçu, qui reste provisoire. La case **Afficher la
+solution**, cochée par défaut, montre la question remplie par sa solution, avec
+l’explication : c’est ce qu’attend la correction ; décochée, la question vierge.
 
 Coche une ou plusieurs questions, puis **Compiler la sélection** :
 

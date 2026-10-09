@@ -105,9 +105,11 @@ window.PyWimsPython = (() => {
       resources.python = fakePython(options);
       const frame = document.createElement("iframe");
       frame.style.cssText = "width:900px;height:700px";
-      frame.srcdoc = questions.length === 1
+      frame.srcdoc = (questions.length === 1
         ? PyWimsCompiler.assembleQuestion(questions[0].fields, questions[0].draws, resources)
-        : PyWimsCompiler.assembleActivity(title, questions, resources);
+        : PyWimsCompiler.assembleActivity(title, questions, resources))
+        // Aperçu du compilateur avec « Afficher la solution » (compiler.js, renderPreviewFrame).
+        .replace("<body", options?.previewSolution ? '<body data-preview-solution="true"' : "<body");
       document.body.append(frame);
       await new Promise(resolve => frame.addEventListener("load", resolve, { once: true }));
       const page = frame.contentDocument;
@@ -645,6 +647,27 @@ window.PyWimsPython = (() => {
         await waitFor(() => role("feedback").classList.contains("is-visible"), "retour");
         if (role("feedback").textContent !== "Réponse incorrecte.") {
           throw new Error(`Retour inattendu : ${role("feedback").textContent}`);
+        }
+        // Un seul tirage : « Nouvel énoncé » devient « Recommencer », et remet la question vierge.
+        if (role("new-draw").getAttribute("aria-label") !== "Recommencer" ||
+            role("new-draw").textContent.trim() !== "Recommencer") {
+          throw new Error(`Bouton d’une question à un tirage : ${role("new-draw").textContent.trim()}`);
+        }
+        role("new-draw").click();
+        await waitFor(() => !role("new-draw").disabled && $("#q1").dataset.state === "open" &&
+          !$("#q1 .pw-choice input:checked"), "question vierge après « Recommencer »");
+        frame.remove();
+      });
+
+      await test("l’aperçu avec « Afficher la solution » s’ouvre sur la solution et son explication", async () => {
+        const radio = { ...choiceWithoutApres, question_statement: "Le plus petit ? {% input_radio 'r' choices=choix solution=bonne %}",
+          question_solution_explanation: "Le plus petit est {{ a }}." };
+        const draws = [{ ...choiceDraws[0], context: { a: "2" }, solutions: { r: 0 } }];
+        const { $, role, frame } = await openQuestion(radio, draws, { previewSolution: true });
+        await waitFor(() => $("#q1").dataset.state === "solution" && role("feedback").classList.contains("is-visible"),
+          "état « Solution affichée »");
+        if (!choiceBox($, 0).checked || role("feedback").textContent !== "Le plus petit est 2.") {
+          throw new Error(`Aperçu de la solution inattendu : ${role("feedback").textContent}`);
         }
         frame.remove();
       });
