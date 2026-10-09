@@ -1,0 +1,38 @@
+%
+% question_title
+%
+input_select : parité et primalité
+%
+% question_keywords
+%
+champ de réponse, input_select, texte à trous, arithmétique
+%
+% question_layout
+%
+STD
+%
+% question_setup
+%
+# Champ input_select : une liste déroulante placée dans une phrase, pour un texte à trous.
+#   choices=     liste des choix, en texte simple (ni formule, ni HTML)
+#   solution=    indice du bon choix
+#   shuffle=0    garde l’ordre de la liste ; fixed_last=n comme pour input_radio
+# Vide, le trou est souligné en pointillé ; rempli, il prend la largeur du choix.
+from random import randint
+from sympy import isprime
+
+n = randint(2, 60)
+parities = ["pair", "impair"]
+parity = n % 2
+primalities = ["il est premier", "il n’est pas premier"]
+primality = 0 if isprime(n) else 1
+%
+% question_statement
+%
+<p>Le nombre ${{n}}$ est {% input_select 'parity_answer' choices=parities solution=parity shuffle=0 %} ;
+{% input_select 'primality_answer' choices=primalities solution=primality shuffle=0 %}.</p>
+%
+% question_solution_explanation
+%
+Un nombre premier a exactement deux diviseurs : $1$ et lui-même.
+%

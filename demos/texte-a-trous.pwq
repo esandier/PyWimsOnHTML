@@ -1,0 +1,41 @@
+%
+% question_title
+%
+Sens de variation d’une fonction affine (texte à trous)
+%
+% question_keywords
+%
+démonstration, input_select, texte à trous, fonction affine, variations
+%
+% question_layout
+%
+STD
+%
+% question_setup
+%
+# Démonstration : input_select, une liste déroulante qui se fond dans la phrase. Les choix sont
+# du texte simple ; shuffle=0 les garde dans l’ordre de la liste. Sur téléphone, le sélecteur du
+# système s’ouvre.
+from random import choice, randint
+from sympy import symbols
+
+x = symbols("x")
+m = choice([-3, -2, -1, 0, 1, 2, 3])
+p = randint(-5, 5)
+function = m * x + p
+senses = ["strictement croissante", "strictement décroissante", "constante"]
+signs = ["positif", "négatif", "nul"]
+index = 0 if m > 0 else 1 if m < 0 else 2
+%
+% question_statement
+%
+<p>Sur $\mathbb{R}$, la fonction $f(x) = {{function}}$ est
+{% input_select 'sense' choices=senses solution=index shuffle=0 %}, car son coefficient
+directeur, ${{m}}$, est {% input_select 'sign' choices=signs solution=index shuffle=0 %}.</p>
+%
+% question_solution_explanation
+%
+Une fonction affine $f(x) = mx + p$ est strictement croissante si $m > 0$, strictement
+décroissante si $m < 0$, et constante si $m = 0$ ; ici $m = {{m}}$. (Une fonction constante est
+aussi croissante et décroissante au sens large : d’où le mot « strictement ».)
+%

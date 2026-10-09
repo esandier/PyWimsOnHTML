@@ -1,0 +1,41 @@
+%
+% question_title
+%
+input_checkbox : multiples d’un entier
+%
+% question_keywords
+%
+champ de réponse, input_checkbox, QCM, choix multiple, barème
+%
+% question_layout
+%
+STD
+%
+% question_setup
+%
+# Champ input_checkbox : plusieurs choix justes, ou aucun.
+#   choices=     liste des choix
+#   solution=    liste des indices des bons choix (vide si aucun n’est bon)
+#   columns=, shuffle=, fixed_last=, scoring=   comme pour input_radio
+# Ici, mcq tire de 0 à 3 multiples et des non-multiples ; « Aucun de ces nombres » est ajouté à
+# la fin, gardé à sa place par fixed_last=1, et juste quand aucun nombre ne l’est. Le barème
+# donne 1 point par case bien traitée, -0,5 par case mal traitée, et 0 au minimum.
+from random import randint
+from pywims import mcq
+
+k = randint(3, 9)
+multiples = [k * i for i in range(2, 12)]
+others = [n for n in range(10, 100) if n % k != 0]
+numbers, good = mcq(correct=multiples, wrong=others, count=5, correct_count=randint(0, 3))
+choices = numbers + ["Aucun de ces nombres"]
+correct = good if good else [5]
+%
+% question_statement
+%
+Cochez les multiples de ${{k}}$ :
+{% input_checkbox 'answer' choices=choices solution=correct fixed_last=1 scoring='b=1,m=-0.5,p=0' %}
+%
+% question_solution_explanation
+%
+Un multiple de ${{k}}$ s’écrit ${{k}} \times n$ : la division par ${{k}}$ tombe juste.
+%

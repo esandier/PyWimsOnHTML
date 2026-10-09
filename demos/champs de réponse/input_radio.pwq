@@ -1,0 +1,40 @@
+%
+% question_title
+%
+input_radio : valeur d’un produit
+%
+% question_keywords
+%
+champ de réponse, input_radio, QCM, choix unique
+%
+% question_layout
+%
+STD
+%
+% question_setup
+%
+# Champ input_radio : un choix unique parmi une liste.
+#   choices=     liste des choix (textes, formules entre $…$, ou objets SymPy)
+#   solution=    indice du bon choix, à partir de 0
+#   columns=     nombre de colonnes, de 1 à 6 ; sans lui, toutes les cases ont la taille de la
+#                plus grande, sur autant de colonnes que possible
+#   shuffle=0    garde l’ordre de la liste ; fixed_last=n garde les n derniers choix à la fin
+#   scoring=     barème à la manière d’AMC (note indicative)
+# Ici, mcq tire la bonne réponse et trois erreurs types dans une réserve.
+from random import randint
+from pywims import mcq
+
+a, b = randint(3, 9), randint(3, 9)
+product = a * b
+choices, correct = mcq(correct=product, wrong=[a + b, a * b + 1, a * b - 1, a * (b + 1), (a - 1) * b, a * b + 10], count=4)
+%
+% question_statement
+%
+Combien font ${{a}} \times {{b}}$ ?
+{% input_radio 'answer' choices=choices solution=correct %}
+%
+% question_solution_explanation
+%
+${{a}} \times {{b}} = {{product}}$ : les autres choix sont des erreurs fréquentes (somme au lieu du
+produit, erreur d’une unité, table voisine).
+%

@@ -1,0 +1,45 @@
+%
+% question_title
+%
+input_text : nature d’un triangle
+%
+% question_keywords
+%
+champ de réponse, input_text, triangle
+%
+% question_layout
+%
+STD
+%
+% question_setup
+%
+# Champ input_text : une réponse écrite, comparée au texte de la solution.
+#   solution=  variable qui contient la réponse attendue (texte, nombre ou expression SymPy)
+#   match=     degré de conformité : normal (par défaut, les espaces ne comptent pas),
+#              exact (caractère pour caractère), loose (ni majuscules, ni accents, ni ponctuation finale)
+#   style=     CSS du champ, le plus souvent sa largeur
+# Ici match=loose : « Equilateral » est juste pour « équilatéral ».
+from random import choice, randint
+
+kind = choice(["équilatéral", "isocèle", "rectangle"])
+if kind == "équilatéral":
+    a = randint(3, 9)
+    sides = (a, a, a)
+elif kind == "isocèle":
+    a, b = randint(5, 9), randint(2, 4)
+    sides = (a, a, b)
+else:
+    k = randint(1, 3)
+    sides = (3 * k, 4 * k, 5 * k)
+a, b, c = sides
+%
+% question_statement
+%
+Un triangle a pour côtés ${{a}}$ cm, ${{b}}$ cm et ${{c}}$ cm. Il est
+{% input_text 'nature' solution=kind match=loose style='width:8em' %}.
+%
+% question_solution_explanation
+%
+Trois côtés égaux : équilatéral ; deux côtés égaux : isocèle ; $3^2 + 4^2 = 5^2$, à un
+facteur près : rectangle.
+%

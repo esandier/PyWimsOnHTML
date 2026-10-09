@@ -1,0 +1,39 @@
+%
+% question_title
+%
+input_value : aire d’un disque
+%
+% question_keywords
+%
+champ de réponse, input_value, aire, disque
+%
+% question_layout
+%
+STD
+%
+% question_setup
+%
+# Champ input_value : une réponse numérique, comparée par sa valeur, sans Python.
+#   solution=   nombre Python ou SymPy (ici pi * r², irrationnel)
+#   tolerance=  écart absolu admis (0 par défaut : la valeur exacte)
+#   form=       écriture exigée : any (par défaut), integer, decimal, fraction,
+#               irreducible, scientific
+#   style=      CSS du champ
+# La virgule et le point sont acceptés ; la solution affichée est arrondie selon la tolérance.
+from random import randint
+from sympy import pi
+from pywims import decimal_comma
+
+r = randint(2, 9)
+area = pi * r**2
+area_text = decimal_comma(area, 1)
+%
+% question_statement
+%
+Aire d’un disque de rayon ${{r}}$ cm, à 0,1 cm² près :
+{% input_value 'answer' solution=area tolerance=0.1 form=decimal style='width:6em' %}&nbsp;cm²
+%
+% question_solution_explanation
+%
+$\mathcal{A} = \pi r^2 = {{r}}^2\pi$, soit environ {{area_text}} cm².
+%

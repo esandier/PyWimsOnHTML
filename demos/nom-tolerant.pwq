@@ -1,0 +1,39 @@
+%
+% question_title
+%
+Le mathématicien derrière le résultat
+%
+% question_keywords
+%
+démonstration, input_text, match, histoire des mathématiques
+%
+% question_layout
+%
+STD
+%
+% question_setup
+%
+# Démonstration : input_text avec match=loose. Ni les majuscules, ni les accents, ni un point
+# final ne comptent : « thales » est juste pour « Thalès ». Sans match (normal), seuls les espaces
+# sont ignorés ; avec match=exact, le texte doit être identique, caractère pour caractère.
+import unicodedata
+from random import choice
+
+description, name = choice([
+    (r"la relation $BC^2 = AB^2 + AC^2$ dans un triangle rectangle en $A$", "Pythagore"),
+    ("le théorème des droites parallèles qui coupent deux sécantes", "Thalès"),
+    ("l’algorithme du PGCD par divisions successives", "Euclide"),
+    ("le triangle des coefficients du binôme", "Pascal"),
+])
+plain = unicodedata.normalize("NFD", name).encode("ascii", "ignore").decode().lower()
+%
+% question_statement
+%
+Quel mathématicien a donné son nom à {{description}} ?
+{% input_text 'mathematician' solution=name match=loose style='width:9em' %}
+%
+% question_solution_explanation
+%
+C’est {{name}}. Les majuscules, les accents et un point final ne comptent pas : «&nbsp;{{plain}}&nbsp;»
+est aussi accepté.
+%

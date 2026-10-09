@@ -1,0 +1,36 @@
+%
+% question_title
+%
+input_matrix : transposée d’une matrice
+%
+% question_keywords
+%
+champ de réponse, input_matrix, matrice, transposée
+%
+% question_layout
+%
+STD
+%
+% question_setup
+%
+# Champ input_matrix : une matrice de dimensions fixées.
+#   solution=     Matrix de SymPy, ou liste de lignes
+#   size=n        matrice carrée, ou rows=m cols=p ; un entier ou une variable de question_setup
+#   input_style=  CSS de chaque case
+# Sans question_check, chaque case est comparée à celle de la solution.
+from random import randint
+from sympy import Matrix
+
+m, p = randint(2, 3), randint(2, 3)
+A = Matrix(m, p, lambda i, j: randint(-9, 9))
+transpose = A.T
+%
+% question_statement
+%
+Donnez la transposée de $A = {{A}}$ :
+{% input_matrix 'answer' rows=p cols=m solution=transpose input_style='width:2.5em' %}
+%
+% question_solution_explanation
+%
+Les lignes de $A$ deviennent les colonnes de ${}^tA$ : ${}^tA = {{transpose}}$.
+%

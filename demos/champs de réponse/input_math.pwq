@@ -1,0 +1,44 @@
+%
+% question_title
+%
+input_math : dérivée d’un produit
+%
+% question_keywords
+%
+champ de réponse, input_math, dérivée, MathLive
+%
+% question_layout
+%
+STD
+%
+% question_setup
+%
+# Champ input_math : une formule, saisie avec un clavier mathématique (MathLive).
+#   solution=  expression SymPy, affichée en formule par « Solution »
+# Ce champ exige un question_check : une formule se corrige par comparaison symbolique, car
+# l’élève peut l’écrire de bien des façons justes. math_expression lit sa saisie.
+from random import randint
+from sympy import diff, exp, simplify, symbols
+from pywims import math_expression
+
+x = symbols("x")
+a = randint(2, 5)
+function = (x + a) * exp(x)
+derivative = diff(function, x)
+%
+% question_statement
+%
+Soit $f(x) = {{function}}$. Donnez $f'(x)$ :
+{% input_math 'student_derivative' solution=derivative %}
+%
+% question_solution_explanation
+%
+$(uv)' = u'v + uv'$ avec $u = x + {{a}}$ et $v = e^x$ : $f'(x) = {{derivative}}$.
+%
+% question_check
+%
+answer = math_expression(student_derivative)
+ok_answer["student_derivative"] = answer is not None and simplify(answer - derivative) == 0
+if not ok_answer["student_derivative"]:
+    feedback = r"Pensez à la dérivée d’un produit : $(uv)' = u'v + uv'$."
+%

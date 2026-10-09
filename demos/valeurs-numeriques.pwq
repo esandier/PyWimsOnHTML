@@ -1,0 +1,54 @@
+%
+% question_title
+%
+Valeur approchée, fraction irréductible, écriture scientifique
+%
+% question_keywords
+%
+démonstration, input_value, tolérance, fraction, notation scientifique
+%
+% question_layout
+%
+STD
+%
+% question_setup
+%
+# Démonstration : le champ input_value, qui compare un nombre par sa valeur, sans Python.
+# - tolerance=0.01 accepte toute valeur à 0,01 près ; la solution affichée a deux décimales.
+# - form=irreducible refuse 10/4 pour 5/2, avec un retour qui le dit.
+# - form=scientific attend 4,7×10^5 (ou 4.7e5), et non 470000.
+# La virgule et le point sont acceptés partout.
+from random import choice, randint
+from sympy import Rational, gcd, sqrt
+from pywims import decimal_comma
+
+n = choice([2, 3, 5, 6, 7, 10, 11])
+root = sqrt(n)
+root_text = decimal_comma(root, 2)
+
+p, q = choice([(6, 8), (10, 4), (9, 12), (14, 21), (15, 25), (18, 12)])
+fraction = Rational(p, q)
+divisor = gcd(p, q)
+
+m = randint(11, 99)
+e = randint(3, 6)
+big = m * 10**e
+scientific_text = decimal_comma(Rational(m, 10), 1).replace(",", "{,}") + r" \times 10^{" + str(e + 1) + "}"
+%
+% question_statement
+%
+<ol>
+  <li>Valeur approchée de $\sqrt{ {{n}} }$ à 0,01 près :
+    {% input_value 'approx' solution=root tolerance=0.01 form=decimal style='width:5em' %}</li>
+  <li>Forme irréductible de $\dfrac{ {{p}} }{ {{q}} }$ :
+    {% input_value 'simplified' solution=fraction form=irreducible style='width:5em' %}</li>
+  <li>Écriture scientifique de ${{big}}$ :
+    {% input_value 'scientific' solution=big form=scientific style='width:7em' %}</li>
+</ol>
+%
+% question_solution_explanation
+%
+$\sqrt{ {{n}} }$ vaut environ {{root_text}} ;
+$\dfrac{ {{p}} }{ {{q}} } = {{fraction}}$, en divisant par ${{divisor}}$ ;
+${{big}} = {{scientific_text}}$.
+%

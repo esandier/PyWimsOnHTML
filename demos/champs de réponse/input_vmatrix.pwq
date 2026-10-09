@@ -1,0 +1,39 @@
+%
+% question_title
+%
+input_vmatrix : produit de deux matrices
+%
+% question_keywords
+%
+champ de réponse, input_vmatrix, matrice, produit
+%
+% question_layout
+%
+STD
+%
+% question_setup
+%
+# Champ input_vmatrix : une matrice que l’élève redimensionne lui-même (poignée en bas à droite,
+# ou flèches du clavier) ; trouver les dimensions fait partie de la question.
+#   solution=               Matrix de SymPy, ou liste de lignes
+#   max_rows=, max_cols=    dimensions maximales (10 par défaut)
+#   input_style=            CSS de chaque case ; cell_width=, cell_height= imposent une taille
+# Sans question_check, une grille aux mauvaises dimensions est fausse.
+from random import randint
+from sympy import Matrix
+
+m, n, p = randint(1, 3), randint(2, 3), randint(1, 3)
+A = Matrix(m, n, lambda i, j: randint(-3, 3))
+B = Matrix(n, p, lambda i, j: randint(-3, 3))
+product = A * B
+%
+% question_statement
+%
+Calculez le produit $AB$, avec $A = {{A}}$ et $B = {{B}}$ :
+{% input_vmatrix 'answer' max_rows=4 max_cols=4 solution=product input_style='width:2.5em' %}
+%
+% question_solution_explanation
+%
+$A$ a ${{m}}$ lignes et $B$ a ${{p}}$ colonnes : $AB$ est une matrice ${{m}} \times {{p}}$,
+$AB = {{product}}$.
+%

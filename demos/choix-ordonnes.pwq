@@ -1,0 +1,43 @@
+%
+% question_title
+%
+Nombre de solutions de x² = a
+%
+% question_keywords
+%
+démonstration, choix compacts, shuffle, équation, carré
+%
+% question_layout
+%
+STD
+%
+% question_setup
+%
+# Démonstration : choix compacts et ordre de l’auteur.
+# - Sans « columns », les choix sont empilés, tous de la largeur du plus long.
+# - shuffle=0 garde l’ordre de la liste : « aucune, une seule, deux… » se lit dans l’ordre.
+from random import choice
+from sympy import latex, sqrt
+
+a = choice([-9, -4, -1, 0, 1, 2, 4, 5, 9])
+choices = ["aucune", "une seule", "deux", "une infinité"]
+if a < 0:
+    correct = 0
+    reason = rf"un carré n’est jamais négatif : $x^2 = {a}$ n’a pas de solution réelle."
+elif a == 0:
+    correct = 1
+    reason = r"seul $x = 0$ a un carré nul."
+else:
+    correct = 2
+    root = latex(sqrt(a))
+    reason = rf"$x = {root}$ et $x = -{root}$ ont pour carré ${a}$."
+%
+% question_statement
+%
+Combien de solutions réelles l’équation $x^2 = {{a}}$ a-t-elle ?
+{% input_radio 'answer' choices=choices solution=correct shuffle=0 %}
+%
+% question_solution_explanation
+%
+{{reason}}
+%

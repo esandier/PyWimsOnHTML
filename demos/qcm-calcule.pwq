@@ -1,0 +1,48 @@
+%
+% question_title
+%
+Développer un produit (QCM aux choix calculés)
+%
+% question_keywords
+%
+démonstration, mcq, QCM, développement, calcul littéral
+%
+% question_layout
+%
+STD
+%
+% question_setup
+%
+# Démonstration : l’outil mcq tire les choix d’un QCM. La bonne réponse dépend des valeurs de
+# l’énoncé ; les mauvaises sont des erreurs types, tirées dans une réserve. mcq retire les
+# doublons (pour b = -a, plusieurs erreurs types coïncident) et les erreurs égales à la bonne
+# réponse, puis mélange : les choix eux-mêmes changent d’un tirage à l’autre.
+from random import choice, randint
+from sympy import expand, symbols
+from pywims import mcq
+
+x = symbols("x")
+a = randint(1, 5)
+b = choice([-5, -4, -3, -2, -1, 1, 2, 3, 4, 5])
+product = (x + a) * (x + b)
+expanded = expand(product)
+mistakes = [
+    x**2 + a * b,                      # oubli des termes croisés
+    x**2 + (a + b) * x + (a + b),      # somme au lieu du produit des constantes
+    x**2 + a * b * x + (a + b),        # produit et somme échangés
+    x**2 + (a - b) * x - a * b,        # erreurs de signe
+    x**2 + (a + b) * x - a * b,        # signe du terme constant
+    x**2 + 2 * (a + b) * x + a * b,    # termes croisés comptés deux fois
+    2 * x + (a + b) * x + a * b,       # x × x écrit 2x
+]
+choices, correct = mcq(correct=expanded, wrong=mistakes, count=4)
+%
+% question_statement
+%
+Développez ${{product}}$ :
+{% input_radio 'answer' choices=choices solution=correct %}
+%
+% question_solution_explanation
+%
+On multiplie chaque terme du premier facteur par chaque terme du second,<br>puis on réduit :<br>${{product}}$<br>$= {{expanded}}$.
+%
