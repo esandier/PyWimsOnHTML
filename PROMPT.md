@@ -217,7 +217,7 @@ auto-multiple-choice (AMC). Convertis chaque question en un fichier `.pwq` :
   correction sans `apres` vérifie déjà la réponse en tout ou rien. Écris-en un
   seulement si l’on te demande des retours ciblés ; il écrit alors un
   `feedback` utile, qui ne donne pas la réponse (voir
-  `exercises/nombres-premiers.pwq`).
+  `questions/nombres-premiers.pwq`).
 - Ne transpose pas en silence ce qui n’a pas d’équivalent : question ouverte
   (`\AMCOpen`), réponse numérique (`\AMCnumericChoices`), image, barème par
   réponse (`\bonne{…}\bareme{…}`), directive `formula`, `set.…`, `default.…`,

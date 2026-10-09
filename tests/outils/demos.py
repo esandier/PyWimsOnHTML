@@ -1,6 +1,6 @@
-# Recompile les démonstrations de l’accueil (demos/) avec le vrai compilateur, à partir des exercices
-# de la racine d’exercises/ et de la charte neutre (SPECIFICATION.md, § 11.6) : l’exemple de deux
-# questions, intégré à l’accueil, et la feuille de tous les exercices. À lancer
+# Recompile les démonstrations de l’accueil (demos/) avec le vrai compilateur, à partir des questions
+# de la racine de questions/ et de la charte neutre (SPECIFICATION.md, § 11.6) : l’exemple de deux
+# questions, intégré à l’accueil, et la feuille de toutes les questions. À lancer
 # avant de publier une modification du moteur : les démonstrations intègrent le moteur du moment.
 # Prérequis : Python avec playwright (voir navigateur.py).
 # Usage : python tests/outils/demos.py
@@ -34,29 +34,29 @@ def port_libre():
 
 
 def compiler(page, titres, destination, titre_activite=None):
-    """Coche les exercices de ces titres, dans cet ordre, et enregistre le fichier compilé."""
-    for case in page.query_selector_all(".exercise-selection"):
+    """Coche les questions de ces titres, dans cet ordre, et enregistre le fichier compilé."""
+    for case in page.query_selector_all(".question-selection"):
         if case.is_checked():
             case.uncheck()
-    liste = page.eval_on_selector_all("#exercise-list li:not(.exercise-group)",
-                                      "items => items.map(li => li.querySelector('.exercise-title').textContent)")
+    liste = page.eval_on_selector_all("#question-list li:not(.question-group)",
+                                      "items => items.map(li => li.querySelector('.question-title').textContent)")
     for titre in titres:
-        page.click(f".exercise-selection >> nth={liste.index(titre)}")
+        page.click(f".question-selection >> nth={liste.index(titre)}")
     if titre_activite:
         page.select_option("#output-mode", "activity")
         page.fill("#activity-title", titre_activite)
     with page.expect_download(timeout=600_000) as attente:
-        page.click("#compile-exercise")
+        page.click("#compile-question")
     attente.value.save_as(destination)
     print(f"{os.path.relpath(destination, PROJECT)} : {os.path.getsize(destination) // 1024} Ko")
 
 
 def main():
-    # Dossier d’exercices : les seuls .pwq de la racine, sans brand.css (charte neutre).
+    # Dossier de questions : les seuls .pwq de la racine, sans brand.css (charte neutre).
     dossier = tempfile.mkdtemp(prefix="pywims-demos-")
-    for nom in os.listdir(os.path.join(PROJECT, "exercises")):
+    for nom in os.listdir(os.path.join(PROJECT, "questions")):
         if nom.endswith(".pwq"):
-            shutil.copy(os.path.join(PROJECT, "exercises", nom), dossier)
+            shutil.copy(os.path.join(PROJECT, "questions", nom), dossier)
     port = port_libre()
     serveur = subprocess.Popen([sys.executable, "-m", "http.server", str(port), "--bind", "127.0.0.1"],
                                cwd=PROJECT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -67,13 +67,13 @@ def main():
             navigateur = lancer_edge(playwright)
             page = navigateur.new_page(accept_downloads=True)
             page.goto(f"http://127.0.0.1:{port}/compiler/")
-            page.set_input_files("#exercise-folder", dossier)
-            page.wait_for_function("document.querySelectorAll('.exercise-selection').length > 0")
+            page.set_input_files("#question-folder", dossier)
+            page.wait_for_function("document.querySelectorAll('.question-selection').length > 0")
             if "Charte neutre" not in page.text_content("#brand-status"):
                 raise SystemExit("Les démonstrations doivent utiliser la charte neutre.")
-            # La feuille : tous les exercices, dans l’ordre de la liste (titres).
-            tous = page.eval_on_selector_all("#exercise-list li:not(.exercise-group)",
-                                             "items => items.map(li => li.querySelector('.exercise-title').textContent)")
+            # La feuille : toutes les questions, dans l’ordre de la liste (titres).
+            tous = page.eval_on_selector_all("#question-list li:not(.question-group)",
+                                             "items => items.map(li => li.querySelector('.question-title').textContent)")
             compiler(page, tous, os.path.join(DEMOS, "feuille.html"), FEUILLE)
             compiler(page, QUESTIONS_EXEMPLE, os.path.join(DEMOS, "exemple.html"), EXEMPLE)
             navigateur.close()

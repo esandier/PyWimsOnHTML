@@ -1,5 +1,5 @@
 /* Charte neutre, utilisée par défaut (SPECIFICATION.md, § 11.4). Une charte ne définit que ces
-   variables, la barre de titre et, si elle en a un, le logo (.pw-brand-logo) : exercise.css en tire
+   variables, la barre de titre et, si elle en a un, le logo (.pw-brand-logo) : question.css en tire
    tout le reste. Pour la charte de son établissement, on place un fichier brand.css à la racine de
    son dossier de questions ; css/chartes/upec.css en est un exemple complet, avec logo.
    Polices du système, sans téléchargement : une charte neutre n’a pas à dépendre d’un service en
@@ -57,7 +57,7 @@ a {
     padding: 0 12px;
   }
 
-  .pw-header #exercise-title {
+  .pw-header #question-title {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;

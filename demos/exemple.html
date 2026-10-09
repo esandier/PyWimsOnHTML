@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Exemple d’activité</title>
   <!-- /* Charte neutre, utilisée par défaut (SPECIFICATION.md, § 11.4). Une charte ne définit que ces
-   variables, la barre de titre et, si elle en a un, le logo (.pw-brand-logo) : exercise.css en tire
+   variables, la barre de titre et, si elle en a un, le logo (.pw-brand-logo) : question.css en tire
    tout le reste. Pour la charte de son établissement, on place un fichier brand.css à la racine de
    son dossier de questions ; css/chartes/upec.css en est un exemple complet, avec logo.
    Polices du système, sans téléchargement : une charte neutre n’a pas à dépendre d’un service en
@@ -64,7 +64,7 @@ a {
     padding: 0 12px;
   }
 
-  .pw-header #exercise-title {
+  .pw-header #question-title {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -73,7 +73,7 @@ a {
   }
 }
 
-/* Réinitialisation minimale et typographie commune à la page d’exercice. */
+/* Réinitialisation minimale et typographie commune à la page de question. */
 * {
   box-sizing: border-box;
 }
@@ -1084,7 +1084,7 @@ mjx-assistive-mml {
  reçoit les styles génériques et la charte de marque choisie. -->
   <style>
 /* Charte neutre, utilisée par défaut (SPECIFICATION.md, § 11.4). Une charte ne définit que ces
-   variables, la barre de titre et, si elle en a un, le logo (.pw-brand-logo) : exercise.css en tire
+   variables, la barre de titre et, si elle en a un, le logo (.pw-brand-logo) : question.css en tire
    tout le reste. Pour la charte de son établissement, on place un fichier brand.css à la racine de
    son dossier de questions ; css/chartes/upec.css en est un exemple complet, avec logo.
    Polices du système, sans téléchargement : une charte neutre n’a pas à dépendre d’un service en
@@ -1142,7 +1142,7 @@ a {
     padding: 0 12px;
   }
 
-  .pw-header #exercise-title {
+  .pw-header #question-title {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1151,7 +1151,7 @@ a {
   }
 }
 
-/* Réinitialisation minimale et typographie commune à la page d’exercice. */
+/* Réinitialisation minimale et typographie commune à la page de question. */
 * {
   box-sizing: border-box;
 }
@@ -2184,7 +2184,7 @@ mjx-assistive-mml {
   <div class="pw-top">
     <!-- Le logo de marque est décoratif ; son image et son style sont définis dans brand.css. -->
     <header class="pw-header">
-      <h1 id="exercise-title">Exemple d’activité</h1>
+      <h1 id="question-title">Exemple d’activité</h1>
       <div class="pw-header-tools">
         <!-- Note indicative de l’activité : affichée seulement si une question a un barème. -->
         <div class="pw-score-total" id="pw-score-total" role="status" aria-live="polite" hidden>
@@ -2370,7 +2370,7 @@ else:
     <div class="pw-q-score" data-role="score" aria-live="polite" hidden></div>
   </template>
   <!-- La grammaire des balises précède les widgets, qui utilisent son échappement. -->
-  <script>// Grammaire unique des modèles d’exercice, partagée par le compilateur et l’exercice généré.
+  <script>// Grammaire unique des modèles de question, partagée par le compilateur et la question générée.
 window.PyWimsTemplate = (() => {
   const tagPattern = /{%\s*(.*?)\s*%}/gs;
   const variablePattern = /{{\s*([A-Za-z_]\w*)\s*}}/g;
@@ -2405,7 +2405,7 @@ window.PyWimsTemplate = (() => {
   // Directives d’AMC connues mais non prises en charge : le message le dit, au lieu de « inconnue ».
   const unsupportedScoring = /^(formula|auto|SUF|allowempty|(set|setglobal|default|requires)\..+)$/;
   // Un champ porte le nom de la variable Python qui reçoit la saisie : il ne doit pas
-  // écraser une variable du contrat d’exercice, un outil pywims ni un mot-clé Python.
+  // écraser une variable du contrat de question, un outil pywims ni un mot-clé Python.
   const reservedNames = new Set([
     "ok_answer", "feedback", "explication_solution",
     "py_wims", "is_nombre", "math_expression", "decimal_fr", "LIBRE", "pywims",
@@ -2734,7 +2734,7 @@ window.PyWimsCorrection = (() => {
   return Object.freeze({ normalizedText, sameText, sameChoice, isCorrect });
 })();
 </script>
-  <script>// Fournit le champ texte standard utilisé par les exercices compilés.
+  <script>// Fournit le champ texte standard utilisé par les questions compilés.
 window.PyWimsWidgets = (() => {
   const existing = window.PyWimsWidgets || {};
   const { escapeHtml } = PyWimsTemplate;
@@ -2797,7 +2797,7 @@ window.PyWimsWidgets = (() => {
   //     (hyphens: auto) n’est pas appliquée par tous les navigateurs, dont Edge sous Windows ;
   //   - une formule composée par MathJax (SVG) ne se coupe jamais.
   // On mesure donc après composition : un choix déborde si sa largeur de contenu dépasse sa largeur
-  // visible (exige « overflow-wrap: normal » dans exercise.css). Des choix courts gardent leurs
+  // visible (exige « overflow-wrap: normal » dans question.css). Des choix courts gardent leurs
   // colonnes, même sur téléphone. On repart du nombre voulu par l’auteur à chaque appel, car la
   // fenêtre a pu s’élargir depuis (rotation du téléphone).
   // Appelée par la question après la composition des formules, et au redimensionnement.
@@ -2832,7 +2832,7 @@ _libre = None
 
 
 def __getattr__(name):
-    """Crée LIBRE à la demande : SymPy n’est importé que par les exercices qui l’utilisent."""
+    """Crée LIBRE à la demande : SymPy n’est importé que par les questions qui l’utilisent."""
     global _libre
     if name == "LIBRE":
         if _libre is None:
@@ -2861,7 +2861,7 @@ def _float_text(value):
 
     L’arrondi efface les artefacts du calcul binaire (0.1 + 0.2 vaut 0.30000000000000004) : sans
     lui, le bouton « Solution » afficherait ces chiffres et la correction par défaut les exigerait
-    (SPECIFICATION.md, § 2.6). Douze chiffres gardent toute valeur qu’un exercice demande.
+    (SPECIFICATION.md, § 2.6). Douze chiffres gardent toute valeur qu’une question demande.
     """
     import decimal
     import math
@@ -3042,7 +3042,7 @@ def _string_errors(source, field):
     Dans une chaîne ordinaire, Python lit « \frac » comme un saut de page suivi de « rac », et
     « \times » comme une tabulation suivie de « imes » : la formule TeX arrive abîmée à MathJax
     (« Math input error »), sans aucune erreur Python. Un tel caractère n’a presque jamais sa place
-    dans un exercice ; on le signale donc à la compilation, avec la ligne, pour qu’une chaîne brute
+    dans une question ; on le signale donc à la compilation, avec la ligne, pour qu’une chaîne brute
     r'…' soit utilisée. Renvoie la liste des messages, en JSON.
     """
     import ast
@@ -3237,7 +3237,7 @@ function ensurePyodide() {
   return pyodidePromise;
 }
 
-// Charge les paquets Pyodide importés par le code de l’exercice. Le module pywims s’appuie sur
+// Charge les paquets Pyodide importés par le code de la question. Le module pywims s’appuie sur
 // SymPy : l’importer charge donc aussi SymPy.
 async function ensurePackages(code) {
   await ensurePyodide();
@@ -3259,14 +3259,14 @@ async function ensurePackages(code) {
       // Premier import de chaque bibliothèque, ici, hors de toute limite de temps : celui de SymPy
       // dure quelques secondes, et bien plus quand le navigateur exécute WebAssembly lentement
       // (Edge en « sécurité renforcée » : plus de 30 s mesurées). Fait dans « avant », il était
-      // compté comme le calcul de l’exercice et faisait refuser la compilation (SPECIFICATION.md,
-      // § 3). Ensuite, l’import de l’exercice retrouve le module déjà chargé. Un module introuvable
+      // compté comme le calcul de la question et faisait refuser la compilation (SPECIFICATION.md,
+      // § 3). Ensuite, l’import de la question retrouve le module déjà chargé. Un module introuvable
       // est laissé à « avant », qui en donnera l’erreur avec sa ligne.
       for (const name of imports) {
         try {
           pyodide.pyimport(name).destroy?.();
         } catch {
-          // L’erreur sera signalée par l’exécution de l’exercice.
+          // L’erreur sera signalée par l’exécution de la question.
         }
       }
     })
@@ -3343,7 +3343,7 @@ const operations = {
     }
   },
 
-  // Exécute le code Python d’initialisation ou de correction de l’exercice. callId : appel limité
+  // Exécute le code Python d’initialisation ou de correction de la question. callId : appel limité
   // dans le temps ; la page est prévenue quand le calcul commence vraiment, après l’attente dans
   // la file, pour ne compter que la durée du calcul.
   run(sessionId, code, callId) {
@@ -3360,7 +3360,7 @@ const operations = {
     const globals = sessionGlobals(sessionId);
     return enqueuePythonOperation(async () => {
       notifyStart(callId);
-      // NumPy n’est initialisé que s’il a été chargé pour cet exercice.
+      // NumPy n’est initialisé que s’il a été chargé pour cette question.
       pyodide.runPython(`
 import importlib.util, random
 random.seed(${seed})
@@ -3898,7 +3898,7 @@ window.PyWimsQuestion = (() => {
     // à chaque changement de la note d’une question notée.
     constructor(section, index, { onSuccess, onScoreChange } = {}) {
       const dataElement = section.querySelector(".pw-question-data");
-      this.exercise = Object.fromEntries(
+      this.definition = Object.fromEntries(
         [...dataElement.querySelectorAll("[data-field]")].map(field => [field.dataset.field, field.textContent])
       );
       this.draws = JSON.parse(dataElement.querySelector("[data-draws]")?.textContent || "[]");
@@ -3911,12 +3911,12 @@ window.PyWimsQuestion = (() => {
       // Une section sans marque vient d’un fichier compilé avant cette règle : elle garde Python.
       this.usesPython = section.dataset.python !== "false";
       this.python = this.usesPython ? PyWimsPython.createSession(section.id) : null;
-      const tags = PyWimsTemplate.parseTags(this.exercise.enonce);
+      const tags = PyWimsTemplate.parseTags(this.definition.enonce);
       this.tagTypes = new Set(tags.map(tag => tag.type));
       // Type de la balise de chaque champ, d’après son nom : la correction par défaut en dépend.
       this.typeOf = new Map(tags.map(tag => [tag.name, tag.type]));
       this.choiceTags = tags.filter(tag => PyWimsTemplate.choiceTypes.has(tag.type));
-      this.pythonCode = `${this.exercise.avant}\n${this.exercise.apres ?? ""}`;
+      this.pythonCode = `${this.definition.avant}\n${this.definition.apres ?? ""}`;
 
       section.append(questionTemplate.content.cloneNode(true));
       const element = role => section.querySelector(`[data-role="${role}"]`);
@@ -3932,10 +3932,10 @@ window.PyWimsQuestion = (() => {
       this.newDrawButton = element("new-draw");
       this.titleElement.id = `${section.id}-title`;
       // Le numéro est affiché par la pastille, décorative : le titre le donne aux lecteurs d’écran.
-      this.titleElement.innerHTML = `<span class="pw-sr-only">Question ${index + 1} : </span>${PyWimsTemplate.escapeHtml(this.exercise.title)}`;
+      this.titleElement.innerHTML = `<span class="pw-sr-only">Question ${index + 1} : </span>${PyWimsTemplate.escapeHtml(this.definition.title)}`;
       this.badgeElement.textContent = String(index + 1);
       // Une question seule porte déjà son titre dans l’en-tête de la page.
-      section.setAttribute("aria-labelledby", singleQuestion ? "exercise-title" : this.titleElement.id);
+      section.setAttribute("aria-labelledby", singleQuestion ? "question-title" : this.titleElement.id);
 
       // Réussie : une vérification de l’élève entièrement juste ; elle le reste ensuite.
       this.succeeded = false;
@@ -4215,7 +4215,7 @@ window.PyWimsQuestion = (() => {
     preparePython(selected) {
       this.drawGeneration += 1;
       const generation = this.drawGeneration;
-      const { python, exercise } = this;
+      const { python, definition } = this;
       this.pythonSettled = false;
       // Session préparée dans ce Worker : après une relance, elle n’existe plus (pythonVerdicts).
       this.pythonEpoch = pythonEpoch();
@@ -4225,7 +4225,7 @@ window.PyWimsQuestion = (() => {
         }
         await python.dispose();
         await python.initialize(this.pythonCode);
-        await python.runSeeded(exercise.avant, selected.seed);
+        await python.runSeeded(definition.avant, selected.seed);
         for (const [name, expected] of Object.entries(selected.context)) {
           if (await python.getTemplateValue(name) !== expected) {
             throw new Error(`Le tirage n’a pas pu être reproduit (« ${name} » diffère) : la vérification est indisponible.`);
@@ -4279,7 +4279,7 @@ window.PyWimsQuestion = (() => {
       this.draw = selected;
       window.MathJax?.typesetClear?.([promptElement]);
       promptElement.innerHTML = PyWimsTemplate.renderTemplate(
-        this.exercise.enonce,
+        this.definition.enonce,
         selected.context,
         tag => this.renderWidget(tag, selected)
       );
@@ -4372,7 +4372,7 @@ window.PyWimsQuestion = (() => {
         await python.setMatrix(name, matrix);
       }
       await python.resetAnswers();
-      await python.run(this.exercise.apres, { timeoutMs: checkTimeoutMs }).catch(error => {
+      await python.run(this.definition.apres, { timeoutMs: checkTimeoutMs }).catch(error => {
         throw error.name === "PyWimsTimeout" ? new Error(checkTimeoutMessage) : error;
       });
 

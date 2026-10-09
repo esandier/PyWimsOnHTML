@@ -31,7 +31,7 @@ def main():
         browser = lancer_edge(playwright, arguments.edge)
         try:
             page = browser.new_page(**(TELEPHONE if arguments.telephone else ORDINATEUR))
-            # « load » et non « networkidle » : une page d’exercices charge Pyodide en arrière-plan,
+            # « load » et non « networkidle » : une page de questions charge Pyodide en arrière-plan,
             # parfois longtemps après l’affichage de l’énoncé.
             page.goto(adresse(arguments.page), wait_until="load", timeout=120_000)
             page.wait_for_timeout(arguments.attente * 1000)

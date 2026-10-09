@@ -19,12 +19,12 @@ qui fait référence ; le format des questions est détaillé dans
 - `compiler/` — page du compilateur (`index.html`), son interface (`compiler.js`) et ses modules :
   format `.pwq` (`format.js`), tirages et contrôles (`draws.js`), assemblage (`assemble.js`),
   archive ZIP (`zip.js`)
-- `exercises/` — fichiers de questions `.pwq`
+- `questions/` — fichiers de questions `.pwq`
 - `layouts/` — mise en page HTML commune aux questions seules et aux activités
 - `widgets/` — champs de saisie : texte, MathLive, matrices fixes et redimensionnables, choix
   unique ou multiple
 - `css/` — charte neutre par défaut (`brand.css`), exemples de chartes (`chartes/`, dont
-  celle de l’UPEC) et styles des questions (`exercise.css`)
+  celle de l’UPEC) et styles des questions (`question.css`)
 - `runtime/` — code intégré au fichier généré : grammaire des balises
   (`template.js`), correction sans Python (`correction.js`), Python dans un
   Worker (`python.js`, `python-worker.js`) et module `pywims` (`pywims.py`),
@@ -172,19 +172,19 @@ correspondance et un exemple complet.
 Le guide complet, avec un exemple, est [`PROMPT.md`](PROMPT.md). Exemples du
 dépôt :
 
-- [`pgcd.pwq`](exercises/pgcd.pwq) — champ texte ;
-- [`addition-fractions.pwq`](exercises/addition-fractions.pwq) — fraction
+- [`pgcd.pwq`](questions/pgcd.pwq) — champ texte ;
+- [`addition-fractions.pwq`](questions/addition-fractions.pwq) — fraction
   irréductible et dénominateur positif ;
-- [`dérivée-polynôme.pwq`](exercises/dérivée-polynôme.pwq) — saisie MathLive et
+- [`dérivée-polynôme.pwq`](questions/dérivée-polynôme.pwq) — saisie MathLive et
   correction symbolique ;
-- [`matrice-triangulaire.pwq`](exercises/matrice-triangulaire.pwq) — matrice de
+- [`matrice-triangulaire.pwq`](questions/matrice-triangulaire.pwq) — matrice de
   taille fixe, valeurs libres (`LIBRE`) et explication de la solution ;
-- [`produit-matrices.pwq`](exercises/produit-matrices.pwq) — matrice
+- [`produit-matrices.pwq`](questions/produit-matrices.pwq) — matrice
   redimensionnable ;
-- [`nombres-premiers.pwq`](exercises/nombres-premiers.pwq) — choix multiple
+- [`nombres-premiers.pwq`](questions/nombres-premiers.pwq) — choix multiple
   converti depuis AMC, avec « Aucun de ces nombres », un barème et des retours
   ciblés (`apres`) ;
-- [`Decim3.pwq`](exercises/Decim3.pwq) — choix unique sans `apres`, corrigé
+- [`Decim3.pwq`](questions/Decim3.pwq) — choix unique sans `apres`, corrigé
   sans Python, avec un barème et une explication de la solution.
 
 Les matrices redimensionnables commencent à 2 × 2 ; la poignée ↘ ajoute ou
@@ -206,7 +206,7 @@ projet :
 - `tests/runtime-tests.html` : cycle de vie des questions, progression et aide,
   avec un Python simulé ; quelques secondes ;
 - `tests/python-tests.html` : vrai Pyodide (module `pywims`, isolement des
-  questions, chaque question du dossier `exercises/` compilée puis corrigée, seule
+  questions, chaque question du dossier `questions/` compilée puis corrigée, seule
   et dans une activité), et balayage des tirages de chaque question : chaque
   tirage est exécuté deux fois, ses solutions converties, saisies comme par un
   élève et jugées justes. 20 tirages par question par défaut, quelques minutes ;

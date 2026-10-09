@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Tests du runtime Python avec le vrai Pyodide : module pywims, espaces de noms et exercices du dépôt.
+<!-- Tests du runtime Python avec le vrai Pyodide : module pywims, espaces de noms et questions du dépôt.
      Ils téléchargent Pyodide et SymPy : compter une à deux minutes. -->
 <html lang="fr">
 <head>
@@ -40,17 +40,17 @@
       }
     }
 
-    // Nombre de tirages du balayage de chaque exercice : 20 par défaut, ?tirages=200 pour un balayage
+    // Nombre de tirages du balayage de chaque question : 20 par défaut, ?tirages=200 pour un balayage
     // complet (quelques minutes).
     const sweepCount = Number(new URLSearchParams(location.search).get("tirages")) || 20;
 
-    // Tous les exercices de la racine d’exercises/ et les modèles du mode d’emploi (guide/modeles/),
+    // Toutes les questions de la racine de questions/ et les modèles du mode d’emploi (guide/modeles/),
     // vérifiés de la même façon (SPECIFICATION.md, § 11.5), d’après la liste que le serveur de test
-    // (python -m http.server) affiche pour un dossier : un nouvel exercice est testé sans modifier
+    // (python -m http.server) affiche pour un dossier : une nouvelle question est testée sans modifier
     // cette page. Chemins relatifs à la racine du projet.
-    async function listExerciseFiles() {
+    async function listQuestionFiles() {
       const files = [];
-      for (const folder of ["exercises/", "guide/modeles/"]) {
+      for (const folder of ["questions/", "guide/modeles/"]) {
         const listing = new DOMParser().parseFromString(await (await fetch(`../${folder}`)).text(), "text/html");
         files.push(...[...listing.querySelectorAll("a[href]")]
           .map(link => decodeURIComponent(link.getAttribute("href")))
@@ -67,7 +67,7 @@
       const workerSource = await (await fetch("../runtime/python-worker.js", { cache: "no-store" })).text();
       PyWimsPython.setWorkerSource(workerSource);
       await PyWimsPython.setModuleSource(moduleSource);
-      const exerciseFiles = await listExerciseFiles();
+      const questionFiles = await listQuestionFiles();
 
       await test("chaque outil exporté par pywims est un nom de champ réservé", async () => {
         const session = PyWimsPython.createSession("exports");
@@ -95,7 +95,7 @@
 
       // Le premier import de SymPy (plusieurs secondes, plus de 30 s sur un navigateur lent) ne doit
       // pas compter dans le temps limité de « avant » : il est fait à l’initialisation.
-      await test("les bibliothèques de l’exercice sont importées à l’initialisation, hors du temps limité", async () => {
+      await test("les bibliothèques de la question sont importées à l’initialisation, hors du temps limité", async () => {
         const session = PyWimsPython.createSession("import-initial");
         await session.initialize("from sympy import Rational\nimport fractions");
         await expectPython(session, "all(m in __import__('sys').modules for m in ('sympy', 'fractions'))",
@@ -238,11 +238,11 @@ json.dumps({
         }
       });
 
-      for (const file of exerciseFiles) {
-        await test(`l’exercice ${file} s’exécute et fournit les variables de son énoncé`, async () => {
+      for (const file of questionFiles) {
+        await test(`la question ${file} s’exécute et fournit les variables de son énoncé`, async () => {
           const response = await fetch(`../${file}`);
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          const fields = PyWimsCompiler.parseExerciseSource(await response.text(), file);
+          const fields = PyWimsCompiler.parseQuestionSource(await response.text(), file);
           const session = PyWimsPython.createSession(file.replace(/\W/g, "_"));
           await session.initialize(`${fields.avant}\n${fields.apres ?? ""}`);
           await session.run(fields.avant);
@@ -272,7 +272,7 @@ json.dumps({
             }
           }
 
-          // Sans « apres », la correction par défaut est en JavaScript : l’exercice compilé, testé
+          // Sans « apres », la correction par défaut est en JavaScript : la question compilée, testée
           // plus bas, la vérifie dans la page générée. Ici, « avant » et les solutions suffisent.
           if (fields.apres === undefined) return;
 
@@ -305,15 +305,15 @@ json.dumps({
       }
 
       // Tirages calculés par le compilateur (étape 4a).
-      const exerciseFields = {};
-      for (const file of exerciseFiles) {
+      const questionFields = {};
+      for (const file of questionFiles) {
         const response = await fetch(`../${file}`);
         // Clé : le nom du fichier, que des tests ci-dessous désignent (« pgcd.pwq »).
-        exerciseFields[file.split("/").pop()] = PyWimsCompiler.parseExerciseSource(await response.text(), file);
+        questionFields[file.split("/").pop()] = PyWimsCompiler.parseQuestionSource(await response.text(), file);
       }
 
-      await test("le compilateur calcule des tirages complets et distincts pour chaque exercice", async () => {
-        for (const [file, fields] of Object.entries(exerciseFields)) {
+      await test("le compilateur calcule des tirages complets et distincts pour chaque question", async () => {
+        for (const [file, fields] of Object.entries(questionFields)) {
           const draws = await PyWimsCompiler.computeDraws(fields, { count: 10 });
           const variables = [...PyWimsTemplate.templateVariables(fields.enonce)].sort().join(",");
           const names = PyWimsTemplate.parseTags(fields.enonce).map(tag => tag.name).sort().join(",");
@@ -327,7 +327,7 @@ json.dumps({
             throw new Error(`${file} : tirages incomplets ou en double (${draws.length})`);
           }
         }
-        const triangular = await PyWimsCompiler.computeDraws(exerciseFields["matrice-triangulaire.pwq"], { count: 3 });
+        const triangular = await PyWimsCompiler.computeDraws(questionFields["matrice-triangulaire.pwq"], { count: 3 });
         const cells = triangular[0].solutions.matrice;
         if (cells[0][0] !== null || cells.at(-1)[0] !== "0" || typeof triangular[0].explication !== "string") {
           throw new Error(`Solution libre ou explication inattendue : ${JSON.stringify(triangular[0])}`);
@@ -336,9 +336,9 @@ json.dumps({
 
       // Balayage : computeDraws exécute chaque tirage deux fois, convertit ses solutions, les saisit
       // comme un élève et exige qu’elles soient jugées justes (SPECIFICATION.md, §§ 3 et 8).
-      await test(`balayage de ${sweepCount} tirages par exercice : contrôles, intégration au fichier et relecture`, async () => {
+      await test(`balayage de ${sweepCount} tirages par question : contrôles, intégration au fichier et relecture`, async () => {
         const sizes = [];
-        for (const [file, fields] of Object.entries(exerciseFields)) {
+        for (const [file, fields] of Object.entries(questionFields)) {
           document.getElementById("progress").textContent = `Balayage : ${file}…`;
           const draws = await PyWimsCompiler.computeDraws(fields, { count: sweepCount }).catch(error => {
             throw new Error(`${file} : ${error.message}`);
@@ -356,7 +356,7 @@ json.dumps({
       });
 
       await test("les tirages sont reproductibles et les doublons sont fusionnés", async () => {
-        const fields = exerciseFields["pgcd.pwq"];
+        const fields = questionFields["pgcd.pwq"];
         const first = JSON.stringify(await PyWimsCompiler.computeDraws(fields, { count: 5 }));
         const second = JSON.stringify(await PyWimsCompiler.computeDraws(fields, { count: 5 }));
         if (first !== second) throw new Error("Deux compilations donnent des tirages différents.");
@@ -366,7 +366,7 @@ json.dumps({
           apres: "ok_answer['r'] = r == '4'"
         }, { count: 5 });
         if (fixed.length !== 1 || fixed[0].solutions.r !== "4") {
-          throw new Error(`Un exercice sans hasard devrait donner un seul tirage : ${JSON.stringify(fixed)}`);
+          throw new Error(`Une question sans hasard devrait donner un seul tirage : ${JSON.stringify(fixed)}`);
         }
         // Le champ « tirages » fixe le nombre de graines essayées : ici 3 (graines 0 à 2).
         const three = await PyWimsCompiler.computeDraws({ ...fields, tirages: "3" });
@@ -543,7 +543,7 @@ json.dumps({
         }, { count: 1 });
       });
 
-      // Exercices réellement compilés puis ouverts : Python reproduit le tirage et juge la solution juste.
+      // Questions réellement compilées puis ouvertes : Python reproduit le tirage et juge la solution juste.
       const resourceTexts = {};
       for (const [key, path] of Object.entries(PyWimsCompiler.resourcePaths)) {
         resourceTexts[key] = await (await fetch(`../${path}`)).text();
@@ -557,7 +557,7 @@ json.dumps({
         const frame = document.createElement("iframe");
         frame.style.cssText = "width:900px;height:700px";
         frame.srcdoc = title === null
-          ? PyWimsCompiler.assembleExercise(questions[0].fields, questions[0].draws, resources)
+          ? PyWimsCompiler.assembleQuestion(questions[0].fields, questions[0].draws, resources)
           : PyWimsCompiler.assembleActivity(title, questions, resources);
         document.body.append(frame);
         await new Promise(resolve => frame.addEventListener("load", resolve, { once: true }));
@@ -615,8 +615,8 @@ json.dumps({
       }
 
       const compiledQuestions = [];
-      for (const [file, fields] of Object.entries(exerciseFields)) {
-        await test(`l’exercice compilé ${file} affiche un tirage et accepte sa solution`, async () => {
+      for (const [file, fields] of Object.entries(questionFields)) {
+        await test(`la question compilée ${file} affiche un tirage et accepte sa solution`, async () => {
           const draws = (await PyWimsCompiler.computeDraws(fields, { count: 4 })).slice(-1);
           compiledQuestions.push({ fields, draws });
           const frame = await openCompiledSheet([{ fields, draws }]);
@@ -673,7 +673,7 @@ json.dumps({
         }
       });
 
-      await test("une activité réunit tous les exercices dans un seul document et les corrige chacun", async () => {
+      await test("une activité réunit toutes les questions dans un seul document et les corrige chacune", async () => {
         const frame = await openCompiledSheet(compiledQuestions, "Toutes les questions");
         try {
           if (frame.contentDocument.querySelectorAll(".pw-question").length !== compiledQuestions.length ||

@@ -1,4 +1,4 @@
-// Ajoute le champ de saisie MathLive aux widgets partagés par l’exercice.
+// Ajoute le champ de saisie MathLive aux widgets partagés par la question.
 window.PyWimsWidgets = (() => {
   const existing = window.PyWimsWidgets || {};
   const { escapeHtml } = PyWimsTemplate;

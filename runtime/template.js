@@ -1,4 +1,4 @@
-// Grammaire unique des modèles d’exercice, partagée par le compilateur et l’exercice généré.
+// Grammaire unique des modèles de question, partagée par le compilateur et la question générée.
 window.PyWimsTemplate = (() => {
   const tagPattern = /{%\s*(.*?)\s*%}/gs;
   const variablePattern = /{{\s*([A-Za-z_]\w*)\s*}}/g;
@@ -33,7 +33,7 @@ window.PyWimsTemplate = (() => {
   // Directives d’AMC connues mais non prises en charge : le message le dit, au lieu de « inconnue ».
   const unsupportedScoring = /^(formula|auto|SUF|allowempty|(set|setglobal|default|requires)\..+)$/;
   // Un champ porte le nom de la variable Python qui reçoit la saisie : il ne doit pas
-  // écraser une variable du contrat d’exercice, un outil pywims ni un mot-clé Python.
+  // écraser une variable du contrat de question, un outil pywims ni un mot-clé Python.
   const reservedNames = new Set([
     "ok_answer", "feedback", "explication_solution",
     "py_wims", "is_nombre", "math_expression", "decimal_fr", "LIBRE", "pywims",

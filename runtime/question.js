@@ -59,7 +59,7 @@ window.PyWimsQuestion = (() => {
     // à chaque changement de la note d’une question notée.
     constructor(section, index, { onSuccess, onScoreChange } = {}) {
       const dataElement = section.querySelector(".pw-question-data");
-      this.exercise = Object.fromEntries(
+      this.definition = Object.fromEntries(
         [...dataElement.querySelectorAll("[data-field]")].map(field => [field.dataset.field, field.textContent])
       );
       this.draws = JSON.parse(dataElement.querySelector("[data-draws]")?.textContent || "[]");
@@ -72,12 +72,12 @@ window.PyWimsQuestion = (() => {
       // Une section sans marque vient d’un fichier compilé avant cette règle : elle garde Python.
       this.usesPython = section.dataset.python !== "false";
       this.python = this.usesPython ? PyWimsPython.createSession(section.id) : null;
-      const tags = PyWimsTemplate.parseTags(this.exercise.enonce);
+      const tags = PyWimsTemplate.parseTags(this.definition.enonce);
       this.tagTypes = new Set(tags.map(tag => tag.type));
       // Type de la balise de chaque champ, d’après son nom : la correction par défaut en dépend.
       this.typeOf = new Map(tags.map(tag => [tag.name, tag.type]));
       this.choiceTags = tags.filter(tag => PyWimsTemplate.choiceTypes.has(tag.type));
-      this.pythonCode = `${this.exercise.avant}\n${this.exercise.apres ?? ""}`;
+      this.pythonCode = `${this.definition.avant}\n${this.definition.apres ?? ""}`;
 
       section.append(questionTemplate.content.cloneNode(true));
       const element = role => section.querySelector(`[data-role="${role}"]`);
@@ -93,10 +93,10 @@ window.PyWimsQuestion = (() => {
       this.newDrawButton = element("new-draw");
       this.titleElement.id = `${section.id}-title`;
       // Le numéro est affiché par la pastille, décorative : le titre le donne aux lecteurs d’écran.
-      this.titleElement.innerHTML = `<span class="pw-sr-only">Question ${index + 1} : </span>${PyWimsTemplate.escapeHtml(this.exercise.title)}`;
+      this.titleElement.innerHTML = `<span class="pw-sr-only">Question ${index + 1} : </span>${PyWimsTemplate.escapeHtml(this.definition.title)}`;
       this.badgeElement.textContent = String(index + 1);
       // Une question seule porte déjà son titre dans l’en-tête de la page.
-      section.setAttribute("aria-labelledby", singleQuestion ? "exercise-title" : this.titleElement.id);
+      section.setAttribute("aria-labelledby", singleQuestion ? "question-title" : this.titleElement.id);
 
       // Réussie : une vérification de l’élève entièrement juste ; elle le reste ensuite.
       this.succeeded = false;
@@ -376,7 +376,7 @@ window.PyWimsQuestion = (() => {
     preparePython(selected) {
       this.drawGeneration += 1;
       const generation = this.drawGeneration;
-      const { python, exercise } = this;
+      const { python, definition } = this;
       this.pythonSettled = false;
       // Session préparée dans ce Worker : après une relance, elle n’existe plus (pythonVerdicts).
       this.pythonEpoch = pythonEpoch();
@@ -386,7 +386,7 @@ window.PyWimsQuestion = (() => {
         }
         await python.dispose();
         await python.initialize(this.pythonCode);
-        await python.runSeeded(exercise.avant, selected.seed);
+        await python.runSeeded(definition.avant, selected.seed);
         for (const [name, expected] of Object.entries(selected.context)) {
           if (await python.getTemplateValue(name) !== expected) {
             throw new Error(`Le tirage n’a pas pu être reproduit (« ${name} » diffère) : la vérification est indisponible.`);
@@ -440,7 +440,7 @@ window.PyWimsQuestion = (() => {
       this.draw = selected;
       window.MathJax?.typesetClear?.([promptElement]);
       promptElement.innerHTML = PyWimsTemplate.renderTemplate(
-        this.exercise.enonce,
+        this.definition.enonce,
         selected.context,
         tag => this.renderWidget(tag, selected)
       );
@@ -533,7 +533,7 @@ window.PyWimsQuestion = (() => {
         await python.setMatrix(name, matrix);
       }
       await python.resetAnswers();
-      await python.run(this.exercise.apres, { timeoutMs: checkTimeoutMs }).catch(error => {
+      await python.run(this.definition.apres, { timeoutMs: checkTimeoutMs }).catch(error => {
         throw error.name === "PyWimsTimeout" ? new Error(checkTimeoutMessage) : error;
       });
 

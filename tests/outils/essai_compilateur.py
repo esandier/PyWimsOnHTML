@@ -1,5 +1,5 @@
 # Essai de bout en bout de l’interface du compilateur, dans Edge sans interface : ouverture d’un dossier
-# d’exercices, liste, aperçu avec un tirage réel, compilation et fichier téléchargé. Le compilateur lit
+# de questions, liste, aperçu avec un tirage réel, compilation et fichier téléchargé. Le compilateur lit
 # les fichiers du projet en ligne, à côté de lui : l’URL doit être servie depuis la racine du projet.
 # C’est la seule partie du projet que les pages de tests ne couvrent pas : elles appellent les
 # fonctions du compilateur, mais pas sa page. Le sélecteur de dossier ne peut pas être cliqué par un
@@ -22,14 +22,14 @@ from navigateur import lancer_edge  # noqa: E402
 PROJECT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 
-def dossier_d_exercices(destination):
-    """Copie dans un dossier d’exercices les seuls exercices de la racine d’exercises/ : les
+def dossier_de_questions(destination):
+    """Copie dans un dossier de questions les seules questions de la racine de questions/ : les
     sous-dossiers contiennent du contenu personnel, que les tests ne vérifient pas (le compilateur
-    les liste aussi, et l’essai dépendrait de leur contenu). Renvoie les noms des exercices copiés."""
-    exercices = sorted(nom for nom in os.listdir(os.path.join(PROJECT, "exercises")) if nom.endswith(".pwq"))
-    for nom in exercices:
-        shutil.copy(os.path.join(PROJECT, "exercises", nom), os.path.join(destination, nom))
-    return exercices
+    les liste aussi, et l’essai dépendrait de leur contenu). Renvoie les noms des questions copiées."""
+    questions = sorted(nom for nom in os.listdir(os.path.join(PROJECT, "questions")) if nom.endswith(".pwq"))
+    for nom in questions:
+        shutil.copy(os.path.join(PROJECT, "questions", nom), os.path.join(destination, nom))
+    return questions
 
 
 # Dossier mémorisé de Chrome et Edge (SPECIFICATION.md, § 11.2). La fenêtre native de choix de dossier
@@ -46,62 +46,62 @@ ECRIRE_OPFS = """async ([chemin, texte]) => {
 }"""
 CHOISIR_OPFS = """async () => {
   const racine = await navigator.storage.getDirectory();
-  const dossier = await racine.getDirectoryHandle('exercices-essai');
+  const dossier = await racine.getDirectoryHandle('questions-essai');
   window.showDirectoryPicker = async () => dossier;
 }"""
-TITRES = "items => items.map(li => li.querySelector('.exercise-title').textContent)"
+TITRES = "items => items.map(li => li.querySelector('.question-title').textContent)"
 
 
 def dossier_memorise(page, fichiers):
     for nom, texte in fichiers.items():
-        # Un exercice dans un sous-dossier : il est lu aussi.
-        chemin = f"exercices-essai/{'sous-dossier/' if nom.startswith('pgcd') else ''}{nom}"
+        # Une question dans un sous-dossier : elle est lue aussi.
+        chemin = f"questions-essai/{'sous-dossier/' if nom.startswith('pgcd') else ''}{nom}"
         page.evaluate(ECRIRE_OPFS, [chemin, texte])
     page.evaluate(CHOISIR_OPFS)
-    page.fill("#exercise-search", "")
+    page.fill("#question-search", "")
     page.click("#choose-folder")
-    page.wait_for_function("document.getElementById('folder-name').textContent === 'exercices-essai'")
-    page.wait_for_function("document.querySelectorAll('#exercise-list li:not(.exercise-group)').length === 2")
+    page.wait_for_function("document.getElementById('folder-name').textContent === 'questions-essai'")
+    page.wait_for_function("document.querySelectorAll('#question-list li:not(.question-group)').length === 2")
     if page.is_hidden("#reload-folder"):
         raise AssertionError("« Relire » n’apparaît pas pour un dossier ouvert par Chrome ou Edge.")
     # Liste regroupée : le dossier choisi d’abord, puis le sous-dossier sous son chemin (§ 11.3).
-    groupes = page.evaluate("[...document.querySelectorAll('#exercise-list li')].map(li => li.classList.contains('exercise-group') ? '# ' + li.textContent : li.querySelector('.exercise-title').textContent)")
-    if len(groupes) != 4 or groupes[0] != "# exercices-essai" or groupes[2] != "# sous-dossier/" or groupes[3] != "PGCD":
+    groupes = page.evaluate("[...document.querySelectorAll('#question-list li')].map(li => li.classList.contains('question-group') ? '# ' + li.textContent : li.querySelector('.question-title').textContent)")
+    if len(groupes) != 4 or groupes[0] != "# questions-essai" or groupes[2] != "# sous-dossier/" or groupes[3] != "PGCD":
         raise AssertionError(f"liste regroupée inattendue : {groupes}")
     print("dossier mémorisé : ouvert, sous-dossier compris, liste regroupée par dossier")
 
     # Fichier modifié, puis « Relire » : le nouveau titre apparaît, la sélection est gardée.
     decim = fichiers["Decim3.pwq"]
     ancien_titre = decim.split("% title\n%\n", 1)[1].split("\n", 1)[0]
-    page.click(".exercise-selection >> nth=1")
-    page.evaluate(ECRIRE_OPFS, ["exercices-essai/Decim3.pwq", decim.replace(ancien_titre, "Titre relu")])
+    page.click(".question-selection >> nth=1")
+    page.evaluate(ECRIRE_OPFS, ["questions-essai/Decim3.pwq", decim.replace(ancien_titre, "Titre relu")])
     page.click("#reload-folder")
-    page.wait_for_function("[...document.querySelectorAll('.exercise-title')].some(t => t.textContent === 'Titre relu')")
-    if sum(page.evaluate("[...document.querySelectorAll('.exercise-selection')].map(c => c.checked)")) != 1:
+    page.wait_for_function("[...document.querySelectorAll('.question-title')].some(t => t.textContent === 'Titre relu')")
+    if sum(page.evaluate("[...document.querySelectorAll('.question-selection')].map(c => c.checked)")) != 1:
         raise AssertionError("« Relire » a perdu la sélection.")
     print("relire : fichier modifié pris en compte, sélection gardée")
 
-    # Fichier modifié sans « Relire » : la compilation relit l’exercice et compile sa dernière version.
-    page.evaluate(ECRIRE_OPFS, ["exercices-essai/Decim3.pwq", decim.replace(ancien_titre, "Titre compilé")])
-    for case in page.query_selector_all(".exercise-selection"):
+    # Fichier modifié sans « Relire » : la compilation relit la question et compile sa dernière version.
+    page.evaluate(ECRIRE_OPFS, ["questions-essai/Decim3.pwq", decim.replace(ancien_titre, "Titre compilé")])
+    for case in page.query_selector_all(".question-selection"):
         if case.is_checked():
             case.uncheck()
-    titres = page.eval_on_selector_all("#exercise-list li:not(.exercise-group)", TITRES)
-    page.click(f".exercise-selection >> nth={titres.index('Titre relu')}")
+    titres = page.eval_on_selector_all("#question-list li:not(.question-group)", TITRES)
+    page.click(f".question-selection >> nth={titres.index('Titre relu')}")
     with page.expect_download(timeout=180_000) as attente:
-        page.click("#compile-exercise")
+        page.click("#compile-question")
     if "Titre compilé" not in open(attente.value.path(), encoding="utf-8").read():
-        raise AssertionError("La compilation n’a pas relu l’exercice modifié.")
-    print("compilation : exercice relu, dernière version compilée")
+        raise AssertionError("La compilation n’a pas relu la question modifiée.")
+    print("compilation : question relue, dernière version compilée")
 
     # Charte du dossier : un brand.css à sa racine remplace la charte neutre (§ 11.4).
     if "Charte neutre" not in page.text_content("#brand-status"):
         raise AssertionError(f"charte annoncée : {page.text_content('#brand-status')}")
-    page.evaluate(ECRIRE_OPFS, ["exercices-essai/brand.css", ":root { --pw-brand-primary: #123456; }"])
+    page.evaluate(ECRIRE_OPFS, ["questions-essai/brand.css", ":root { --pw-brand-primary: #123456; }"])
     page.click("#reload-folder")
     page.wait_for_function("document.getElementById('brand-status').textContent.includes('brand.css du dossier')")
     with page.expect_download(timeout=180_000) as attente:
-        page.click("#compile-exercise")
+        page.click("#compile-question")
     compile_charte = open(attente.value.path(), encoding="utf-8").read()
     if "--pw-brand-primary: #123456" not in compile_charte or "--pw-brand-primary: #2f5d7c" in compile_charte:
         raise AssertionError("Le fichier compilé n’utilise pas le brand.css du dossier.")
@@ -109,15 +109,15 @@ def dossier_memorise(page, fichiers):
 
     # Ordre d’une activité (§ 11.9) : celui des cases cochées, changé par « ↓ » sur la question choisie,
     # gardé par « Relire », et suivi par le fichier compilé.
-    for case in page.query_selector_all(".exercise-selection"):
+    for case in page.query_selector_all(".question-selection"):
         if case.is_checked():
             case.uncheck()
-    page.click(".exercise-selection >> nth=1")  # PGCD, dans le sous-dossier
-    page.click(".exercise-selection >> nth=0")  # Decim3, à la racine
+    page.click(".question-selection >> nth=1")  # PGCD, dans le sous-dossier
+    page.click(".question-selection >> nth=0")  # Decim3, à la racine
     page.select_option("#output-mode", "activity")
     page.fill("#activity-title", "Activité ordonnée")
     ordre = "[...document.querySelectorAll('#activity-order-list .order-title')].map(b => b.textContent)"
-    rangs = "[...document.querySelectorAll('#exercise-list .exercise-rank')].map(r => r.textContent)"
+    rangs = "[...document.querySelectorAll('#question-list .question-rank')].map(r => r.textContent)"
     if page.evaluate(ordre) != ["PGCD", "Titre compilé"] or page.evaluate(rangs) != ["2", "1"]:
         raise AssertionError(f"ordre des cases cochées non suivi : {page.evaluate(ordre)}, rangs {page.evaluate(rangs)}")
     page.click(".order-title >> text=PGCD")
@@ -132,7 +132,7 @@ def dossier_memorise(page, fichiers):
     if page.evaluate(ordre) != ["Titre compilé", "PGCD"] or page.evaluate(rangs) != ["1", "2"]:
         raise AssertionError(f"« Relire » n’a pas gardé l’ordre : {page.evaluate(ordre)}, rangs {page.evaluate(rangs)}")
     with page.expect_download(timeout=180_000) as attente:
-        page.click("#compile-exercise")
+        page.click("#compile-question")
     activite = open(attente.value.path(), encoding="utf-8").read()
     if not 0 <= activite.find("Titre compilé") < activite.find(">PGCD<"):
         raise AssertionError("Le fichier compilé ne suit pas l’ordre choisi.")
@@ -143,11 +143,11 @@ def dossier_memorise(page, fichiers):
 
     # Visite suivante : le dossier se rouvre d’un clic.
     page.reload()
-    page.wait_for_function("document.getElementById('choose-folder').textContent === 'Rouvrir « exercices-essai »'")
+    page.wait_for_function("document.getElementById('choose-folder').textContent === 'Rouvrir « questions-essai »'")
     page.evaluate("() => { delete window.showDirectoryPicker; }")
     page.click("#choose-folder")
-    page.wait_for_function("document.querySelectorAll('#exercise-list li:not(.exercise-group)').length === 2")
-    print("visite suivante : « Rouvrir « exercices-essai » » rouvre le dossier")
+    page.wait_for_function("document.querySelectorAll('#question-list li:not(.question-group)').length === 2")
+    print("visite suivante : « Rouvrir « questions-essai » » rouvre le dossier")
 
 
 # Firefox et Safari, imités dans Edge sans showDirectoryPicker : sélecteur classique, nom du dernier
@@ -157,20 +157,20 @@ def sans_dossier_memorise(browser, url, dossier):
     page.add_init_script("delete window.showDirectoryPicker;")
     page.goto(url)
     page.wait_for_function("!!window.PyWimsCompiler")
-    page.set_input_files("#exercise-folder", dossier)
-    page.wait_for_function("document.querySelectorAll('#exercise-list li:not(.exercise-group)').length > 0")
+    page.set_input_files("#question-folder", dossier)
+    page.wait_for_function("document.querySelectorAll('#question-list li:not(.question-group)').length > 0")
     if not page.is_hidden("#reload-folder"):
         raise AssertionError("« Relire » ne devrait pas apparaître sans accès durable au dossier.")
     page.reload()
     nom = os.path.basename(dossier)
     page.wait_for_function(f"document.getElementById('folder-name').textContent === 'Dernier dossier : {nom}'")
-    page.set_input_files("#exercise-folder", dossier)
-    page.wait_for_function("document.querySelectorAll('#exercise-list li:not(.exercise-group)').length > 0")
+    page.set_input_files("#question-folder", dossier)
+    page.wait_for_function("document.querySelectorAll('#question-list li:not(.question-group)').length > 0")
     with open(os.path.join(dossier, "Decim3.pwq"), "a", encoding="utf-8") as fichier:
         fichier.write("\n")
-    page.fill("#exercise-search", "Valeur approchée")
-    page.click(".exercise-selection >> nth=0")
-    page.click("#compile-exercise")
+    page.fill("#question-search", "Valeur approchée")
+    page.click(".question-selection >> nth=0")
+    page.click("#compile-question")
     page.wait_for_function("document.getElementById('messages').classList.contains('error')", timeout=180_000)
     if "a changé depuis l’ouverture du dossier" not in page.text_content("#messages"):
         raise AssertionError(f"message inattendu : {page.text_content('#messages')}")
@@ -180,10 +180,10 @@ def sans_dossier_memorise(browser, url, dossier):
 
 def main():
     url = sys.argv[1]
-    dossier = tempfile.mkdtemp(prefix="pywims-exercices-")
+    dossier = tempfile.mkdtemp(prefix="pywims-questions-")
     erreurs = []
     try:
-        exercises = dossier_d_exercices(dossier)
+        questions = dossier_de_questions(dossier)
         with sync_playwright() as playwright:
             browser = lancer_edge(playwright, sys.argv[2] if len(sys.argv) > 2 else None)
             try:
@@ -196,19 +196,19 @@ def main():
                 page.wait_for_function("PyWimsPython.isLoaded()", timeout=180_000)
                 print("Python préchargé dès l’ouverture de la page")
 
-                # Ouverture du dossier : la liste montre chaque exercice par son titre et ses champs.
-                page.set_input_files("#exercise-folder", dossier)
-                page.wait_for_function("document.querySelectorAll('#exercise-list li:not(.exercise-group)').length > 0", timeout=30_000)
+                # Ouverture du dossier : la liste montre chaque question par son titre et ses champs.
+                page.set_input_files("#question-folder", dossier)
+                page.wait_for_function("document.querySelectorAll('#question-list li:not(.question-group)').length > 0", timeout=30_000)
                 items = page.eval_on_selector_all(
-                    "#exercise-list li:not(.exercise-group)",
-                    "items => items.map(li => [li.querySelector('.exercise-title').textContent, "
-                    "li.querySelector('.exercise-fields').textContent])")
-                if len(items) != len(exercises) or any(not title or not kinds for title, kinds in items):
-                    raise AssertionError(f"liste inattendue : {items} pour {exercises}")
-                print(f"liste : {len(items)} exercices, avec titre et types de champs")
+                    "#question-list li:not(.question-group)",
+                    "items => items.map(li => [li.querySelector('.question-title').textContent, "
+                    "li.querySelector('.question-fields').textContent])")
+                if len(items) != len(questions) or any(not title or not kinds for title, kinds in items):
+                    raise AssertionError(f"liste inattendue : {items} pour {questions}")
+                print(f"liste : {len(items)} questions, avec titre et types de champs")
 
-                # Aperçu du premier exercice : provisoire, puis un tirage réel calculé par Python.
-                page.click(".exercise-preview-button >> nth=0")
+                # Aperçu de la première question : provisoire, puis un tirage réel calculé par Python.
+                page.click(".question-preview-button >> nth=0")
                 page.wait_for_function(
                     "document.getElementById('preview-frame').srcdoc.includes('pw-question') && "
                     "!document.getElementById('preview-notice').textContent.startsWith('Aperçu provisoire') && "
@@ -216,10 +216,10 @@ def main():
                     timeout=180_000)
                 print("aperçu : tirage réel affiché")
 
-                # Compilation de cet exercice : un fichier HTML autonome est téléchargé.
-                page.click(".exercise-selection >> nth=0")
+                # Compilation de cette question : un fichier HTML autonome est téléchargé.
+                page.click(".question-selection >> nth=0")
                 with page.expect_download(timeout=180_000) as attente:
-                    page.click("#compile-exercise")
+                    page.click("#compile-question")
                 telechargement = attente.value
                 message = page.text_content("#messages")
                 if "téléchargée" not in message:
@@ -231,26 +231,26 @@ def main():
                     raise AssertionError(f"{telechargement.suggested_filename} ne contient pas de question compilée")
                 print(f"compilation : {telechargement.suggested_filename} téléchargé ({len(html) // 1024} Ko)")
 
-                # « Tout sélectionner » n’agit que sur les exercices visibles, puis devient « Tout désélectionner ».
-                # Seul le premier exercice est coché (compilé ci-dessus) ; « matrice » en montre d’autres.
-                coches = "[...document.querySelectorAll('.exercise-selection')].map(c => c.checked)"
-                page.fill("#exercise-search", "matrice")
+                # « Tout sélectionner » n’agit que sur les questions visibles, puis devient « Tout désélectionner ».
+                # Seule la première question est cochée (compilée ci-dessus) ; « matrice » en montre d’autres.
+                coches = "[...document.querySelectorAll('.question-selection')].map(c => c.checked)"
+                page.fill("#question-search", "matrice")
                 visibles = len(page.evaluate(coches))
                 if not visibles or any(page.evaluate(coches)):
-                    raise AssertionError("La recherche « matrice » devait montrer des exercices non cochés.")
+                    raise AssertionError("La recherche « matrice » devait montrer des questions non cochés.")
                 page.click("#select-visible")
                 if not all(page.evaluate(coches)) or page.text_content("#select-visible") != "Tout désélectionner":
-                    raise AssertionError("« Tout sélectionner » n’a pas coché les exercices visibles.")
-                page.fill("#exercise-search", "")
+                    raise AssertionError("« Tout sélectionner » n’a pas coché les questions visibles.")
+                page.fill("#question-search", "")
                 if sum(page.evaluate(coches)) != visibles + 1 or page.text_content("#select-visible") != "Tout sélectionner":
-                    raise AssertionError(f"Les exercices masqués ont changé d’état : {page.evaluate(coches)}")
+                    raise AssertionError(f"Les questions masqués ont changé d’état : {page.evaluate(coches)}")
                 page.click("#select-visible")
                 if not all(page.evaluate(coches)):
-                    raise AssertionError("« Tout sélectionner » n’a pas coché tous les exercices.")
+                    raise AssertionError("« Tout sélectionner » n’a pas coché toutes les questions.")
                 page.click("#select-visible")
                 if any(page.evaluate(coches)):
-                    raise AssertionError("« Tout désélectionner » n’a pas décoché les exercices.")
-                print("tout sélectionner / désélectionner : exercices visibles seulement")
+                    raise AssertionError("« Tout désélectionner » n’a pas décoché les questions.")
+                print("tout sélectionner / désélectionner : questions visibles seulement")
 
                 # Ordre (§ 11.9) : trois clics sur « ↓ » descendent trois fois la question choisie, sans
                 # qu’un clic annule le précédent.
@@ -271,10 +271,10 @@ def main():
 
                 # Une question sans « apres » : la compilation lit le module pywims et le script du
                 # Worker pour ses tirages, mais le fichier n’en contient aucun (il ne charge pas Python).
-                page.fill("#exercise-search", "Valeur approchée")
-                page.click(".exercise-selection >> nth=0")
+                page.fill("#question-search", "Valeur approchée")
+                page.click(".question-selection >> nth=0")
                 with page.expect_download(timeout=180_000) as attente:
-                    page.click("#compile-exercise")
+                    page.click("#compile-question")
                 sans_python = open(attente.value.path(), encoding="utf-8").read()
                 if ('id="pywims-worker"></script>' not in sans_python or
                         'id="pywims-module"></script>' not in sans_python):

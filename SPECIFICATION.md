@@ -381,7 +381,7 @@ sans `apres` : la comparaison y est sans ambiguïté.
   rejouer un tirage dans Python, et elle ne charge jamais Python. Ses tirages
   suffisent (−25 % pour une activité de QCM dont `avant` contient toutes les
   variantes).
-- Les styles de la feuille sont dans `css/exercise.css` et n’utilisent que les
+- Les styles de la feuille sont dans `css/question.css` et n’utilisent que les
   variables de la charte (§ 11.4).
 - Le mode « pages séparées (ZIP) » produit une feuille à une question par
   fichier.
@@ -531,7 +531,7 @@ sans `apres` : la comparaison y est sans ambiguïté.
 | `runtime/sheet.js` | la feuille : création des questions, progression et sa mémoire, note indicative, aide, célébration, redimensionnement |
 | `widgets/*.js` | champs de saisie, avec pré-remplissage pour la solution ; le widget de choix retire des colonnes quand un choix déborde |
 | `layouts/standard.html` | mise en page commune aux feuilles et aux questions seules |
-| `css/exercise.css` | styles des feuilles, à partir des variables de la charte |
+| `css/question.css` | styles des feuilles, à partir des variables de la charte |
 | `css/brand.css` | charte neutre, par défaut (§ 11.4) |
 | `css/chartes/*.css` | exemples de chartes à copier en `brand.css` dans son dossier de questions (UPEC) |
 | `compiler/format.js` | analyse d’un fichier `.pwq`, types de ses champs de réponse |
@@ -557,13 +557,13 @@ un sous-projet distinct, traité plus tard.
 - `tests/python-tests.html` : vrai Pyodide (module `pywims`, isolement des
   questions, calcul sans fin, chaque question compilée puis corrigée, seule et
   dans une activité) et balayage des tirages ; « chaque question » : celles de la
-  racine d’`exercises/` et les modèles du mode d’emploi (`guide/modeles/`).
+  racine de `questions/` et les modèles du mode d’emploi (`guide/modeles/`).
 - `tests/outils/essai_compilateur.py` : l’interface du compilateur, de bout en
   bout (ouverture d’un dossier de questions, liste, « Tout sélectionner »,
   aperçu réel, compilation, fichier téléchargé, dossier mémorisé, « Relire »,
   « Rouvrir », et le chemin de Firefox et Safari imité sans
   `showDirectoryPicker`), sans erreur JavaScript. Le
-  dossier ouvert est une copie des seules questions de la racine d’`exercises/` :
+  dossier ouvert est une copie des seules questions de la racine de `questions/` :
   comme les autres tests, il ne dépend pas du contenu des sous-dossiers.
 - `tests/outils/lancer-tests.ps1` lance le tout dans Edge sans interface.
 - Le pilotage d’Edge passe par Playwright pour Python (`pip install
@@ -867,7 +867,7 @@ Une page `guide/` (« Créer »), en sections :
 - **Compiler et publier**, **Bon à savoir** (entraînement seulement, poids de
   Python, renvoi à `PROMPT.md`, référence complète du format).
 - Les modèles sont des questions vérifiées par les tests, comme celles de la
-  racine d’`exercises/`.
+  racine de `questions/`.
 
 ### 11.6 Page d’accueil, bandeau commun
 
@@ -883,7 +883,7 @@ Une page `guide/` (« Créer »), en sections :
   l’élève et pour l’enseignant ; « Pour commencer » en cinq étapes ; mention
   de la licence en bas. Un lien discret mène à une feuille plus complète.
 - **Démonstrations** (`demos/`) : `exemple.html` (l’activité de l’accueil) et
-  `feuille.html` (toutes les questions de la racine d’`exercises/`), compilées
+  `feuille.html` (toutes les questions de la racine de `questions/`), compilées
   avec la charte neutre. Un script (`tests/outils/demos.py`) les recompile par
   le vrai compilateur ; on le lance avant de publier une modification du
   moteur.

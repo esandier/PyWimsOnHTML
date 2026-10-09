@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Tests du cycle de vie d’une question dans un exercice réellement assemblé, avec un Python simulé :
+<!-- Tests du cycle de vie d’une question dans une page réellement assemblée, avec un Python simulé :
      affichage immédiat, vérifier, corriger, solution, nouvel énoncé. Quelques secondes. -->
 <html lang="fr">
 <head>
@@ -40,7 +40,7 @@ window.PyWimsPython = (() => {
   let epoch = 0;
   const pause = () => new Promise(resolve => setTimeout(resolve, options.delay || 0));
   function createSession(id) {
-    const exercise = options.questions?.[id] ?? options;
+    const question = options.questions?.[id] ?? options;
     const values = {};
     const log = logs[id] = [];
     let seed = null;
@@ -51,11 +51,11 @@ window.PyWimsPython = (() => {
       dispose: async () => { log.push("dispose"); },
       runSeeded: async (code, nextSeed) => { await pause(); seed = nextSeed; log.push("seed " + nextSeed); },
       getTemplateValue: async name => name === "feedback" ? feedback
-        : exercise.mismatch ? "autre valeur" : exercise.contexts[seed][name],
+        : question.mismatch ? "autre valeur" : question.contexts[seed][name],
       set: async (name, value) => { values[name] = value; },
       setMatrix: async (name, value) => { values[name] = value; },
       setChoice: async (name, value) => { values[name] = value; log.push("choix " + name + " " + JSON.stringify(value)); },
-      getChoiceTexts: async variable => exercise.mismatch ? ["autre"] : exercise.choices[seed][variable],
+      getChoiceTexts: async variable => question.mismatch ? ["autre"] : question.choices[seed][variable],
       resetAnswers: async () => { ok = {}; feedback = null; },
       run: async () => {
         if (Object.values(values).includes("boucle")) {
@@ -65,7 +65,7 @@ window.PyWimsPython = (() => {
           throw error;
         }
         log.push("apres");
-        const expected = exercise.answers[seed];
+        const expected = question.answers[seed];
         let allOk = true;
         for (const [name, answer] of Object.entries(expected)) {
           if (answer && typeof answer === "object" && "choice" in answer) {
@@ -106,7 +106,7 @@ window.PyWimsPython = (() => {
       const frame = document.createElement("iframe");
       frame.style.cssText = "width:900px;height:700px";
       frame.srcdoc = questions.length === 1
-        ? PyWimsCompiler.assembleExercise(questions[0].fields, questions[0].draws, resources)
+        ? PyWimsCompiler.assembleQuestion(questions[0].fields, questions[0].draws, resources)
         : PyWimsCompiler.assembleActivity(title, questions, resources);
       document.body.append(frame);
       await new Promise(resolve => frame.addEventListener("load", resolve, { once: true }));
@@ -119,7 +119,7 @@ window.PyWimsPython = (() => {
       return { frame, page, $, role, seeds, window: frame.contentWindow };
     }
 
-    const openExercise = (fields, draws, options) => openSheet([{ fields, draws }], options);
+    const openQuestion = (fields, draws, options) => openSheet([{ fields, draws }], options);
 
     async function waitFor(predicate, description, timeout = 8000) {
       const end = Date.now() + timeout;
@@ -144,7 +144,7 @@ window.PyWimsPython = (() => {
       input.dispatchEvent(new Event("input", { bubbles: true }));
     }
 
-    const textExercise = {
+    const textQuestion = {
       title: "Addition",
       layout: "STD",
       avant: "a = 2",
@@ -162,7 +162,7 @@ window.PyWimsPython = (() => {
 
     (async () => {
       await test("l’énoncé s’affiche avant que Python soit prêt", async () => {
-        const { $, role, seeds, frame } = await openExercise(textExercise, textDraws, { ...textOptions, delay: 3000 });
+        const { $, role, seeds, frame } = await openQuestion(textQuestion, textDraws, { ...textOptions, delay: 3000 });
         await waitFor(() => $("#q1-form_txt_r"), "affichage du champ", 1500);
         if (!/Combien font [23] plus [23]/.test(role("prompt").textContent) || seeds().length) {
           throw new Error("L’énoncé n’est pas affiché tout de suite à partir du tirage.");
@@ -171,7 +171,7 @@ window.PyWimsPython = (() => {
       });
 
       await test("vérifier, corriger, puis réussir sur le même tirage", async () => {
-        const { $, role, seeds, frame } = await openExercise(textExercise, textDraws, textOptions);
+        const { $, role, seeds, frame } = await openQuestion(textQuestion, textDraws, textOptions);
         const field = $("#q1-form_txt_r");
         const check = role("check");
         const feedback = role("feedback");
@@ -211,7 +211,7 @@ window.PyWimsPython = (() => {
       });
 
       await test("sans variable feedback, un retour par défaut s’affiche", async () => {
-        const { $, role, frame } = await openExercise(textExercise, textDraws, textOptions);
+        const { $, role, frame } = await openQuestion(textQuestion, textDraws, textOptions);
         type($("#q1-form_txt_r"), "sans retour");
         role("check").click();
         await waitFor(() => role("feedback").classList.contains("is-visible"), "retour par défaut")
@@ -224,7 +224,7 @@ window.PyWimsPython = (() => {
       });
 
       await test("la solution remplit le champ et affiche l’explication", async () => {
-        const { $, role, frame } = await openExercise(textExercise, [textDraws[0]], textOptions);
+        const { $, role, frame } = await openQuestion(textQuestion, [textDraws[0]], textOptions);
         role("solution").click();
         await waitFor(() => role("feedback").classList.contains("is-visible"), "explication");
         const field = $("#q1-form_txt_r");
@@ -238,7 +238,7 @@ window.PyWimsPython = (() => {
       });
 
       await test("une correction trop longue invite à modifier la réponse, puis la question se prépare de nouveau", async () => {
-        const { $, role, seeds, frame } = await openExercise(textExercise, textDraws, textOptions);
+        const { $, role, seeds, frame } = await openQuestion(textQuestion, textDraws, textOptions);
         const field = $("#q1-form_txt_r");
         type(field, "boucle");
         role("check").click();
@@ -258,7 +258,7 @@ window.PyWimsPython = (() => {
       });
 
       await test("Python n’est préparé qu’au premier contact de l’élève avec la question", async () => {
-        const { $, role, seeds, frame, window: frameWindow } = await openExercise(textExercise, textDraws, textOptions);
+        const { $, role, seeds, frame, window: frameWindow } = await openQuestion(textQuestion, textDraws, textOptions);
         await waitFor(() => $("#q1-form_txt_r"), "affichage du champ");
         role("new-draw").click();
         await waitFor(() => !role("new-draw").disabled, "nouvel énoncé sans contact");
@@ -273,7 +273,7 @@ window.PyWimsPython = (() => {
       });
 
       await test("un nouvel énoncé change de tirage sans recharger la page", async () => {
-        const { $, role, seeds, window: frameWindow, frame } = await openExercise(textExercise, textDraws, textOptions);
+        const { $, role, seeds, window: frameWindow, frame } = await openQuestion(textQuestion, textDraws, textOptions);
         frameWindow.marker = "même page";
         const before = role("prompt").textContent;
         touch(role("prompt"));
@@ -301,7 +301,7 @@ window.PyWimsPython = (() => {
           apres: "pass"
         };
         const draws = [{ seed: 0, context: {}, dimensions: {}, solutions: { m: [[null, "1"], ["0", null]] }, explication: null }];
-        const { $, role, frame } = await openExercise(fields, draws, { contexts: { 0: {} }, answers: { 0: { m: [[null, "1"], ["0", null]] } } });
+        const { $, role, frame } = await openQuestion(fields, draws, { contexts: { 0: {} }, answers: { 0: { m: [[null, "1"], ["0", null]] } } });
         const cell = (i, j) => $(`[id='q1-form_txt_m[${i}][${j}]']`);
         // Vérification d’abord : les cases libres et [0][1] sont justes, [1][0] est fausse.
         for (const [i, j, value] of [[0, 0, "5"], [0, 1, "1"], [1, 0, "7"], [1, 1, "9"]]) type(cell(i, j), value);
@@ -322,7 +322,7 @@ window.PyWimsPython = (() => {
       });
 
       // Choix multiple : solution [0, 2], affichée dans l’ordre 2, 0, 3, 1.
-      const choiceExercise = {
+      const choiceQuestion = {
         title: "Nombres premiers",
         layout: "STD",
         avant: "choix = ['2', '4', '5', '9']",
@@ -343,7 +343,7 @@ window.PyWimsPython = (() => {
       const click = element => element.click();
 
       await test("un choix multiple colore seulement les choix cochés, puis Corriger garde les bons", async () => {
-        const { $, role, frame, window: frameWindow } = await openExercise(choiceExercise, choiceDraws, choiceOptions);
+        const { $, role, frame, window: frameWindow } = await openQuestion(choiceQuestion, choiceDraws, choiceOptions);
         await waitFor(() => $("#q1 .pw-choices"), "affichage des choix");
         const order = [...$("#q1").querySelectorAll(".pw-choice")].map(label => label.dataset.choiceIndex).join();
         if (order !== "2,0,3,1" || role("check").disabled) {
@@ -380,7 +380,7 @@ window.PyWimsPython = (() => {
       });
 
       await test("la solution d’un choix multiple coche les bons choix et décoche les autres", async () => {
-        const { $, role, frame } = await openExercise(choiceExercise, choiceDraws, choiceOptions);
+        const { $, role, frame } = await openQuestion(choiceQuestion, choiceDraws, choiceOptions);
         await waitFor(() => $("#q1 .pw-choices"), "affichage des choix");
         click(choiceBox($, 3));
         role("solution").click();
@@ -394,9 +394,9 @@ window.PyWimsPython = (() => {
       });
 
       await test("un choix unique attend une réponse, puis se rouvre entièrement après une erreur", async () => {
-        const radioExercise = { ...choiceExercise, enonce: "Le plus petit ? {% input_radio 'r' choices=choix solution=bonne %}" };
+        const radioQuestion = { ...choiceQuestion, enonce: "Le plus petit ? {% input_radio 'r' choices=choix solution=bonne %}" };
         const radioDraws = [{ ...choiceDraws[0], solutions: { r: 0 } }];
-        const { $, role, frame, window: frameWindow } = await openExercise(radioExercise, radioDraws,
+        const { $, role, frame, window: frameWindow } = await openQuestion(radioQuestion, radioDraws,
           { ...choiceOptions, answers: { 0: { r: { choice: 0 } } } });
         await waitFor(() => $("#q1 .pw-choices"), "affichage des choix");
         if (!role("check").disabled || choiceBox($, 0).type !== "radio") {
@@ -421,7 +421,7 @@ window.PyWimsPython = (() => {
       // choix : des flèches de défilement apparaissaient sous chaque formule à exposant.
       await test("une formule à exposant ne fait pas déborder le texte de son choix", async () => {
         const draws = [{ ...choiceDraws[0], choices: { r: ["$2^{-1}$", "$2^{-3}$", "$\\frac{1}{2}$", "$9$"] } }];
-        const { $, frame } = await openExercise(choiceExercise, draws,
+        const { $, frame } = await openQuestion(choiceQuestion, draws,
           { ...choiceOptions, choices: { 0: { choix: draws[0].choices.r } } });
         await waitFor(() => $("#q1 .pw-choices").querySelectorAll("mjx-container").length === 4, "composition des choix", 20000);
         const overflowing = [...$("#q1 .pw-choices").querySelectorAll(".pw-choice-text")]
@@ -434,11 +434,11 @@ window.PyWimsPython = (() => {
 
       await test("un groupe de choix perd des colonnes tant qu’un choix déborde, jamais au-delà", async () => {
         const draws = [{ ...choiceDraws[0], choices: { r: ["$2$", "x".repeat(80), "$5$", "$9$"] } }];
-        const exercise = { ...choiceExercise, enonce: choiceExercise.enonce.replace("columns=2", "columns=4") };
-        const { $, frame } = await openExercise(exercise, draws,
+        const question = { ...choiceQuestion, enonce: choiceQuestion.enonce.replace("columns=2", "columns=4") };
+        const { $, frame } = await openQuestion(question, draws,
           { ...choiceOptions, choices: { 0: { choix: draws[0].choices.r } } });
         await waitFor(() => $("#q1 .pw-choices")?.style.getPropertyValue("--pw-choice-columns") === "1", "retrait des colonnes");
-        const short = await openExercise(exercise, choiceDraws, choiceOptions);
+        const short = await openQuestion(question, choiceDraws, choiceOptions);
         // Les colonnes s’ajustent après la composition des formules par MathJax.
         await waitFor(() => short.$("#q1 .pw-choices mjx-container"), "composition des choix courts");
         await new Promise(resolve => setTimeout(resolve, 200));
@@ -450,7 +450,7 @@ window.PyWimsPython = (() => {
       });
 
       await test("une question notée affiche sa note, et l’activité une note indicative", async () => {
-        const scoredExercise = { ...choiceExercise, enonce: choiceExercise.enonce.replace("columns=2", "bareme='b=2,m=-0.5'") };
+        const scoredQuestion = { ...choiceQuestion, enonce: choiceQuestion.enonce.replace("columns=2", "bareme='b=2,m=-0.5'") };
         const scoredDraws = [choiceDraws[0], { ...choiceDraws[0], seed: 1, orders: { r: [0, 1, 2, 3] } }];
         const seedOptions = {
           contexts: { 0: {}, 1: {} },
@@ -458,7 +458,7 @@ window.PyWimsPython = (() => {
           answers: { 0: choiceOptions.answers[0], 1: choiceOptions.answers[0] }
         };
         const { page, $, role, frame } = await openSheet(
-          [{ fields: scoredExercise, draws: scoredDraws }, { fields: textExercise, draws: textDraws }],
+          [{ fields: scoredQuestion, draws: scoredDraws }, { fields: textQuestion, draws: textDraws }],
           { questions: { q1: seedOptions, q2: textOptions } }, "Révisions notées");
         await waitFor(() => $("#q1 .pw-choices") && !$("#pw-score-total").hidden, "affichage de la note indicative");
         const total = () => `${$("#pw-score-total-value").textContent} | ${$("#pw-score-total-label").textContent}`;
@@ -503,8 +503,8 @@ window.PyWimsPython = (() => {
       });
 
       await test("une question seule notée affiche sa note, sans note d’activité ; sans barème, rien", async () => {
-        const scoredExercise = { ...choiceExercise, enonce: choiceExercise.enonce.replace("columns=2", "bareme='mz=1'") };
-        const single = await openExercise(scoredExercise, choiceDraws, choiceOptions);
+        const scoredQuestion = { ...choiceQuestion, enonce: choiceQuestion.enonce.replace("columns=2", "bareme='mz=1'") };
+        const single = await openQuestion(scoredQuestion, choiceDraws, choiceOptions);
         await waitFor(() => single.$("#q1 .pw-choices"), "affichage des choix");
         single.$('#q1 .pw-choice[data-choice-index="0"] input').click();
         single.$('#q1 .pw-choice[data-choice-index="2"] input').click();
@@ -516,7 +516,7 @@ window.PyWimsPython = (() => {
           throw new Error(`Question seule notée inattendue : ${single.role("score").textContent}`);
         }
         single.frame.remove();
-        const plain = await openExercise(choiceExercise, choiceDraws, choiceOptions);
+        const plain = await openQuestion(choiceQuestion, choiceDraws, choiceOptions);
         await waitFor(() => plain.$("#q1 .pw-choices"), "affichage des choix");
         if (!plain.role("score").hidden || plain.page.body.dataset.scored ||
             getComputedStyle(plain.$(".pw-help-score")).display !== "none") {
@@ -526,7 +526,7 @@ window.PyWimsPython = (() => {
       });
 
       await test("des choix que Python ne reproduit pas sont signalés", async () => {
-        const { role, frame } = await openExercise(choiceExercise, choiceDraws,
+        const { role, frame } = await openQuestion(choiceQuestion, choiceDraws,
           { ...choiceOptions, choices: { 0: { choix: ["$2$", "$4$", "$5$", "$8$"] } } });
         touch(role("prompt"));
         await waitFor(() => role("status").classList.contains("is-error"), "message d’erreur");
@@ -537,7 +537,7 @@ window.PyWimsPython = (() => {
       });
 
       await test("un tirage que Python ne reproduit pas est signalé", async () => {
-        const { role, frame } = await openExercise(textExercise, textDraws, { ...textOptions, mismatch: true });
+        const { role, frame } = await openQuestion(textQuestion, textDraws, { ...textOptions, mismatch: true });
         touch(role("prompt"));
         await waitFor(() => role("status").classList.contains("is-error"), "message d’erreur");
         if (!role("status").textContent.includes("n’a pas pu être reproduit")) {
@@ -547,7 +547,7 @@ window.PyWimsPython = (() => {
       });
 
       await test("une feuille de deux questions les garde indépendantes, même avec des champs de même nom", async () => {
-        const otherExercise = { ...textExercise, title: "Double", enonce: "Le double de {{ a }} ? {% input_text 'r' solution=s %}" };
+        const otherQuestion = { ...textQuestion, title: "Double", enonce: "Le double de {{ a }} ? {% input_text 'r' solution=s %}" };
         const otherDraws = [{ seed: 5, context: { a: "7" }, dimensions: {}, solutions: { r: "14" }, explication: null }];
         const options = {
           questions: {
@@ -556,9 +556,9 @@ window.PyWimsPython = (() => {
           }
         };
         const { page, $, role, seeds, window: frameWindow, frame } = await openSheet(
-          [{ fields: textExercise, draws: textDraws }, { fields: otherExercise, draws: otherDraws }], options, "Révisions");
+          [{ fields: textQuestion, draws: textDraws }, { fields: otherQuestion, draws: otherDraws }], options, "Révisions");
         await waitFor(() => $("#q1-form_txt_r") && $("#q2-form_txt_r"), "affichage des deux questions");
-        if (page.body.dataset.sheet !== "activity" || $("#exercise-title").textContent !== "Révisions" ||
+        if (page.body.dataset.sheet !== "activity" || $("#question-title").textContent !== "Révisions" ||
             role("title", 1).textContent !== "Question 1 : Addition" || role("title", 2).textContent !== "Question 2 : Double" ||
             role("badge", 1).textContent !== "1" || page.querySelectorAll("iframe").length ||
             $("#pw-completion-value").textContent !== "0 %" || $("#pw-completion-label").textContent !== "0 / 2 réussie" ||
@@ -603,10 +603,10 @@ window.PyWimsPython = (() => {
 
       // Sans « apres » (SPECIFICATION.md, § 2.6) : la section est marquée data-python="false", la
       // question se corrige par comparaison avec sa solution et ne crée aucune session Python.
-      const { apres: _apres, ...choiceWithoutApres } = choiceExercise;
+      const { apres: _apres, ...choiceWithoutApres } = choiceQuestion;
 
       await test("une question à choix sans « apres » se corrige sans jamais créer de session Python", async () => {
-        const { $, role, frame, window: frameWindow } = await openExercise(choiceWithoutApres, choiceDraws, choiceOptions);
+        const { $, role, frame, window: frameWindow } = await openQuestion(choiceWithoutApres, choiceDraws, choiceOptions);
         await waitFor(() => $("#q1 .pw-choices"), "affichage des choix");
         if ($("#q1").dataset.python !== "false") throw new Error("La section n’est pas marquée sans Python.");
         click(choiceBox($, 0));
@@ -636,7 +636,7 @@ window.PyWimsPython = (() => {
       await test("un choix unique sans « apres » faux reçoit « Réponse incorrecte. »", async () => {
         const radio = { ...choiceWithoutApres, enonce: "Le plus petit ? {% input_radio 'r' choices=choix solution=bonne %}" };
         const draws = [{ ...choiceDraws[0], solutions: { r: 0 } }];
-        const { $, role, frame } = await openExercise(radio, draws, {});
+        const { $, role, frame } = await openQuestion(radio, draws, {});
         await waitFor(() => $("#q1 .pw-choices"), "affichage des choix");
         click(choiceBox($, 3));
         role("check").click();
@@ -653,7 +653,7 @@ window.PyWimsPython = (() => {
           enonce: "{% input_text 't' solution=s %} {% input_vmatrix 'm' max_rows=3 max_cols=3 solution=M %}"
         };
         const draws = [{ seed: 0, context: {}, dimensions: {}, solutions: { t: "x^2 + 1", m: [["1", "-2"]] }, explication: null }];
-        const { $, role, frame, window: frameWindow } = await openExercise(fields, draws, {});
+        const { $, role, frame, window: frameWindow } = await openQuestion(fields, draws, {});
         // Ni formule ni « apres » : la feuille n’intègre pas MathJax, et tout marche sans lui.
         if (frameWindow.MathJax !== undefined) throw new Error("MathJax est chargé par une feuille sans formule.");
         const text = $("#q1-form_txt_t");
@@ -688,7 +688,7 @@ window.PyWimsPython = (() => {
 
       await test("dans une feuille mixte, seule la question qui a un « apres » utilise Python", async () => {
         const { $, role, frame, window: frameWindow } = await openSheet([
-          { fields: textExercise, draws: textDraws },
+          { fields: textQuestion, draws: textDraws },
           { fields: choiceWithoutApres, draws: choiceDraws }
         ], { questions: { q1: textOptions } }, "Mixte");
         await waitFor(() => $("#q2 .pw-choices") && role("prompt", 1).textContent, "affichage des deux questions");
@@ -756,7 +756,7 @@ window.PyWimsPython = (() => {
       });
 
       await test("une question seule n’a pas de mémoire de progression", async () => {
-        const { page, frame } = await openExercise(choiceWithoutApres, choiceDraws, {});
+        const { page, frame } = await openQuestion(choiceWithoutApres, choiceDraws, {});
         // Sans empreinte, rien n’est gardé ; le bouton ↺ est masqué (test « une question seule n’a ni
         // numéro… »).
         if (page.body.dataset.sheetId !== undefined) {
@@ -766,7 +766,7 @@ window.PyWimsPython = (() => {
       });
 
       await test("une question seule n’a ni numéro ni progression, mais garde l’aide", async () => {
-        const { $, role, frame } = await openExercise(textExercise, textDraws, textOptions);
+        const { $, role, frame } = await openQuestion(textQuestion, textDraws, textOptions);
         const hidden = element => getComputedStyle(element).display === "none";
         if (!hidden($("#pw-completion")) || !hidden($(".pw-progress")) || !hidden(role("badge")) ||
             !hidden(role("title")) || !hidden($("#pw-restart")) || hidden($("#pw-help-button"))) {
@@ -785,7 +785,7 @@ window.PyWimsPython = (() => {
           enonce: "Calculer $x^2$ pour $$y = 3$$ {% input_text 'r' solution=s %}"
         };
         const draws = [{ seed: 0, context: {}, dimensions: {}, solutions: { r: "9" }, explication: null }];
-        const { role, frame } = await openExercise(fields, draws, {});
+        const { role, frame } = await openQuestion(fields, draws, {});
         await waitFor(() => role("prompt").querySelectorAll("mjx-container").length === 2, "composition des deux formules", 20000);
         if (role("prompt").querySelector("mjx-container[display='true']") === null) {
           throw new Error("La formule $$…$$ n’est pas composée en mode centré.");
@@ -804,7 +804,7 @@ window.PyWimsPython = (() => {
           { seed: 0, context: { t: "mot ".repeat(150) }, dimensions: {}, solutions: { r: "1" }, explication: null },
           { seed: 1, context: { t: "court" }, dimensions: {}, solutions: { r: "1" }, explication: null }
         ];
-        const { role, frame } = await openExercise(fields, draws, {});
+        const { role, frame } = await openQuestion(fields, draws, {});
         const prompt = role("prompt");
         await waitFor(() => prompt.querySelector("input"), "affichage de l’énoncé");
         if (prompt.style.minHeight) throw new Error(`Minimum fixé dès le premier affichage : ${prompt.style.minHeight}`);
@@ -824,13 +824,13 @@ window.PyWimsPython = (() => {
       // charger, attendre qu’il soit prêt, puis transmettre à « apres » l’écriture ASCII (« x^2+1 »)
       // et non le LaTeX affiché (« x^{2}+1 »).
       await test("un champ MathLive est transmis à « apres » en écriture ASCII", async () => {
-        const mathExercise = {
+        const mathQuestion = {
           title: "Formule", layout: "STD", avant: "a = 1",
           enonce: "Écrire $x^2+1$ : {% input_math 'd' solution=s %}",
           apres: "ok_answer['d'] = d == 'x^2+1'"
         };
         const draws = [{ seed: 0, context: {}, dimensions: {}, solutions: { d: "x^2+1" }, explication: null }];
-        const { page, role, frame, window } = await openExercise(mathExercise, draws,
+        const { page, role, frame, window } = await openQuestion(mathQuestion, draws,
           { contexts: { 0: {} }, answers: { 0: { d: "x^2+1" } } });
         await waitFor(() => window.customElements.get("math-field"), "chargement de MathLive", 30000);
         const field = page.querySelector("#q1 math-field");

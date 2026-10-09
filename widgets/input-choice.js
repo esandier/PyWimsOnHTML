@@ -41,7 +41,7 @@ window.PyWimsWidgets = (() => {
   //     (hyphens: auto) n’est pas appliquée par tous les navigateurs, dont Edge sous Windows ;
   //   - une formule composée par MathJax (SVG) ne se coupe jamais.
   // On mesure donc après composition : un choix déborde si sa largeur de contenu dépasse sa largeur
-  // visible (exige « overflow-wrap: normal » dans exercise.css). Des choix courts gardent leurs
+  // visible (exige « overflow-wrap: normal » dans question.css). Des choix courts gardent leurs
   // colonnes, même sur téléphone. On repart du nombre voulu par l’auteur à chaque appel, car la
   // fenêtre a pu s’élargir depuis (rotation du téléphone).
   // Appelée par la question après la composition des formules, et au redimensionnement.

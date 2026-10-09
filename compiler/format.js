@@ -1,4 +1,4 @@
-// Format .pwq : analyse d’un fichier d’exercice et types de ses champs de réponse.
+// Format .pwq : analyse d’un fichier de question et types de ses champs de réponse.
 // Script classique (et non module ES), pour que le compilateur marche aussi ouvert depuis le
 // disque ; il ajoute ses fonctions à window.PyWimsCompiler, que les autres scripts complètent.
 (() => {
@@ -7,7 +7,7 @@
   const requiredFields = ["title", "keywords", "layout", "avant", "enonce"];
   const knownFields = new Set([...requiredFields, "apres", "tirages"]);
   // Analyse les champs délimités par « % » et signale les erreurs avec leur emplacement.
-  function parseExerciseSource(source, path = "exercise.pwq") {
+  function parseQuestionSource(source, path = "question.pwq") {
     const lines = source.replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n").split("\n");
     const fields = {};
     let index = 0;
@@ -108,7 +108,7 @@
 
   window.PyWimsCompiler = Object.freeze({
     ...window.PyWimsCompiler,
-    parseExerciseSource,
+    parseQuestionSource,
     fieldKindsLabel,
     templateWarnings
   });

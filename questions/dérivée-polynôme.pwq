@@ -17,7 +17,7 @@ from random import choice, randint
 from sympy import *
 from pywims import math_expression
 
-# Le terme cubique non nul garantit que l’exercice demande bien une dérivée
+# Le terme cubique non nul garantit que la question demande bien une dérivée
 # d’un polynôme de degré trois, tandis que les autres coefficients varient.
 x = symbols("x")
 a = choice([-4, -3, -2, -1, 1, 2, 3, 4])

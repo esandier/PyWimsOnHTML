@@ -1,4 +1,4 @@
-// Fournit le champ texte standard utilisé par les exercices compilés.
+// Fournit le champ texte standard utilisé par les questions compilés.
 window.PyWimsWidgets = (() => {
   const existing = window.PyWimsWidgets || {};
   const { escapeHtml } = PyWimsTemplate;

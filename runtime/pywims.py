@@ -13,7 +13,7 @@ _libre = None
 
 
 def __getattr__(name):
-    """Crée LIBRE à la demande : SymPy n’est importé que par les exercices qui l’utilisent."""
+    """Crée LIBRE à la demande : SymPy n’est importé que par les questions qui l’utilisent."""
     global _libre
     if name == "LIBRE":
         if _libre is None:
@@ -42,7 +42,7 @@ def _float_text(value):
 
     L’arrondi efface les artefacts du calcul binaire (0.1 + 0.2 vaut 0.30000000000000004) : sans
     lui, le bouton « Solution » afficherait ces chiffres et la correction par défaut les exigerait
-    (SPECIFICATION.md, § 2.6). Douze chiffres gardent toute valeur qu’un exercice demande.
+    (SPECIFICATION.md, § 2.6). Douze chiffres gardent toute valeur qu’une question demande.
     """
     import decimal
     import math
@@ -223,7 +223,7 @@ def _string_errors(source, field):
     Dans une chaîne ordinaire, Python lit « \frac » comme un saut de page suivi de « rac », et
     « \times » comme une tabulation suivie de « imes » : la formule TeX arrive abîmée à MathJax
     (« Math input error »), sans aucune erreur Python. Un tel caractère n’a presque jamais sa place
-    dans un exercice ; on le signale donc à la compilation, avec la ligne, pour qu’une chaîne brute
+    dans une question ; on le signale donc à la compilation, avec la ligne, pour qu’une chaîne brute
     r'…' soit utilisée. Renvoie la liste des messages, en JSON.
     """
     import ast

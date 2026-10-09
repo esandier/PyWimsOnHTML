@@ -1,26 +1,26 @@
-// Interface du compilateur : ouverture du dossier d’exercices, liste, aperçu sûr et compilation.
+// Interface du compilateur : ouverture du dossier de questions, liste, aperçu sûr et compilation.
 // Le format, les tirages, l’assemblage et l’archive sont dans les autres scripts de ce dossier.
 // Les fichiers du projet (mise en page, moteur, widgets, styles) sont lus en ligne, à côté de cette
-// page (SPECIFICATION.md, § 11.1) ; le dossier choisi par l’utilisateur ne contient que ses exercices.
+// page (SPECIFICATION.md, § 11.1) ; le dossier choisi par l’utilisateur ne contient que ses questions.
 (() => {
   // Fonctions des modules du compilateur (format.js, draws.js, assemble.js, zip.js).
-  const { assembleActivity, assembleExercise, computeDraws, createExerciseFilename, createZip, fieldKindsLabel, neededResources, parseExerciseSource, previewPlaceholderDraw, resourcePaths, templateWarnings } = PyWimsCompiler;
+  const { assembleActivity, assembleQuestion, computeDraws, createQuestionFilename, createZip, fieldKindsLabel, neededResources, parseQuestionSource, previewPlaceholderDraw, resourcePaths, templateWarnings } = PyWimsCompiler;
 
   const chooseFolderButton = document.getElementById("choose-folder");
-  const filePicker = document.getElementById("exercise-folder");
+  const filePicker = document.getElementById("question-folder");
   const folderName = document.getElementById("folder-name");
   const reloadFolderButton = document.getElementById("reload-folder");
   const otherFolderButton = document.getElementById("other-folder");
   const brandStatus = document.getElementById("brand-status");
   const projectStatus = document.getElementById("project-status");
-  const search = document.getElementById("exercise-search");
-  const exerciseList = document.getElementById("exercise-list");
+  const search = document.getElementById("question-search");
+  const questionList = document.getElementById("question-list");
   const listEmpty = document.getElementById("list-empty");
   const selectionCount = document.getElementById("selection-count");
   const selectVisibleButton = document.getElementById("select-visible");
   const previewFrame = document.getElementById("preview-frame");
   const previewNotice = document.getElementById("preview-notice");
-  const compileButton = document.getElementById("compile-exercise");
+  const compileButton = document.getElementById("compile-question");
   const multiOutputControls = document.getElementById("multi-output-controls");
   const outputMode = document.getElementById("output-mode");
   const activityTitleInput = document.getElementById("activity-title");
@@ -32,16 +32,16 @@
   const moveDownButton = document.getElementById("move-down");
   const orderHint = document.getElementById("order-hint");
 
-  let exercises = [];
-  let selectedExercise;
+  let questions = [];
+  let selectedQuestion;
   // Questions cochées, dans l’ordre de l’activité (SPECIFICATION.md, § 11.9) : un tableau, et non
   // plus un Set, pour pouvoir déplacer une question.
-  let selectedExercises = [];
-  // Pastille de rang de chaque exercice affiché dans la liste, mise à jour sans reconstruire la
+  let selectedQuestions = [];
+  // Pastille de rang de chaque question affichée dans la liste, mise à jour sans reconstruire la
   // liste : la reconstruire ferait perdre le focus à la case qu’on vient de cocher.
   const rankBadges = new Map();
-  // Exercices que la recherche laisse affichés et qu’on peut cocher : ceux de « Tout sélectionner ».
-  let visibleExercises = [];
+  // Questions que la recherche laisse affichées et qu’on peut cocher : celles de « Tout sélectionner ».
+  let visibleQuestions = [];
   const messageTimers = new WeakMap();
   const messageFadeDurationMs = 700;
 
@@ -87,14 +87,14 @@
     }
   }
 
-  // Retire le dossier racine ajouté par le sélecteur : chemin relatif au dossier d’exercices.
+  // Retire le dossier racine ajouté par le sélecteur : chemin relatif au dossier de questions.
   function relativePath(file) {
     const path = file.webkitRelativePath || file.name;
     const firstSlash = path.indexOf("/");
     return firstSlash < 0 ? path : path.slice(firstSlash + 1);
   }
 
-  // Dossier d’exercices (SPECIFICATION.md, § 11.2). Chrome et Edge donnent à la page un accès
+  // Dossier de questions (SPECIFICATION.md, § 11.2). Chrome et Edge donnent à la page un accès
   // durable au dossier (File System Access) : on le mémorise, on le rouvre à la visite suivante,
   // et on relit ses fichiers à la demande. Firefox et Safari n’ont que le sélecteur de dossier :
   // ses fichiers sont figés à l’ouverture, et seul le nom du dernier dossier est rappelé.
@@ -119,11 +119,11 @@
     });
   }
   // Sans mémoire (navigation privée, réglages), le compilateur marche, sans rouvrir le dossier.
-  const rememberFolder = handle => folderStore("readwrite", store => store.put(handle, "exercices")).catch(() => {});
-  const rememberedFolder = () => folderStore("readonly", store => store.get("exercices")).catch(() => null);
+  const rememberFolder = handle => folderStore("readwrite", store => store.put(handle, "questions")).catch(() => {});
+  const rememberedFolder = () => folderStore("readonly", store => store.get("questions")).catch(() => null);
 
   // Fichiers .pwq d’un dossier et de ses sous-dossiers, avec leur chemin relatif et de quoi les
-  // relire. Les dossiers cachés (.git…) sont sautés : ils ne contiennent pas d’exercices et
+  // relire. Les dossiers cachés (.git…) sont sautés : ils ne contiennent pas de questions et
   // peuvent compter des milliers de fichiers.
   async function pwqFilesOf(directory, prefix = "") {
     const found = [];
@@ -210,7 +210,7 @@
   }
 
   // Ouvre un dossier par son accès (Chrome, Edge) et le mémorise. keepSelection : relecture du
-  // même dossier, qui garde la sélection, l’exercice affiché et la recherche.
+  // même dossier, qui garde la sélection, la question affichée et la recherche.
   async function openHandle(handle, { keepSelection = false } = {}) {
     folderHandle = handle;
     rememberedHandle = handle;
@@ -228,7 +228,7 @@
   async function pickFolder() {
     let handle;
     try {
-      handle = await window.showDirectoryPicker({ id: "pywims-exercices", mode: "read" });
+      handle = await window.showDirectoryPicker({ id: "pywims-questions", mode: "read" });
     } catch {
       return; // Fenêtre fermée sans choisir : rien ne change.
     }
@@ -246,7 +246,7 @@
     await openHandle(rememberedHandle);
   }
 
-  // Aperçu : la vraie page de l’exercice, assemblée comme à la compilation, dans un cadre isolé
+  // Aperçu : la vraie page de la question, assemblée comme à la compilation, dans un cadre isolé
   // (sandbox sans « allow-same-origin ») car l’énoncé est du HTML écrit par l’auteur. Le cadre
   // n’exécute jamais Python : il affiche d’abord un tirage provisoire où chaque variable porte son
   // nom, puis un tirage réel calculé par le Python de cette page, chargé une seule fois.
@@ -266,20 +266,20 @@
     previewNotice.className = className;
   }
 
-  // Assemble la page de l’exercice pour un tirage donné et l’affiche dans le cadre.
+  // Assemble la page de la question pour un tirage donné et l’affiche dans le cadre.
   async function renderPreviewFrame(fields, draw) {
     const resources = await readProjectResources(neededResources([fields]));
     resources.python = previewPythonStub;
-    previewFrame.srcdoc = assembleExercise(fields, [draw], resources).replace("</head>", `${previewHead}</head>`);
+    previewFrame.srcdoc = assembleQuestion(fields, [draw], resources).replace("</head>", `${previewHead}</head>`);
     previewFrame.hidden = false;
   }
 
-  // Affiche l’aperçu provisoire tout de suite, puis le remplace par un tirage réel. Un exercice
+  // Affiche l’aperçu provisoire tout de suite, puis le remplace par un tirage réel. Une question
   // choisi entre-temps annule la suite (previewGeneration).
-  async function showPreview(exercise) {
+  async function showPreview(question) {
     previewGeneration += 1;
     const generation = previewGeneration;
-    const { fields } = exercise;
+    const { fields } = question;
     try {
       await renderPreviewFrame(fields, previewPlaceholderDraw(fields));
     } catch (error) {
@@ -287,18 +287,18 @@
       showPreviewNotice(`Aperçu impossible : ${error.message}`, "error");
       return;
     }
-    if (!previewDrawCache.has(exercise)) {
+    if (!previewDrawCache.has(question)) {
       showPreviewNotice(PyWimsPython.isLoaded?.()
         ? "Aperçu provisoire : les variables apparaissent sous leur nom, le temps de calculer un tirage…"
         : "Aperçu provisoire : les variables apparaissent sous leur nom. Chargement de Python pour calculer un tirage (10 à 20 secondes la première fois)…");
       const draws = readProjectResources(pythonResources)
         .then(installPythonSources)
         .then(() => computeDraws(fields, { count: 1 }));
-      previewDrawCache.set(exercise, draws);
-      draws.catch(() => previewDrawCache.delete(exercise));
+      previewDrawCache.set(question, draws);
+      draws.catch(() => previewDrawCache.delete(question));
     }
     try {
-      const [draw] = await previewDrawCache.get(exercise);
+      const [draw] = await previewDrawCache.get(question);
       if (generation !== previewGeneration) {
         return;
       }
@@ -313,23 +313,23 @@
     }
   }
 
-  // Lit les exercices du dossier choisi, sous-dossiers compris, et réinitialise l’interface.
+  // Lit les questions du dossier choisi, sous-dossiers compris, et réinitialise l’interface.
   // sources : [{ path, read }] ; keepSelection garde la sélection d’une relecture du même dossier.
   async function loadFolder(name, sources, { keepSelection = false, brand = null } = {}) {
     // Chemins dans l’ordre de l’activité : « Relire » garde cet ordre.
-    const selectedPaths = selectedExercises.map(exercise => exercise.path);
-    const shownPath = selectedExercise?.path;
+    const selectedPaths = selectedQuestions.map(question => question.path);
+    const shownPath = selectedQuestion?.path;
     clearMessage(messages);
     clearMessage(projectStatus);
-    exercises = [];
-    selectedExercise = undefined;
-    selectedExercises = [];
+    questions = [];
+    selectedQuestion = undefined;
+    selectedQuestions = [];
     if (!keepSelection) {
       outputMode.value = "separate";
       activityTitleInput.value = "";
       search.value = "";
     }
-    exerciseList.replaceChildren();
+    questionList.replaceChildren();
     listEmpty.hidden = false;
     updateCompilationControls();
     // Un aperçu en cours de calcul ne doit pas s’afficher pour le nouveau dossier.
@@ -348,27 +348,27 @@
     showMessage(projectStatus, "Chargement des questions…");
 
     for (const { path, read } of sources) {
-      const exercise = { path, read };
+      const question = { path, read };
       try {
-        exercise.source = await read();
-        exercise.fields = parseExerciseSource(exercise.source, path);
+        question.source = await read();
+        question.fields = parseQuestionSource(question.source, path);
       } catch (error) {
-        exercise.error = error;
+        question.error = error;
       }
-      exercises.push(exercise);
+      questions.push(question);
     }
     if (keepSelection) {
-      selectedExercises = selectedPaths
-        .map(path => exercises.find(exercise => exercise.path === path && !exercise.error))
+      selectedQuestions = selectedPaths
+        .map(path => questions.find(question => question.path === path && !question.error))
         .filter(Boolean);
     }
 
-    const count = exercises.length;
-    renderExerciseList();
+    const count = questions.length;
+    renderQuestionList();
     updateCompilationControls();
-    const shown = keepSelection && exercises.find(exercise => exercise.path === shownPath);
+    const shown = keepSelection && questions.find(question => question.path === shownPath);
     if (shown) {
-      selectExercise(shown);
+      selectQuestion(shown);
     }
     showMessage(
       projectStatus,
@@ -378,19 +378,19 @@
     );
   }
 
-  // Nom d’un exercice dans la liste : son titre, ou le nom du fichier s’il est illisible.
-  function exerciseLabel(exercise) {
-    return exercise.fields?.title || exercise.path.split("/").pop();
+  // Nom d’une question dans la liste : son titre, ou le nom du fichier s’il est illisible.
+  function questionLabel(question) {
+    return question.fields?.title || question.path.split("/").pop();
   }
 
-  // Filtre et trie les exercices, puis reconstruit leur liste accessible.
-  function renderExerciseList() {
+  // Filtre et trie les questions, puis reconstruit leur liste accessible.
+  function renderQuestionList() {
     const query = search.value.trim().toLocaleLowerCase();
-    exerciseList.replaceChildren();
+    questionList.replaceChildren();
     rankBadges.clear();
 
-    const matches = exercises.filter(exercise => {
-      const searchable = `${exercise.fields?.title || ""} ${exercise.fields?.keywords || ""} ${exercise.path}`.toLocaleLowerCase();
+    const matches = questions.filter(question => {
+      const searchable = `${question.fields?.title || ""} ${question.fields?.keywords || ""} ${question.path}`.toLocaleLowerCase();
       return searchable.includes(query);
     });
 
@@ -398,116 +398,116 @@
     // chaque sous-dossier sous son chemin ; dans chaque groupe, ordre naturel des titres (« (2) »
     // avant « (10) »). Sans sous-dossier, aucun intertitre.
     const naturalOrder = (left, right) => left.localeCompare(right, "fr", { numeric: true });
-    const folderOf = exercise => exercise.path.includes("/") ? exercise.path.slice(0, exercise.path.lastIndexOf("/")) : "";
+    const folderOf = question => question.path.includes("/") ? question.path.slice(0, question.path.lastIndexOf("/")) : "";
     matches.sort((left, right) =>
       (folderOf(left) === "" ? -1 : 0) - (folderOf(right) === "" ? -1 : 0) ||
       naturalOrder(folderOf(left), folderOf(right)) ||
-      naturalOrder(exerciseLabel(left), exerciseLabel(right)));
-    const grouped = exercises.some(exercise => folderOf(exercise) !== "");
+      naturalOrder(questionLabel(left), questionLabel(right)));
+    const grouped = questions.some(question => folderOf(question) !== "");
     let currentFolder = null;
-    for (const exercise of matches) {
-      if (grouped && folderOf(exercise) !== currentFolder) {
-        currentFolder = folderOf(exercise);
+    for (const question of matches) {
+      if (grouped && folderOf(question) !== currentFolder) {
+        currentFolder = folderOf(question);
         const heading = document.createElement("li");
-        heading.className = "exercise-group";
+        heading.className = "question-group";
         heading.textContent = currentFolder === "" ? folderName.textContent : `${currentFolder}/`;
-        exerciseList.append(heading);
+        questionList.append(heading);
       }
       const item = document.createElement("li");
       const selection = document.createElement("input");
-      selection.className = "exercise-selection";
+      selection.className = "question-selection";
       selection.type = "checkbox";
-      selection.checked = selectedExercises.includes(exercise);
-      selection.disabled = Boolean(exercise.error);
+      selection.checked = selectedQuestions.includes(question);
+      selection.disabled = Boolean(question.error);
       selection.setAttribute(
         "aria-label",
-        `Inclure « ${exerciseLabel(exercise)} » dans la compilation`
+        `Inclure « ${questionLabel(question)} » dans la compilation`
       );
       selection.addEventListener("change", () => {
         if (selection.checked) {
-          selectedExercises.push(exercise);
+          selectedQuestions.push(question);
         } else {
-          selectedExercises = selectedExercises.filter(other => other !== exercise);
+          selectedQuestions = selectedQuestions.filter(other => other !== question);
         }
         updateCompilationControls();
         updateSelectVisibleButton();
       });
       const button = document.createElement("button");
-      button.className = "exercise-preview-button";
+      button.className = "question-preview-button";
       button.type = "button";
-      button.setAttribute("aria-current", String(exercise === selectedExercise));
+      button.setAttribute("aria-current", String(question === selectedQuestion));
       const title = document.createElement("span");
-      title.className = "exercise-title";
+      title.className = "question-title";
       const rank = document.createElement("span");
-      rank.className = "exercise-rank";
-      rankBadges.set(exercise, rank);
-      title.append(rank, exerciseLabel(exercise));
+      rank.className = "question-rank";
+      rankBadges.set(question, rank);
+      title.append(rank, questionLabel(question));
       const kinds = document.createElement("span");
-      kinds.className = "exercise-fields";
-      kinds.textContent = exercise.error ? "fichier illisible" : fieldKindsLabel(exercise.fields.enonce);
-      // Le chemin reste accessible au survol : deux exercices peuvent porter le même titre.
-      button.title = exercise.path;
+      kinds.className = "question-fields";
+      kinds.textContent = question.error ? "fichier illisible" : fieldKindsLabel(question.fields.enonce);
+      // Le chemin reste accessible au survol : deux questions peuvent porter le même titre.
+      button.title = question.path;
       button.append(title, kinds);
-      button.addEventListener("click", () => selectExercise(exercise));
+      button.addEventListener("click", () => selectQuestion(question));
       item.append(selection, button);
-      exerciseList.append(item);
+      questionList.append(item);
     }
 
-    visibleExercises = matches.filter(exercise => !exercise.error);
+    visibleQuestions = matches.filter(question => !question.error);
     updateRanks();
     updateSelectVisibleButton();
     listEmpty.hidden = matches.length > 0;
-    if (!exercises.length) {
+    if (!questions.length) {
       listEmpty.textContent = "Aucun fichier .pwq dans le dossier choisi.";
     } else if (!matches.length) {
       listEmpty.textContent = "Aucun fichier ne correspond à cette recherche.";
     }
   }
 
-  // « Tout sélectionner » tant qu’un exercice visible n’est pas coché, « Tout désélectionner » sinon ;
-  // absent quand aucun exercice visible ne peut être coché.
+  // « Tout sélectionner » tant qu’une question visible n’est pas cochée, « Tout désélectionner » sinon ;
+  // absent quand aucune question visible ne peut être cochée.
   function updateSelectVisibleButton() {
-    const allSelected = visibleExercises.every(exercise => selectedExercises.includes(exercise));
-    selectVisibleButton.hidden = visibleExercises.length === 0;
+    const allSelected = visibleQuestions.every(question => selectedQuestions.includes(question));
+    selectVisibleButton.hidden = visibleQuestions.length === 0;
     selectVisibleButton.textContent = allSelected ? "Tout désélectionner" : "Tout sélectionner";
   }
 
-  // Coche ou décoche d’un coup les exercices visibles ; les exercices masqués par la recherche
+  // Coche ou décoche d’un coup les questions visibles ; les questions masquées par la recherche
   // gardent leur état (SPECIFICATION.md, § 11.3).
   function toggleVisibleSelection() {
-    const allSelected = visibleExercises.every(exercise => selectedExercises.includes(exercise));
+    const allSelected = visibleQuestions.every(question => selectedQuestions.includes(question));
     if (allSelected) {
-      selectedExercises = selectedExercises.filter(exercise => !visibleExercises.includes(exercise));
+      selectedQuestions = selectedQuestions.filter(question => !visibleQuestions.includes(question));
     } else {
       // Les questions visibles non cochées s’ajoutent à la fin, dans l’ordre de la liste.
-      selectedExercises.push(...visibleExercises.filter(exercise => !selectedExercises.includes(exercise)));
+      selectedQuestions.push(...visibleQuestions.filter(question => !selectedQuestions.includes(question)));
     }
-    renderExerciseList();
+    renderQuestionList();
     updateCompilationControls();
   }
 
-  // Affiche l’aperçu de l’exercice choisi et met à jour l’état du bouton de compilation.
-  function selectExercise(exercise) {
-    selectedExercise = exercise;
-    renderExerciseList();
-    if (exercise.error) {
+  // Affiche l’aperçu de la question choisie et met à jour l’état du bouton de compilation.
+  function selectQuestion(question) {
+    selectedQuestion = question;
+    renderQuestionList();
+    if (question.error) {
       previewGeneration += 1;
       previewFrame.hidden = true;
       showPreviewNotice("Impossible de lire cette question.", "error");
       clearMessage(messages);
-      showMessage(messages, exercise.error.message, "error");
+      showMessage(messages, question.error.message, "error");
       updateCompilationControls();
       return;
     }
 
     clearMessage(messages);
-    showPreview(exercise);
+    showPreview(question);
     updateCompilationControls();
   }
 
   // Adapte les options de compilation au nombre et au mode des questions choisies.
   function updateCompilationControls() {
-    const selected = selectedExercises.filter(exercise => !exercise.error);
+    const selected = selectedQuestions.filter(question => !question.error);
     const multiple = selected.length > 1;
     const activityMode = multiple && outputMode.value === "activity";
     selectionCount.textContent = selected.length === 0
@@ -524,14 +524,14 @@
 
   // L’ordre ne compte que pour une activité unique : hors de ce mode, ni rang ni liste d’ordre.
   function activityOrderShown() {
-    return selectedExercises.length > 1 && outputMode.value === "activity";
+    return selectedQuestions.length > 1 && outputMode.value === "activity";
   }
 
-  // Rang de chaque question cochée, à côté de sa case dans la liste des exercices.
+  // Rang de chaque question cochée, à côté de sa case dans la liste des questions.
   function updateRanks() {
     const shown = activityOrderShown();
-    for (const [exercise, badge] of rankBadges) {
-      const index = selectedExercises.indexOf(exercise);
+    for (const [question, badge] of rankBadges) {
+      const index = selectedQuestions.indexOf(question);
       badge.textContent = shown && index >= 0 ? String(index + 1) : "";
     }
   }
@@ -546,25 +546,25 @@
     if (activityOrder.hidden) {
       return;
     }
-    for (const [index, exercise] of selectedExercises.entries()) {
+    for (const [index, question] of selectedQuestions.entries()) {
       const item = document.createElement("li");
-      item.classList.toggle("is-chosen", exercise === selectedExercise);
+      item.classList.toggle("is-chosen", question === selectedQuestion);
       const rank = document.createElement("span");
       rank.className = "order-rank";
       rank.textContent = `${index + 1}.`;
       const title = document.createElement("button");
       title.className = "order-title";
       title.type = "button";
-      title.textContent = exerciseLabel(exercise);
-      title.title = exercise.path;
-      title.setAttribute("aria-current", String(exercise === selectedExercise));
-      title.addEventListener("click", () => selectExercise(exercise));
+      title.textContent = questionLabel(question);
+      title.title = question.path;
+      title.setAttribute("aria-current", String(question === selectedQuestion));
+      title.addEventListener("click", () => selectQuestion(question));
       item.append(rank, title);
       activityOrderList.append(item);
     }
-    const chosen = selectedExercises.indexOf(selectedExercise);
+    const chosen = selectedQuestions.indexOf(selectedQuestion);
     moveUpButton.disabled = chosen <= 0;
-    moveDownButton.disabled = chosen < 0 || chosen === selectedExercises.length - 1;
+    moveDownButton.disabled = chosen < 0 || chosen === selectedQuestions.length - 1;
     orderHint.hidden = chosen >= 0;
   }
 
@@ -572,12 +572,12 @@
   // en tête ou en fin, la flèche utilisée devient inactive : le focus passe à l’autre, pour ne pas
   // retomber sur la page.
   function moveChosen(step) {
-    const index = selectedExercises.indexOf(selectedExercise);
+    const index = selectedQuestions.indexOf(selectedQuestion);
     const target = index + step;
-    if (index < 0 || target < 0 || target >= selectedExercises.length) {
+    if (index < 0 || target < 0 || target >= selectedQuestions.length) {
       return;
     }
-    [selectedExercises[index], selectedExercises[target]] = [selectedExercises[target], selectedExercises[index]];
+    [selectedQuestions[index], selectedQuestions[target]] = [selectedQuestions[target], selectedQuestions[index]];
     updateCompilationControls();
     activityOrderList.children[target].scrollIntoView({ block: "nearest" });
     const [same, other] = step < 0 ? [moveUpButton, moveDownButton] : [moveDownButton, moveUpButton];
@@ -601,7 +601,7 @@
       return [key, await response.text()];
     }));
     const resources = Object.fromEntries(entries);
-    // La charte du dossier remplace la charte neutre ; relue à chaque fois, comme les exercices.
+    // La charte du dossier remplace la charte neutre ; relue à chaque fois, comme les questions.
     if (folderBrand && "brandCss" in resources) {
       try {
         resources.brandCss = await folderBrand.read();
@@ -633,7 +633,7 @@
     const needed = Object.fromEntries(
       neededResources(questions.map(({ fields }) => fields)).map(key => [key, resources[key]]));
     return activityTitle === null
-      ? assembleExercise(questions[0].fields, questions[0].draws, needed)
+      ? assembleQuestion(questions[0].fields, questions[0].draws, needed)
       : assembleActivity(activityTitle, questions, needed);
   }
 
@@ -649,8 +649,8 @@
   }
 
   // Compile les questions choisies, seules ou assemblées selon le mode demandé.
-  async function downloadExercise() {
-    const selected = selectedExercises.filter(exercise => !exercise.error);
+  async function downloadQuestion() {
+    const selected = selectedQuestions.filter(question => !question.error);
     if (!selected.length) {
       return;
     }
@@ -663,53 +663,53 @@
       const keys = [...new Set([...pythonResources, ...neededResources(selected.map(({ fields }) => fields))])];
       const resources = await readProjectResources(keys);
       await installPythonSources(resources);
-      // Les exercices sont relus : un fichier modifié depuis l’ouverture est compilé dans sa
+      // Les questions sont relues : un fichier modifié depuis l’ouverture est compilé dans sa
       // dernière version (Chrome, Edge), ou signalé (Firefox, Safari).
-      for (const exercise of selected) {
-        const source = await exercise.read();
-        if (source !== exercise.source) {
-          exercise.fields = parseExerciseSource(source, exercise.path);
-          exercise.source = source;
-          previewDrawCache.delete(exercise);
+      for (const question of selected) {
+        const source = await question.read();
+        if (source !== question.source) {
+          question.fields = parseQuestionSource(source, question.path);
+          question.source = source;
+          previewDrawCache.delete(question);
         }
       }
-      const questions = [];
-      for (const [index, exercise] of selected.entries()) {
+      const compiled = [];
+      for (const [index, question] of selected.entries()) {
         const label = selected.length > 1 ? `question ${index + 1}/${selected.length}, ` : "";
-        showMessage(messages, `Chargement de Python et calcul des tirages (${label}« ${exercise.fields.title} »)…`);
-        // Les tirages valident l’exercice en exécutant « avant », puis sont intégrés au fichier.
-        const draws = await computeDraws(exercise.fields, {
+        showMessage(messages, `Chargement de Python et calcul des tirages (${label}« ${question.fields.title} »)…`);
+        // Les tirages valident la question en exécutant « avant », puis sont intégrés au fichier.
+        const draws = await computeDraws(question.fields, {
           onProgress: (done, total) => showMessage(
             messages,
-            `Calcul des tirages (${label}« ${exercise.fields.title} ») : ${done}/${total}…`
+            `Calcul des tirages (${label}« ${question.fields.title} ») : ${done}/${total}…`
           )
         }).catch(error => {
-          throw new Error(`${exercise.path} : ${error.message}`);
+          throw new Error(`${question.path} : ${error.message}`);
         });
-        questions.push({ fields: exercise.fields, draws, path: exercise.path });
+        compiled.push({ fields: question.fields, draws, path: question.path });
       }
       const html = content => new Blob([content], { type: "text/html;charset=utf-8" });
-      if (questions.length === 1) {
-        downloadBlob(html(compileSheet(questions, resources)), createExerciseFilename(questions[0].fields.title));
+      if (compiled.length === 1) {
+        downloadBlob(html(compileSheet(compiled, resources)), createQuestionFilename(compiled[0].fields.title));
       } else if (outputMode.value === "activity") {
         const title = activityTitleInput.value.trim();
         if (!title) {
           throw new Error("Indiquez un titre pour l’activité.");
         }
-        downloadBlob(html(compileSheet(questions, resources, title)), createExerciseFilename(title));
+        downloadBlob(html(compileSheet(compiled, resources, title)), createQuestionFilename(title));
       } else {
         // Pages séparées : une feuille d’une question par fichier.
         const archiveEntries = [];
-        for (const question of questions) {
+        for (const question of compiled) {
           archiveEntries.push({
             name: question.path.replace(/\.pwq$/i, ".html"),
             content: compileSheet([question], resources)
           });
         }
-        downloadBlob(createZip(archiveEntries), `${questions.length}-questions.zip`);
+        downloadBlob(createZip(archiveEntries), `${compiled.length}-questions.zip`);
       }
       // Les avertissements ne bloquent pas la compilation ; ils restent affichés pour être lus.
-      const warnings = questions.flatMap(({ fields, path }) => templateWarnings(fields).map(text => `${path} : ${text}`));
+      const warnings = compiled.flatMap(({ fields, path }) => templateWarnings(fields).map(text => `${path} : ${text}`));
       if (warnings.length) {
         showMessage(messages, `La compilation a été téléchargée. Avertissement : ${warnings.join(" ")}`, "warning");
       } else {
@@ -777,9 +777,9 @@
   } else {
     updateFolderControls();
   }
-  search.addEventListener("input", renderExerciseList);
+  search.addEventListener("input", renderQuestionList);
   selectVisibleButton.addEventListener("click", toggleVisibleSelection);
-  compileButton.addEventListener("click", downloadExercise);
+  compileButton.addEventListener("click", downloadQuestion);
   outputMode.addEventListener("change", updateCompilationControls);
   activityTitleInput.addEventListener("input", updateCompilationControls);
   moveUpButton.addEventListener("click", () => moveChosen(-1));

@@ -78,7 +78,7 @@ a {
     height: 2.75rem;
   }
 
-  .pw-header #exercise-title {
+  .pw-header #question-title {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;

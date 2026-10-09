@@ -3,11 +3,11 @@
 // Script classique (et non module ES), pour que le compilateur marche aussi ouvert depuis le
 // disque ; il ajoute ses fonctions à window.PyWimsCompiler, que les autres scripts complètent.
 (() => {
-  // Protège les données de l’exercice avant de les insérer dans le HTML généré.
+  // Protège les données de la question avant de les insérer dans le HTML généré.
   const { escapeHtml } = PyWimsTemplate;
 
   // Intègre les champs comme texte lisible dans des blocs dédiés au runtime.
-  function renderExerciseData(fields) {
+  function renderQuestionData(fields) {
     return Object.entries(fields)
       .map(([name, value]) => `<pre data-field="${escapeHtml(name)}">${escapeHtml(value)}</pre>`)
       .join("\n");
@@ -24,7 +24,7 @@
     template: "runtime/template.js",
     correction: "runtime/correction.js",
     brandCss: "css/brand.css",
-    exerciseCss: "css/exercise.css",
+    questionCss: "css/question.css",
     textWidget: "widgets/input-text.js",
     mathWidget: "widgets/input-math.js",
     matrixWidget: "widgets/input-matrix.js",
@@ -72,14 +72,14 @@
     const { avant, ...withoutAvant } = fields;
     return `<section class="pw-question" id="q${index + 1}" data-python="${python}">
 <div class="pw-question-data" hidden>
-${renderExerciseData(fields.apres === undefined ? withoutAvant : fields)}
+${renderQuestionData(fields.apres === undefined ? withoutAvant : fields)}
 ${renderDrawData(draws)}
 </div>
 </section>`;
   }
 
   // Assemble une question seule ; c’est une feuille d’une question avec la mise en page « question seule ».
-  function assembleExercise(fields, draws, resources) {
+  function assembleQuestion(fields, draws, resources) {
     return assembleSheet({ title: fields.title, kind: "single", questions: [{ fields, draws }] }, resources);
   }
 
@@ -168,7 +168,7 @@ ${renderDrawData(draws)}
       SHEET_KIND: kind,
       // Seule une activité garde sa progression : une question seule n’a pas d’empreinte.
       SHEET_ID: kind === "activity" ? ` data-sheet-id="${sheetFingerprint(title, questions)}"` : "",
-      CSS: `${resources.brandCss}\n${resources.exerciseCss}`,
+      CSS: `${resources.brandCss}\n${resources.questionCss}`,
       TEMPLATE: resources.template,
       CORRECTION: resources.correction,
       WIDGETS: [resources.textWidget, resources.mathWidget, resources.matrixWidget, resources.choiceWidget]
@@ -201,7 +201,7 @@ window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
   }
 
   // Crée un nom de fichier sûr en conservant les lettres Unicode, dont les accents français.
-  function createExerciseFilename(title) {
+  function createQuestionFilename(title) {
     const slug = title
       .normalize("NFC")
       .replace(/[^\p{L}\p{N}_-]+/gu, "-")
@@ -215,9 +215,9 @@ window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
     renderDrawData,
     resourcePaths,
     neededResources,
-    assembleExercise,
+    assembleQuestion,
     assembleActivity,
-    renderExerciseData,
-    createExerciseFilename
+    renderQuestionData,
+    createQuestionFilename
   });
 })();
