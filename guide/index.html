@@ -251,6 +251,9 @@
           <tr><td><code>scoring</code></td><td>facultatif</td><td>note indicative, dans la syntaxe d’AMC (voir « Le barème »)</td></tr>
         </tbody>
       </table></div>
+      <p>Pour des choix qui changent avec les valeurs tirées, l’outil <code>mcq</code> du module
+        <code>pywims</code> tire la bonne réponse et des erreurs types dans une réserve, sans doublon :</p>
+<pre><code>choices, correct = mcq(correct=a * b, wrong=[a + b, a * b + 1, a * (b - 1), (a + 1) * b], count=4)</code></pre>
       <p>Les choix sont mélangés à chaque tirage, et deux choix de même texte sont refusés. Aucun choix n’est ajouté automatiquement : pour « Aucune de
         ces réponses », écrivez-le en dernier, avec <code>fixed_last=1</code>. Dans <code>question_check</code>, la
         saisie arrive comme le numéro choisi (choix unique) ou la liste croissante des numéros cochés.</p>

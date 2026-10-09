@@ -2653,7 +2653,7 @@ window.PyWimsTemplate = (() => {
   // écraser une variable du contrat de question, un outil pywims ni un mot-clé Python.
   const reservedNames = new Set([
     "ok_answer", "feedback",
-    "py_wims", "is_number", "math_expression", "decimal_comma", "ANY", "pywims",
+    "py_wims", "is_number", "math_expression", "decimal_comma", "mcq", "ANY", "pywims",
     "False", "None", "True", "and", "as", "assert", "async", "await", "break",
     "class", "continue", "def", "del", "elif", "else", "except", "finally", "for",
     "from", "global", "if", "import", "in", "is", "lambda", "nonlocal", "not",
@@ -3515,7 +3515,7 @@ window.PyWimsWidgets = (() => {
 </script>
   <!-- Module Python « pywims » (runtime/pywims.py), lu par le runtime Python : le type text/x-python
        empêche le navigateur de l’exécuter. Vide si aucune question n’a d’« question_check ». -->
-  <script type="text/x-python" id="pywims-module">"""Outils PyWims : from pywims import py_wims, is_number, math_expression, decimal_comma, ANY"""
+  <script type="text/x-python" id="pywims-module">"""Outils PyWims : from pywims import py_wims, is_number, math_expression, decimal_comma, mcq, ANY"""
 # Module installé dans Pyodide par runtime/python.js, à la compilation comme dans le fichier généré,
 # qui l’intègre tel quel : les tirages calculés et rejoués utilisent ainsi le même code
 # (SPECIFICATION.md, § 3). Les fonctions dont le nom commence par « _ » servent au compilateur et à
@@ -3524,7 +3524,7 @@ window.PyWimsWidgets = (() => {
 import re as _re
 import sys as _sys
 
-__all__ = ["py_wims", "is_number", "math_expression", "decimal_comma", "ANY"]
+__all__ = ["py_wims", "is_number", "math_expression", "decimal_comma", "mcq", "ANY"]
 
 _any_value = None
 
@@ -3649,15 +3649,16 @@ def _choice_texts(value):
     """Textes des choix d’un champ à choix : un texte reste tel quel, un objet SymPy devient une formule."""
     if isinstance(value, (str, bytes)) or not isinstance(value, (list, tuple)) or len(value) < 2:
         raise TypeError("ce doit être une liste d’au moins deux choix.")
+    return [_choice_text(choice) for choice in value]
+
+
+def _choice_text(choice):
+    """Texte d’un choix : un texte reste tel quel, un objet SymPy devient une formule en ligne, pour
+    que les choix restent compacts, côte à côte sur téléphone."""
     sympy = _sys.modules.get("sympy")
-    texts = []
-    for choice in value:
-        if sympy is not None and isinstance(choice, sympy.Basic):
-            # Formule en ligne : les choix restent compacts, côte à côte sur téléphone.
-            texts.append(r"\(" + sympy.latex(choice) + r"\)")
-        else:
-            texts.append(str(choice))
-    return texts
+    if sympy is not None and isinstance(choice, sympy.Basic):
+        return r"\(" + sympy.latex(choice) + r"\)"
+    return str(choice)
 
 
 def _choice_index(value, count):
@@ -3845,6 +3846,63 @@ def decimal_comma(value, digits):
         context.prec = len(exact.as_tuple().digits) + digits + 10
         rounded = exact.quantize(decimal.Decimal(1).scaleb(-digits), rounding=decimal.ROUND_HALF_UP)
     return _plain_decimal(rounded).replace(".", ",")
+
+
+def _choice_key(value):
+    """Ce qu’affiche un choix, aux espaces près : deux valeurs de même clé sont des doublons."""
+    return "".join(_choice_text(value).split())
+
+
+def _distinct(values, excluded=()):
+    """Valeurs sans doublon d’affichage, dans leur ordre, privées de celles de excluded."""
+    seen = {_choice_key(value) for value in excluded}
+    kept = []
+    for value in values:
+        key = _choice_key(value)
+        if key not in seen:
+            seen.add(key)
+            kept.append(value)
+    return kept
+
+
+def mcq(correct, wrong, count=4, correct_count=None):
+    """Choix d’un QCM tirés au hasard (SPECIFICATION.md, § 10.9).
+
+    Choix unique (correct est une valeur) : renvoie (choices, index), la bonne réponse et
+    count - 1 mauvaises tirées dans wrong, mélangées. Choix multiple (correct est une liste) :
+    renvoie (choices, indices), correct_count bonnes réponses tirées dans correct (toutes par
+    défaut) et des mauvaises pour compléter. Les doublons d’affichage sont retirés, ainsi que les
+    mauvaises réponses égales à une bonne : deux distracteurs calculés coïncident souvent.
+    Le hasard est celui du module random, donc la graine du tirage.
+    """
+    import random
+    multiple = isinstance(correct, (list, tuple, set))
+    if isinstance(wrong, (str, bytes)) or not isinstance(wrong, (list, tuple, set)):
+        raise TypeError("mcq : wrong doit être une liste de mauvaises réponses.")
+    if isinstance(count, bool) or not isinstance(count, int) or count < 2:
+        raise ValueError("mcq : count doit être un entier au moins égal à 2.")
+    goods = _distinct(list(correct) if multiple else [correct])
+    if multiple:
+        wanted = len(goods) if correct_count is None else correct_count
+        if isinstance(wanted, bool) or not isinstance(wanted, int) or not 0 <= wanted <= count:
+            raise ValueError("mcq : correct_count doit être un entier de 0 à count ({}).".format(count))
+        if wanted > len(goods):
+            raise ValueError("mcq : {} bonnes réponses demandées, mais correct n’en donne que {} distinctes "
+                             "pour ce tirage.".format(wanted, len(goods)))
+    else:
+        if correct_count is not None:
+            raise ValueError("mcq : correct_count ne sert qu’avec une liste de bonnes réponses.")
+        wanted = 1
+    bads = _distinct(list(wrong), excluded=goods)
+    if len(bads) < count - wanted:
+        raise ValueError("mcq : il faut {} mauvaises réponses distinctes (et différentes des bonnes), "
+                         "mais wrong n’en donne que {} pour ce tirage.".format(count - wanted, len(bads)))
+    chosen_goods = random.sample(goods, wanted)
+    chosen = [(value, True) for value in chosen_goods] + [(value, False) for value in random.sample(bads, count - wanted)]
+    random.shuffle(chosen)
+    choices = [value for value, _ in chosen]
+    indices = [index for index, (_, good) in enumerate(chosen) if good]
+    return (choices, indices) if multiple else (choices, indices[0])
 
 
 def is_number(value):

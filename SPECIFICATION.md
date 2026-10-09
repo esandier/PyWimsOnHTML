@@ -42,7 +42,7 @@ et une activité en réunit plusieurs.
 
 **Noms en anglais.** Tous les noms que l’auteur écrit sont en anglais, comme
 Python et HTML : champs (préfixés par `question_`), outils de `pywims`
-(`ANY`, `decimal_comma`, `is_number`), attributs des balises (`scoring`), et noms des
+(`ANY`, `decimal_comma`, `is_number`, `mcq`), attributs des balises (`scoring`), et noms des
 exemples. Les anciens noms de PyWims (`avant`, `enonce`, `apres`, `tirages`,
 `bareme`, `LIBRE`, `decimal_fr`, `is_nombre`, `explication_solution`) sont refusés comme
 tout nom inconnu, sans compatibilité : un mélange des deux langues serait
@@ -69,7 +69,8 @@ refusé.
 - Chaque question importe explicitement ce qu’elle utilise :
   `import sympy as sp`, `from sympy import …`, `import random`, etc.
 - Les outils PyWims viennent d’un module dédié :
-  `from pywims import py_wims, is_number, math_expression, decimal_comma`.
+  `from pywims import py_wims, is_number, math_expression, decimal_comma, mcq`
+  (`mcq` : choix d’un QCM tirés au hasard, § 10.9).
   Ses fonctions internes ne sont pas visibles par l’auteur, qui ne peut donc
   pas les perturber (par exemple en écrivant `E = 3`).
 - `question_check` partage l’espace de noms de `question_setup` et y trouve les saisies de
@@ -921,6 +922,46 @@ En plus du § 2.4, le compilateur refuse la question si, pour l’un des tirages
 - tout ce qui ne se transpose pas (image, question ouverte, barème refusé…)
   est signalé, pas approximé ;
 - un exemple complet, du source AMC au fichier `.pwq`.
+
+### 10.9 Choix tirés au hasard : `mcq`
+
+Un QCM dont les choix eux-mêmes changent d’un tirage à l’autre, et pas
+seulement leur ordre : la bonne réponse se calcule avec les valeurs de
+l’énoncé, et les mauvaises sont tirées d’une réserve (erreurs types,
+distracteurs). L’outil `mcq` de `pywims` fait ce tirage, avec le `random` de
+l’auteur, donc avec la graine du tirage.
+
+```python
+from random import randint
+from pywims import mcq
+
+a, b = randint(2, 9), randint(2, 9)
+choices, correct = mcq(correct=a * b, wrong=[a + b, a * b + 1, a * (b - 1), a * b - a, (a + 1) * b], count=4)
+```
+
+- **Choix unique** : `mcq(correct=valeur, wrong=[…], count=4)` renvoie
+  `(choices, index)` : `count` choix, la bonne réponse et `count − 1` mauvaises
+  tirées au hasard dans `wrong`, dans un ordre mélangé, et l’indice de la bonne.
+- **Choix multiple** : `mcq(correct=[…], wrong=[…], count=5, correct_count=2)`
+  renvoie `(choices, indices)` : `correct_count` bonnes réponses tirées dans
+  `correct` (toutes par défaut) et des mauvaises pour compléter, et la liste
+  croissante des indices des bonnes. `correct_count` peut valoir 0.
+- **Doublons.** Deux valeurs qui s’afficheraient de la même façon (même texte,
+  aux espaces près ; même formule pour un objet SymPy) n’en font qu’une, et
+  une mauvaise réponse égale à une bonne est retirée : `a + b` vaut parfois
+  `a × b`. C’est le défaut ordinaire des distracteurs calculés, que le
+  compilateur refuserait sinon (§ 10.6).
+- **Réserve insuffisante.** Si, une fois les doublons retirés, il reste trop
+  peu de mauvaises réponses (ou de bonnes), `mcq` lève une erreur qui le dit ;
+  le compilateur la signale avec la graine. La réserve doit donc être plus
+  large que le besoin, ou sans doublon possible.
+- Le résultat s’utilise comme une liste écrite à la main :
+  `{% input_radio 'answer' choices=choices solution=correct %}`. L’ordre étant
+  déjà tiré au hasard, le mélange du compilateur ne change rien ; avec
+  `shuffle=0`, l’ordre de `mcq` est gardé.
+- On a écarté une syntaxe propre dans l’énoncé (choix écrits dans la balise) :
+  les choix calculés dépendent des valeurs de `question_setup`, et une fonction
+  Python les couple naturellement au même aléa.
 
 ## 11. Site du projet : compilateur hébergé, accueil, mode d’emploi
 

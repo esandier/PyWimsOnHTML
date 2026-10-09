@@ -481,6 +481,31 @@ json.dumps({
         }
       });
 
+      await test("mcq tire les choix d’un QCM avec la graine, sans doublon ni mauvaise réponse égale à la bonne", async () => {
+        // a + b vaut a × b pour a = b = 2 : la réserve contient alors un doublon de la bonne réponse.
+        const fields = {
+          question_setup: "from random import randint\nfrom pywims import mcq\na, b = randint(2, 3), randint(2, 3)\n" +
+            "choices, correct = mcq(correct=a * b, wrong=[a + b, a * b + 1, a * (b - 1), a * b - 1, (a + 1) * b], count=4)",
+          question_statement: "${{a}} \\times {{b}}$ ? {% input_radio 'r' choices=choices solution=correct %}"
+        };
+        const draws = await PyWimsCompiler.computeDraws(fields, { count: 20 });
+        for (const draw of draws) {
+          const [a, b] = [Number(draw.context.a), Number(draw.context.b)];
+          const texts = draw.choices.r;
+          if (texts.length !== 4 || new Set(texts).size !== 4 || texts[draw.solutions.r] !== String(a * b)) {
+            throw new Error(`Tirage inattendu : ${JSON.stringify(draw)}`);
+          }
+        }
+        const [multiple] = await PyWimsCompiler.computeDraws({
+          question_setup: "from pywims import mcq\nchoices, correct = mcq(correct=[2, 3, 5, 7], wrong=[4, 6, 8, 9, 10], count=5, correct_count=2)",
+          question_statement: "Premiers ? {% input_checkbox 'r' choices=choices solution=correct %}"
+        }, { count: 1 });
+        if (multiple.choices.r.length !== 5 || multiple.solutions.r.length !== 2 ||
+            !multiple.solutions.r.every(index => ["2", "3", "5", "7"].includes(multiple.choices.r[index]))) {
+          throw new Error(`Choix multiple inattendu : ${JSON.stringify(multiple)}`);
+        }
+      });
+
       await test("une valeur numérique enregistre sa valeur exacte et la solution affichée", async () => {
         const draw = async (setup, tag, check) => (await PyWimsCompiler.computeDraws({
           question_setup: setup, question_statement: tag, ...(check ? { question_check: check } : {})
@@ -541,6 +566,9 @@ json.dumps({
             ["La solution « s » du champ « r » : ce doit être un nombre réel, et non 'douze'."]],
           [{ question_setup: "s = 7 / 2", question_statement: "{% input_value 'r' solution=s form=integer %}" },
             ["La solution « s » du champ « r » : 7/2 n’est pas un entier"]],
+          [{ question_setup: "from pywims import mcq\nchoices, s = mcq(correct=1, wrong=[1, 2], count=3)",
+             question_statement: "{% input_radio 'r' choices=choices solution=s %}" },
+            ["graine 0", "mcq : il faut 2 mauvaises réponses distinctes (et différentes des bonnes), mais wrong n’en donne que 1"]],
           // Deux choix de même texte, aux espaces près : l’élève ne pourrait pas les distinguer.
           [{ question_setup: "c = ['x+1', '2', 'x + 1']\ns = 0", question_statement: "{% input_radio 'r' choices=c solution=s %}" },
             ["Graine 0", "Les choix 0 et 2 du champ « r » ont le même texte (« x + 1 »)"]],

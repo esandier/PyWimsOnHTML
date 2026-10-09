@@ -43,7 +43,7 @@ français, séparés par des virgules.
   tirage impossible à reproduire : le compilateur exécute chaque graine deux
   fois et refuse la question si les deux tirages diffèrent.
 - Les outils PyWims s’importent depuis le module `pywims` :
-  `from pywims import py_wims, is_number, math_expression, decimal_comma, ANY`.
+  `from pywims import py_wims, is_number, math_expression, decimal_comma, mcq, ANY`.
   - `math_expression(saisie)` analyse une expression écrite par un élève
     (`2x`, `x^2`, `sqrt(2)`, `sin x`, `ln(x)`), en n’admettant que les
     fonctions mathématiques usuelles, et renvoie une expression SymPy ou
@@ -56,6 +56,8 @@ français, séparés par des virgules.
     décimales, avec une virgule et sans zéros finaux : `decimal_comma(sqrt(2), 2)`
     donne `"1,41"`, `decimal_comma(1.5, 2)` donne `"1,5"`. Il sert à afficher
     un nombre dans un texte ; pour une réponse numérique, préfère `input_value`.
+  - `mcq(correct=…, wrong=[…], count=4)` tire les choix d’un QCM : voir
+    « Questions à choix ».
 - Toute chaîne Python qui contient une formule TeX s’écrit en **chaîne brute**,
   préfixée par `r` : `feedback = r'Simplifiez $\frac{6}{8}$ par $2$.'`, et non
   `'… $\frac{6}{8}$ …'`. Dans une chaîne ordinaire, Python transforme `\f`
@@ -160,6 +162,14 @@ français, séparés par des virgules.
 - `solution=` désigne l’indice du bon choix (`input_radio`) ou la liste des
   indices des bons choix (`input_checkbox`), éventuellement vide. Les indices
   commencent à 0, dans l’ordre de `choices`.
+- **Choix calculés** : quand la bonne réponse dépend des valeurs tirées, écris
+  une réserve d’erreurs types et laisse `mcq` choisir :
+  `choices, correct = mcq(correct=a * b, wrong=[a + b, a * b + 1, a * (b - 1), (a + 1) * b], count=4)`
+  renvoie 4 choix mélangés et l’indice du bon. Pour un choix multiple,
+  `mcq(correct=[…], wrong=[…], count=5, correct_count=2)` renvoie la liste des
+  indices des bons. `mcq` retire les doublons et les mauvaises réponses égales
+  à une bonne ; prévois donc une réserve plus large que nécessaire (sinon la
+  compilation échoue pour le tirage en cause).
 - Ne mélange pas les choix toi-même : le compilateur les mélange à chaque
   tirage. `fixed_last=n` garde les n derniers choix à la fin, dans ton ordre
   (pour « Aucune de ces réponses », par exemple). `shuffle=0` garde tous les

@@ -157,7 +157,7 @@ avec la solution, écrite comme l’énoncé), `question_check` (correction) et
 noms sont en anglais. Chaque balise de saisie désigne sa solution
 (`solution=variable`). La question importe elle-même ses bibliothèques, ainsi que
 les outils du module `pywims` (`py_wims`, `is_number`, `math_expression`,
-`decimal_comma`, `ANY`). `question_check` peut définir la variable `feedback`.
+`decimal_comma`, `mcq`, `ANY`). `question_check` peut définir la variable `feedback`.
 
 **Sans `question_check`, l’élève doit donner ce qu’affiche le bouton « Solution ».**
 Seuls les espaces, le signe moins typographique et le codage des accents sont
