@@ -1,4 +1,5 @@
-// Archive ZIP sans compression, pour distribuer plusieurs pages séparées.
+// Archives ZIP : écriture sans compression, pour distribuer plusieurs pages séparées, et lecture des
+// archives de question (.pwqa, .zip : un .pwq et ses images, SPECIFICATION.md, § 2.7).
 // Script classique (et non module ES), pour que le compilateur marche aussi ouvert depuis le
 // disque ; il ajoute ses fonctions à window.PyWimsCompiler, que les autres scripts complètent.
 (() => {
@@ -36,7 +37,8 @@
     const dosDate = ((date.getFullYear() - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate();
     for (const entry of entries) {
       const name = encoder.encode(entry.name);
-      const content = encoder.encode(entry.content);
+      // Texte (une page) ou octets (une image, dans les tests).
+      const content = typeof entry.content === "string" ? encoder.encode(entry.content) : entry.content;
       if (name.length > 0xffff || content.length > 0xffffffff) {
         throw new Error(`Le fichier « ${entry.name} » dépasse la taille maximale prise en charge.`);
       }
@@ -72,8 +74,68 @@
     });
   }
 
+  // Lit une archive ZIP : renvoie ses fichiers, [{ name, bytes }], sans les dossiers. Seules les
+  // méthodes « stockée » (0) et « deflate » (8) existent en pratique ; deflate est décompressé par
+  // le navigateur (DecompressionStream), sans bibliothèque. Solution écartée : une bibliothèque ZIP
+  // (JSZip, fflate), à intégrer au site pour une centaine de lignes. Le répertoire central fait
+  // foi : les tailles des en-têtes locaux manquent quand l’archive a été écrite en flux (bit 3).
+  async function readZip(buffer) {
+    const bytes = new Uint8Array(buffer);
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    // Fin du répertoire central : 22 octets, suivis d’un commentaire d’au plus 65 535 octets.
+    let end = -1;
+    for (let offset = bytes.length - 22; offset >= Math.max(0, bytes.length - 22 - 0xffff); offset -= 1) {
+      if (view.getUint32(offset, true) === 0x06054b50) {
+        end = offset;
+        break;
+      }
+    }
+    if (end < 0) {
+      throw new Error("ce n’est pas une archive ZIP lisible.");
+    }
+    const count = view.getUint16(end + 10, true);
+    let offset = view.getUint32(end + 16, true);
+    if (count === 0xffff || offset === 0xffffffff) {
+      throw new Error("les archives ZIP64 ne sont pas prises en charge.");
+    }
+    const decoder = new TextDecoder();
+    const files = [];
+    for (let index = 0; index < count; index += 1) {
+      if (offset + 46 > bytes.length || view.getUint32(offset, true) !== 0x02014b50) {
+        throw new Error("le répertoire de l’archive est abîmé.");
+      }
+      const flags = view.getUint16(offset + 8, true);
+      const method = view.getUint16(offset + 10, true);
+      const compressedSize = view.getUint32(offset + 20, true);
+      const nameLength = view.getUint16(offset + 28, true);
+      const extraLength = view.getUint16(offset + 30, true);
+      const commentLength = view.getUint16(offset + 32, true);
+      const localOffset = view.getUint32(offset + 42, true);
+      // Les noms sont lus en UTF-8 (bit 11, ou noms ASCII) : les rares archives en page de code
+      // DOS n’ont d’accents illisibles que dans des noms de fichiers.
+      const name = decoder.decode(bytes.subarray(offset + 46, offset + 46 + nameLength));
+      offset += 46 + nameLength + extraLength + commentLength;
+      if (name.endsWith("/")) continue;
+      if (flags & 1) {
+        throw new Error(`« ${name} » est chiffré dans l’archive.`);
+      }
+      const dataStart = localOffset + 30 + view.getUint16(localOffset + 26, true) + view.getUint16(localOffset + 28, true);
+      const data = bytes.subarray(dataStart, dataStart + compressedSize);
+      if (method === 0) {
+        files.push({ name, bytes: data });
+      } else if (method === 8) {
+        const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+        files.push({ name, bytes: new Uint8Array(await new Response(stream).arrayBuffer()) });
+      } else {
+        throw new Error(`« ${name} » est compressé par une méthode non prise en charge (${method}).`);
+      }
+    }
+    return files;
+  }
+
   window.PyWimsCompiler = Object.freeze({
     ...window.PyWimsCompiler,
-    createZip
+    createZip,
+    readZip
   });
 })();

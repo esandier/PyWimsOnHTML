@@ -4,7 +4,7 @@
 // page (SPECIFICATION.md, § 11.1) ; le dossier choisi par l’utilisateur ne contient que ses questions.
 (() => {
   // Fonctions des modules du compilateur (format.js, draws.js, assemble.js, zip.js).
-  const { assembleActivity, assembleQuestion, computeDraws, createQuestionFilename, createZip, fieldKindsLabel, neededResources, parseQuestionSource, previewPlaceholderDraw, resourcePaths, templateWarnings } = PyWimsCompiler;
+  const { archiveQuestionSource, assembleActivity, assembleQuestion, computeDraws, createQuestionFilename, createZip, fieldKindsLabel, isQuestionFile, neededResources, parseQuestionSource, previewPlaceholderDraw, readZip, resourcePaths, templateWarnings } = PyWimsCompiler;
 
   const chooseFolderButton = document.getElementById("choose-folder");
   const filePicker = document.getElementById("question-folder");
@@ -123,25 +123,42 @@
   const rememberFolder = handle => folderStore("readwrite", store => store.put(handle, "questions")).catch(() => {});
   const rememberedFolder = () => folderStore("readonly", store => store.get("questions")).catch(() => null);
 
-  // Fichiers .pwq d’un dossier et de ses sous-dossiers, avec leur chemin relatif et de quoi les
-  // relire. Les dossiers cachés (.git…) sont sautés : ils ne contiennent pas de questions et
-  // peuvent compter des milliers de fichiers.
-  async function pwqFilesOf(directory, prefix = "") {
+  // Texte d’un fichier de question : celui d’un .pwq, ou celui du .pwq d’une archive, ses images
+  // intégrées (SPECIFICATION.md, § 2.7) ; null pour un .zip qui ne contient pas de question.
+  async function questionText(file, path) {
+    if (/\.pwq$/i.test(path)) {
+      return file.text();
+    }
+    let files;
+    try {
+      files = await readZip(await file.arrayBuffer());
+    } catch (error) {
+      throw new Error(`${path} : ${error.message}`);
+    }
+    return archiveQuestionSource(files, path);
+  }
+
+  // Fichiers de question (.pwq, .pwqa, .zip) d’un dossier et de ses sous-dossiers, avec leur chemin
+  // relatif et de quoi les relire. Les dossiers cachés (.git…) sont sautés : ils ne contiennent
+  // pas de questions et peuvent compter des milliers de fichiers.
+  async function questionFilesOf(directory, prefix = "") {
     const found = [];
     for await (const [name, entry] of directory.entries()) {
       if (name.startsWith(".")) continue;
       if (entry.kind === "directory") {
-        found.push(...await pwqFilesOf(entry, `${prefix}${name}/`));
-      } else if (name.toLowerCase().endsWith(".pwq")) {
+        found.push(...await questionFilesOf(entry, `${prefix}${name}/`));
+      } else if (isQuestionFile(name)) {
         const path = `${prefix}${name}`;
         found.push({
           path,
           read: async () => {
+            let file;
             try {
-              return await (await entry.getFile()).text();
+              file = await entry.getFile();
             } catch {
               throw new Error(`« ${path} » est introuvable ou illisible : cliquez sur « Relire ».`);
             }
+            return questionText(file, path);
           }
         });
       }
@@ -165,20 +182,25 @@
     return file ? { read: () => file.text() } : null;
   }
 
-  // Fichiers .pwq choisis par le sélecteur classique (Firefox, Safari). Le navigateur les fige à
-  // l’ouverture : un fichier modifié ou supprimé depuis ne peut plus être lu.
-  function pwqFilesOfPicker(files) {
+  // Fichiers de question choisis par le sélecteur classique (Firefox, Safari). Le navigateur les
+  // fige à l’ouverture : un fichier modifié ou supprimé depuis ne peut plus être lu. Les dossiers
+  // cachés sont sautés, comme avec l’accès durable.
+  function questionFilesOfPicker(files) {
     return [...files]
       .map(file => ({ path: relativePath(file), file }))
-      .filter(({ path }) => path.toLowerCase().endsWith(".pwq"))
+      .filter(({ path }) => isQuestionFile(path) && !path.split("/").some(part => part.startsWith(".")))
       .map(({ path, file }) => ({
         path,
         read: async () => {
+          // Un fichier changé est illisible : l’erreur du navigateur (NotReadableError) est expliquée.
+          let bytes;
           try {
-            return await file.text();
+            bytes = await file.arrayBuffer();
           } catch {
             throw new Error(`« ${path} » a changé depuis l’ouverture du dossier : rouvrez le dossier, puis compilez de nouveau.`);
           }
+          const copy = new Blob([bytes]);
+          return questionText(copy, path);
         }
       }));
   }
@@ -218,7 +240,7 @@
     rememberFolder(handle);
     showMessage(projectStatus, "Lecture du dossier…");
     try {
-      await loadFolder(handle.name, await pwqFilesOf(handle), { keepSelection, brand: await brandOf(handle) });
+      await loadFolder(handle.name, await questionFilesOf(handle), { keepSelection, brand: await brandOf(handle) });
     } catch (error) {
       showMessage(projectStatus, `Le dossier n’a pas pu être lu : ${error.message}`, "error");
     }
@@ -369,6 +391,8 @@
       const question = { path, read };
       try {
         question.source = await read();
+        // Un .zip sans .pwq n’est pas une question : il n’est pas listé (§ 2.7).
+        if (question.source === null) continue;
         question.fields = parseQuestionSource(question.source, path);
       } catch (error) {
         question.error = error;
@@ -476,7 +500,7 @@
     updateSelectVisibleButton();
     listEmpty.hidden = matches.length > 0;
     if (!questions.length) {
-      listEmpty.textContent = "Aucun fichier .pwq dans le dossier choisi.";
+      listEmpty.textContent = "Aucune question (.pwq, .pwqa) dans le dossier choisi.";
     } else if (!matches.length) {
       listEmpty.textContent = "Aucun fichier ne correspond à cette recherche.";
     }
@@ -685,6 +709,9 @@
       // dernière version (Chrome, Edge), ou signalé (Firefox, Safari).
       for (const question of selected) {
         const source = await question.read();
+        if (source === null) {
+          throw new Error(`${question.path} : l’archive ne contient plus de fichier .pwq.`);
+        }
         if (source !== question.source) {
           question.fields = parseQuestionSource(source, question.path);
           question.source = source;
@@ -720,7 +747,7 @@
         const archiveEntries = [];
         for (const question of compiled) {
           archiveEntries.push({
-            name: question.path.replace(/\.pwq$/i, ".html"),
+            name: question.path.replace(/\.(pwq|pwqa|zip)$/i, ".html"),
             content: compileSheet([question], resources)
           });
         }
@@ -760,7 +787,7 @@
     } catch {
       // Stockage indisponible : le nom ne sera pas rappelé.
     }
-    loadFolder(name, pwqFilesOfPicker(filePicker.files), { brand: brandOfPicker(filePicker.files) });
+    loadFolder(name, questionFilesOfPicker(filePicker.files), { brand: brandOfPicker(filePicker.files) });
   });
   chooseFolderButton.addEventListener("click", () => {
     if (!canRememberFolder) {

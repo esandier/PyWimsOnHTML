@@ -37,7 +37,9 @@ qui fait référence ; le format des questions est détaillé dans
 Ouvre le compilateur en ligne, <https://esandier.github.io/PyWimsOnHTML/compiler/>,
 dans un navigateur récent, puis clique sur **Ouvrir un dossier de questions** et
 choisis le dossier où sont tes fichiers `.pwq` (ceux de ses sous-dossiers sont
-lus aussi). Le bouton devient **Dossier ouvert :** suivi du nom du dossier ; il
+lus aussi). Une question qui montre une figure est une archive `.pwqa` (ou
+`.zip`) : le `.pwq` et ses images, que l’énoncé affiche par `<img src="figure.png">` ;
+le compilateur intègre les images à la page. Le bouton devient **Dossier ouvert :** suivi du nom du dossier ; il
 permet d’en ouvrir un autre. Les questions restent sur l’ordinateur : rien n’est
 téléversé. Sur Chrome et Edge, le dossier est mémorisé : à la visite suivante,
 **Rouvrir « nom »** suffit, et **Relire** prend en compte les fichiers modifiés,

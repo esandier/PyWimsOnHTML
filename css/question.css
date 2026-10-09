@@ -221,6 +221,14 @@ body:not([data-scored]) .pw-help-score {
   font-size: 12pt;
 }
 
+/* Image de l’énoncé ou de l’explication (SPECIFICATION.md, § 2.7) : jamais plus large que sa zone,
+   pour que la page ne défile pas de côté sur téléphone ; ses proportions sont gardées. */
+.form-statement img,
+.pw-feedback img {
+  max-width: 100%;
+  height: auto;
+}
+
 .validation-statement {
   margin-top: 1em;
   padding: 0.3em;

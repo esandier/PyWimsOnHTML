@@ -380,6 +380,110 @@
       item.style.color = "red";
       results.append(item);
     }));
+
+    // Contrôle asynchrone, signalé comme les autres quand il se termine.
+    function asyncTest(name, callback) {
+      pendingTests.push(Promise.resolve().then(callback).then(() => {
+        const item = document.createElement("li");
+        item.textContent = `RÉUSSI : ${name}`;
+        results.append(item);
+      }, error => {
+        const item = document.createElement("li");
+        item.textContent = `ÉCHEC : ${name} — ${error.message}`;
+        item.style.color = "red";
+        results.append(item);
+      }));
+    }
+
+    // Archive de question (SPECIFICATION.md, § 2.7) : un .pwq et ses images.
+    const imageQuestion = (statement, explanation = "") => `%\n% question_title\n%\nFigure\n%\n% question_keywords\n%\nimage\n%\n% question_layout\n%\nSTD\n%\n% question_setup\n%\nx = 1\n%\n% question_statement\n%\n${statement} {% input_text 'r' solution=x %}\n%${explanation ? `\n% question_solution_explanation\n%\n${explanation}\n%` : ""}`;
+    const pixel = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 1, 2, 3]);
+    const readArchive = async (entries, path = "figure.pwqa") => PyWimsCompiler.archiveQuestionSource(
+      await PyWimsCompiler.readZip(await PyWimsCompiler.createZip(entries).arrayBuffer()), path);
+    const expectRejection = async (promise, fragment) => {
+      try {
+        await promise;
+      } catch (error) {
+        if (!error.message.includes(fragment)) throw new Error(`Message inattendu : ${error.message}`);
+        return;
+      }
+      throw new Error(`Aucune erreur, alors que « ${fragment} » était attendu.`);
+    };
+    // Archive compressée (deflate), comme celles des outils du système : en-têtes écrits ici, car
+    // createZip ne compresse pas. Le CRC est nul : la lecture ne le vérifie pas.
+    async function deflatedZip(name, text) {
+      const encoder = new TextEncoder();
+      const nameBytes = encoder.encode(name);
+      const raw = encoder.encode(text);
+      const stream = new Blob([raw]).stream().pipeThrough(new CompressionStream("deflate-raw"));
+      const data = new Uint8Array(await new Response(stream).arrayBuffer());
+      const local = new DataView(new ArrayBuffer(30));
+      local.setUint32(0, 0x04034b50, true);
+      local.setUint16(8, 8, true);
+      local.setUint32(18, data.length, true);
+      local.setUint32(22, raw.length, true);
+      local.setUint16(26, nameBytes.length, true);
+      const central = new DataView(new ArrayBuffer(46));
+      central.setUint32(0, 0x02014b50, true);
+      central.setUint16(10, 8, true);
+      central.setUint32(20, data.length, true);
+      central.setUint32(24, raw.length, true);
+      central.setUint16(28, nameBytes.length, true);
+      const end = new DataView(new ArrayBuffer(22));
+      end.setUint32(0, 0x06054b50, true);
+      end.setUint16(8, 1, true);
+      end.setUint16(10, 1, true);
+      end.setUint32(12, 46 + nameBytes.length, true);
+      end.setUint32(16, 30 + nameBytes.length + data.length, true);
+      return new Blob([local, nameBytes, data, central, nameBytes, end]).arrayBuffer();
+    }
+
+    asyncTest("une archive .pwqa intègre ses images à la question, même rangées dans un dossier", async () => {
+      const statement = `<img src="figure.png" alt="Figure"> <img src='./mon%20dessin.svg'> <img src="https://exemple.fr/a.png">`;
+      for (const prefix of ["", "triangle/"]) {
+        const text = await readArchive([
+          { name: `${prefix}question.pwq`, content: imageQuestion(statement) },
+          { name: `${prefix}figure.png`, content: pixel },
+          { name: `${prefix}mon dessin.svg`, content: "<svg xmlns='http://www.w3.org/2000/svg'/>" },
+          { name: "__MACOSX/._figure.png", content: "x" }
+        ].filter(entry => prefix || !entry.name.startsWith("__MACOSX")));
+        const fields = PyWimsCompiler.parseQuestionSource(text, "figure.pwqa");
+        if (!fields.question_statement.includes(`src="data:image/png;base64,${btoa(String.fromCharCode(...pixel))}"`) ||
+            !fields.question_statement.includes("src='data:image/svg+xml;base64,") ||
+            !fields.question_statement.includes('src="https://exemple.fr/a.png"')) {
+          throw new Error(`Images mal intégrées (${prefix || "racine"}) : ${fields.question_statement}`);
+        }
+      }
+    });
+    asyncTest("une archive compressée (deflate) se lit avec le navigateur", async () => {
+      const files = await PyWimsCompiler.readZip(await deflatedZip("q.pwq", imageQuestion("Sans image.")));
+      if (files.length !== 1 || !PyWimsCompiler.archiveQuestionSource(files, "q.zip").includes("Sans image.")) {
+        throw new Error(`Lecture inattendue : ${JSON.stringify(files.map(file => file.name))}`);
+      }
+    });
+    asyncTest("une archive mal faite ou une image absente sont expliquées ; un .zip sans .pwq est ignoré", async () => {
+      if (await readArchive([{ name: "notes.txt", content: "x" }], "divers.zip") !== null) {
+        throw new Error("Un .zip sans .pwq doit être ignoré.");
+      }
+      await expectRejection(readArchive([{ name: "notes.txt", content: "x" }]), "ne contient pas de fichier .pwq");
+      await expectRejection(readArchive([{ name: "a.pwq", content: "" }, { name: "b.pwq", content: "" }]), "plusieurs fichiers .pwq");
+      await expectRejection(readArchive([{ name: "a.pwq", content: "" }, { name: "images/f.png", content: pixel }]),
+        "« images/f.png » est dans un sous-dossier");
+      await expectRejection(PyWimsCompiler.readZip(new TextEncoder().encode("pas une archive").buffer), "pas une archive ZIP");
+      const archived = await readArchive([{ name: "q.pwq", content: imageQuestion("<img src=\"absente.png\">") }]);
+      await expectRejection(Promise.resolve().then(() => PyWimsCompiler.parseQuestionSource(archived, "q.pwqa")),
+        "l’image « absente.png » n’est pas dans l’archive");
+      await expectRejection(Promise.resolve().then(() => PyWimsCompiler.parseQuestionSource(
+        imageQuestion("Voir.", "<img src=\"f.png\">"), "q.pwq")), "mettez le .pwq et ses images dans une archive .pwqa");
+    });
+    test("une image intégrée de plus de 300 Ko donne un avertissement", () => {
+      const big = `<img src="data:image/png;base64,${"A".repeat(420 * 1024)}">`;
+      const warnings = PyWimsCompiler.templateWarnings({ question_statement: big });
+      if (warnings.length !== 1 || !warnings[0].includes("315 Ko") ||
+          PyWimsCompiler.templateWarnings({ question_statement: '<img src="data:image/png;base64,AAAA">' }).length) {
+        throw new Error(`Avertissements inattendus : ${JSON.stringify(warnings)}`);
+      }
+    });
     test("rejette les champs en double", () => {
       let rejected = false;
       try {

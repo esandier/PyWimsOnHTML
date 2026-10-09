@@ -297,6 +297,43 @@ sans `question_check` : la comparaison y est sans ambiguïté.
   (ou faite d’espaces) est refusée : l’élève ne pourrait pas la saisir, car
   « Vérifier » reste inactif tant qu’aucun champ n’est rempli.
 
+### 2.7 Images
+
+Une question qui montre une figure est une **archive** : un fichier `.pwqa`
+(« PyWims question archive »), ou `.zip`, qui contient exactement un fichier
+`.pwq` et ses images, à la racine de l’archive. Le fichier compilé reste une
+page unique et autonome : le compilateur y intègre chaque image.
+
+- **Écriture.** Dans l’énoncé ou l’explication, `<img src="figure.png"
+  alt="…">` désigne une image de l’archive par son nom. Les images de
+  `question_setup` (graphiques calculés) sont un autre chantier (§ 12).
+- **Intégration.** À la lecture de l’archive, chaque `src` qui nomme une image
+  de l’archive est remplacé par l’image elle-même (adresse `data:`), dans le
+  texte du `.pwq`. Le reste du compilateur (aperçu, tirages, assemblage) ne
+  voit qu’un `.pwq` ordinaire, et « Relire » voit aussi une image modifiée.
+- **Affichage.** Une image n’est jamais plus large que l’énoncé : sur
+  téléphone, elle est réduite, sans défilement horizontal.
+- **Formats** : PNG, JPEG, GIF, SVG, WebP, d’après l’extension. Une image SVG
+  est affichée par `<img>`, qui n’exécute aucun script.
+- **Liste.** Une archive est listée comme une question, sous le titre de son
+  `.pwq` ; son chemin est celui de l’archive. Un `.zip` sans `.pwq` n’est pas
+  une question : il est ignoré sans message (un dossier de questions peut
+  contenir d’autres archives). Un `.pwqa` sans `.pwq`, ou une archive à
+  plusieurs `.pwq`, est un fichier illisible, avec son explication.
+- **Dossier dans l’archive.** Compresser un dossier (plutôt que ses fichiers)
+  met tout dans un dossier de l’archive : s’il est seul, il est ignoré. Les
+  fichiers ajoutés par macOS (`__MACOSX/`, `.DS_Store`) sont ignorés.
+- **Contrôles.** Une image `src` relative absente de l’archive est une erreur,
+  qui nomme l’image ; dans un `.pwq` seul, l’erreur rappelle de faire une
+  archive. Une adresse complète (`https://…`, `data:`) est laissée telle
+  quelle : c’est le choix de l’auteur, et la page dépend alors du réseau. Une
+  image de plus de 300 Ko donne un **avertissement** : chaque image alourdit
+  la page de toute sa taille (un tiers de plus en `data:`), et une photo se
+  réduit sans perte visible.
+- **Décompression** : par le navigateur (`DecompressionStream`), sans
+  bibliothèque ; les archives compressées (« deflate ») et non compressées sont
+  lues. Une archive chiffrée ou au format ZIP64 est refusée.
+
 ## 3. Compilation
 
 - Le compilateur charge Pyodide (version **0.27.7**, la même que le fichier
@@ -850,7 +887,8 @@ liste par titre (§ 11.3) sont déjà en place dans le compilateur local.
 ### 11.2 Dossier des questions
 
 - Un seul dossier de questions à la fois, n’importe où sur le disque. Les
-  fichiers `.pwq` de ses sous-dossiers sont lus aussi.
+  fichiers `.pwq`, et les archives `.pwqa` et `.zip` (§ 2.7), de ses
+  sous-dossiers sont lus aussi.
 - **Chrome et Edge** : le dossier est choisi une fois et mémorisé (accès
   conservé par le navigateur, dans IndexedDB). À la visite suivante, un bouton
   « Rouvrir « nom du dossier » » suffit : le navigateur demande seulement de

@@ -7,10 +7,12 @@
 # Prérequis : pip install playwright (voir edge.py).
 # Usage : python compiler_e2e.py URL_DU_COMPILATEUR [CHEMIN_D’EDGE]
 # Code de sortie : 0 si tout est bon, 1 sinon.
+import base64
 import os
 import shutil
 import sys
 import tempfile
+import zipfile
 
 from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import sync_playwright
@@ -148,6 +150,72 @@ def remembered_folder(page, files):
     page.click("#choose-folder")
     page.wait_for_function("document.querySelectorAll('#question-list li:not(.question-group)').length === 2")
     print("visite suivante : « Rouvrir « questions-essai » » rouvre le dossier")
+
+
+# Question avec image (SPECIFICATION.md, § 2.7) : une archive .pwqa compressée par zipfile, comme par les
+# outils du système, dont le .pwq et l’image sont rangés dans un dossier ; à côté, un .zip sans .pwq,
+# qui ne doit pas être listé.
+ARCHIVE_QUESTION = """%
+% question_title
+%
+Aire d’un carré
+%
+% question_keywords
+%
+image, aire
+%
+% question_layout
+%
+STD
+%
+% question_setup
+%
+side = 3
+area = side ** 2
+%
+% question_statement
+%
+<img src="figure.png" alt="Un carré"> Quelle est l’aire d’un carré de côté {{side}} ?
+{% input_text 'answer' solution=area %}
+%
+"""
+# Image PNG d’un pixel.
+PIXEL = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==")
+
+
+def archive_question(browser, url):
+    folder = tempfile.mkdtemp(prefix="pywims-archive-")
+    try:
+        with zipfile.ZipFile(os.path.join(folder, "carré.pwqa"), "w", zipfile.ZIP_DEFLATED) as archive:
+            archive.writestr("carré/question.pwq", ARCHIVE_QUESTION)
+            archive.writestr("carré/figure.png", PIXEL)
+        with zipfile.ZipFile(os.path.join(folder, "divers.zip"), "w", zipfile.ZIP_DEFLATED) as archive:
+            archive.writestr("notes.txt", "pas une question")
+        page = browser.new_page(accept_downloads=True)
+        page.goto(url)
+        page.wait_for_function("!!window.PyWimsCompiler")
+        page.set_input_files("#question-folder", folder)
+        page.wait_for_function("document.querySelectorAll('#question-list li:not(.question-group)').length > 0")
+        titles = page.eval_on_selector_all("#question-list li:not(.question-group)", TITLES)
+        if titles != ["Aire d’un carré"]:
+            raise AssertionError(f"liste inattendue pour l’archive : {titles}")
+        # L’image est intégrée : l’aperçu l’affiche, et le fichier compilé la contient.
+        page.click(".question-preview-button >> nth=0")
+        image = page.frame_locator("#preview-frame").locator("img[alt='Un carré']")
+        image.wait_for(timeout=30_000)
+        if not image.evaluate("img => img.src.startsWith('data:image/png;base64,') && img.complete && img.naturalWidth === 1"):
+            raise AssertionError("L’image de l’archive n’est pas affichée dans l’aperçu.")
+        page.click(".question-selection >> nth=0")
+        with page.expect_download(timeout=180_000) as waiting:
+            page.click("#compile-question")
+        html = open(waiting.value.path(), encoding="utf-8").read()
+        # L’énoncé est intégré en texte échappé (src=&quot;data:…) : on cherche l’image elle-même.
+        if f"data:image/png;base64,{base64.b64encode(PIXEL).decode()}" not in html:
+            raise AssertionError("Le fichier compilé ne contient pas l’image de l’archive.")
+        page.close()
+        print("archive .pwqa : listée, image affichée et intégrée ; .zip sans .pwq ignoré")
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
 
 
 # Firefox et Safari, imités dans Edge sans showDirectoryPicker : sélecteur classique, nom du dernier
@@ -291,6 +359,7 @@ def main():
                     raise AssertionError("Une question sans « question_check » intègre le module ou le script du Worker.")
                 print(f"question sans « question_check » : ni module ni Worker intégrés ({len(without_python) // 1024} Ko)")
 
+                archive_question(browser, url)
                 remembered_folder(page, {name: open(os.path.join(folder, name), encoding="utf-8").read()
                                         for name in ("Decim3.pwq", "pgcd.pwq")})
                 # Erreurs JavaScript de la page principale seulement : la page sans mémoire a les siennes.

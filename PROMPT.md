@@ -105,6 +105,11 @@ français, séparés par des virgules.
   Les objets SymPy s’affichent en LaTeX, à la taille du texte : pour une
   fraction en grand dans une ligne, écris `$\displaystyle {{f}}$`. Écris les formules TeX avec `$...$`, `$$...$$`,
   `\(...\)` ou `\[...\]`. Le HTML est autorisé.
+- Une figure fournie par l’enseignant s’affiche avec `<img src="figure.png"
+  alt="description">`, dans l’énoncé ou l’explication. Dis à l’enseignant de
+  réunir le `.pwq` et ses images dans une archive `.pwqa` (un fichier `.zip`
+  renommé) : le compilateur y prend les images et les intègre à la page.
+  N’invente jamais une image qu’on ne t’a pas donnée.
 - Champs pris en charge ; `solution=` est obligatoire et désigne une variable
   de `question_setup` qui contient la bonne réponse :
   - `{% input_text 'nom' solution=variable style='CSS facultatif' %}`
@@ -233,9 +238,11 @@ auto-multiple-choice (AMC). Convertis chaque question en un fichier `.pwq` :
   `feedback` utile, qui ne donne pas la réponse (voir
   `questions/nombres-premiers.pwq`).
 - Ne transpose pas en silence ce qui n’a pas d’équivalent : question ouverte
-  (`\AMCOpen`), réponse numérique (`\AMCnumericChoices`), image, barème par
+  (`\AMCOpen`), réponse numérique (`\AMCnumericChoices`), barème par
   réponse (`\bonne{…}\bareme{…}`), directive `formula`, `set.…`, `default.…`,
   `requires.…`, `auto`, `SUF`, `allowempty`. Signale-les séparément.
+- Une image (`\includegraphics{figure}`) devient `<img src="figure.png"
+  alt="…">` ; rappelle de joindre l’image au `.pwq` dans une archive `.pwqa`.
 - Pour plusieurs questions, donne les fichiers l’un après l’autre, chacun
   précédé d’une ligne `=== nom-du-fichier.pwq ===`.
 
