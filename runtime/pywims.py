@@ -1,4 +1,4 @@
-"""Outils PyWims : from pywims import py_wims, is_nombre, math_expression, decimal_comma, ANY"""
+"""Outils PyWims : from pywims import py_wims, is_number, math_expression, decimal_comma, ANY"""
 # Module installé dans Pyodide par runtime/python.js, à la compilation comme dans le fichier généré,
 # qui l’intègre tel quel : les tirages calculés et rejoués utilisent ainsi le même code
 # (SPECIFICATION.md, § 3). Les fonctions dont le nom commence par « _ » servent au compilateur et à
@@ -7,25 +7,25 @@
 import re as _re
 import sys as _sys
 
-__all__ = ["py_wims", "is_nombre", "math_expression", "decimal_comma", "ANY"]
+__all__ = ["py_wims", "is_number", "math_expression", "decimal_comma", "ANY"]
 
-_libre = None
+_any_value = None
 
 
 def __getattr__(name):
     """Crée ANY à la demande : SymPy n’est importé que par les questions qui l’utilisent."""
-    global _libre
+    global _any_value
     if name == "ANY":
-        if _libre is None:
+        if _any_value is None:
             import sympy
             # Symbole unique, utilisable dans une Matrix, qui marque une valeur de solution libre.
-            _libre = sympy.Dummy("ANY")
-        return _libre
+            _any_value = sympy.Dummy("ANY")
+        return _any_value
     raise AttributeError(f"module 'pywims' has no attribute {name!r}")
 
 
-def _is_libre(value):
-    return _libre is not None and value is _libre
+def _is_any(value):
+    return _any_value is not None and value is _any_value
 
 
 def _plain_decimal(value):
@@ -54,7 +54,7 @@ def _float_text(value):
 
 def _solution_text(value):
     """Solution d’un champ texte, écrite comme un élève la saisirait ; None pour une valeur libre."""
-    if _is_libre(value):
+    if _is_any(value):
         return None
     if isinstance(value, float):
         return _float_text(value)
@@ -68,7 +68,7 @@ def _solution_text(value):
 
 def _solution_latex(value):
     """Solution d’un champ MathLive, en LaTeX ; None pour une valeur libre."""
-    if _is_libre(value):
+    if _is_any(value):
         return None
     sympy = _sys.modules.get("sympy")
     if sympy is not None:
@@ -285,7 +285,7 @@ def decimal_comma(value, digits):
     return _plain_decimal(rounded).replace(".", ",")
 
 
-def is_nombre(value):
+def is_number(value):
     """Indique si la valeur est un nombre Python ou SymPy."""
     import sympy
     return isinstance(value, (int, float, sympy.Number, sympy.NumberSymbol))

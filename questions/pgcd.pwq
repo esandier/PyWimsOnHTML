@@ -15,7 +15,7 @@ STD
 %
 from random import randint
 from sympy import *
-from pywims import py_wims, is_nombre
+from pywims import py_wims, is_number
 
 # Tire deux entiers et calcule leur plus grand diviseur commun.
 x = randint(26,145)
@@ -44,11 +44,11 @@ Algorithme d’Euclide : {{euclid_steps}}. Le dernier reste non nul est ${{resul
 %
 # Convertit la saisie, puis explique l’erreur sans donner la réponse.
 value = py_wims(answer)
-ok_answer['answer'] = is_nombre(value) and value == result
+ok_answer['answer'] = is_number(value) and value == result
 
 if ok_answer['answer']:
     feedback = 'Bravo, c’est exact !'
-elif not is_nombre(value) or not value.is_Integer or value <= 0:
+elif not is_number(value) or not value.is_Integer or value <= 0:
     feedback = 'Saisissez un nombre entier positif.'
 elif x % value == 0 and y % value == 0:
     feedback = '{} divise bien {} et {}, mais ce n’est pas le plus grand diviseur commun.'.format(value, x, y)

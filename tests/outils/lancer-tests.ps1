@@ -1,10 +1,10 @@
 # Lance les tests du projet : page des tests rapides, cycle de vie avec un Python simulé, puis tests
 # Python avec le vrai Pyodide, qui comprennent le balayage des tirages de chaque question.
 # Prérequis : Edge, Python avec le paquet « playwright » (pilotage d’Edge, voir navigateur.py).
-# Usage : .\tests\outils\lancer-tests.ps1 [-SansPyodide] [-Draws 200]
+# Usage : .\tests\outils\lancer-tests.ps1 [-SkipPyodide] [-Draws 200]
 #   -Draws : tirages balayés par question (20 par défaut ; 200 pour un balayage complet, plus lent).
 param(
-  [switch]$SansPyodide,
+  [switch]$SkipPyodide,
   [int]$Draws = 20
 )
 
@@ -23,7 +23,7 @@ try {
   "== Cycle de vie d’une question, Python simulé (tests/runtime-tests.html)"
   python -I -X utf8 "$PSScriptRoot\pilote_edge.py" "http://127.0.0.1:$port/tests/runtime-tests.html"
   if ($LASTEXITCODE) { $failed = $true }
-  if (-not $SansPyodide) {
+  if (-not $SkipPyodide) {
     "== Tests Python avec Pyodide, balayage de $Draws tirages par question (tests/python-tests.html)"
     python -I -X utf8 "$PSScriptRoot\pilote_edge.py" "http://127.0.0.1:$port/tests/python-tests.html?draws=$Draws"
     if ($LASTEXITCODE) { $failed = $true }

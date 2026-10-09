@@ -42,9 +42,9 @@ et une activité en réunit plusieurs.
 
 **Noms en anglais.** Tous les noms que l’auteur écrit sont en anglais, comme
 Python et HTML : champs (préfixés par `question_`), outils de `pywims`
-(`ANY`, `decimal_comma`), attributs des balises (`scoring`), et noms des
+(`ANY`, `decimal_comma`, `is_number`), attributs des balises (`scoring`), et noms des
 exemples. Les anciens noms de PyWims (`avant`, `enonce`, `apres`, `tirages`,
-`bareme`, `LIBRE`, `decimal_fr`, `explication_solution`) sont refusés comme
+`bareme`, `LIBRE`, `decimal_fr`, `is_nombre`, `explication_solution`) sont refusés comme
 tout nom inconnu, sans compatibilité : un mélange des deux langues serait
 pire qu’une conversion, faite une fois.
 
@@ -69,7 +69,7 @@ refusé.
 - Chaque question importe explicitement ce qu’elle utilise :
   `import sympy as sp`, `from sympy import …`, `import random`, etc.
 - Les outils PyWims viennent d’un module dédié :
-  `from pywims import py_wims, is_nombre, math_expression, decimal_comma`.
+  `from pywims import py_wims, is_number, math_expression, decimal_comma`.
   Ses fonctions internes ne sont pas visibles par l’auteur, qui ne peut donc
   pas les perturber (par exemple en écrivant `E = 3`).
 - `question_check` partage l’espace de noms de `question_setup` et y trouve les saisies de

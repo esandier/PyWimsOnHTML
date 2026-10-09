@@ -10,14 +10,14 @@ import os
 import pathlib
 
 
-def lancer_edge(playwright, chemin=None):
+def launch_edge(playwright, path=None):
     """Edge sans interface ; chemin : exécutable d’Edge, si Playwright ne le trouve pas seul."""
-    options = {"executable_path": chemin} if chemin else {"channel": "msedge"}
+    options = {"executable_path": path} if path else {"channel": "msedge"}
     return playwright.chromium.launch(headless=True, **options)
 
 
-def adresse(cible):
+def page_address(target):
     """URL d’une page : une adresse telle quelle, ou un fichier local (ouvert en file://)."""
-    if os.path.exists(cible):
-        return pathlib.Path(cible).resolve().as_uri()
-    return cible
+    if os.path.exists(target):
+        return pathlib.Path(target).resolve().as_uri()
+    return target

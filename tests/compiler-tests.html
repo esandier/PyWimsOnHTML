@@ -260,10 +260,10 @@
         }
       });
       test("seule une question qui a un « question_check » est marquée comme ayant besoin de Python", () => {
-        const withoutApres = sheetQuestion("Sans", "Un {% input_text 'r' solution=a %}");
-        delete withoutApres.fields.question_check;
+        const withoutCheck = sheetQuestion("Sans", "Un {% input_text 'r' solution=a %}");
+        delete withoutCheck.fields.question_check;
         const page = new DOMParser().parseFromString(PyWimsCompiler.assembleActivity("Mixte", [
-          sheetQuestion("Avec", "Un {% input_text 'r' solution=a %}"), withoutApres
+          sheetQuestion("Avec", "Un {% input_text 'r' solution=a %}"), withoutCheck
         ], sheetResources(layout)), "text/html");
         const marks = [...page.querySelectorAll(".pw-question")].map(section => section.dataset.python);
         if (marks.join() !== "true,false" ||
@@ -301,10 +301,10 @@
         // Les chaînes sont coupées : écrites d’un seul tenant, elles fermeraient le script de cette page.
         const close = element => "</" + element;
         for (const [key, code, fragment] of [
-          ["sheet", `const fin = '${close("SCRIPT")}>';`, "@@SHEET@@"],
-          ["question", `const fin = '${close("script")}>';`, "@@QUESTION@@"],
-          ["fields", `const fin = '${close("script")}>';`, "@@FIELDS@@"],
-          ["pythonWorker", `const fin = '${close("script")}>';`, "@@PYTHON_WORKER@@"],
+          ["sheet", `const end = '${close("SCRIPT")}>';`, "@@SHEET@@"],
+          ["question", `const end = '${close("script")}>';`, "@@QUESTION@@"],
+          ["fields", `const end = '${close("script")}>';`, "@@FIELDS@@"],
+          ["pythonWorker", `const end = '${close("script")}>';`, "@@PYTHON_WORKER@@"],
           ["python", `x = '${close("script")}'`, "@@PYTHON_RUNTIME@@"],
           ["questionCss", `/* ${close("style")}> */`, "@@CSS@@"]
         ]) {
@@ -321,7 +321,7 @@
         }
         // Une chaîne coupée, elle, est acceptée.
         PyWimsCompiler.assembleQuestion(sheetQuestion("A", "x").fields, sheetQuestion("A", "x").draws,
-          { ...sheetResources(layout), sheet: "const fin = '</' + 'script>';" });
+          { ...sheetResources(layout), sheet: "const end = '</' + 'script>';" });
       });
     }
     test("l’archive des pages séparées est un fichier ZIP", () => {

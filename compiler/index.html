@@ -46,10 +46,10 @@
        boutons du site à droite (SPECIFICATION.md, § 11.6). Ses deux parties deviennent des éléments
        de la barre, pour que les messages se glissent entre elles. */
     h1 { margin: 0; font-size: inherit; }
-    .titlebar .bandeau { display: contents; }
-    .titlebar .bandeau-titre { flex: 0 1 auto; }
+    .titlebar .banner { display: contents; }
+    .titlebar .banner-title { flex: 0 1 auto; }
     .titlebar .message-stack { order: 1; }
-    .titlebar .bandeau-nav { flex: 0 0 auto; order: 2; }
+    .titlebar .banner-nav { flex: 0 0 auto; order: 2; }
     h2, h3 { margin-top: 0; }
     button, input { font: inherit; }
 
@@ -376,7 +376,7 @@
       body { gap: 0.5rem; padding: 0.5rem; }
       .titlebar { min-height: 3rem; gap: 0.5rem; }
       /* La devise cède sa place aux messages : sur l’accueil, elle reste lisible. */
-      .titlebar .devise { display: none; }
+      .titlebar .tagline { display: none; }
       /* Deux rangées : « PWOH » et les messages, puis les quatre boutons sur toute la largeur. La barre
          reste collée en haut : elle doit rester basse. Côte à côte, les messages laissaient aux
          boutons à peine la moitié de la largeur, et ils passaient sur deux lignes. */
@@ -387,8 +387,8 @@
         gap: 0.2rem 0.75rem;
       }
       .titlebar .message-stack { grid-column: 2; grid-row: 1; }
-      .titlebar .bandeau-nav { grid-column: 1 / -1; grid-row: 2; gap: 0.25rem; }
-      .titlebar .bandeau-nav a { padding: 0.15rem 0.4rem; font-size: 0.78rem; }
+      .titlebar .banner-nav { grid-column: 1 / -1; grid-row: 2; gap: 0.25rem; }
+      .titlebar .banner-nav a { padding: 0.15rem 0.4rem; font-size: 0.78rem; }
       .message-stack { height: 2.5rem; }
       .header-message { font-size: 0.72rem; }
       .folder-row { gap: 0.5rem; }
@@ -426,15 +426,15 @@
 </head>
 <body>
   <!-- Barre de titre et deux emplacements de notification transitoires. -->
-  <header class="titlebar bandeau-pleine-largeur">
+  <header class="titlebar banner-full-width">
     <!-- Bandeau commun au site (SPECIFICATION.md, § 11.6), les messages entre ses deux parties ; sur
          téléphone, sans la devise. -->
-    <div class="bandeau">
-      <div class="bandeau-titre">
-        <h1><a class="marque" href="../">PWOH</a></h1>
-        <span class="devise">questions à données aléatoires dans une page HTML</span>
+    <div class="banner">
+      <div class="banner-title">
+        <h1><a class="wordmark" href="../">PWOH</a></h1>
+        <span class="tagline">questions à données aléatoires dans une page HTML</span>
       </div>
-      <nav class="bandeau-nav" aria-label="Site">
+      <nav class="banner-nav" aria-label="Site">
         <a href="../">Accueil</a>
         <a href="../guide/">Créer</a>
         <a href="./" aria-current="page">Compilateur</a>

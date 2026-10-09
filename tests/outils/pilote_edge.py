@@ -5,12 +5,12 @@
 import os
 import sys
 
-from playwright.sync_api import TimeoutError as DelaiDepasse
+from playwright.sync_api import TimeoutError as PlaywrightTimeout
 from playwright.sync_api import sync_playwright
 
 # python -I (lancer-tests.ps1) n’ajoute pas le dossier du script au chemin d’import.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from navigateur import lancer_edge  # noqa: E402
+from navigateur import launch_edge  # noqa: E402
 
 TIMEOUT_SECONDS = 600
 
@@ -18,14 +18,14 @@ TIMEOUT_SECONDS = 600
 def main():
     url = sys.argv[1]
     with sync_playwright() as playwright:
-        browser = lancer_edge(playwright, sys.argv[2] if len(sys.argv) > 2 else None)
+        browser = launch_edge(playwright, sys.argv[2] if len(sys.argv) > 2 else None)
         try:
             page = browser.new_page()
             page.goto(url)
             try:
                 page.wait_for_function("document.body && document.body.dataset.done === 'true'",
                                        timeout=TIMEOUT_SECONDS * 1000, polling=1000)
-            except DelaiDepasse:
+            except PlaywrightTimeout:
                 print("Délai dépassé : les tests ne se sont pas terminés.")
                 return 1
             results = page.eval_on_selector_all("#results li", "items => items.map(li => li.textContent)")

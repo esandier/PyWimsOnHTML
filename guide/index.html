@@ -10,12 +10,12 @@
   <link rel="stylesheet" href="../css/site.css">
 </head>
 <body>
-  <header class="bandeau bandeau-pleine-largeur">
-    <div class="bandeau-titre">
-      <a class="marque" href="../">PWOH</a>
-      <span class="devise">questions à données aléatoires dans une page HTML</span>
+  <header class="banner banner-full-width">
+    <div class="banner-title">
+      <a class="wordmark" href="../">PWOH</a>
+      <span class="tagline">questions à données aléatoires dans une page HTML</span>
     </div>
-    <nav class="bandeau-nav" aria-label="Site">
+    <nav class="banner-nav" aria-label="Site">
       <a href="../">Accueil</a>
       <a href="./" aria-current="page">Créer</a>
       <a href="../compiler/">Compilateur</a>
@@ -25,20 +25,20 @@
 
   <main>
     <h1>Créer une question</h1>
-    <p class="chapeau">Une question est un petit fichier texte, d’extension <code>.pwq</code>. On l’écrit avec
+    <p class="lead">Une question est un petit fichier texte, d’extension <code>.pwq</code>. On l’écrit avec
       l’aide d’une IA, ou à la main à partir d’un modèle, puis le compilateur en fait une page HTML à
       donner aux élèves.</p>
 
-    <ol class="sommaire">
-      <li><a href="#avec-ia">Avec une IA</a></li>
-      <li><a href="#sans-ia">Sans IA : le format <code>.pwq</code></a></li>
+    <ol class="toc">
+      <li><a href="#with-ai">Avec une IA</a></li>
+      <li><a href="#without-ai">Sans IA : le format <code>.pwq</code></a></li>
       <li><a href="#structure">Structure d’un fichier</a></li>
-      <li><a href="#champs">Les champs de réponse</a></li>
-      <li><a href="#publier">Compiler et publier</a></li>
-      <li><a href="#bon-a-savoir">Bon à savoir</a></li>
+      <li><a href="#fields">Les champs de réponse</a></li>
+      <li><a href="#publish">Compiler et publier</a></li>
+      <li><a href="#good-to-know">Bon à savoir</a></li>
     </ol>
 
-    <h2 id="avec-ia">1. Avec une IA</h2>
+    <h2 id="with-ai">1. Avec une IA</h2>
     <p>Le prompt explique le format à l’assistant (ChatGPT, Claude, Le Chat…) : il écrit alors un fichier
       complet et correct.</p>
     <ol>
@@ -50,42 +50,42 @@
         signale une erreur s’il y en a une.</li>
     </ol>
     <div class="actions">
-      <button class="bouton" id="copier-prompt" type="button">Copier le prompt</button>
-      <button class="bouton secondaire" type="button" data-voir="../PROMPT.md" aria-controls="cadre-prompt" aria-expanded="false">Voir le prompt</button>
-      <a class="bouton secondaire" href="../PROMPT.md" download="PROMPT.md">Télécharger le prompt</a>
-      <span class="statut" id="statut-copie" role="status" aria-live="polite"></span>
+      <button class="button" id="copy-prompt" type="button">Copier le prompt</button>
+      <button class="button secondary" type="button" data-show="../PROMPT.md" aria-controls="prompt-frame" aria-expanded="false">Voir le prompt</button>
+      <a class="button secondary" href="../PROMPT.md" download="PROMPT.md">Télécharger le prompt</a>
+      <span class="status" id="copy-status" role="status" aria-live="polite"></span>
     </div>
-    <div class="cadre-texte" id="cadre-prompt" hidden><pre></pre></div>
+    <div class="text-frame" id="prompt-frame" hidden><pre></pre></div>
 
-    <h2 id="sans-ia">2. Sans IA : le format <code>.pwq</code></h2>
+    <h2 id="without-ai">2. Sans IA : le format <code>.pwq</code></h2>
     <p>Le plus simple est de partir d’un modèle commenté, de le copier dans votre dossier de questions et de
       le modifier :</p>
 
-    <div class="panneau">
+    <div class="panel">
       <h3>Exemple de QCM</h3>
       <p>Sans aléatoire ni Python à écrire.</p>
       <div class="actions">
-        <a class="bouton" href="modeles/qcm.pwq" download>Télécharger</a>
-        <button class="bouton secondaire" type="button" data-voir="modeles/qcm.pwq" aria-controls="cadre-qcm" aria-expanded="false">Voir</button>
+        <a class="button" href="modeles/qcm.pwq" download>Télécharger</a>
+        <button class="button secondary" type="button" data-show="modeles/qcm.pwq" aria-controls="mcq-frame" aria-expanded="false">Voir</button>
       </div>
-      <div class="cadre-texte" id="cadre-qcm" hidden><pre></pre></div>
+      <div class="text-frame" id="mcq-frame" hidden><pre></pre></div>
     </div>
 
-    <div class="panneau">
+    <div class="panel">
       <h3>Exemple avec Python</h3>
       <p>Données aléatoires et réponse calculée.</p>
       <div class="actions">
-        <a class="bouton" href="modeles/calcul.pwq" download>Télécharger</a>
-        <button class="bouton secondaire" type="button" data-voir="modeles/calcul.pwq" aria-controls="cadre-calcul" aria-expanded="false">Voir</button>
+        <a class="button" href="modeles/calcul.pwq" download>Télécharger</a>
+        <button class="button secondary" type="button" data-show="modeles/calcul.pwq" aria-controls="calculation-frame" aria-expanded="false">Voir</button>
       </div>
-      <div class="cadre-texte" id="cadre-calcul" hidden><pre></pre></div>
+      <div class="text-frame" id="calculation-frame" hidden><pre></pre></div>
     </div>
 
     <h2 id="structure">3. Structure d’un fichier</h2>
     <p>Un fichier est une suite de <strong>champs</strong>. Chacun commence par trois lignes : <code>%</code>,
       <code>% nom_du_champ</code>, <code>%</code> ; son contenu suit. Une ligne <code>%</code> seule ferme le
       dernier champ.</p>
-    <div class="tableau">
+    <div class="table-wrap">
       <table>
         <thead><tr><th>Champ</th><th>Statut</th><th>Contenu</th></tr></thead>
         <tbody>
@@ -102,7 +102,7 @@
     </div>
 
     <h3>Le champ <code>question_setup</code></h3>
-    <ol class="lettres">
+    <ol class="lettered">
       <li>C’est du Python. Importez ce dont vous avez besoin (<code>from random import randint</code>,
         <code>from sympy import *</code>…). Utilisez le module <code>random</code> pour des données
         aléatoires.</li>
@@ -114,7 +114,7 @@
     </ol>
 
     <h3>Le champ <code>question_statement</code></h3>
-    <ol class="lettres">
+    <ol class="lettered">
       <li>C’est du HTML.</li>
       <li>Les formules s’écrivent en LaTeX entre <code>$…$</code> (dans la ligne) ou <code>$$…$$</code>
         (centrées).</li>
@@ -143,7 +143,7 @@
       l’erreur sans donner la réponse. Il est nécessaire pour une formule (<code>input_math</code>), ou
       lorsque plusieurs réponses sont justes, par exemple.</p>
 
-    <h2 id="champs">4. Les champs de réponse</h2>
+    <h2 id="fields">4. Les champs de réponse</h2>
     <p>Un champ s’écrit dans <code>question_statement</code>, à l’endroit où il doit apparaître :</p>
 <pre><code>{% type 'nom' paramètre=valeur paramètre=valeur … %}</code></pre>
     <ul>
@@ -155,10 +155,10 @@
         réponse.</li>
     </ul>
 
-    <details class="champ">
+    <details class="field-item">
       <summary><code>input_text</code> : réponse écrite</summary>
 <pre><code>{% input_text 'answer' solution=product style='width:4em' %}</code></pre>
-      <div class="tableau"><table>
+      <div class="table-wrap"><table>
         <thead><tr><th>Paramètre</th><th>Statut</th><th>Rôle</th></tr></thead>
         <tbody>
           <tr><td><code>solution</code></td><td>obligatoire</td><td>nombre, expression SymPy ou texte ; affiché comme un élève l’écrirait (<code>19/12</code>, <code>x^2 + 1</code>). Pour un décimal à virgule, utilisez <code>decimal_comma</code> du module <code>pywims</code>.</td></tr>
@@ -168,10 +168,10 @@
       <p>Dans <code>question_check</code>, la saisie arrive comme un texte.</p>
     </details>
 
-    <details class="champ">
+    <details class="field-item">
       <summary><code>input_math</code> : formule, avec clavier mathématique</summary>
 <pre><code>{% input_math 'derivative' solution=f_prime %}</code></pre>
-      <div class="tableau"><table>
+      <div class="table-wrap"><table>
         <thead><tr><th>Paramètre</th><th>Statut</th><th>Rôle</th></tr></thead>
         <tbody>
           <tr><td><code>solution</code></td><td>obligatoire</td><td>expression SymPy, affichée en formule</td></tr>
@@ -182,10 +182,10 @@
         puis à comparer, par exemple <code>simplify(math_expression(derivative) - f_prime) == 0</code>.</p>
     </details>
 
-    <details class="champ">
+    <details class="field-item">
       <summary><code>input_matrix</code> : matrice de taille fixe</summary>
 <pre><code>{% input_matrix 'M' rows=2 cols=3 solution=product input_style='width:2.5em' %}</code></pre>
-      <div class="tableau"><table>
+      <div class="table-wrap"><table>
         <thead><tr><th>Paramètre</th><th>Statut</th><th>Rôle</th></tr></thead>
         <tbody>
           <tr><td><code>solution</code></td><td>obligatoire</td><td><code>Matrix</code> SymPy ou liste de lignes</td></tr>
@@ -199,10 +199,10 @@
         part : <code>ok_answer["M[0][1]"] = …</code>.</p>
     </details>
 
-    <details class="champ">
+    <details class="field-item">
       <summary><code>input_vmatrix</code> : matrice dont l’élève choisit la taille</summary>
 <pre><code>{% input_vmatrix 'M' max_rows=5 max_cols=5 solution=product %}</code></pre>
-      <div class="tableau"><table>
+      <div class="table-wrap"><table>
         <thead><tr><th>Paramètre</th><th>Statut</th><th>Rôle</th></tr></thead>
         <tbody>
           <tr><td><code>solution</code></td><td>obligatoire</td><td><code>Matrix</code> SymPy ou liste de lignes ; la solution affichée prend ses dimensions</td></tr>
@@ -215,11 +215,11 @@
         <code>question_check</code>, une grille aux mauvaises dimensions est fausse.</p>
     </details>
 
-    <details class="champ">
+    <details class="field-item">
       <summary><code>input_radio</code> et <code>input_checkbox</code> : choix unique, choix multiple</summary>
 <pre><code>{% input_radio 'answer' choices=choices solution=correct columns=4 fixed_last=1 %}
 {% input_checkbox 'answers' choices=choices solution=correct scoring='b=1,m=-0.5' %}</code></pre>
-      <div class="tableau"><table>
+      <div class="table-wrap"><table>
         <thead><tr><th>Paramètre</th><th>Statut</th><th>Rôle</th></tr></thead>
         <tbody>
           <tr><td><code>choices</code></td><td>obligatoire</td><td>liste de <code>question_setup</code> : au moins deux choix, dans votre ordre (textes avec formules, ou expressions SymPy)</td></tr>
@@ -234,13 +234,13 @@
         saisie arrive comme le numéro choisi (choix unique) ou la liste croissante des numéros cochés.</p>
     </details>
 
-    <details class="champ">
+    <details class="field-item">
       <summary>Le barème (questions à choix)</summary>
       <p>Il affiche une note indicative à chaque vérification, sans rien évaluer. La syntaxe est celle
         d’<a href="https://www.auto-multiple-choice.net/fr/doc/scoring/">AMC</a>, et un barème d’AMC se
         recopie tel quel : <code>scoring='b=1,m=-0.5,p=0'</code>. Un barème n’est admis que si le champ à
         choix est le seul champ de la question.</p>
-      <div class="tableau"><table>
+      <div class="table-wrap"><table>
         <thead><tr><th>Directive</th><th>Rôle</th></tr></thead>
         <tbody>
           <tr><td><code>b</code>, <code>m</code></td><td>points d’une bonne, d’une mauvaise réponse (par case, en choix multiple) ; 1 et 0 par défaut</td></tr>
@@ -254,14 +254,14 @@
       </table></div>
     </details>
 
-    <details class="champ">
+    <details class="field-item">
       <summary>Plusieurs réponses justes : <code>ANY</code></summary>
       <p>Dans une solution, <code>ANY</code> (de <code>from pywims import ANY</code>) marque une valeur
         quelconque : toute réponse y est juste, et le bouton « Solution » y affiche « ∗ ». Par exemple, pour
         une matrice triangulaire : <code>Matrix(n, n, lambda i, j: 0 if i &gt; j else ANY)</code>.</p>
     </details>
 
-    <h2 id="publier">5. Compiler et publier</h2>
+    <h2 id="publish">5. Compiler et publier</h2>
     <ol>
       <li>Ouvrez le <a href="../compiler/">compilateur</a> et choisissez votre dossier de questions (ses
         sous-dossiers sont lus aussi). Sur Chrome et Edge, il est mémorisé pour la visite suivante.</li>
@@ -277,8 +277,8 @@
       de votre établissement, placez un fichier <code>brand.css</code> à la racine de votre dossier
       de questions ; <a href="../css/chartes/upec.css">celui de l’UPEC</a> sert d’exemple.</p>
 
-    <h2 id="bon-a-savoir">6. Bon à savoir</h2>
-    <div class="encadre">
+    <h2 id="good-to-know">6. Bon à savoir</h2>
+    <div class="callout">
       <p><strong>Pour l’entraînement, pas pour l’évaluation.</strong> La solution est toujours visible. La
         note (pour les QCM, si un barème est défini) n’est qu’une indication fournie à l’élève ; elle n’est
         transmise ni à Moodle ni à l’enseignant.</p>
@@ -299,21 +299,21 @@
 
   <script>
     // Lit un fichier du site (prompt, modèle) à côté de la page : toujours la version publiée.
-    async function lire(adresse) {
-      const reponse = await fetch(adresse, { cache: "no-cache" });
-      if (!reponse.ok) throw new Error(String(reponse.status));
-      return reponse.text();
+    async function readSiteFile(address) {
+      const response = await fetch(address, { cache: "no-cache" });
+      if (!response.ok) throw new Error(String(response.status));
+      return response.text();
     }
 
     // Sans presse-papiers (page ouverte depuis le disque, navigateur ancien), on renvoie vers
     // « Voir le prompt », où le texte se copie à la main.
-    document.getElementById("copier-prompt").addEventListener("click", async () => {
-      const statut = document.getElementById("statut-copie");
+    document.getElementById("copy-prompt").addEventListener("click", async () => {
+      const status = document.getElementById("copy-status");
       try {
-        await navigator.clipboard.writeText(await lire("../PROMPT.md"));
-        statut.textContent = "Prompt copié : collez-le dans votre assistant.";
+        await navigator.clipboard.writeText(await readSiteFile("../PROMPT.md"));
+        status.textContent = "Prompt copié : collez-le dans votre assistant.";
       } catch {
-        statut.textContent = "Copie impossible : ouvrez « Voir le prompt » et copiez le texte.";
+        status.textContent = "Copie impossible : ouvrez « Voir le prompt » et copiez le texte.";
       }
     });
 
@@ -321,23 +321,23 @@
     // texte n’est lu qu’à la première ouverture : le prompt fait plusieurs dizaines de Ko, inutiles à
     // qui ne le regarde pas. On a écarté <details>, dont le résumé ne peut pas se ranger parmi les
     // boutons « Copier » et « Télécharger ».
-    for (const bouton of document.querySelectorAll("[data-voir]")) {
-      const libelle = bouton.textContent;
-      bouton.addEventListener("click", async () => {
-        const cadre = document.getElementById(bouton.getAttribute("aria-controls"));
-        const ouvrir = cadre.hidden;
-        if (ouvrir && !cadre.dataset.lu) {
-          const pre = cadre.querySelector("pre");
+    for (const button of document.querySelectorAll("[data-show]")) {
+      const label = button.textContent;
+      button.addEventListener("click", async () => {
+        const frame = document.getElementById(button.getAttribute("aria-controls"));
+        const opening = frame.hidden;
+        if (opening && !frame.dataset.loaded) {
+          const pre = frame.querySelector("pre");
           try {
-            pre.textContent = await lire(bouton.dataset.voir);
-            cadre.dataset.lu = "1";
+            pre.textContent = await readSiteFile(button.dataset.show);
+            frame.dataset.loaded = "1";
           } catch {
             pre.textContent = "Lecture impossible : utilisez « Télécharger ».";
           }
         }
-        cadre.hidden = !ouvrir;
-        bouton.setAttribute("aria-expanded", String(ouvrir));
-        bouton.textContent = ouvrir ? "Refermer" : libelle;
+        frame.hidden = !opening;
+        button.setAttribute("aria-expanded", String(opening));
+        button.textContent = opening ? "Refermer" : label;
       });
     }
   </script>

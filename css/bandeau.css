@@ -5,8 +5,8 @@
    filet marque la séparation. Il est opaque : sur téléphone, le bandeau du compilateur reste collé
    en haut, et la page défile sous lui. */
 :root {
-  --bandeau-fond: #f5f6f8;
-  --bandeau-filet: #d7dbe0;
+  --banner-background: #f5f6f8;
+  --banner-rule: #d7dbe0;
 }
 
 /* Fond et filet sur toute la largeur de la fenêtre, alors que le contenu du bandeau garde la largeur
@@ -15,26 +15,26 @@
    deux, décalée d’un pixel, ne marchait pas : l’ombre du fond recouvrait celle du filet. On a écarté
    un élément englobant pleine largeur : le compilateur, où le bandeau est une rangée de la grille de
    la page, aurait dû changer de structure. */
-.bandeau-pleine-largeur {
+.banner-full-width {
   position: relative;
-  background: var(--bandeau-fond);
-  box-shadow: 0 0 0 100vmax var(--bandeau-fond);
+  background: var(--banner-background);
+  box-shadow: 0 0 0 100vmax var(--banner-background);
   clip-path: inset(-1rem -100vmax 0 -100vmax);
 }
 
-.bandeau-pleine-largeur::after {
+.banner-full-width::after {
   position: absolute;
   right: 0;
   bottom: 0;
   left: 0;
   height: 1px;
-  background: var(--bandeau-filet);
-  box-shadow: 0 0 0 100vmax var(--bandeau-filet);
+  background: var(--banner-rule);
+  box-shadow: 0 0 0 100vmax var(--banner-rule);
   clip-path: inset(0 -100vmax);
   content: "";
 }
 
-.bandeau {
+.banner {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -43,7 +43,7 @@
   min-width: 0;
 }
 
-.bandeau-titre {
+.banner-title {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -51,7 +51,7 @@
   min-width: 0;
 }
 
-.marque {
+.wordmark {
   color: #a95f00;
   font-size: clamp(1.5rem, 3vw, 2rem);
   font-weight: 700;
@@ -59,12 +59,12 @@
   text-decoration: none;
 }
 
-.devise { color: #656b72; font-size: 0.95rem; }
+.tagline { color: #656b72; font-size: 0.95rem; }
 
-.bandeau-nav { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.banner-nav { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 
 /* Les liens du bandeau ont l’allure de boutons ; la page courante est pleine, comme « Compiler ». */
-.bandeau-nav a {
+.banner-nav a {
   padding: 0.3rem 0.75rem;
   border: 1px solid #c9a06c;
   border-radius: 0.35rem;
@@ -76,11 +76,11 @@
   white-space: nowrap;
 }
 
-.bandeau-nav a:hover { background: #fff0d8; }
-.bandeau-nav a[aria-current="page"] { border-color: #9b5700; color: #fff; background: #a95f00; }
+.banner-nav a:hover { background: #fff0d8; }
+.banner-nav a[aria-current="page"] { border-color: #9b5700; color: #fff; background: #a95f00; }
 
 @media (max-width: 640px) {
-  .marque { font-size: 1.4rem; }
-  .devise { font-size: 0.85rem; }
-  .bandeau-nav a { padding: 0.25rem 0.55rem; font-size: 0.85rem; }
+  .wordmark { font-size: 1.4rem; }
+  .tagline { font-size: 0.85rem; }
+  .banner-nav a { padding: 0.25rem 0.55rem; font-size: 0.85rem; }
 }

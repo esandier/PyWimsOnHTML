@@ -152,7 +152,7 @@ avec la solution, écrite comme l’énoncé), `question_check` (correction) et
 `question_draws` (nombre de tirages calculés, de 1 à 200 ; 20 par défaut). Tous les
 noms sont en anglais. Chaque balise de saisie désigne sa solution
 (`solution=variable`). La question importe elle-même ses bibliothèques, ainsi que
-les outils du module `pywims` (`py_wims`, `is_nombre`, `math_expression`,
+les outils du module `pywims` (`py_wims`, `is_number`, `math_expression`,
 `decimal_comma`, `ANY`). `question_check` peut définir la variable `feedback`.
 
 **Sans `question_check`, l’élève doit donner ce qu’affiche le bouton « Solution ».**
@@ -218,11 +218,11 @@ sans interface, profil vierge), puis `tests/outils/essai_compilateur.py`, qui
 essaie l’interface du compilateur de bout en bout : ouverture du dossier, liste,
 aperçu, compilation et fichier téléchargé. Prérequis : Python avec le paquet
 `playwright` (`pip install playwright`), qui pilote l’Edge installé, sans autre
-navigateur à télécharger. L’option `-SansPyodide` saute les tests du vrai Pyodide, les
+navigateur à télécharger. L’option `-SkipPyodide` saute les tests du vrai Pyodide, les
 plus longs ; `-Draws 200` demande un balayage complet.
 
-Pour vérifier un rendu, `python tests/outils/capture.py URL image.png --telephone`
-capture une page comme sur un téléphone (375 px de large) ; sans `--telephone`,
+Pour vérifier un rendu, `python tests/outils/capture.py URL image.png --phone`
+capture une page comme sur un téléphone (375 px de large) ; sans `--phone`,
 comme sur un ordinateur.
 
 Les tests servent les pages par `http://`, alors qu’un élève ouvre souvent le

@@ -43,7 +43,7 @@ français, séparés par des virgules.
   tirage impossible à reproduire : le compilateur exécute chaque graine deux
   fois et refuse la question si les deux tirages diffèrent.
 - Les outils PyWims s’importent depuis le module `pywims` :
-  `from pywims import py_wims, is_nombre, math_expression, decimal_comma, ANY`.
+  `from pywims import py_wims, is_number, math_expression, decimal_comma, ANY`.
   - `math_expression(saisie)` analyse une expression écrite par un élève
     (`2x`, `x^2`, `sqrt(2)`, `sin x`, `ln(x)`), en n’admettant que les
     fonctions mathématiques usuelles, et renvoie une expression SymPy ou
@@ -51,7 +51,7 @@ français, séparés par des virgules.
     saisie qui peut contenir une expression.
   - `py_wims(saisie)` convertit une saisie simple (nombre, fraction) en objet
     SymPy, ou renvoie `None`.
-  - `is_nombre(valeur)` indique si une valeur est un nombre.
+  - `is_number(valeur)` indique si une valeur est un nombre.
   - `decimal_comma(nombre, chiffres)` écrit un nombre arrondi à `chiffres`
     décimales, avec une virgule et sans zéros finaux : `decimal_comma(sqrt(2), 2)`
     donne `"1,41"`, `decimal_comma(1.5, 2)` donne `"1,5"`. Utilise-le comme
@@ -309,7 +309,7 @@ STD
 %
 from random import randint
 from sympy import gcd
-from pywims import py_wims, is_nombre
+from pywims import py_wims, is_number
 
 x = randint(10, 100)
 y = randint(10, 100)
@@ -328,10 +328,10 @@ l’algorithme d’Euclide permet de le trouver.
 % question_check
 %
 value = py_wims(answer)
-ok_answer['answer'] = is_nombre(value) and value == result
+ok_answer['answer'] = is_number(value) and value == result
 if ok_answer['answer']:
     feedback = 'Bravo, c’est exact !'
-elif is_nombre(value) and value != 0 and x % value == 0 and y % value == 0:
+elif is_number(value) and value != 0 and x % value == 0 and y % value == 0:
     feedback = 'C’est bien un diviseur commun, mais ce n’est pas le plus grand.'
 else:
     feedback = 'Ce nombre ne divise pas les deux entiers.'

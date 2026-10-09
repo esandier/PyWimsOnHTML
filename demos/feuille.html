@@ -2186,7 +2186,7 @@ window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
 </head>
 <!-- data-sheet : « single » pour une question seule, « activity » pour une feuille de plusieurs questions. -->
 <!-- data-sheet-id : empreinte d’une activité, clé de la mémoire de sa progression (absente pour une question seule). -->
-<body data-sheet="activity" data-sheet-id="1lvgtfmy6uw">
+<body data-sheet="activity" data-sheet-id="8wd3aagn5e">
   <!-- En-tête : titre, progression (activité seulement), aide et logo. Il reste visible au défilement d’une activité. -->
   <div class="pw-top">
     <!-- Le logo de marque est décoratif ; son image et son style sont définis dans brand.css. -->
@@ -2361,7 +2361,7 @@ for i in range(size):
 <pre data-field="question_layout">STD</pre>
 <pre data-field="question_setup">from random import randint
 from sympy import *
-from pywims import py_wims, is_nombre
+from pywims import py_wims, is_number
 
 # Tire deux entiers et calcule leur plus grand diviseur commun.
 x = randint(26,145)
@@ -2381,11 +2381,11 @@ Réponse : {% input_text &#39;answer&#39; solution=result style=&#39;width :5em&
 <pre data-field="question_solution_explanation">Algorithme d’Euclide : {{euclid_steps}}. Le dernier reste non nul est ${{result}}$.</pre>
 <pre data-field="question_check"># Convertit la saisie, puis explique l’erreur sans donner la réponse.
 value = py_wims(answer)
-ok_answer[&#39;answer&#39;] = is_nombre(value) and value == result
+ok_answer[&#39;answer&#39;] = is_number(value) and value == result
 
 if ok_answer[&#39;answer&#39;]:
     feedback = &#39;Bravo, c’est exact !&#39;
-elif not is_nombre(value) or not value.is_Integer or value &lt;= 0:
+elif not is_number(value) or not value.is_Integer or value &lt;= 0:
     feedback = &#39;Saisissez un nombre entier positif.&#39;
 elif x % value == 0 and y % value == 0:
     feedback = &#39;{} divise bien {} et {}, mais ce n’est pas le plus grand diviseur commun.&#39;.format(value, x, y)
@@ -2615,7 +2615,7 @@ window.PyWimsTemplate = (() => {
   // écraser une variable du contrat de question, un outil pywims ni un mot-clé Python.
   const reservedNames = new Set([
     "ok_answer", "feedback",
-    "py_wims", "is_nombre", "math_expression", "decimal_comma", "ANY", "pywims",
+    "py_wims", "is_number", "math_expression", "decimal_comma", "ANY", "pywims",
     "False", "None", "True", "and", "as", "assert", "async", "await", "break",
     "class", "continue", "def", "del", "elif", "else", "except", "finally", "for",
     "from", "global", "if", "import", "in", "is", "lambda", "nonlocal", "not",
@@ -3233,7 +3233,7 @@ window.PyWimsWidgets = (() => {
 </script>
   <!-- Module Python « pywims » (runtime/pywims.py), lu par le runtime Python : le type text/x-python
        empêche le navigateur de l’exécuter. Vide si aucune question n’a d’« question_check ». -->
-  <script type="text/x-python" id="pywims-module">"""Outils PyWims : from pywims import py_wims, is_nombre, math_expression, decimal_comma, ANY"""
+  <script type="text/x-python" id="pywims-module">"""Outils PyWims : from pywims import py_wims, is_number, math_expression, decimal_comma, ANY"""
 # Module installé dans Pyodide par runtime/python.js, à la compilation comme dans le fichier généré,
 # qui l’intègre tel quel : les tirages calculés et rejoués utilisent ainsi le même code
 # (SPECIFICATION.md, § 3). Les fonctions dont le nom commence par « _ » servent au compilateur et à
@@ -3242,25 +3242,25 @@ window.PyWimsWidgets = (() => {
 import re as _re
 import sys as _sys
 
-__all__ = ["py_wims", "is_nombre", "math_expression", "decimal_comma", "ANY"]
+__all__ = ["py_wims", "is_number", "math_expression", "decimal_comma", "ANY"]
 
-_libre = None
+_any_value = None
 
 
 def __getattr__(name):
     """Crée ANY à la demande : SymPy n’est importé que par les questions qui l’utilisent."""
-    global _libre
+    global _any_value
     if name == "ANY":
-        if _libre is None:
+        if _any_value is None:
             import sympy
             # Symbole unique, utilisable dans une Matrix, qui marque une valeur de solution libre.
-            _libre = sympy.Dummy("ANY")
-        return _libre
+            _any_value = sympy.Dummy("ANY")
+        return _any_value
     raise AttributeError(f"module 'pywims' has no attribute {name!r}")
 
 
-def _is_libre(value):
-    return _libre is not None and value is _libre
+def _is_any(value):
+    return _any_value is not None and value is _any_value
 
 
 def _plain_decimal(value):
@@ -3289,7 +3289,7 @@ def _float_text(value):
 
 def _solution_text(value):
     """Solution d’un champ texte, écrite comme un élève la saisirait ; None pour une valeur libre."""
-    if _is_libre(value):
+    if _is_any(value):
         return None
     if isinstance(value, float):
         return _float_text(value)
@@ -3303,7 +3303,7 @@ def _solution_text(value):
 
 def _solution_latex(value):
     """Solution d’un champ MathLive, en LaTeX ; None pour une valeur libre."""
-    if _is_libre(value):
+    if _is_any(value):
         return None
     sympy = _sys.modules.get("sympy")
     if sympy is not None:
@@ -3520,7 +3520,7 @@ def decimal_comma(value, digits):
     return _plain_decimal(rounded).replace(".", ",")
 
 
-def is_nombre(value):
+def is_number(value):
     """Indique si la valeur est un nombre Python ou SymPy."""
     import sympy
     return isinstance(value, (int, float, sympy.Number, sympy.NumberSymbol))

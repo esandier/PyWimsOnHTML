@@ -10,12 +10,12 @@
   <link rel="stylesheet" href="css/site.css">
 </head>
 <body>
-  <header class="bandeau bandeau-pleine-largeur">
-    <div class="bandeau-titre">
-      <a class="marque" href="./">PWOH</a>
-      <span class="devise">questions à données aléatoires dans une page HTML</span>
+  <header class="banner banner-full-width">
+    <div class="banner-title">
+      <a class="wordmark" href="./">PWOH</a>
+      <span class="tagline">questions à données aléatoires dans une page HTML</span>
     </div>
-    <nav class="bandeau-nav" aria-label="Site">
+    <nav class="banner-nav" aria-label="Site">
       <a href="./" aria-current="page">Accueil</a>
       <a href="guide/">Créer</a>
       <a href="compiler/">Compilateur</a>
@@ -24,19 +24,19 @@
   </header>
 
   <main>
-    <p class="chapeau"><strong>PWOH</strong> (PyWimsOnHTML) prend en entrée un fichier descriptif simple, à
+    <p class="lead"><strong>PWOH</strong> (PyWimsOnHTML) prend en entrée un fichier descriptif simple, à
       base de code Python pour la logique de la question, et de HTML pour son aspect visuel, et produit un
       fichier HTML autonome qui peut être déposé tel quel sur Moodle, ou distribué par courriel…</p>
 
     <h2>Exemple : une activité de deux questions</h2>
     <!-- La vraie page compilée (demos/exemple.html, produite par tests/outils/demos.py). -->
-    <iframe class="exemple" id="exemple" src="demos/exemple.html" title="Exemple d’activité de deux questions"></iframe>
-    <p class="sous-exemple"><a href="demos/exemple.html">Ouvrir l’exemple en pleine page</a> ·
+    <iframe class="example-frame" id="example" src="demos/exemple.html" title="Exemple d’activité de deux questions"></iframe>
+    <p class="example-links"><a href="demos/exemple.html">Ouvrir l’exemple en pleine page</a> ·
       <a href="demos/feuille.html">une feuille plus complète</a> (sept questions : choix, texte, formule,
       matrices)</p>
 
-    <div class="colonnes">
-      <section class="panneau">
+    <div class="columns">
+      <section class="panel">
         <h2>Pour l’élève ou l’étudiant</h2>
         <ul>
           <li>Sa progression dans l’activité est gardée, s’il la reprend après avoir fermé le navigateur.</li>
@@ -46,7 +46,7 @@
           <li>Chaque question contient sa solution.</li>
         </ul>
       </section>
-      <section class="panneau">
+      <section class="panel">
         <h2>Pour l’enseignant</h2>
         <ul>
           <li>Une charte graphique en <code>.css</code> peut accompagner les questions, pour un visuel
@@ -63,8 +63,8 @@
     <h2>Pour commencer</h2>
     <ol>
       <li>Créez un dossier pour vos questions.</li>
-      <li>Créez une question, <a href="guide/#avec-ia">à l’aide d’une IA de votre choix</a> ou
-        <a href="guide/#sans-ia">à partir d’un modèle</a>.</li>
+      <li>Créez une question, <a href="guide/#with-ai">à l’aide d’une IA de votre choix</a> ou
+        <a href="guide/#without-ai">à partir d’un modèle</a>.</li>
       <li>Ouvrez votre dossier de questions dans la <a href="compiler/">page du compilateur</a>.</li>
       <li>Choisissez la ou les questions à compiler, cliquez sur « Compiler la sélection » : la page HTML correspondante
         est téléchargée (ou des messages d’erreur sont affichés).</li>
@@ -83,18 +83,18 @@
     // origine que l’accueil ; sinon (page ouverte depuis le disque), le cadre garde sa hauteur fixe
     // de site.css et défile seul. On a écarté la question à formule pour cet exemple : dans un cadre
     // aussi haut que son contenu, le clavier mathématique s’ouvrirait hors de l’écran.
-    const cadre = document.getElementById("exemple");
-    cadre.addEventListener("load", () => {
+    const frame = document.getElementById("example");
+    frame.addEventListener("load", () => {
       try {
         // On mesure le bas des questions, et non la hauteur du document : le corps d’une activité a
         // une hauteur minimale de 100vh, qui dans un cadre vaut la hauteur du cadre ; mesuré ainsi,
         // le cadre ne pourrait que grandir.
-        const feuille = cadre.contentDocument.querySelector(".pw-sheet");
-        const ajuster = () => {
-          cadre.style.height = `${Math.ceil(feuille.getBoundingClientRect().bottom + cadre.contentWindow.scrollY) + 24}px`;
+        const sheet = frame.contentDocument.querySelector(".pw-sheet");
+        const fit = () => {
+          frame.style.height = `${Math.ceil(sheet.getBoundingClientRect().bottom + frame.contentWindow.scrollY) + 24}px`;
         };
-        new ResizeObserver(ajuster).observe(feuille);
-        ajuster();
+        new ResizeObserver(fit).observe(sheet);
+        fit();
       } catch {
         // Origine différente : hauteur fixe.
       }

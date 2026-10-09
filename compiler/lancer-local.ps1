@@ -12,23 +12,23 @@ param(
 # Le port doit être vraiment libre. Sous Windows, le serveur de Python (SO_REUSEADDR) ouvre sans
 # erreur un port déjà pris, par exemple le 8000 d’un serveur Django : le navigateur parlait alors à
 # l’autre serveur, qui répondait 404. Un TcpListener exclusif, lui, échoue si le port est occupé.
-function Test-PortLibre([int]$numero) {
+function Test-FreePort([int]$number) {
   try {
-    $ecoute = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, $numero)
-    $ecoute.ExclusiveAddressUse = $true
-    $ecoute.Start()
-    $ecoute.Stop()
+    $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, $number)
+    $listener.ExclusiveAddressUse = $true
+    $listener.Start()
+    $listener.Stop()
     return $true
   } catch {
     return $false
   }
 }
 
-$depart = $Port
-while (-not (Test-PortLibre $Port)) {
+$firstPort = $Port
+while (-not (Test-FreePort $Port)) {
   $Port += 1
-  if ($Port -gt $depart + 20) {
-    throw "Aucun port libre entre $depart et $Port."
+  if ($Port -gt $firstPort + 20) {
+    throw "Aucun port libre entre $firstPort et $Port."
   }
 }
 

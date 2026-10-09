@@ -4,16 +4,16 @@
 :root {
   color-scheme: light;
   --accent: #a95f00;
-  --accent-fonce: #874c00;
-  --lien: #8a4d00;
-  --texte: #242424;
-  --gris: #656b72;
-  --filet: #d7dbe0;
-  --fond: #f5f6f8;
+  --accent-dark: #874c00;
+  --link: #8a4d00;
+  --text: #242424;
+  --gray: #656b72;
+  --rule: #d7dbe0;
+  --background: #f5f6f8;
   --code: #f1f3f5;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-  color: var(--texte);
-  background: var(--fond);
+  color: var(--text);
+  background: var(--background);
 }
 
 * { box-sizing: border-box; }
@@ -21,10 +21,10 @@
 body {
   margin: 0;
   line-height: 1.6;
-  background: var(--fond);
+  background: var(--background);
 }
 
-.bandeau,
+.banner,
 main,
 footer {
   width: min(100%, 56rem);
@@ -32,7 +32,7 @@ footer {
   padding: 0 16px;
 }
 
-.bandeau { padding-top: 1rem; padding-bottom: 0.75rem; }
+.banner { padding-top: 1rem; padding-bottom: 0.75rem; }
 
 main { padding-top: 1.25rem; padding-bottom: 2.5rem; }
 
@@ -41,29 +41,29 @@ h2 { margin: 2.25rem 0 0.6rem; font-size: 1.35rem; line-height: 1.3; }
 h3 { margin: 1.5rem 0 0.4rem; font-size: 1.05rem; }
 p, ul, ol { margin: 0 0 0.85rem; }
 li { margin-bottom: 0.3rem; }
-a { color: var(--lien); }
+a { color: var(--link); }
 
-.chapeau { margin: 1rem 0 1.25rem; font-size: 1.1rem; }
+.lead { margin: 1rem 0 1.25rem; font-size: 1.1rem; }
 
 /* Panneau blanc, comme ceux du compilateur. */
-.panneau {
+.panel {
   margin: 1rem 0;
   padding: 1rem 1.1rem;
-  border: 1px solid var(--filet);
+  border: 1px solid var(--rule);
   border-radius: 0.5rem;
   background: #fff;
   box-shadow: 0 1px 3px #0000000a;
 }
-.panneau > :last-child { margin-bottom: 0; }
-.panneau h2, .panneau h3 { margin-top: 0; }
+.panel > :last-child { margin-bottom: 0; }
+.panel h2, .panel h3 { margin-top: 0; }
 
 /* Caractéristiques, élève et enseignant, côte à côte sur grand écran. */
-.colonnes { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: 1rem; margin: 1rem 0; }
-.colonnes .panneau { margin: 0; }
+.columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: 1rem; margin: 1rem 0; }
+.columns .panel { margin: 0; }
 
 /* Boutons : ceux du compilateur (plein pour l’action principale, contour pour les autres). */
 .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin: 1rem 0; }
-.bouton {
+.button {
   display: inline-block;
   padding: 0.5rem 0.9rem;
   border: 1px solid #9b5700;
@@ -76,27 +76,27 @@ a { color: var(--lien); }
   text-decoration: none;
   cursor: pointer;
 }
-.bouton:hover { background: var(--accent-fonce); }
-.bouton.secondaire { color: var(--lien); background: #fff; }
-.bouton.secondaire:hover { background: #fff0d8; }
+.button:hover { background: var(--accent-dark); }
+.button.secondary { color: var(--link); background: #fff; }
+.button.secondary:hover { background: #fff0d8; }
 
-.statut { color: var(--gris); font-size: 0.9rem; }
+.status { color: var(--gray); font-size: 0.9rem; }
 
 /* Cadre déplié par « Voir » (prompt, modèles) : il défile seul, la page garde sa longueur. */
-.cadre-texte { margin: 0 0 1rem; }
-.cadre-texte pre { max-height: 28rem; overflow: auto; margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.text-frame { margin: 0 0 1rem; }
+.text-frame pre { max-height: 28rem; overflow: auto; margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 
 /* Exemple d’activité de l’accueil : la vraie page compilée, qui défile dans son cadre. */
-.exemple {
+.example-frame {
   display: block;
   width: 100%;
   height: min(80vh, 46rem);
   height: min(80dvh, 46rem);
-  border: 1px solid var(--filet);
+  border: 1px solid var(--rule);
   border-radius: 0.5rem;
   background: #fff;
 }
-.sous-exemple { margin-top: 0.4rem; color: var(--gris); font-size: 0.9rem; }
+.example-links { margin-top: 0.4rem; color: var(--gray); font-size: 0.9rem; }
 
 code, pre { font-family: Consolas, "Cascadia Mono", Menlo, monospace; font-size: 0.9em; }
 code { padding: 0.05rem 0.3rem; border-radius: 0.25rem; background: var(--code); }
@@ -104,7 +104,7 @@ pre {
   overflow-x: auto;
   margin: 0 0 1rem;
   padding: 0.8rem 1rem;
-  border: 1px solid var(--filet);
+  border: 1px solid var(--rule);
   border-radius: 0.4rem;
   background: #fff;
   line-height: 1.45;
@@ -112,51 +112,51 @@ pre {
 pre code { padding: 0; background: none; }
 
 /* Sous-parties d’un champ (a, b, c…) : la lettre, puis le texte. */
-ol.lettres { list-style: lower-alpha; }
+ol.lettered { list-style: lower-alpha; }
 
 /* Champs de réponse : un élément dépliable chacun, pour voir la liste d’un coup d’œil. */
-details.champ {
+details.field-item {
   margin: 0 0 0.5rem;
-  border: 1px solid var(--filet);
+  border: 1px solid var(--rule);
   border-radius: 0.4rem;
   background: #fff;
 }
-details.champ > summary {
+details.field-item > summary {
   padding: 0.55rem 0.9rem;
   font-weight: 600;
   cursor: pointer;
 }
-details.champ > summary:hover { background: var(--code); }
-details.champ[open] > summary { border-bottom: 1px solid var(--filet); }
-details.champ > :not(summary) { margin-left: 0.9rem; margin-right: 0.9rem; }
-details.champ > :nth-child(2) { margin-top: 0.75rem; }
-details.champ > :last-child { margin-bottom: 0.9rem; }
+details.field-item > summary:hover { background: var(--code); }
+details.field-item[open] > summary { border-bottom: 1px solid var(--rule); }
+details.field-item > :not(summary) { margin-left: 0.9rem; margin-right: 0.9rem; }
+details.field-item > :nth-child(2) { margin-top: 0.75rem; }
+details.field-item > :last-child { margin-bottom: 0.9rem; }
 
 /* Tableaux de paramètres : ils défilent seuls sur un écran étroit, jamais la page. */
-.tableau { overflow-x: auto; margin: 0 0 1rem; }
+.table-wrap { overflow-x: auto; margin: 0 0 1rem; }
 table { width: 100%; border-collapse: collapse; background: #fff; font-size: 0.95rem; }
-th, td { padding: 0.45rem 0.6rem; border: 1px solid var(--filet); text-align: left; vertical-align: top; }
+th, td { padding: 0.45rem 0.6rem; border: 1px solid var(--rule); text-align: left; vertical-align: top; }
 th { background: var(--code); font-weight: 600; }
 
 /* Sur téléphone, trois colonnes laissaient trois mots par ligne au rôle d’un paramètre : chaque
    ligne devient une petite carte, nom et statut en tête, rôle dessous sur toute la largeur. */
 @media (max-width: 640px) {
-  .tableau thead { display: none; }
-  .tableau table, .tableau tbody, .tableau tr, .tableau td { display: block; }
-  .tableau table { background: none; }
-  .tableau tr {
+  .table-wrap thead { display: none; }
+  .table-wrap table, .table-wrap tbody, .table-wrap tr, .table-wrap td { display: block; }
+  .table-wrap table { background: none; }
+  .table-wrap tr {
     margin-bottom: 0.6rem;
-    border: 1px solid var(--filet);
+    border: 1px solid var(--rule);
     border-radius: 0.4rem;
     background: #fff;
   }
-  .tableau td { padding: 0.15rem 0.75rem; border: 0; }
-  .tableau td:first-child { padding-top: 0.55rem; font-weight: 600; }
-  .tableau td:nth-child(2):not(:last-child) { color: var(--gris); font-size: 0.9rem; }
-  .tableau td:last-child { padding-bottom: 0.55rem; }
+  .table-wrap td { padding: 0.15rem 0.75rem; border: 0; }
+  .table-wrap td:first-child { padding-top: 0.55rem; font-weight: 600; }
+  .table-wrap td:nth-child(2):not(:last-child) { color: var(--gray); font-size: 0.9rem; }
+  .table-wrap td:last-child { padding-bottom: 0.55rem; }
 }
 
-.encadre {
+.callout {
   margin: 1rem 0;
   padding: 0.8rem 1rem;
   border-left: 4px solid var(--accent);
@@ -164,12 +164,12 @@ th { background: var(--code); font-weight: 600; }
   background: #fff;
 }
 
-.sommaire { padding: 0.8rem 1rem 0.5rem 2rem; border: 1px solid var(--filet); border-radius: 0.5rem; background: #fff; }
+.toc { padding: 0.8rem 1rem 0.5rem 2rem; border: 1px solid var(--rule); border-radius: 0.5rem; background: #fff; }
 
 footer {
   padding-top: 1rem;
   padding-bottom: 2rem;
-  border-top: 1px solid var(--filet);
-  color: var(--gris);
+  border-top: 1px solid var(--rule);
+  color: var(--gray);
   font-size: 0.9rem;
 }

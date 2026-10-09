@@ -118,8 +118,8 @@
 
       await test("le module pywims analyse les saisies et refuse tout autre code", async () => {
         const session = PyWimsPython.createSession("module");
-        await session.initialize("from pywims import py_wims, is_nombre, math_expression\nfrom sympy import *");
-        await session.run("from pywims import py_wims, is_nombre, math_expression\nfrom sympy import *\nx = symbols('x')");
+        await session.initialize("from pywims import py_wims, is_number, math_expression\nfrom sympy import *");
+        await session.run("from pywims import py_wims, is_number, math_expression\nfrom sympy import *\nx = symbols('x')");
         await expectPython(session, "math_expression('3x^2+2x') == 3*x**2 + 2*x", "Produit implicite et puissance mal lus");
         await expectPython(session, "math_expression('sqrt(4)+e') == 2 + E", "Fonctions ou constantes mal lues");
         await expectPython(session, "math_expression(\"__import__('os')\") is None", "Une saisie dangereuse a été acceptée");
@@ -133,7 +133,7 @@
           "Une saisie hors de l’écriture mathématique a été acceptée");
         await expectPython(session, "simplify(py_wims('1/2') - Rational(1, 2)) == 0", "py_wims ne lit pas une fraction");
         await expectPython(session, "py_wims('(') is None", "py_wims accepte une saisie invalide");
-        await expectPython(session, "is_nombre(Rational(1, 2)) and is_nombre(3) and not is_nombre(x)", "is_nombre se trompe");
+        await expectPython(session, "is_number(Rational(1, 2)) and is_number(3) and not is_number(x)", "is_number se trompe");
       });
 
       await test("l’espace de noms de l’auteur est vierge et ne perturbe pas pywims", async () => {
@@ -403,7 +403,7 @@ json.dumps({
       });
 
       await test("une question sans « question_check » se compile et se corrige par défaut", async () => {
-        const qcm = await PyWimsCompiler.computeDraws({
+        const mcq = await PyWimsCompiler.computeDraws({
           question_setup: "from random import sample\nnombres = sample(range(2, 30), 3)\nchoix = [str(n) for n in nombres]\nbonne = 0",
           question_statement: "Lequel est le premier tiré ? {% input_radio 'r' choices=choix solution=bonne %}"
         }, { count: 3 });
@@ -411,9 +411,9 @@ json.dumps({
           question_setup: "from pywims import decimal_comma\nprix = 12.5 * 0.8\nracine = decimal_comma(2 ** 0.5, 2)\nsomme = 0.1 + 0.2",
           question_statement: "{% input_text 'a' solution=prix %} {% input_text 'b' solution=racine %} {% input_text 'c' solution=somme %}"
         }, { count: 1 });
-        if (qcm.length < 2 || qcm.some(draw => draw.solutions.r !== 0) ||
+        if (mcq.length < 2 || mcq.some(draw => draw.solutions.r !== 0) ||
             JSON.stringify(decimal[0].solutions) !== JSON.stringify({ a: "10", b: "1,41", c: "0.3" })) {
-          throw new Error(`Tirages inattendus : ${JSON.stringify([qcm, decimal])}`);
+          throw new Error(`Tirages inattendus : ${JSON.stringify([mcq, decimal])}`);
         }
         for (const [fields, fragment] of [
           [{ question_setup: "from sympy import symbols\nx = symbols('x')\nd = 2*x",
