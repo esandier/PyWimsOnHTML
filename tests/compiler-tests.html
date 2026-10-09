@@ -330,7 +330,7 @@
         throw new Error("L’archive des pages séparées est vide ou mal typée.");
       }
     });
-    // Contrôles asynchrones : la page signale leur fin par data-done sur <body> (outil tests/outils).
+    // Contrôles asynchrones : la page signale leur fin par data-done sur <body> (outil tests/tools).
     const pendingTests = [];
     pendingTests.push(PyWimsCompiler.createZip([
       { name: "question 1.html", content: "hello" },
@@ -718,7 +718,7 @@
         fetch(`../compiler/${name}.js`).then(response => response.text()))).then(texts => texts.join("\n")),
       fetch("../layouts/standard.html").then(response => response.text()),
         fetch("../css/brand.css").then(response => response.text()),
-        fetch("../css/chartes/upec.css").then(response => response.text()),
+        fetch("../css/brands/upec.css").then(response => response.text()),
         fetch("../css/question.css").then(response => response.text()),
         fetch("../widgets/input-text.js").then(response => response.text()),
           fetch("../widgets/input-matrix.js").then(response => response.text()),
@@ -896,7 +896,7 @@
             const used = new Set([...questionCss.matchAll(/var\((--pw-[a-z-]+)\)/g)].map(match => match[1]));
             // Variables posées par le code (matrice redimensionnable, colonnes de choix), pas par la charte.
             const local = new Set([...questionCss.matchAll(/(--pw-[a-z-]+)\s*:/g)].map(match => match[1]));
-            for (const [name, css] of [["css/brand.css", brandCss], ["css/chartes/upec.css", upecCss]]) {
+            for (const [name, css] of [["css/brand.css", brandCss], ["css/brands/upec.css", upecCss]]) {
               const missing = [...used].filter(variable => !local.has(variable) &&
                 !["--pw-vmatrix-rows", "--pw-vmatrix-columns", "--pw-choice-columns", "--fb-h"].includes(variable) &&
                 !new RegExp(`${variable}\\s*:`).test(css));

@@ -4,8 +4,8 @@
 # C’est la seule partie du projet que les pages de tests ne couvrent pas : elles appellent les
 # fonctions du compilateur, mais pas sa page. Le sélecteur de dossier ne peut pas être cliqué par un
 # programme ; Playwright lui donne le dossier (set_input_files), comme un choix de l’utilisateur.
-# Prérequis : pip install playwright (voir navigateur.py).
-# Usage : python essai_compilateur.py URL_DU_COMPILATEUR [CHEMIN_D’EDGE]
+# Prérequis : pip install playwright (voir edge.py).
+# Usage : python compiler_e2e.py URL_DU_COMPILATEUR [CHEMIN_D’EDGE]
 # Code de sortie : 0 si tout est bon, 1 sinon.
 import os
 import shutil
@@ -15,9 +15,9 @@ import tempfile
 from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import sync_playwright
 
-# python -I (lancer-tests.ps1) n’ajoute pas le dossier du script au chemin d’import.
+# python -I (run-tests.ps1) n’ajoute pas le dossier du script au chemin d’import.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from navigateur import launch_edge  # noqa: E402
+from edge import launch_edge  # noqa: E402
 
 PROJECT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 

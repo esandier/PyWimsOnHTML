@@ -1,7 +1,7 @@
 # Lance les tests du projet : page des tests rapides, cycle de vie avec un Python simulé, puis tests
 # Python avec le vrai Pyodide, qui comprennent le balayage des tirages de chaque question.
-# Prérequis : Edge, Python avec le paquet « playwright » (pilotage d’Edge, voir navigateur.py).
-# Usage : .\tests\outils\lancer-tests.ps1 [-SkipPyodide] [-Draws 200]
+# Prérequis : Edge, Python avec le paquet « playwright » (pilotage d’Edge, voir edge.py).
+# Usage : .\tests\tools\run-tests.ps1 [-SkipPyodide] [-Draws 200]
 #   -Draws : tirages balayés par question (20 par défaut ; 200 pour un balayage complet, plus lent).
 param(
   [switch]$SkipPyodide,
@@ -18,18 +18,18 @@ $failed = $false
 try {
   Start-Sleep -Milliseconds 800
   "== Tests rapides (tests/compiler-tests.html)"
-  python -I -X utf8 "$PSScriptRoot\pilote_edge.py" "http://127.0.0.1:$port/tests/compiler-tests.html"
+  python -I -X utf8 "$PSScriptRoot\run_test_page.py" "http://127.0.0.1:$port/tests/compiler-tests.html"
   if ($LASTEXITCODE) { $failed = $true }
   "== Cycle de vie d’une question, Python simulé (tests/runtime-tests.html)"
-  python -I -X utf8 "$PSScriptRoot\pilote_edge.py" "http://127.0.0.1:$port/tests/runtime-tests.html"
+  python -I -X utf8 "$PSScriptRoot\run_test_page.py" "http://127.0.0.1:$port/tests/runtime-tests.html"
   if ($LASTEXITCODE) { $failed = $true }
   if (-not $SkipPyodide) {
     "== Tests Python avec Pyodide, balayage de $Draws tirages par question (tests/python-tests.html)"
-    python -I -X utf8 "$PSScriptRoot\pilote_edge.py" "http://127.0.0.1:$port/tests/python-tests.html?draws=$Draws"
+    python -I -X utf8 "$PSScriptRoot\run_test_page.py" "http://127.0.0.1:$port/tests/python-tests.html?draws=$Draws"
     if ($LASTEXITCODE) { $failed = $true }
     # L’interface du compilateur, de bout en bout : elle aussi a besoin de Pyodide (aperçu, compilation).
-    "== Interface du compilateur : dossier, liste, aperçu, compilation (tests/outils/essai_compilateur.py)"
-    python -I -X utf8 "$PSScriptRoot\essai_compilateur.py" "http://127.0.0.1:$port/compiler/index.html"
+    "== Interface du compilateur : dossier, liste, aperçu, compilation (tests/tools/compiler_e2e.py)"
+    python -I -X utf8 "$PSScriptRoot\compiler_e2e.py" "http://127.0.0.1:$port/compiler/index.html"
     if ($LASTEXITCODE) { $failed = $true }
   }
 } finally {

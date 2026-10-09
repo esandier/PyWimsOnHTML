@@ -2,8 +2,8 @@
 # de la racine de questions/ et de la charte neutre (SPECIFICATION.md, § 11.6) : l’exemple de deux
 # questions, intégré à l’accueil, et la feuille de toutes les questions. À lancer
 # avant de publier une modification du moteur : les démonstrations intègrent le moteur du moment.
-# Prérequis : Python avec playwright (voir navigateur.py).
-# Usage : python tests/outils/demos.py
+# Prérequis : Python avec playwright (voir edge.py).
+# Usage : python tests/tools/demos.py
 import os
 import shutil
 import socket
@@ -16,7 +16,7 @@ from playwright.sync_api import sync_playwright
 
 # python -I n’ajoute pas le dossier du script au chemin d’import.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from navigateur import launch_edge  # noqa: E402
+from edge import launch_edge  # noqa: E402
 
 PROJECT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 DEMOS = os.path.join(PROJECT, "demos")
@@ -74,8 +74,8 @@ def main():
             # La feuille : toutes les questions, dans l’ordre de la liste (titres).
             all_titles = page.eval_on_selector_all("#question-list li:not(.question-group)",
                                              "items => items.map(li => li.querySelector('.question-title').textContent)")
-            compile_selection(page, all_titles, os.path.join(DEMOS, "feuille.html"), SHEET)
-            compile_selection(page, EXAMPLE_QUESTIONS, os.path.join(DEMOS, "exemple.html"), EXAMPLE)
+            compile_selection(page, all_titles, os.path.join(DEMOS, "sheet.html"), SHEET)
+            compile_selection(page, EXAMPLE_QUESTIONS, os.path.join(DEMOS, "example.html"), EXAMPLE)
             navigateur.close()
     finally:
         server.terminate()

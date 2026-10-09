@@ -730,7 +730,7 @@
   // fetch en file://) : elle l’explique au lieu d’échouer à la première compilation.
   if (location.protocol === "file:") {
     chooseFolderButton.disabled = true;
-    showMessage(projectStatus, "Ouvert depuis le disque, le compilateur ne peut pas lire ses fichiers : utilisez la version en ligne, ou lancez compiler/lancer-local.ps1.", "error");
+    showMessage(projectStatus, "Ouvert depuis le disque, le compilateur ne peut pas lire ses fichiers : utilisez la version en ligne, ou lancez compiler/run-local.ps1.", "error");
     return;
   }
 

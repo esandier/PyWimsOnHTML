@@ -1,5 +1,5 @@
 /* Pages du site (accueil, Créer) : dans la palette du compilateur (SPECIFICATION.md, § 11.6),
-   panneaux blancs sur fond gris, lisibles sur téléphone. Le bandeau est dans bandeau.css, partagé
+   panneaux blancs sur fond gris, lisibles sur téléphone. Le bandeau est dans banner.css, partagé
    avec le compilateur. Polices du système : rien à télécharger. */
 :root {
   color-scheme: light;

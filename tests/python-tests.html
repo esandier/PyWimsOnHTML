@@ -44,13 +44,13 @@
     // complet (quelques minutes).
     const sweepCount = Number(new URLSearchParams(location.search).get("draws")) || 20;
 
-    // Toutes les questions de la racine de questions/ et les modèles du mode d’emploi (guide/modeles/),
+    // Toutes les questions de la racine de questions/ et les modèles du mode d’emploi (guide/templates/),
     // vérifiés de la même façon (SPECIFICATION.md, § 11.5), d’après la liste que le serveur de test
     // (python -m http.server) affiche pour un dossier : une nouvelle question est testée sans modifier
     // cette page. Chemins relatifs à la racine du projet.
     async function listQuestionFiles() {
       const files = [];
-      for (const folder of ["questions/", "guide/modeles/"]) {
+      for (const folder of ["questions/", "guide/templates/"]) {
         const listing = new DOMParser().parseFromString(await (await fetch(`../${folder}`)).text(), "text/html");
         files.push(...[...listing.querySelectorAll("a[href]")]
           .map(link => decodeURIComponent(link.getAttribute("href")))

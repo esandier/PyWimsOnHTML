@@ -1,16 +1,16 @@
 # Ouvre une page de tests dans Edge sans interface (profil vierge, sans extension), attend
 # l’attribut data-done de <body>, puis affiche le nombre de résultats et les échecs.
-# Prérequis : pip install playwright (voir navigateur.py).
-# Usage : python pilote_edge.py URL [CHEMIN_EDGE]
+# Prérequis : pip install playwright (voir edge.py).
+# Usage : python run_test_page.py URL [CHEMIN_EDGE]
 import os
 import sys
 
 from playwright.sync_api import TimeoutError as PlaywrightTimeout
 from playwright.sync_api import sync_playwright
 
-# python -I (lancer-tests.ps1) n’ajoute pas le dossier du script au chemin d’import.
+# python -I (run-tests.ps1) n’ajoute pas le dossier du script au chemin d’import.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from navigateur import launch_edge  # noqa: E402
+from edge import launch_edge  # noqa: E402
 
 TIMEOUT_SECONDS = 600
 

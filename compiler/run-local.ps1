@@ -3,7 +3,7 @@
 # publier ; pour compiler ses questions, la version en ligne suffit.
 # Pourquoi un serveur : ouvert depuis le disque (file://), le compilateur ne peut pas lire les
 # fichiers du projet, que le navigateur refuse de lui donner (SPECIFICATION.md, § 11.1).
-# Prérequis : Python (son module http.server). Usage : .\compiler\lancer-local.ps1 [-Port 8800]
+# Prérequis : Python (son module http.server). Usage : .\compiler\run-local.ps1 [-Port 8800]
 # Fichier enregistré en UTF-8 avec BOM : sans lui, Windows PowerShell 5.1 lit les accents de travers.
 param(
   [int]$Port = 8800

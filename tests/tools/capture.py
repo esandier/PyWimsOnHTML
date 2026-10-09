@@ -1,6 +1,6 @@
 # Capture d’une page, comme sur un ordinateur ou comme sur un téléphone, pour vérifier le rendu
 # (SPECIFICATION.md, § 9). La page peut être une URL ou un fichier local (une feuille compilée).
-# Prérequis : pip install playwright (voir navigateur.py).
+# Prérequis : pip install playwright (voir edge.py).
 # Usage : python capture.py URL_OU_FICHIER IMAGE.png [--phone] [--wait SECONDES] [--edge CHEMIN]
 #   --phone : 375 px de large, écran tactile, densité 2 (la largeur de référence du projet).
 #   --wait : délai après le chargement, pour MathJax et les animations (2 s par défaut).
@@ -12,7 +12,7 @@ from playwright.sync_api import sync_playwright
 
 # python -I n’ajoute pas le dossier du script au chemin d’import.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from navigateur import page_address, launch_edge  # noqa: E402
+from edge import page_address, launch_edge  # noqa: E402
 
 PHONE = {"viewport": {"width": 375, "height": 812}, "device_scale_factor": 2,
              "is_mobile": True, "has_touch": True}

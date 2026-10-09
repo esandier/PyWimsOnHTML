@@ -556,15 +556,15 @@ sans `question_check` : la comparaison y est sans ambiguïté.
 | `layouts/standard.html` | mise en page commune aux feuilles et aux questions seules |
 | `css/question.css` | styles des feuilles, à partir des variables de la charte |
 | `css/brand.css` | charte neutre, par défaut (§ 11.4) |
-| `css/chartes/*.css` | exemples de chartes à copier en `brand.css` dans son dossier de questions (UPEC) |
+| `css/brands/*.css` | exemples de chartes à copier en `brand.css` dans son dossier de questions (UPEC) |
 | `compiler/format.js` | analyse d’un fichier `.pwq`, types de ses champs de réponse |
 | `compiler/draws.js` | tirages avec Pyodide, contrôles de l’auteur, cohérence, ordre des choix |
 | `compiler/assemble.js` | ressources du projet, assemblage des feuilles, empreinte d’une activité |
 | `compiler/zip.js` | archive ZIP des pages séparées |
 | `compiler/compiler.js` | interface du compilateur : dossier de questions, liste, aperçu, compilation, téléchargement ; lit en ligne les fichiers du projet (§ 11.1) |
-| `compiler/lancer-local.ps1` | serveur local et compilateur, pour essayer une modification du moteur avant de la publier |
-| `index.html`, `guide/`, `css/site.css`, `favicon.svg` | site du projet : accueil, mode d’emploi et ses modèles (`guide/modeles/`), styles et icône communs (§ 11.5, § 11.6) |
-| `demos/` | exemple de l’accueil et feuille complète, produits par `tests/outils/demos.py` |
+| `compiler/run-local.ps1` | serveur local et compilateur, pour essayer une modification du moteur avant de la publier |
+| `index.html`, `guide/`, `css/site.css`, `favicon.svg` | site du projet : accueil, mode d’emploi et ses modèles (`guide/templates/`), styles et icône communs (§ 11.5, § 11.6) |
+| `demos/` | exemple de l’accueil et feuille complète, produits par `tests/tools/demos.py` |
 
 ## 7. Questions PyWims existantes
 
@@ -580,20 +580,20 @@ un sous-projet distinct, traité plus tard.
 - `tests/python-tests.html` : vrai Pyodide (module `pywims`, isolement des
   questions, calcul sans fin, chaque question compilée puis corrigée, seule et
   dans une activité) et balayage des tirages ; « chaque question » : celles de la
-  racine de `questions/` et les modèles du mode d’emploi (`guide/modeles/`).
-- `tests/outils/essai_compilateur.py` : l’interface du compilateur, de bout en
+  racine de `questions/` et les modèles du mode d’emploi (`guide/templates/`).
+- `tests/tools/compiler_e2e.py` : l’interface du compilateur, de bout en
   bout (ouverture d’un dossier de questions, liste, « Tout sélectionner »,
   aperçu réel, compilation, fichier téléchargé, dossier mémorisé, « Relire »,
   « Rouvrir », et le chemin de Firefox et Safari imité sans
   `showDirectoryPicker`), sans erreur JavaScript. Le
   dossier ouvert est une copie des seules questions de la racine de `questions/` :
   comme les autres tests, il ne dépend pas du contenu des sous-dossiers.
-- `tests/outils/lancer-tests.ps1` lance le tout dans Edge sans interface.
+- `tests/tools/run-tests.ps1` lance le tout dans Edge sans interface.
 - Le pilotage d’Edge passe par Playwright pour Python (`pip install
   playwright`), avec l’Edge installé (`channel="msedge"`) : aucun autre
   navigateur à télécharger. Il ouvre les pages, donne le dossier au sélecteur,
   reçoit les téléchargements et fait les captures.
-- `tests/outils/capture.py` : capture d’une page sur ordinateur ou sur
+- `tests/tools/capture.py` : capture d’une page sur ordinateur ou sur
   téléphone (375 px de large, écran tactile), pour vérifier le rendu (§ 9).
 - Un test vérifie un comportement, et non la présence d’une chaîne dans le
   code.
@@ -615,7 +615,7 @@ un sous-projet distinct, traité plus tard.
   (par exemple pour l’affichage sur téléphone). Ils décrivent le code tel qu’il
   est, pas l’histoire de ses versions, qui est celle de git.
 - Le rendu se vérifie sur ordinateur et sur téléphone (375 px de large,
-  `tests/outils/capture.py`).
+  `tests/tools/capture.py`).
 
 ## 10. Questions à choix
 
@@ -805,7 +805,7 @@ liste par titre (§ 11.3) sont déjà en place dans le compilateur local.
   n’attendent plus son chargement (de 10 s à beaucoup plus, selon le navigateur
   et la connexion). Un échec de ce préchargement est silencieux : la
   compilation recommence le chargement, et en donne l’erreur.
-- **Développement local** : `compiler/lancer-local.ps1` démarre un serveur
+- **Développement local** : `compiler/run-local.ps1` démarre un serveur
   local à la racine du projet et ouvre le compilateur dans le navigateur ; on
   essaie ainsi une modification du moteur avant de la publier. Ouvert
   directement depuis le disque (`file://`), le compilateur ne peut pas lire
@@ -861,7 +861,7 @@ liste par titre (§ 11.3) sont déjà en place dans le compilateur local.
   qui ne définit que les variables et le logo prévus par `css/brand.css`.
 - **Par défaut, une charte neutre** : `css/brand.css`, sans logo ni couleurs
   d’établissement. La charte de l’UPEC devient un exemple,
-  `css/chartes/upec.css`.
+  `css/brands/upec.css`.
 - **Charte du dossier** : si le dossier de questions contient un fichier
   `brand.css` à sa racine, il remplace la charte par défaut, pour l’aperçu
   comme pour les fichiers générés. Un enseignant y met la charte de son
@@ -881,8 +881,8 @@ Une page `guide/` (« Créer »), en sections :
   du dossier de questions, puis on l’ouvre dans le compilateur.
 - **Sans IA** : deux modèles commentés, chacun avec « Télécharger » et
   « Voir » (le fichier déplié dans un cadre, comme le prompt) : un QCM sans
-  Python (`guide/modeles/qcm.pwq`) et une question à données aléatoires et
-  réponse calculée (`guide/modeles/calcul.pwq`).
+  Python (`guide/templates/qcm.pwq`) et une question à données aléatoires et
+  réponse calculée (`guide/templates/calcul.pwq`).
 - **Structure d’un fichier** : tableau des champs, puis `question_setup`, `question_statement` et
   `question_check` ; pas d’exemple recopié, les modèles se déplient juste au-dessus.
 - **Les champs de réponse** : syntaxe commune, puis un élément dépliable par
@@ -905,9 +905,9 @@ Une page `guide/` (« Créer »), en sections :
   deux questions**, intégré à la page dans un cadre ; les caractéristiques pour
   l’élève et pour l’enseignant ; « Pour commencer » en cinq étapes ; mention
   de la licence en bas. Un lien discret mène à une feuille plus complète.
-- **Démonstrations** (`demos/`) : `exemple.html` (l’activité de l’accueil) et
-  `feuille.html` (toutes les questions de la racine de `questions/`), compilées
-  avec la charte neutre. Un script (`tests/outils/demos.py`) les recompile par
+- **Démonstrations** (`demos/`) : `example.html` (l’activité de l’accueil) et
+  `sheet.html` (toutes les questions de la racine de `questions/`), compilées
+  avec la charte neutre. Un script (`tests/tools/demos.py`) les recompile par
   le vrai compilateur ; on le lance avant de publier une modification du
   moteur.
 - Lisible sur téléphone : aucune page ne défile en largeur.
@@ -915,7 +915,7 @@ Une page `guide/` (« Créer »), en sections :
 ### 11.7 Étapes
 
 1. **Fichiers du projet lus en ligne** : plus de choix du dossier du projet ;
-   `compiler/lancer-local.ps1` ; README mis à jour. Activation de GitHub Pages
+   `compiler/run-local.ps1` ; README mis à jour. Activation de GitHub Pages
    (par l’auteur).
 2. **Dossier mémorisé** sur Chrome et Edge, nom rappelé sur Firefox et Safari,
    bouton « Relire ».

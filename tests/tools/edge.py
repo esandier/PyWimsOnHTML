@@ -1,4 +1,4 @@
-# Lancement d’Edge par Playwright, commun aux outils de test (pilote_edge.py, essai_compilateur.py,
+# Lancement d’Edge par Playwright, commun aux outils de test (run_test_page.py, compiler_e2e.py,
 # capture.py).
 # Prérequis : pip install playwright. Playwright pilote l’Edge installé (channel « msedge ») : aucun
 # autre navigateur à télécharger. Il démarre avec un profil neuf et sans extension, ce qui compte :

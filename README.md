@@ -23,7 +23,7 @@ qui fait référence ; le format des questions est détaillé dans
 - `layouts/` — mise en page HTML commune aux questions seules et aux activités
 - `widgets/` — champs de saisie : texte, MathLive, matrices fixes et redimensionnables, choix
   unique ou multiple
-- `css/` — charte neutre par défaut (`brand.css`), exemples de chartes (`chartes/`, dont
+- `css/` — charte neutre par défaut (`brand.css`), exemples de chartes (`brands/`, dont
   celle de l’UPEC) et styles des questions (`question.css`)
 - `runtime/` — code intégré au fichier généré : grammaire des balises
   (`template.js`), correction sans Python (`correction.js`), Python dans un
@@ -45,7 +45,7 @@ ajoutés ou supprimés ; la compilation relit d’elle-même les questions chois
 Sur Firefox et Safari, on choisit le dossier à chaque visite.
 
 Pour essayer une modification du moteur (`runtime/`, `widgets/`, `css/`,
-`layouts/`) avant de la publier, lance `compiler/lancer-local.ps1` : il démarre
+`layouts/`) avant de la publier, lance `compiler/run-local.ps1` : il démarre
 un serveur local à la racine du projet et ouvre le compilateur. Ouvert
 directement depuis le disque (`file://`), le compilateur ne peut pas lire ses
 fichiers, et il le dit.
@@ -79,7 +79,7 @@ Les fichiers du projet (mise en page, moteur, module `runtime/pywims.py`) sont
 lus en ligne, à côté du compilateur, au début de chaque compilation : les
 tirages sont calculés avec le module qui est intégré au fichier généré, et les
 deux restent toujours d’accord. On peut ajouter ses propres outils Python à
-`pywims.py` (en local, avec `lancer-local.ps1`) ; chaque nom exporté (`__all__`)
+`pywims.py` (en local, avec `run-local.ps1`) ; chaque nom exporté (`__all__`)
 doit aussi être réservé dans `runtime/template.js`, ce que vérifient les tests.
 
 ## Le fichier généré
@@ -137,7 +137,7 @@ question sans `question_check`, qui ne charge pas Python).
 Les couleurs, polices et couleurs de correction sont les variables CSS d’une
 charte : par défaut la charte neutre, `css/brand.css`. Pour celle de son
 établissement, on place un fichier `brand.css` à la racine de son dossier
-de questions (exemple complet, avec logo : `css/chartes/upec.css`) ; le
+de questions (exemple complet, avec logo : `css/brands/upec.css`) ; le
 compilateur l’utilise et l’indique. Les bibliothèques en ligne sont figées sur une
 version exacte : Pyodide 0.27.7, MathJax 3.2.2 (rendu SVG), MathLive 0.111.0.
 MathJax reconnaît `$...$`, `$$...$$`, `\(...\)` et `\[...\]`.
@@ -213,15 +213,15 @@ projet :
   élève et jugées justes. 20 tirages par question par défaut, quelques minutes ;
   `?draws=200` pour un balayage complet, plus long.
 
-Sous Windows, `tests/outils/lancer-tests.ps1` lance tout automatiquement (Edge
-sans interface, profil vierge), puis `tests/outils/essai_compilateur.py`, qui
+Sous Windows, `tests/tools/run-tests.ps1` lance tout automatiquement (Edge
+sans interface, profil vierge), puis `tests/tools/compiler_e2e.py`, qui
 essaie l’interface du compilateur de bout en bout : ouverture du dossier, liste,
 aperçu, compilation et fichier téléchargé. Prérequis : Python avec le paquet
 `playwright` (`pip install playwright`), qui pilote l’Edge installé, sans autre
 navigateur à télécharger. L’option `-SkipPyodide` saute les tests du vrai Pyodide, les
 plus longs ; `-Draws 200` demande un balayage complet.
 
-Pour vérifier un rendu, `python tests/outils/capture.py URL image.png --phone`
+Pour vérifier un rendu, `python tests/tools/capture.py URL image.png --phone`
 capture une page comme sur un téléphone (375 px de large) ; sans `--phone`,
 comme sur un ordinateur.
 
