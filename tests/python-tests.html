@@ -256,7 +256,8 @@ json.dumps({
           const solutionJson = tag => {
             const variable = tag.attributes.solution;
             const converter = tag.type === "input_math" ? "_solution_latex"
-              : tag.type === "input_text" ? "_solution_text" : "_solution_cells";
+              : tag.type === "input_text" ? "_solution_text"
+                : tag.type === "input_value" ? "_value_solution" : "_solution_cells";
             const call = PyWimsTemplate.choiceTypes.has(tag.type)
               ? `_choice_solution(${variable}, ${tag.type === "input_checkbox" ? "True" : "False"}, ` +
                 `len(__import__("pywims")._choice_texts(${tag.attributes.choices})))`
@@ -281,6 +282,10 @@ json.dumps({
             const variable = tag.attributes.solution;
             if (PyWimsTemplate.choiceTypes.has(tag.type)) {
               await session.setChoice(tag.name, JSON.parse(await session.run(solutionJson(tag))));
+            } else if (tag.type === "input_value") {
+              // Le texte qu’affiche « Solution », calculé comme à la compilation.
+              const raw = JSON.parse(await session.run(solutionJson(tag)));
+              await session.set(tag.name, PyWimsCorrection.valueSolutionText(raw, tag.attributes));
             } else if (tag.type === "input_text" || tag.type === "input_math") {
               await session.set(tag.name, await session.run(`__import__("pywims")._solution_text(${variable})`));
             } else {
@@ -476,6 +481,25 @@ json.dumps({
         }
       });
 
+      await test("une valeur numérique enregistre sa valeur exacte et la solution affichée", async () => {
+        const draw = async (setup, tag, check) => (await PyWimsCompiler.computeDraws({
+          question_setup: setup, question_statement: tag, ...(check ? { question_check: check } : {})
+        }, { count: 1 }))[0].solutions.r;
+        const cases = [
+          [await draw("from sympy import Rational\ns = Rational(1, 3)", "{% input_value 'r' solution=s tolerance=0.01 form=decimal %}"), { text: "0,33", value: "1/3" }],
+          [await draw("s = 0.1 + 0.2", "{% input_value 'r' solution=s %}"), { text: "0,3", value: "3/10" }],
+          [await draw("from sympy import sqrt\ns = sqrt(2)", "{% input_value 'r' solution=s tolerance=0.001 %}"), { text: "1,414", value: "141421356237309504880168872421/100000000000000000000000000000" }],
+          [await draw("s = 1500", "{% input_value 'r' solution=s form=scientific %}"), { text: "1,5×10^3", value: "1500/1" }],
+          // Avec « question_check », le champ reçoit le texte saisi, comme un input_text.
+          [await draw("from fractions import Fraction\ns = Fraction(3, 4)", "{% input_value 'r' solution=s form=fraction %}", "ok_answer['r'] = r == '3/4'"), { text: "3/4", value: "3/4" }]
+        ];
+        for (const [actual, expected] of cases) {
+          if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+            throw new Error(`Solution ${JSON.stringify(actual)} au lieu de ${JSON.stringify(expected)}`);
+          }
+        }
+      });
+
       await test("les erreurs de l’auteur sont signalées avec leur graine et leur cause", async () => {
         const cases = [
           [{ question_setup: "a = 1\nb = 1 / 0", question_statement: "{% input_text 'r' solution=a %}" },
@@ -511,6 +535,12 @@ json.dumps({
             ["True n’est pas un indice de choix"]],
           [{ question_setup: "c = ['a', 'b']\ns = []", question_statement: "{% input_checkbox 'r' choices=c solution=s fixed_last=2 %}" },
             ["fixed_last=2 doit être inférieur au nombre de choix (2) du champ « r »"]],
+          [{ question_setup: "from sympy import sqrt\ns = sqrt(2)", question_statement: "{% input_value 'r' solution=s %}" },
+            ["Graine 0", "La solution « s » du champ « r » : c’est un nombre irrationnel : donnez une tolérance"]],
+          [{ question_setup: "s = 'douze'", question_statement: "{% input_value 'r' solution=s %}" },
+            ["La solution « s » du champ « r » : ce doit être un nombre réel, et non 'douze'."]],
+          [{ question_setup: "s = 7 / 2", question_statement: "{% input_value 'r' solution=s form=integer %}" },
+            ["La solution « s » du champ « r » : 7/2 n’est pas un entier"]],
           // Deux choix de même texte, aux espaces près : l’élève ne pourrait pas les distinguer.
           [{ question_setup: "c = ['x+1', '2', 'x + 1']\ns = 0", question_statement: "{% input_radio 'r' choices=c solution=s %}" },
             ["Graine 0", "Les choix 0 et 2 du champ « r » ont le même texte (« x + 1 »)"]],
@@ -619,7 +649,9 @@ json.dumps({
           const solution = matrixName === undefined
             ? shown.solutions[name]
             : shown.solutions[matrixName][Number(matrixRow)]?.[Number(matrixColumn)];
-          if (solution !== undefined) input.value = solution ?? "1";
+          // Une valeur numérique (input_value) a une solution { text, value } : l’élève tape son texte.
+          const text = solution !== null && typeof solution === "object" ? solution.text : solution;
+          if (text !== undefined) input.value = text ?? "1";
         }
         role("prompt").dispatchEvent(new Event("input"));
         role("check").click();

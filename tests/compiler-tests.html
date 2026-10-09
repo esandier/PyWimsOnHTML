@@ -102,6 +102,87 @@
       expectTagError("input_radio 'r' choices=c solution=s scoring='-2'", "barème propre à une réponse");
       expectTagError("input_radio 'r' choices=c solution=s scoring='b=1,b=2'", "« b » répétée");
     });
+    test("input_value lit sa tolérance et sa forme, input_text son degré de conformité", () => {
+      const value = PyWimsTemplate.parseTag("input_value 'r' solution=s tolerance=0.01 form=decimal style='width:5em'");
+      const quoted = PyWimsTemplate.parseTag("input_value 'r' solution=s tolerance=.5 form='scientific'");
+      const text = PyWimsTemplate.parseTag("input_text 'r' solution=s match=loose");
+      if (value.attributes.tolerance !== "0.01" || value.attributes.form !== "decimal" ||
+          quoted.attributes.tolerance !== ".5" || quoted.attributes.form !== "scientific" || text.attributes.match !== "loose") {
+        throw new Error(`Attributs mal lus : ${JSON.stringify([value.attributes, quoted.attributes, text.attributes])}`);
+      }
+      expectTagError("input_value 'r' solution=s form=decimale", "« form » doit être l’une des valeurs any, integer, decimal");
+      expectTagError("input_value 'r' solution=s tolerance=tol", "« tolerance » doit être un nombre positif");
+      expectTagError("input_text 'r' solution=s match=strict", "« match » doit être l’une des valeurs exact, normal, loose");
+      expectTagError("input_matrix 'm' size=2.5 solution=s", "« size » doit être un entier ou un nom de variable");
+    });
+    test("une valeur numérique se compare exactement, à la tolérance près, et dans la forme demandée", () => {
+      const { valueVerdict } = PyWimsCorrection;
+      const half = { text: "1,5", value: "3/2" };
+      const cases = [
+        ["1,5", half, {}, "correct"], ["1.5", half, {}, "correct"], ["3/2", half, {}, "correct"], ["6/4", half, {}, "correct"],
+        ["1.5e0", half, {}, "correct"], ["15×10^-1", half, {}, "correct"], [" 1,50 ", half, {}, "correct"],
+        ["3/2", half, { form: "decimal" }, "form"], ["1,5", half, { form: "fraction" }, "form"],
+        ["6/4", half, { form: "irreducible" }, "form"], ["3/2", half, { form: "irreducible" }, "correct"],
+        ["1,5", half, { form: "scientific" }, "correct"], ["15×10^-1", half, { form: "scientific" }, "form"],
+        ["1,4", half, {}, "wrong"], ["1,4", half, { tolerance: "0.1" }, "correct"], ["1,39", half, { tolerance: "0.1" }, "wrong"],
+        ["abc", half, {}, "wrong"], ["1/0", half, {}, "wrong"], ["", half, {}, "wrong"],
+        ["−2", { text: "-2", value: "-2/1" }, { form: "integer" }, "correct"], ["-2,0", { text: "-2", value: "-2/1" }, { form: "integer" }, "form"],
+        ["1 500", { text: "1500", value: "1500/1" }, {}, "correct"], ["1,5x10^3", { text: "1500", value: "1500/1" }, { form: "scientific" }, "correct"],
+        ["0,3", { text: "0,3", value: "3/10" }, {}, "correct"]
+      ];
+      for (const [input, solution, attributes, expected] of cases) {
+        const actual = valueVerdict(input, solution, attributes);
+        if (actual !== expected) throw new Error(`« ${input} » (${JSON.stringify(attributes)}) : ${actual} au lieu de ${expected}`);
+      }
+      if (!PyWimsCorrection.formHint("irreducible").includes("sous forme de fraction irréductible")) {
+        throw new Error("Retour de forme inattendu.");
+      }
+    });
+    test("la solution d’une valeur numérique s’écrit dans la forme demandée, arrondie selon la tolérance", () => {
+      const { valueSolutionText } = PyWimsCorrection;
+      const sqrt2 = { value: "141421356237309504880168872421/100000000000000000000000000000", exact: false };
+      const cases = [
+        [{ value: "3/2", exact: true }, {}, "1,5"], [{ value: "3/2", exact: true }, { form: "fraction" }, "3/2"],
+        [{ value: "1/3", exact: true }, {}, "1/3"], [{ value: "1/3", exact: true }, { form: "decimal", tolerance: "0.01" }, "0,33"],
+        [{ value: "2/3", exact: true }, { form: "decimal", tolerance: "0.005" }, "0,67"],
+        [{ value: "-7/3", exact: true }, { form: "integer", tolerance: "0.5" }, "-2"], [{ value: "12/1", exact: true }, { form: "integer" }, "12"],
+        [{ value: "1500/1", exact: true }, { form: "scientific" }, "1,5×10^3"], [{ value: "21/50000", exact: true }, { form: "scientific" }, "4,2×10^-4"],
+        [{ value: "-3/1", exact: true }, { form: "scientific" }, "-3"], [{ value: "0/1", exact: true }, { form: "scientific" }, "0"],
+        [{ value: "29999/3", exact: true }, { form: "scientific", tolerance: "10" }, "1×10^4"], [{ value: "19999/3", exact: true }, { form: "scientific", tolerance: "10" }, "6,666×10^3"],
+        [sqrt2, { tolerance: "0.001" }, "1,414"], [sqrt2, { form: "decimal", tolerance: "0.0001" }, "1,4142"],
+        [{ value: "1/20", exact: true }, {}, "0,05"]
+      ];
+      for (const [raw, attributes, expected] of cases) {
+        const actual = valueSolutionText(raw, attributes);
+        if (actual !== expected) throw new Error(`${raw.value} (${JSON.stringify(attributes)}) : « ${actual} » au lieu de « ${expected} »`);
+      }
+      for (const [raw, attributes, fragment] of [
+        [{ value: "1/3", exact: true }, { form: "decimal" }, "1/3 ne s’écrit pas exactement en décimal : donnez une tolérance"],
+        [{ value: "7/2", exact: true }, { form: "integer" }, "7/2 n’est pas un entier"],
+        [sqrt2, {}, "c’est un nombre irrationnel : donnez une tolérance"],
+        [sqrt2, { form: "irreducible", tolerance: "0.1" }, "qui ne s’écrit pas en fraction"]
+      ]) {
+        let message = "";
+        try {
+          valueSolutionText(raw, attributes);
+        } catch (error) {
+          message = error.message;
+        }
+        if (!message.includes(fragment)) throw new Error(`${raw.value} (${JSON.stringify(attributes)}) : « ${message} »`);
+      }
+    });
+    test("le degré de conformité d’un champ texte règle les différences admises", () => {
+      const { sameText } = PyWimsCorrection;
+      const cases = [
+        ["Théorème de Pythagore", "théorème de Pythagore", "normal", false],
+        ["Theoreme de pythagore.", "théorème de Pythagore", "loose", true],
+        ["x^2+1", "x^2 + 1", "normal", true], ["x^2+1", "x^2 + 1", "exact", false],
+        ["  1 000 ", "1 000", "exact", true], ["1000", "1 000", "exact", false]
+      ];
+      for (const [input, solution, match, expected] of cases) {
+        if (sameText(input, solution, match) !== expected) throw new Error(`« ${input} » / « ${solution} » (${match}) : ${!expected}`);
+      }
+    });
     test("le barème suit la syntaxe d’AMC et n’est admis que pour un champ seul", () => {
       const scoring = PyWimsTemplate.parseScoring("b=2,m=-0.5, v=0,e=-1,mz=3,haut=4,MAX=5,p=0,P=6,d=.5");
       if (JSON.stringify(scoring) !== JSON.stringify({ b: 2, m: -0.5, v: 0, e: -1, mz: 3, haut: 4, MAX: 5, p: 0, P: 6, d: 0.5 })) {

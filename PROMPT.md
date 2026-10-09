@@ -54,8 +54,8 @@ français, séparés par des virgules.
   - `is_number(valeur)` indique si une valeur est un nombre.
   - `decimal_comma(nombre, chiffres)` écrit un nombre arrondi à `chiffres`
     décimales, avec une virgule et sans zéros finaux : `decimal_comma(sqrt(2), 2)`
-    donne `"1,41"`, `decimal_comma(1.5, 2)` donne `"1,5"`. Utilise-le comme
-    solution d’une réponse décimale en français.
+    donne `"1,41"`, `decimal_comma(1.5, 2)` donne `"1,5"`. Il sert à afficher
+    un nombre dans un texte ; pour une réponse numérique, préfère `input_value`.
 - Toute chaîne Python qui contient une formule TeX s’écrit en **chaîne brute**,
   préfixée par `r` : `feedback = r'Simplifiez $\frac{6}{8}$ par $2$.'`, et non
   `'… $\frac{6}{8}$ …'`. Dans une chaîne ordinaire, Python transforme `\f`
@@ -82,17 +82,17 @@ français, séparés par des virgules.
   fractions équivalentes (`14/24` est faux pour `7/12`), séparateur décimal
   (`0,5` est faux pour `0.5`).
 - **N’écris pas `question_check`** pour une question à choix corrigée en tout ou rien,
-  ni pour un champ texte dont la réponse a une seule écriture (un entier, une
-  fraction irréductible, un mot).
-- **Écris `question_check`** quand plusieurs écritures sont justes (expression dans un
-  autre ordre, fraction non simplifiée, valeur approchée), pour un retour ciblé
+  ni pour une réponse numérique (`input_value`, même approchée ou en fraction),
+  ni pour un champ texte dont la réponse a une seule écriture (un mot).
+- **Écris `question_check`** quand plusieurs écritures d’une expression sont justes
+  (termes dans un autre ordre), pour un retour ciblé
   selon l’erreur, et toujours pour un champ `input_math` : une formule se
   corrige par une comparaison symbolique, par exemple
   `simplify(math_expression(saisie) - solution) == 0`.
 - La solution s’affiche telle que SymPy l’écrit (`19/12`, `x^2 + 1`). Un
   flottant est arrondi à 12 chiffres significatifs et s’écrit avec un point
-  (`0.1 + 0.2` donne `0.3`). Pour une réponse décimale écrite à la française,
-  donne une solution texte avec `decimal_comma`.
+  (`0.1 + 0.2` donne `0.3`). Pour une réponse numérique, utilise `input_value`,
+  qui accepte la virgule et le point et affiche la solution avec une virgule.
 - Un indice qui ne dépend pas de la réponse de l’élève va dans le champ
   `question_solution_explanation`, affiché avec la solution : il ne demande pas
   de `question_check`.
@@ -112,7 +112,12 @@ français, séparés par des virgules.
   N’invente jamais une image qu’on ne t’a pas donnée.
 - Champs pris en charge ; `solution=` est obligatoire et désigne une variable
   de `question_setup` qui contient la bonne réponse :
-  - `{% input_text 'nom' solution=variable style='CSS facultatif' %}`
+  - `{% input_value 'nom' solution=variable tolerance=0.01 form=decimal %}` :
+    réponse numérique, voir « Valeurs numériques » ci-dessous.
+  - `{% input_text 'nom' solution=variable style='CSS facultatif' match=normal %}` :
+    réponse écrite ; `match=exact` exige le texte caractère pour caractère,
+    `match=loose` ignore en plus majuscules, accents et ponctuation finale
+    (pour un mot ou un nom).
   - `{% input_math 'nom' solution=variable %}` (saisie mathématique MathLive)
   - `{% input_matrix 'nom' size=n solution=variable input_style='CSS facultatif' %}`
     ou `{% input_matrix 'nom' rows=m cols=p solution=variable %}` ; chaque
@@ -129,6 +134,22 @@ français, séparés par des virgules.
   matrice, un indice ou une liste d’indices pour une question à choix). Il ne doit pas reprendre un nom de `question_setup`, ni `ok_answer`,
   `feedback`, un outil de `pywims` ou un mot-clé Python. Donne-lui un nom anglais
   (`answer`, `result`, `matrix`…), comme aux variables de `question_setup`.
+
+## Valeurs numériques
+
+- Pour toute réponse qui est un nombre, utilise `input_value`, et non
+  `input_text` : il compare la valeur exacte, sans `question_check`, et
+  accepte la virgule comme le point (`1,5`, `1.5` et `3/2` sont la même valeur).
+- `solution=` désigne un nombre Python ou SymPy : `int`, `float`,
+  `Rational(3, 2)`, `sqrt(2)`, `pi`… Garde-le exact (`Rational`, pas `1/3`).
+- `tolerance=0.01` admet un écart absolu ; sans lui, la valeur doit être
+  exacte. Un irrationnel (`sqrt(2)`) exige une tolérance.
+- `form=` impose l’écriture : `any` (par défaut), `integer`, `decimal`,
+  `fraction`, `irreducible` (fraction irréductible), `scientific`
+  (`1,5×10^3`). Une valeur juste dans une autre forme est refusée, avec un
+  retour qui le dit. N’impose une forme que si l’énoncé la demande.
+- La solution affichée est écrite dans la forme demandée, arrondie selon la
+  tolérance : `tolerance=0.01` affiche deux décimales.
 
 ## Questions à choix
 
@@ -238,9 +259,12 @@ auto-multiple-choice (AMC). Convertis chaque question en un fichier `.pwq` :
   `feedback` utile, qui ne donne pas la réponse (voir
   `questions/nombres-premiers.pwq`).
 - Ne transpose pas en silence ce qui n’a pas d’équivalent : question ouverte
-  (`\AMCOpen`), réponse numérique (`\AMCnumericChoices`), barème par
+  (`\AMCOpen`), barème par
   réponse (`\bonne{…}\bareme{…}`), directive `formula`, `set.…`, `default.…`,
   `requires.…`, `auto`, `SUF`, `allowempty`. Signale-les séparément.
+- Une réponse numérique (`\AMCnumericChoices{valeur}{digits=…,decimals=…}`)
+  devient `input_value`, avec une tolérance d’une demi-unité de la dernière
+  décimale demandée (`decimals=2` donne `tolerance=0.005`).
 - Une image (`\includegraphics{figure}`) devient `<img src="figure.png"
   alt="…">` ; rappelle de joindre l’image au `.pwq` dans une archive `.pwqa`.
 - Pour plusieurs questions, donne les fichiers l’un après l’autre, chacun
@@ -331,7 +355,7 @@ result = gcd(x, y)
 % question_statement
 %
 Quel est le plus grand diviseur commun de ${{x}}$ et ${{y}}$ ?
-{% input_text 'answer' solution=result style='width:5em' %}
+{% input_value 'answer' solution=result style='width:5em' %}
 %
 % question_solution_explanation
 %

@@ -34,7 +34,7 @@ euclid_steps = " ; ".join(steps)
 %
 Quel est le plus grand diviseur commun de ${{x}}$ et ${{y}}$ ?
 <br>
-Réponse : {% input_text 'answer' solution=result style='width :5em' %}
+Réponse : {% input_value 'answer' solution=result style='width :5em' %}
 %
 % question_solution_explanation
 %

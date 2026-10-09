@@ -104,6 +104,8 @@ définie par `question_setup` :
 
 ```
 {% input_text 'result' solution=total style='width:7em' %}
+{% input_text 'word' solution=noun match=loose %}
+{% input_value 'length' solution=hypotenuse tolerance=0.01 form=decimal %}
 {% input_math 'student_derivative' solution=derivative %}
 {% input_matrix 'matrix' rows=m cols=p solution=product input_style='width:2em' %}
 {% input_vmatrix 'matrix' max_rows=5 max_cols=5 solution=product %}
@@ -111,7 +113,8 @@ définie par `question_setup` :
 {% input_checkbox 'answers' choices=choices solution=correct columns=2 %}
 ```
 
-Les questions à choix (`input_radio`, `input_checkbox`) sont décrites au § 10.
+Les questions à choix (`input_radio`, `input_checkbox`) sont décrites au § 10,
+les valeurs numériques (`input_value`) au § 2.8.
 
 **Conversion de la solution.** À la compilation, pour chaque tirage, la
 valeur Python de la variable de solution (calculée par `question_setup`) est convertie
@@ -122,6 +125,7 @@ n’a pas besoin de Python pour l’afficher.
 | Champ | Valeur Python (entrée) | Valeur écrite dans le champ (sortie) |
 |---|---|---|
 | `input_text` | nombre, expression SymPy ou texte | le texte qu’un élève taperait : `Rational(19, 12)` → `19/12`, `x**2 + 1` → `x^2 + 1`, `'oui'` → `oui` |
+| `input_value` | nombre Python ou SymPy | le nombre, écrit selon `form` (§ 2.8) : `Rational(3, 2)` → `3/2` ou `1,5` |
 | `input_math` | expression SymPy | son code LaTeX, affiché par MathLive : `Rational(19, 12)` → `\frac{19}{12}` |
 | `input_matrix` | `Matrix` ou liste de lignes | un texte par case, converti comme pour `input_text` |
 | `input_vmatrix` | idem | idem ; la grille prend les dimensions de la solution |
@@ -233,8 +237,9 @@ Le retour explique l’erreur sans donner la réponse : c’est le rôle du bout
 
 Chaque champ désigne sa solution : `question_check` est facultatif. Sans lui, chaque
 saisie est comparée à la solution du tirage, en JavaScript, sans Python.
-`question_check` ne sert qu’aux corrections particulières (plusieurs écritures justes,
-valeur numérique approchée) et aux retours ciblés.
+`question_check` ne sert qu’aux corrections particulières (plusieurs écritures justes
+d’une expression, formule) et aux retours ciblés ; une valeur numérique,
+même approchée, se corrige avec `input_value` (§ 2.8).
 
 **Principe : sans `question_check`, l’élève doit donner ce qu’affiche le bouton
 « Solution ».** L’auteur le vérifie dans l’aperçu du compilateur.
@@ -248,7 +253,8 @@ valeur numérique approchée) et aux retours ciblés.
 | `input_radio` | le choix est celui de la solution |
 | `input_checkbox` | les cases cochées sont exactement celles de la solution |
 | futur glisser-déposer | chaque élément est à la place de la solution |
-| `input_text`, case de matrice | le texte saisi est celui de la solution (§ 2.3), aux différences typographiques près (ci-dessous) |
+| `input_text`, case de matrice | le texte saisi est celui de la solution (§ 2.3), aux différences typographiques près (ci-dessous) ; `match` règle cette tolérance |
+| `input_value` | la valeur saisie est à `tolerance` près celle de la solution, et écrite sous la forme `form` (§ 2.8) |
 | `input_vmatrix` | la grille a les dimensions de la solution, et chaque case est juste ; avec d’autres dimensions, toutes les cases sont fausses |
 | valeur `ANY` | la saisie n’est pas vide |
 | `input_math` | pas de correction par défaut : `question_check` est obligatoire (ci-dessous) |
@@ -263,6 +269,14 @@ sans `question_check` : la comparaison y est sans ambiguïté.
   caractères). Tout le reste compte : majuscules (`A` et `a` sont deux objets
   mathématiques), ordre des termes (`1 + x^2` est faux pour `x^2 + 1`),
   fractions équivalentes (`14/24` pour `7/12`), séparateur décimal.
+- **Degré de conformité d’un champ texte** (`match`, facultatif) :
+  - `match=normal` (par défaut) : les différences typographiques ci-dessus ;
+  - `match=exact` : caractère pour caractère, aux espaces de début et de fin
+    près (une écriture imposée, par exemple `1 000` avec son espace) ;
+  - `match=loose` : en plus, ni les majuscules, ni les accents, ni la
+    ponctuation finale ne comptent (`Theoreme de Pythagore.` est juste pour
+    `théorème de Pythagore`) : pour un mot ou un nom, où l’orthographe des
+    accents n’est pas ce qu’on évalue.
 - **Séparateur décimal.** Aucune équivalence entre la virgule et le point : en
   anglais la virgule sépare les milliers, et en mathématiques elle sépare des
   éléments (`(1, 5)` n’est pas `(1.5)`). L’élève écrit le séparateur que montre
@@ -271,8 +285,10 @@ sans `question_check` : la comparaison y est sans ambiguïté.
   (`0.1 + 0.2` donne `0.3`, et non `0.30000000000000004`). Pour une écriture
   française, l’auteur donne une solution texte, par exemple avec l’outil
   `decimal_comma(x, 2)` du module `pywims`, qui renvoie `"1,41"`.
-- **Plusieurs écritures justes** (ordre des termes, fraction non simplifiée,
-  valeur approchée) : l’auteur écrit `question_check`. `PROMPT.md` le dit.
+- **Plusieurs écritures justes** : pour un nombre (fraction non simplifiée,
+  valeur approchée, virgule ou point), `input_value` (§ 2.8) ; pour une
+  expression (ordre des termes), l’auteur écrit `question_check`. `PROMPT.md`
+  le dit.
 - **Retour.** Le texte générique du § 2.2 (« Réponse incorrecte. » pour une
   question qui n’attend qu’une réponse). Un indice qui ne dépend pas de la
   réponse de l’élève peut aller dans `question_solution_explanation`,
@@ -333,6 +349,65 @@ page unique et autonome : le compilateur y intègre chaque image.
 - **Décompression** : par le navigateur (`DecompressionStream`), sans
   bibliothèque ; les archives compressées (« deflate ») et non compressées sont
   lues. Une archive chiffrée ou au format ZIP64 est refusée.
+
+### 2.8 Valeurs numériques
+
+`input_value` attend un nombre, comparé à la solution par sa valeur, sans
+Python : la réponse numérique est le cas le plus courant, et ni la virgule de
+l’écriture française, ni une valeur approchée, ni une fraction non simplifiée
+n’exigent plus un `question_check`.
+
+```
+{% input_value 'length' solution=hypotenuse tolerance=0.01 form=decimal %}
+```
+
+| Attribut | Statut | Rôle |
+|---|---|---|
+| `solution` | obligatoire | nombre Python (`int`, `float`, `Fraction`) ou SymPy (`Rational`, `sqrt(2)`, `pi`…) |
+| `tolerance` | facultatif | écart absolu admis, nombre décimal positif ; 0 par défaut : la valeur exacte |
+| `form` | facultatif | écriture exigée (ci-dessous) ; `any` par défaut |
+| `style` | facultatif | CSS du champ, comme pour `input_text` |
+
+| `form` | Écriture acceptée | Solution affichée |
+|---|---|---|
+| `any` | toutes celles-ci | entier, sinon décimal, sinon fraction irréductible |
+| `integer` | entier : `-12` | `-12` |
+| `decimal` | décimal (ou entier) : `1,5`, `1.5` | `1,5` |
+| `fraction` | fraction d’entiers (ou entier) : `6/4` | `3/2` |
+| `irreducible` | fraction irréductible (ou entier) : `3/2`, pas `6/4` | `3/2` |
+| `scientific` | `m×10^n` ou `m e n`, avec 1 ≤ \|m\| < 10 : `1,5×10^3`, `1.5e3` | `1,5×10^3` |
+
+- **Lecture de la saisie.** La virgule et le point sont acceptés : un nombre
+  seul est sans ambiguïté, contrairement à un texte (§ 2.6). Les espaces sont
+  ignorés (`1 000`), comme le signe moins typographique. Le multiplié s’écrit
+  `×`, `*`, `x` ou `·`.
+- **Comparaison exacte.** Saisie, solution et tolérance sont des fractions
+  exactes (entiers de taille quelconque, `BigInt`) : `0,1 + 0,2` n’a pas
+  d’erreur d’arrondi. Un flottant de Python est d’abord arrondi à 12 chiffres
+  significatifs, comme au § 2.6. Un nombre irrationnel (`sqrt(2)`, `pi`) est
+  pris avec 30 chiffres significatifs ; il exige une tolérance non nulle.
+- **Bonne valeur, mauvaise forme.** Le champ est faux, et le retour le dit :
+  « La valeur est juste, mais elle doit être écrite sous forme décimale. »
+  (de même « d’entier », « de fraction », « de fraction irréductible », « en
+  notation scientifique »). L’élève sait ainsi ce qui reste à corriger. Une
+  valeur fausse reçoit le retour générique (§ 2.2).
+- **Solution affichée.** Écrite avec une virgule, dans la forme demandée.
+  Quand la solution ne s’écrit pas exactement ainsi (`1/3` en décimal, `sqrt(2)`),
+  elle est arrondie au nombre de décimales que permet la tolérance (la moitié
+  d’une unité du dernier chiffre ne dépasse pas la tolérance) : `tolerance=0.01`
+  affiche `0,33`.
+- **Contrôles à la compilation** (§ 2.4), pour chaque tirage : la solution est
+  un nombre réel (ni texte, ni booléen, ni matrice ; `ANY` reste admis) ; un
+  irrationnel, ou un décimal infini avec `form=decimal` ou `scientific`, a une
+  tolérance non nulle ; une fraction est demandée pour une solution
+  rationnelle ; et, comme pour tout champ, la solution affichée est jugée juste
+  (§ 3, « Cohérence »).
+- **Avec `question_check`**, le champ arrive à Python comme un `input_text`
+  (le texte saisi) : `tolerance` et `form` ne servent qu’à la correction par
+  défaut et à la solution affichée.
+- On a écarté une tolérance relative (`1%`) et une tolérance calculée par
+  tirage (variable de `question_setup`) : l’écart absolu couvre les exercices
+  courants, et l’un ou l’autre s’ajoutera sans rien changer à l’existant.
 
 ## 3. Compilation
 
@@ -908,7 +983,7 @@ liste par titre (§ 11.3) sont déjà en place dans le compilateur local.
 
 - Chaque question est désignée par son **titre**. Dessous, en petit et en gris,
   les types de champs de réponse qu’il utilise, dans l’ordre de l’énoncé et
-  sans répétition : « texte », « formule », « matrice », « matrice
+  sans répétition : « texte », « nombre », « formule », « matrice », « matrice
   redimensionnable », « choix unique », « choix multiple ».
 - Les questions sont regroupées par sous-dossier (le dossier choisi d’abord,
   puis chaque sous-dossier sous son chemin, en intertitre), et triés par titre
@@ -1065,7 +1140,6 @@ remplaçait par l’ordre de la liste.
   avant la diffusion large.
 - **Clavier choisi par l’auteur** pour une case ou un champ (pavé numérique
   quand toutes les réponses sont des nombres positifs).
-- **Autres écritures des nombres** (notation scientifique pour la physique).
 - **KaTeX à la place de MathJax** : plus léger et plus rapide ; à étudier
   (couverture de l’écriture des questions, par exemple `@{\;}` dans un
   `array`, rendu, MathLive). Mesure d’octobre 2026 : MathJax pèse 603 Ko, et

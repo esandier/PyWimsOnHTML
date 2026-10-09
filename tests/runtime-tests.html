@@ -659,6 +659,33 @@ window.PyWimsPython = (() => {
         frame.remove();
       });
 
+      await test("une valeur numérique juste mais mal écrite est fausse, et le retour dit pourquoi", async () => {
+        const question = {
+          question_title: "Moitié", question_layout: "STD", question_setup: "s = 1.5",
+          question_statement: "La moitié de 3 ? {% input_value 'r' solution=s form=decimal %}"
+        };
+        const draws = [{ seed: 0, context: {}, dimensions: {}, solutions: { r: { text: "1,5", value: "3/2" } } }];
+        const { $, role, frame } = await openQuestion(question, draws, {});
+        await waitFor(() => $("#q1-form_txt_r"), "affichage du champ");
+        type($("#q1-form_txt_r"), "3/2");
+        role("check").click();
+        await waitFor(() => role("feedback").classList.contains("is-visible"), "retour de forme");
+        if (role("feedback").textContent !== "La valeur est juste, mais elle doit être écrite sous forme décimale." ||
+            !$("#q1-form_txt_r").classList.contains("is-incorrect")) {
+          throw new Error(`Retour inattendu : ${role("feedback").textContent}`);
+        }
+        role("check").click();
+        type($("#q1-form_txt_r"), "1.5");
+        role("check").click();
+        await waitFor(() => role("feedback").classList.contains("is-correct"), "retour juste");
+        role("new-draw").click();
+        await waitFor(() => !role("new-draw").disabled && $("#q1").dataset.state === "open", "question vierge");
+        role("solution").click();
+        await waitFor(() => $("#q1").dataset.state === "solution", "solution affichée");
+        if ($("#q1-form_txt_r").value !== "1,5") throw new Error(`Solution affichée : ${$("#q1-form_txt_r").value}`);
+        frame.remove();
+      });
+
       await test("l’aperçu avec « Afficher la solution » s’ouvre sur la solution et son explication", async () => {
         const radio = { ...choiceWithoutApres, question_statement: "Le plus petit ? {% input_radio 'r' choices=choix solution=bonne %}",
           question_solution_explanation: "Le plus petit est {{ a }}." };

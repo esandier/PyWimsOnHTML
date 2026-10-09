@@ -14,7 +14,7 @@
     const orders = {};
     const solutions = {};
     for (const tag of PyWimsTemplate.parseTags(fields.question_statement)) {
-      if (["input_text", "input_math"].includes(tag.type)) {
+      if (["input_text", "input_value", "input_math"].includes(tag.type)) {
         solutions[tag.name] = tag.attributes.solution;
       }
       for (const key of ["size", "rows", "cols"]) {
@@ -103,6 +103,8 @@
         await session.setChoice(name, solution);
       } else if (type === "input_text") {
         await session.set(name, typed(solution));
+      } else if (type === "input_value") {
+        await session.set(name, typed(solution?.text));
       } else if (type === "input_math") {
         // MathLive transmet une expression en texte (« x^2 + 1 »), et non le LaTeX affiché par la
         // solution : on saisit donc la forme texte, la plus proche de ce que reçoit « question_check ».
@@ -153,23 +155,46 @@
   function defaultCoherenceErrors(tags, draw) {
     const { isCorrect, normalizedText } = PyWimsCorrection;
     const errors = [];
-    for (const { name, type } of tags) {
+    for (const { name, type, attributes } of tags) {
       const solution = draw.solutions[name];
       let wrong;
       if (PyWimsTemplate.choiceTypes.has(type)) {
         wrong = isCorrect(type, solution, solution) ? [] : [""];
+      } else if (type === "input_value") {
+        // La solution affichée (texte), saisie comme par un élève, doit être juste à la tolérance près
+        // et dans la forme demandée : c’est ce qui vérifie l’arrondi de la solution affichée.
+        wrong = solution === null || isCorrect(type, solution.text, solution, attributes) ? [] : [""];
       } else {
         // Une valeur libre (null) se saisit « 1 », comme dans le contrôle avec « question_check ».
         const cells = ["input_matrix", "input_vmatrix"].includes(type)
           ? solution.flatMap((row, i) => row.map((cell, j) => [`[${i}][${j}]`, cell]))
           : [["", solution]];
         wrong = cells
-          .filter(([, cell]) => (cell !== null && normalizedText(cell) === "") || !isCorrect(type, cell ?? "1", cell))
+          .filter(([, cell]) => (cell !== null && normalizedText(cell) === "") || !isCorrect(type, cell ?? "1", cell, attributes))
           .map(([key]) => key);
       }
       if (wrong.length) {
         const where = wrong[0] ? ` (case${wrong.length > 1 ? "s" : ""} ${wrong.join(", ")})` : "";
         errors.push(`la solution du champ « ${name} »${where} est vide ou n’est pas acceptée par la correction par défaut.`);
+      }
+    }
+    return errors;
+  }
+
+  // Solutions des champs input_value (SPECIFICATION.md, § 2.8) : Python donne la valeur exacte
+  // ({ value: "n/d", exact }) ; on y ajoute le texte qu’écrit le bouton « Solution », selon form et
+  // tolerance. Le tirage garde les deux : le texte pour l’affichage, la valeur pour la correction.
+  // Renvoie les messages des solutions qui ne peuvent pas s’écrire ainsi.
+  function valueSolutionErrors(tags, draw) {
+    const errors = [];
+    for (const { name, type, attributes } of tags) {
+      const raw = draw.solutions[name];
+      if (type !== "input_value" || raw === null || raw === undefined) continue;
+      try {
+        draw.solutions[name] = { text: PyWimsCorrection.valueSolutionText(raw, attributes), value: raw.value };
+      } catch (error) {
+        errors.push(`La solution « ${attributes.solution} » du champ « ${name} » : ${error.message}`);
+        delete draw.solutions[name];
       }
     }
     return errors;
@@ -284,7 +309,9 @@
           }
           throw new Error(`Erreur dans « question_setup » pour la graine ${seed}, ${pythonErrorSummary(error.message)}`);
         }
-        return { session, draw: await session.collectDraw(spec) };
+        const draw = await session.collectDraw(spec);
+        draw.errors.push(...valueSolutionErrors(tags, draw));
+        return { session, draw };
       } catch (error) {
         await session.dispose();
         throw error;

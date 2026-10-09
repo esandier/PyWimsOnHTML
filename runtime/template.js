@@ -3,9 +3,15 @@ window.PyWimsTemplate = (() => {
   const tagPattern = /{%\s*(.*?)\s*%}/gs;
   const variablePattern = /{{\s*([A-Za-z_]\w*)\s*}}/g;
 
-  // Types d’attributs : entier, nom de variable Python, dimension (l’un ou l’autre) ou texte entre guillemets.
+  // Types d’attributs : entier, nombre décimal positif (gardé en texte, pour une valeur exacte), nom
+  // de variable Python, dimension (entier ou variable), texte entre guillemets, ou liste de mots
+  // admis, écrits avec ou sans guillemets (form=decimal ou form='decimal').
   const tagSchemas = {
-    input_text: { style: "text", solution: "variable" },
+    input_text: { style: "text", solution: "variable", match: ["exact", "normal", "loose"] },
+    input_value: {
+      style: "text", solution: "variable", tolerance: "number",
+      form: ["any", "integer", "decimal", "fraction", "irreducible", "scientific"]
+    },
     input_math: { solution: "variable" },
     input_matrix: {
       size: "dimension", rows: "dimension", cols: "dimension",
@@ -44,6 +50,7 @@ window.PyWimsTemplate = (() => {
   ]);
   const typeDescriptions = {
     integer: "un entier",
+    number: "un nombre positif, par exemple 0.01",
     variable: "un nom de variable",
     dimension: "un entier ou un nom de variable",
     text: "un texte entre guillemets"
@@ -161,7 +168,7 @@ window.PyWimsTemplate = (() => {
     }
     const schema = tagSchemas[type];
     const attributes = {};
-    const attributePattern = /^\s+([A-Za-z_]\w*)\s*=\s*(?:(\d+)|([A-Za-z_]\w*)|(['"])(.*?)\4)/s;
+    const attributePattern = /^\s+([A-Za-z_]\w*)\s*=\s*(?:(\d+(?:\.\d+)?|\.\d+)|([A-Za-z_]\w*)|(['"])(.*?)\4)/s;
     let rest = tagSource.slice(head[0].length);
 
     while (rest.trim()) {
@@ -169,7 +176,8 @@ window.PyWimsTemplate = (() => {
       if (!match) {
         throw new Error(`Syntaxe d’attribut invalide dans {% ${tagSource} %}`);
       }
-      const [, key, integer, variable, , text] = match;
+      const [, key, number, variable, , text] = match;
+      const integer = number !== undefined && /^\d+$/.test(number) ? number : undefined;
       if (!Object.hasOwn(schema, key)) {
         throw new Error(`Attribut « ${key} » inconnu pour ${type} dans {% ${tagSource} %}`);
       }
@@ -177,15 +185,21 @@ window.PyWimsTemplate = (() => {
         throw new Error(`Attribut « ${key} » répété dans {% ${tagSource} %}`);
       }
       const expected = schema[key];
+      const word = variable ?? text;
       const value =
-        expected === "integer" && integer !== undefined ? Number(integer)
+        Array.isArray(expected) ? (expected.includes(word) ? word : undefined)
+        : expected === "number" && number !== undefined ? number
+        : expected === "integer" && integer !== undefined ? Number(integer)
           : expected === "variable" && variable !== undefined ? variable
             : expected === "dimension" && integer !== undefined ? Number(integer)
               : expected === "dimension" && variable !== undefined ? variable
                 : expected === "text" && text !== undefined ? text
                   : undefined;
       if (value === undefined) {
-        throw new Error(`L’attribut « ${key} » doit être ${typeDescriptions[expected]} dans {% ${tagSource} %}`);
+        const description = Array.isArray(expected)
+          ? `l’une des valeurs ${expected.join(", ")}`
+          : typeDescriptions[expected];
+        throw new Error(`L’attribut « ${key} » doit être ${description} dans {% ${tagSource} %}`);
       }
       attributes[key] = value;
       rest = rest.slice(match[0].length);

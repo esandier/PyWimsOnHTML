@@ -23,8 +23,8 @@ from random import randint
 a = randint(2, 9)
 b = randint(11, 19)
 
-# La réponse attendue. Sans champ « question_check », l’élève doit l’écrire exactement ainsi (un
-# entier ici) ; pour accepter plusieurs écritures (fractions équivalentes, expressions), voir PROMPT.md.
+# La réponse attendue. Le champ input_value la compare par sa valeur : « 126 » ou « 126,0 » sont
+# justes. Ses paramètres tolerance (valeur approchée) et form (écriture exigée) sont dans le guide.
 product = a * b
 
 # Valeurs intermédiaires, affichées par l’explication de la solution (champ plus bas).
@@ -35,7 +35,7 @@ units_product = a * units
 % question_statement
 %
 Calculez ${{a}} \times {{b}}$ :
-{% input_text 'answer' solution=product style='width:4em' %}
+{% input_value 'answer' solution=product style='width:4em' %}
 %
 % question_solution_explanation
 %

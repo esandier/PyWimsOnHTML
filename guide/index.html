@@ -150,18 +150,39 @@
       <li><code>'nom'</code> : un nom de variable Python (lettres, chiffres, <code>_</code>), différent des
         variables de <code>question_setup</code> ; dans <code>question_check</code>, la saisie arrive dans cette variable.</li>
       <li>Une valeur est un nom de variable de <code>question_setup</code> (<code>solution=product</code>), un
-        entier (<code>columns=4</code>) ou un texte entre apostrophes (<code>style='width:4em'</code>).</li>
+        nombre (<code>columns=4</code>, <code>tolerance=0.01</code>), un mot parmi ceux que le champ admet
+        (<code>form=decimal</code>) ou un texte entre apostrophes (<code>style='width:4em'</code>).</li>
       <li><code>solution=</code> est obligatoire pour tous les champs : la variable qui contient la bonne
         réponse.</li>
     </ul>
 
     <details class="field-item">
-      <summary><code>input_text</code> : réponse écrite</summary>
-<pre><code>{% input_text 'answer' solution=product style='width:4em' %}</code></pre>
+      <summary><code>input_value</code> : réponse numérique</summary>
+<pre><code>{% input_value 'answer' solution=product %}
+{% input_value 'length' solution=hypotenuse tolerance=0.01 form=decimal %}</code></pre>
       <div class="table-wrap"><table>
         <thead><tr><th>Paramètre</th><th>Statut</th><th>Rôle</th></tr></thead>
         <tbody>
-          <tr><td><code>solution</code></td><td>obligatoire</td><td>nombre, expression SymPy ou texte ; affiché comme un élève l’écrirait (<code>19/12</code>, <code>x^2 + 1</code>). Pour un décimal à virgule, utilisez <code>decimal_comma</code> du module <code>pywims</code>.</td></tr>
+          <tr><td><code>solution</code></td><td>obligatoire</td><td>nombre Python ou SymPy (<code>Rational(3, 2)</code>, <code>sqrt(2)</code>…)</td></tr>
+          <tr><td><code>tolerance</code></td><td>facultatif</td><td>écart admis, par exemple <code>0.01</code> ; 0 par défaut (la valeur exacte). Obligatoire pour une solution comme <code>sqrt(2)</code>.</td></tr>
+          <tr><td><code>form</code></td><td>facultatif</td><td>écriture exigée : <code>any</code> (par défaut, toute écriture), <code>integer</code>, <code>decimal</code>, <code>fraction</code>, <code>irreducible</code> (fraction irréductible), <code>scientific</code> (<code>1,5×10^3</code>)</td></tr>
+          <tr><td><code>style</code></td><td>facultatif</td><td>style CSS du champ : <code>'width:5em'</code></td></tr>
+        </tbody>
+      </table></div>
+      <p>La valeur est comparée exactement, sans Python : <code>1,5</code>, <code>1.5</code> et <code>3/2</code> sont
+        la même valeur. Une valeur juste dans une autre forme que celle demandée est refusée, et le retour le dit
+        (« La valeur est juste, mais elle doit être écrite sous forme décimale. »). La solution affichée suit la
+        forme demandée, arrondie selon la tolérance.</p>
+    </details>
+
+    <details class="field-item">
+      <summary><code>input_text</code> : réponse écrite</summary>
+<pre><code>{% input_text 'answer' solution=noun match=loose %}</code></pre>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Paramètre</th><th>Statut</th><th>Rôle</th></tr></thead>
+        <tbody>
+          <tr><td><code>solution</code></td><td>obligatoire</td><td>nombre, expression SymPy ou texte ; affiché comme un élève l’écrirait (<code>19/12</code>, <code>x^2 + 1</code>). Pour un nombre, préférez <code>input_value</code>.</td></tr>
+          <tr><td><code>match</code></td><td>facultatif</td><td>conformité exigée : <code>normal</code> (par défaut, les espaces ne comptent pas), <code>exact</code> (caractère pour caractère), <code>loose</code> (ni majuscules, ni accents, ni ponctuation finale : pour un mot ou un nom)</td></tr>
           <tr><td><code>style</code></td><td>facultatif</td><td>style CSS du champ, le plus souvent sa largeur : <code>'width:4em'</code></td></tr>
         </tbody>
       </table></div>

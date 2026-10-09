@@ -189,6 +189,7 @@
   // Noms des types de champs de réponse, tels que la liste les affiche.
   const fieldKindNames = {
     input_text: "texte",
+    input_value: "nombre",
     input_math: "formule",
     input_matrix: "matrice",
     input_vmatrix: "matrice redimensionnable",

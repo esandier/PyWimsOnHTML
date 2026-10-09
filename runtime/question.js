@@ -74,8 +74,10 @@ window.PyWimsQuestion = (() => {
       this.python = this.usesPython ? PyWimsPython.createSession(section.id) : null;
       const tags = PyWimsTemplate.parseTags(this.definition.question_statement);
       this.tagTypes = new Set(tags.map(tag => tag.type));
-      // Type de la balise de chaque champ, d’après son nom : la correction par défaut en dépend.
+      // Type et attributs de la balise de chaque champ, d’après son nom : la correction par défaut en
+      // dépend (match, tolerance, form).
       this.typeOf = new Map(tags.map(tag => [tag.name, tag.type]));
+      this.attributesOf = new Map(tags.map(tag => [tag.name, tag.attributes]));
       this.choiceTags = tags.filter(tag => PyWimsTemplate.choiceTypes.has(tag.type));
       this.pythonCode = `${this.definition.question_setup}\n${this.definition.question_check ?? ""}`;
 
@@ -195,7 +197,10 @@ window.PyWimsQuestion = (() => {
       };
 
       switch (tag.type) {
+        // Une valeur numérique se saisit dans un champ texte : virgule, fraction ou « ×10^ » y
+        // sont permis, ce que le pavé numérique des téléphones ne permet pas (SPECIFICATION.md, § 2.3).
         case "input_text":
+        case "input_value":
           return PyWimsWidgets.inputText(tag.name, { style: attributes.style || "", idPrefix });
         case "input_math":
           return PyWimsWidgets.inputMath(tag.name, { idPrefix });
@@ -479,10 +484,12 @@ window.PyWimsQuestion = (() => {
     }
 
     // Verdicts de la correction par défaut (SPECIFICATION.md, § 2.6), un par champ de fields() :
-    // chaque saisie est comparée à la solution du tirage, sans Python.
+    // chaque saisie est comparée à la solution du tirage, sans Python. Renvoie aussi l’indication
+    // d’un champ input_value dont la valeur est juste mais pas l’écriture (§ 2.8), ou null.
     defaultVerdicts(inputs) {
-      const { isCorrect } = PyWimsCorrection;
-      return inputs.map(input => {
+      const { isCorrect, valueVerdict, formHint } = PyWimsCorrection;
+      let hint = null;
+      const answerResults = inputs.map(input => {
         const { name, matrixName, vmatrixName } = input.dataset;
         if (isChoiceGroup(input)) {
           const indices = checkedIndices(input);
@@ -499,8 +506,17 @@ window.PyWimsQuestion = (() => {
             return false;
           }
         }
-        return isCorrect(this.typeOf.get(matrixName ?? name), fieldValue(input), this.solutionFor(input));
+        const fieldName = matrixName ?? name;
+        const type = this.typeOf.get(fieldName);
+        const attributes = this.attributesOf.get(fieldName) ?? {};
+        const solution = this.solutionFor(input);
+        if (type === "input_value" && solution !== null &&
+            valueVerdict(fieldValue(input), solution, attributes) === "form") {
+          hint ??= formHint(attributes.form);
+        }
+        return isCorrect(type, fieldValue(input), solution, attributes);
       });
+      return { answerResults, hint };
     }
 
     // Transmet toutes les saisies à Python et exécute « question_check ». Renvoie les verdicts, un par champ de
@@ -567,14 +583,17 @@ window.PyWimsQuestion = (() => {
       try {
         await this.mathLiveReady();
         const inputs = this.fields();
-        const { answerResults, feedback: authorFeedback } = this.usesPython
+        const { answerResults, feedback: authorFeedback, hint = null } = this.usesPython
           ? await this.pythonVerdicts(inputs)
-          : { answerResults: this.defaultVerdicts(inputs), feedback: null };
+          : { ...this.defaultVerdicts(inputs), feedback: null };
         const allCorrect = inputs.length > 0 && answerResults.every(Boolean);
         // La variable « feedback » de « question_check » est facultative : sans elle, un retour générique s’affiche.
+        // Une valeur juste mais mal écrite (input_value) le dit : l’élève sait ce qui reste à corriger.
         const singleAnswer = inputs.length === 1 && isSingleAnswer(inputs[0]);
-        const feedback = authorFeedback ?? (allCorrect ? defaultFeedback.correct
-          : singleAnswer ? defaultFeedback.incorrectSingle : defaultFeedback.incorrect);
+        const generic = allCorrect ? defaultFeedback.correct
+          : singleAnswer ? defaultFeedback.incorrectSingle : defaultFeedback.incorrect;
+        const feedback = authorFeedback ??
+          (hint && !allCorrect ? (singleAnswer ? hint : `${generic} ${hint}`) : generic);
         this.hideStatus();
 
         const verdicts = new Map(inputs.map((input, index) => [input, answerResults[index]]));
@@ -699,7 +718,9 @@ window.PyWimsQuestion = (() => {
         const fields = this.fields();
         await Promise.all([
           animateFields(fields.filter(input => !isChoiceGroup(input)), input => {
-            const solution = this.solutionFor(input);
+            // Une valeur numérique (input_value) a une solution { text, value } : on écrit son texte.
+            const stored = this.solutionFor(input);
+            const solution = stored !== null && typeof stored === "object" ? stored.text : stored;
             input.classList.remove("is-incorrect", "is-correct");
             if (solution === null) {
               setFieldValue(input, input.matches("math-field") ? "\\ast" : freeValue);

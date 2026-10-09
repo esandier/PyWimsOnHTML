@@ -2404,9 +2404,15 @@ window.PyWimsTemplate = (() => {
   const tagPattern = /{%\s*(.*?)\s*%}/gs;
   const variablePattern = /{{\s*([A-Za-z_]\w*)\s*}}/g;
 
-  // Types d’attributs : entier, nom de variable Python, dimension (l’un ou l’autre) ou texte entre guillemets.
+  // Types d’attributs : entier, nombre décimal positif (gardé en texte, pour une valeur exacte), nom
+  // de variable Python, dimension (entier ou variable), texte entre guillemets, ou liste de mots
+  // admis, écrits avec ou sans guillemets (form=decimal ou form='decimal').
   const tagSchemas = {
-    input_text: { style: "text", solution: "variable" },
+    input_text: { style: "text", solution: "variable", match: ["exact", "normal", "loose"] },
+    input_value: {
+      style: "text", solution: "variable", tolerance: "number",
+      form: ["any", "integer", "decimal", "fraction", "irreducible", "scientific"]
+    },
     input_math: { solution: "variable" },
     input_matrix: {
       size: "dimension", rows: "dimension", cols: "dimension",
@@ -2445,6 +2451,7 @@ window.PyWimsTemplate = (() => {
   ]);
   const typeDescriptions = {
     integer: "un entier",
+    number: "un nombre positif, par exemple 0.01",
     variable: "un nom de variable",
     dimension: "un entier ou un nom de variable",
     text: "un texte entre guillemets"
@@ -2562,7 +2569,7 @@ window.PyWimsTemplate = (() => {
     }
     const schema = tagSchemas[type];
     const attributes = {};
-    const attributePattern = /^\s+([A-Za-z_]\w*)\s*=\s*(?:(\d+)|([A-Za-z_]\w*)|(['"])(.*?)\4)/s;
+    const attributePattern = /^\s+([A-Za-z_]\w*)\s*=\s*(?:(\d+(?:\.\d+)?|\.\d+)|([A-Za-z_]\w*)|(['"])(.*?)\4)/s;
     let rest = tagSource.slice(head[0].length);
 
     while (rest.trim()) {
@@ -2570,7 +2577,8 @@ window.PyWimsTemplate = (() => {
       if (!match) {
         throw new Error(`Syntaxe d’attribut invalide dans {% ${tagSource} %}`);
       }
-      const [, key, integer, variable, , text] = match;
+      const [, key, number, variable, , text] = match;
+      const integer = number !== undefined && /^\d+$/.test(number) ? number : undefined;
       if (!Object.hasOwn(schema, key)) {
         throw new Error(`Attribut « ${key} » inconnu pour ${type} dans {% ${tagSource} %}`);
       }
@@ -2578,15 +2586,21 @@ window.PyWimsTemplate = (() => {
         throw new Error(`Attribut « ${key} » répété dans {% ${tagSource} %}`);
       }
       const expected = schema[key];
+      const word = variable ?? text;
       const value =
-        expected === "integer" && integer !== undefined ? Number(integer)
+        Array.isArray(expected) ? (expected.includes(word) ? word : undefined)
+        : expected === "number" && number !== undefined ? number
+        : expected === "integer" && integer !== undefined ? Number(integer)
           : expected === "variable" && variable !== undefined ? variable
             : expected === "dimension" && integer !== undefined ? Number(integer)
               : expected === "dimension" && variable !== undefined ? variable
                 : expected === "text" && text !== undefined ? text
                   : undefined;
       if (value === undefined) {
-        throw new Error(`L’attribut « ${key} » doit être ${typeDescriptions[expected]} dans {% ${tagSource} %}`);
+        const description = Array.isArray(expected)
+          ? `l’une des valeurs ${expected.join(", ")}`
+          : typeDescriptions[expected];
+        throw new Error(`L’attribut « ${key} » doit être ${description} dans {% ${tagSource} %}`);
       }
       attributes[key] = value;
       rest = rest.slice(match[0].length);
@@ -2738,9 +2752,225 @@ window.PyWimsCorrection = (() => {
     return String(text).normalize("NFC").replace(/\u2212/g, "-").replace(/\s+/g, "");
   }
 
+  // Écriture comparée selon le degré de conformité d’un champ texte (match, § 2.6) :
+  //   - exact : caractère pour caractère, aux espaces de début et de fin près ;
+  //   - normal : les différences typographiques de normalizedText ;
+  //   - loose : en plus, ni les majuscules, ni les accents, ni la ponctuation finale, pour un mot
+  //     ou un nom, où l’orthographe des accents n’est pas ce qu’on évalue.
+  function matchedText(text, match = "normal") {
+    if (match === "exact") {
+      return String(text).normalize("NFC").trim();
+    }
+    const normal = normalizedText(text);
+    if (match !== "loose") {
+      return normal;
+    }
+    return normal.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/[.!?;:,…]+$/u, "");
+  }
+
   // Champ texte ou case de matrice : même écriture que la solution, une fois normalisée.
-  function sameText(input, solution) {
-    return typeof input === "string" && normalizedText(input) === normalizedText(solution);
+  function sameText(input, solution, match = "normal") {
+    return typeof input === "string" && matchedText(input, match) === matchedText(solution, match);
+  }
+
+  // Valeurs numériques (input_value, SPECIFICATION.md, § 2.8). Les nombres sont des fractions exactes
+  // { n, d } d’entiers BigInt, d > 0, irréductibles : la saisie, la solution et la tolérance se
+  // comparent sans erreur d’arrondi (0,1 + 0,2 vaut exactement 0,3). Solution écartée : les
+  // flottants de JavaScript, qui jugeraient fausse une saisie exacte à cause de l’arrondi binaire.
+  const abs = value => (value < 0n ? -value : value);
+  const gcd = (a, b) => {
+    [a, b] = [abs(a), abs(b)];
+    while (b) [a, b] = [b, a % b];
+    return a;
+  };
+  function rational(n, d = 1n) {
+    if (d === 0n) return null;
+    if (d < 0n) [n, d] = [-n, -d];
+    const divisor = gcd(n, d) || 1n;
+    return { n: n / divisor, d: d / divisor };
+  }
+  const subtract = (a, b) => rational(a.n * b.d - b.n * a.d, a.d * b.d);
+  const compare = (a, b) => {
+    const difference = a.n * b.d - b.n * a.d;
+    return difference < 0n ? -1 : difference > 0n ? 1 : 0;
+  };
+  const power10 = exponent => 10n ** BigInt(exponent);
+
+  // Décimal écrit avec un point ou une virgule (« -1,25 ») en fraction exacte.
+  function decimalRational(text) {
+    const [whole, fraction = ""] = text.replace(",", ".").split(".");
+    return rational(BigInt(whole + fraction), power10(fraction.length));
+  }
+
+  // Fraction « n/d » enregistrée dans le tirage (solution d’un champ input_value).
+  function parseRational(text) {
+    const [n, d = "1"] = String(text).split("/");
+    return rational(BigInt(n), BigInt(d));
+  }
+
+  // Lit une saisie numérique : renvoie { value, kind, irreducible, scientific } ou null si ce n’est
+  // pas un nombre. Virgule et point sont acceptés : un nombre seul est sans ambiguïté. Le
+  // multiplié de la notation scientifique s’écrit ×, *, x ou ·.
+  function parseNumber(text) {
+    const source = normalizedText(text);
+    let match = source.match(/^[+-]?\d+$/);
+    if (match) {
+      return { value: rational(BigInt(source)), kind: "integer" };
+    }
+    match = source.match(/^[+-]?\d+[.,]\d+$/);
+    if (match) {
+      return { value: decimalRational(source), kind: "decimal" };
+    }
+    match = source.match(/^([+-]?\d+)\/(\d+)$/);
+    if (match) {
+      const value = rational(BigInt(match[1]), BigInt(match[2]));
+      if (!value) return null;
+      return { value, kind: "fraction", irreducible: BigInt(match[2]) > 1n && gcd(BigInt(match[1]), BigInt(match[2])) === 1n };
+    }
+    match = source.match(/^([+-]?\d+(?:[.,]\d+)?)(?:[eE]([+-]?\d+)|[×*x·]10\^\(?([+-]?\d+)\)?)$/);
+    if (match) {
+      const mantissa = decimalRational(match[1]);
+      const exponent = Number(match[2] ?? match[3]);
+      if (Math.abs(exponent) > 400) return null;
+      const scale = exponent >= 0 ? rational(power10(exponent)) : rational(1n, power10(-exponent));
+      const value = rational(mantissa.n * scale.n, mantissa.d * scale.d);
+      const size = rational(abs(mantissa.n), mantissa.d);
+      return { value, kind: "scientific", scientific: compare(size, rational(1n)) >= 0 && compare(size, rational(10n)) < 0 };
+    }
+    return null;
+  }
+
+  // La saisie est-elle écrite sous la forme demandée (form, § 2.8) ?
+  function hasForm(parsed, form) {
+    switch (form) {
+      case "integer": return parsed.kind === "integer";
+      case "decimal": return parsed.kind === "integer" || parsed.kind === "decimal";
+      case "fraction": return parsed.kind === "integer" || parsed.kind === "fraction";
+      case "irreducible": return parsed.kind === "integer" || (parsed.kind === "fraction" && parsed.irreducible);
+      case "scientific": {
+        // Un nombre de 1 à 10 (exposant 0) et zéro s’écrivent aussi sans « ×10^0 ».
+        if (parsed.kind === "scientific") return parsed.scientific;
+        if (parsed.kind !== "integer" && parsed.kind !== "decimal") return false;
+        const size = rational(abs(parsed.value.n), parsed.value.d);
+        return parsed.value.n === 0n || (compare(size, rational(1n)) >= 0 && compare(size, rational(10n)) < 0);
+      }
+      default: return true;
+    }
+  }
+
+  // Écriture exigée, dans le retour « bonne valeur, mauvaise forme ».
+  const formNames = {
+    integer: "sous forme d’entier",
+    decimal: "sous forme décimale",
+    fraction: "sous forme de fraction",
+    irreducible: "sous forme de fraction irréductible",
+    scientific: "en notation scientifique"
+  };
+  const formHint = form => `La valeur est juste, mais elle doit être écrite ${formNames[form]}.`;
+
+  // Verdict d’un champ input_value : « correct », « form » (bonne valeur, mauvaise écriture) ou
+  // « wrong ». solution : { text, value } du tirage ; attributes : tolerance et form de la balise.
+  function valueVerdict(input, solution, { tolerance = "0", form = "any" } = {}) {
+    const parsed = typeof input === "string" ? parseNumber(input) : null;
+    if (!parsed) return "wrong";
+    const gap = subtract(parsed.value, parseRational(solution.value));
+    if (compare(rational(abs(gap.n), gap.d), decimalRational(String(tolerance))) > 0) return "wrong";
+    return hasForm(parsed, form) ? "correct" : "form";
+  }
+
+  // Écriture décimale d’une fraction, avec une virgule : exacte si digits est null (la fraction doit
+  // alors être un décimal fini), sinon arrondie à digits décimales, la moitié loin de zéro comme en
+  // classe ; les zéros finaux sont retirés.
+  function decimalText(value, digits = null) {
+    let places = digits;
+    if (places === null) {
+      places = 0;
+      while ((power10(places) * value.n) % value.d !== 0n && places < 400) places += 1;
+    }
+    const scaled = value.n * power10(places);
+    const sign = scaled < 0n ? "-" : "";
+    let units = abs(scaled) / value.d;
+    if (digits !== null && 2n * (abs(scaled) % value.d) >= value.d) units += 1n;
+    let text = units.toString().padStart(places + 1, "0");
+    text = places ? `${text.slice(0, -places)},${text.slice(-places)}` : text;
+    text = text.includes(",") ? text.replace(/0+$/, "").replace(/,$/, "") : text;
+    return text === "0" ? "0" : sign + text;
+  }
+
+  // Un décimal fini : un dénominateur sans autre facteur premier que 2 et 5.
+  function isFiniteDecimal(value) {
+    let d = value.d;
+    for (const factor of [2n, 5n]) while (d % factor === 0n) d /= factor;
+    return d === 1n;
+  }
+
+  // Nombre de décimales qu’autorise une tolérance : le plus petit d tel qu’une demi-unité du
+  // d-ième chiffre ne la dépasse pas ; null pour une tolérance nulle.
+  function decimalsFor(tolerance) {
+    if (tolerance.n === 0n) return null;
+    for (let digits = 0; digits <= 60; digits += 1) {
+      if (compare(rational(1n, 2n * power10(digits)), tolerance) <= 0) return digits;
+    }
+    return 60;
+  }
+
+  // Solution affichée d’un champ input_value (§ 2.8), écrite selon la forme demandée ; lève une
+  // erreur explicite si elle ne peut pas l’être. raw : { value: "n/d", exact } calculé par Python ;
+  // exact est faux pour un irrationnel, pris avec 30 chiffres significatifs.
+  function valueSolutionText(raw, { tolerance = "0", form = "any" } = {}) {
+    const value = parseRational(raw.value);
+    const shown = `${value.n}${value.d === 1n ? "" : `/${value.d}`}`;
+    const digits = decimalsFor(decimalRational(String(tolerance)));
+    const needTolerance = what => new Error(`${what} : donnez une tolérance (tolerance=…).`);
+    const fractionText = () => {
+      if (!raw.exact) throw new Error("c’est un nombre irrationnel, qui ne s’écrit pas en fraction.");
+      return shown;
+    };
+    const decimalOrRounded = what => {
+      if (raw.exact && isFiniteDecimal(value)) return decimalText(value);
+      if (digits === null) throw needTolerance(what);
+      return decimalText(value, digits);
+    };
+    switch (form) {
+      case "integer":
+        if (value.d === 1n) return shown;
+        if (digits === null) throw needTolerance(`${shown} n’est pas un entier`);
+        return decimalText(value, 0);
+      case "decimal":
+        return decimalOrRounded(`${raw.exact ? shown : "ce nombre irrationnel"} ne s’écrit pas exactement en décimal`);
+      case "fraction":
+      case "irreducible":
+        return fractionText();
+      case "scientific": {
+        if (value.n === 0n) return "0";
+        // Exposant : 10^e ≤ |valeur| < 10^(e+1).
+        const size = rational(abs(value.n), value.d);
+        let exponent = size.n.toString().length - size.d.toString().length;
+        const scale = e => (e >= 0 ? rational(power10(e)) : rational(1n, power10(-e)));
+        if (compare(size, scale(exponent)) < 0) exponent -= 1;
+        const mantissa = rational(value.n * scale(-exponent).n, value.d * scale(-exponent).d);
+        let text;
+        if (raw.exact && isFiniteDecimal(mantissa)) {
+          text = decimalText(mantissa);
+        } else {
+          if (digits === null) throw needTolerance(`${raw.exact ? shown : "ce nombre irrationnel"} ne s’écrit pas exactement en notation scientifique`);
+          // La tolérance porte sur la valeur : sur la mantisse, elle est divisée par 10^e.
+          const mantissaDigits = Math.max(0, digits + exponent);
+          text = decimalText(mantissa, mantissaDigits);
+          // L’arrondi peut donner 10 : 9,96 devient 1×10^(e+1).
+          if (/^-?10$/.test(text)) {
+            text = text.replace("10", "1");
+            exponent += 1;
+          }
+        }
+        return exponent === 0 ? text : `${text}×10^${exponent}`;
+      }
+      default:
+        if (raw.exact) {
+          return isFiniteDecimal(value) ? decimalText(value) : shown;
+        }
+        return decimalOrRounded("c’est un nombre irrationnel");
+    }
   }
 
   // Choix unique : l’indice choisi (null si rien n’est choisi) ; choix multiple : la liste des
@@ -2754,9 +2984,10 @@ window.PyWimsCorrection = (() => {
     return input === solution;
   }
 
-  // Verdict d’un champ, ou d’une case de matrice, d’après le type de sa balise et la solution du
-  // tirage (§ 2.3) ; une solution null est une valeur libre (ANY) : toute réponse non vide convient.
-  function isCorrect(type, input, solution) {
+  // Verdict d’un champ, ou d’une case de matrice, d’après le type de sa balise, la solution du
+  // tirage (§ 2.3) et les attributs de la balise (match, tolerance, form) ; une solution null est
+  // une valeur libre (ANY) : toute réponse non vide convient.
+  function isCorrect(type, input, solution, attributes = {}) {
     if (choiceTypes.has(type)) {
       return sameChoice(input, solution);
     }
@@ -2768,10 +2999,16 @@ window.PyWimsCorrection = (() => {
     if (solution === null) {
       return typeof input === "string" && input.trim() !== "";
     }
-    return sameText(input, solution);
+    if (type === "input_value") {
+      return valueVerdict(input, solution, attributes) === "correct";
+    }
+    return sameText(input, solution, attributes.match);
   }
 
-  return Object.freeze({ normalizedText, sameText, sameChoice, isCorrect });
+  return Object.freeze({
+    normalizedText, matchedText, sameText, sameChoice, isCorrect,
+    parseNumber, valueVerdict, valueSolutionText, formHint
+  });
 })();
 </script>
   <script>// Fournit le champ texte standard utilisé par les questions compilés.
@@ -2952,6 +3189,46 @@ def _solution_cells(value):
     return [[_solution_text(cell) for cell in row] for row in value]
 
 
+def _value_solution(value):
+    """Solution d’un champ input_value : {"value": "n/d", "exact": bool}, ou None pour une valeur libre.
+
+    La valeur est une fraction exacte, que le navigateur compare sans erreur d’arrondi
+    (SPECIFICATION.md, § 2.8). Un flottant est d’abord arrondi à 12 chiffres significatifs, comme
+    la solution d’un champ texte : 0.1 + 0.2 vaut 3/10. Un irrationnel (sqrt(2), pi) est pris avec
+    30 chiffres significatifs et marqué inexact : il exige une tolérance.
+    """
+    import decimal
+    import fractions
+    if _is_any(value):
+        return None
+    sympy = _sys.modules.get("sympy")
+    exact = True
+    if isinstance(value, bool):
+        raise TypeError("ce doit être un nombre, pas un booléen.")
+    if isinstance(value, int):
+        ratio = fractions.Fraction(value)
+    elif isinstance(value, fractions.Fraction):
+        ratio = value
+    elif isinstance(value, decimal.Decimal):
+        ratio = fractions.Fraction(value)
+    elif isinstance(value, float) or (sympy is not None and isinstance(value, sympy.Float)):
+        text = _float_text(value)
+        try:
+            ratio = fractions.Fraction(decimal.Decimal(text))
+        except (decimal.InvalidOperation, ValueError, OverflowError):
+            raise TypeError("{} n’est pas un nombre fini.".format(text)) from None
+    elif sympy is not None and isinstance(value, sympy.Basic) and getattr(value, "is_number", False) and value.is_real:
+        if value.is_rational:
+            rational = sympy.Rational(value)
+            ratio = fractions.Fraction(int(rational.p), int(rational.q))
+        else:
+            ratio = fractions.Fraction(decimal.Decimal(str(sympy.N(value, 30))))
+            exact = False
+    else:
+        raise TypeError("ce doit être un nombre réel, et non {!r}.".format(value))
+    return {"value": "{}/{}".format(ratio.numerator, ratio.denominator), "exact": exact}
+
+
 def _choice_texts(value):
     """Textes des choix d’un champ à choix : un texte reste tel quel, un objet SymPy devient une formule."""
     if isinstance(value, (str, bytes)) or not isinstance(value, (list, tuple)) or len(value) < 2:
@@ -3054,6 +3331,11 @@ def _collect_draw(namespace, spec):
                 continue
             try:
                 solutions[name] = _choice_solution(value, kind == "input_checkbox", len(choices[name]))
+            except TypeError as error:
+                errors.append("La solution « {} » du champ « {} » : {}".format(variable, name, error))
+        elif kind == "input_value":
+            try:
+                solutions[name] = _value_solution(value)
             except TypeError as error:
                 errors.append("La solution « {} » du champ « {} » : {}".format(variable, name, error))
         elif kind in ("input_text", "input_math"):
@@ -3954,8 +4236,10 @@ window.PyWimsQuestion = (() => {
       this.python = this.usesPython ? PyWimsPython.createSession(section.id) : null;
       const tags = PyWimsTemplate.parseTags(this.definition.question_statement);
       this.tagTypes = new Set(tags.map(tag => tag.type));
-      // Type de la balise de chaque champ, d’après son nom : la correction par défaut en dépend.
+      // Type et attributs de la balise de chaque champ, d’après son nom : la correction par défaut en
+      // dépend (match, tolerance, form).
       this.typeOf = new Map(tags.map(tag => [tag.name, tag.type]));
+      this.attributesOf = new Map(tags.map(tag => [tag.name, tag.attributes]));
       this.choiceTags = tags.filter(tag => PyWimsTemplate.choiceTypes.has(tag.type));
       this.pythonCode = `${this.definition.question_setup}\n${this.definition.question_check ?? ""}`;
 
@@ -4075,7 +4359,10 @@ window.PyWimsQuestion = (() => {
       };
 
       switch (tag.type) {
+        // Une valeur numérique se saisit dans un champ texte : virgule, fraction ou « ×10^ » y
+        // sont permis, ce que le pavé numérique des téléphones ne permet pas (SPECIFICATION.md, § 2.3).
         case "input_text":
+        case "input_value":
           return PyWimsWidgets.inputText(tag.name, { style: attributes.style || "", idPrefix });
         case "input_math":
           return PyWimsWidgets.inputMath(tag.name, { idPrefix });
@@ -4359,10 +4646,12 @@ window.PyWimsQuestion = (() => {
     }
 
     // Verdicts de la correction par défaut (SPECIFICATION.md, § 2.6), un par champ de fields() :
-    // chaque saisie est comparée à la solution du tirage, sans Python.
+    // chaque saisie est comparée à la solution du tirage, sans Python. Renvoie aussi l’indication
+    // d’un champ input_value dont la valeur est juste mais pas l’écriture (§ 2.8), ou null.
     defaultVerdicts(inputs) {
-      const { isCorrect } = PyWimsCorrection;
-      return inputs.map(input => {
+      const { isCorrect, valueVerdict, formHint } = PyWimsCorrection;
+      let hint = null;
+      const answerResults = inputs.map(input => {
         const { name, matrixName, vmatrixName } = input.dataset;
         if (isChoiceGroup(input)) {
           const indices = checkedIndices(input);
@@ -4379,8 +4668,17 @@ window.PyWimsQuestion = (() => {
             return false;
           }
         }
-        return isCorrect(this.typeOf.get(matrixName ?? name), fieldValue(input), this.solutionFor(input));
+        const fieldName = matrixName ?? name;
+        const type = this.typeOf.get(fieldName);
+        const attributes = this.attributesOf.get(fieldName) ?? {};
+        const solution = this.solutionFor(input);
+        if (type === "input_value" && solution !== null &&
+            valueVerdict(fieldValue(input), solution, attributes) === "form") {
+          hint ??= formHint(attributes.form);
+        }
+        return isCorrect(type, fieldValue(input), solution, attributes);
       });
+      return { answerResults, hint };
     }
 
     // Transmet toutes les saisies à Python et exécute « question_check ». Renvoie les verdicts, un par champ de
@@ -4447,14 +4745,17 @@ window.PyWimsQuestion = (() => {
       try {
         await this.mathLiveReady();
         const inputs = this.fields();
-        const { answerResults, feedback: authorFeedback } = this.usesPython
+        const { answerResults, feedback: authorFeedback, hint = null } = this.usesPython
           ? await this.pythonVerdicts(inputs)
-          : { answerResults: this.defaultVerdicts(inputs), feedback: null };
+          : { ...this.defaultVerdicts(inputs), feedback: null };
         const allCorrect = inputs.length > 0 && answerResults.every(Boolean);
         // La variable « feedback » de « question_check » est facultative : sans elle, un retour générique s’affiche.
+        // Une valeur juste mais mal écrite (input_value) le dit : l’élève sait ce qui reste à corriger.
         const singleAnswer = inputs.length === 1 && isSingleAnswer(inputs[0]);
-        const feedback = authorFeedback ?? (allCorrect ? defaultFeedback.correct
-          : singleAnswer ? defaultFeedback.incorrectSingle : defaultFeedback.incorrect);
+        const generic = allCorrect ? defaultFeedback.correct
+          : singleAnswer ? defaultFeedback.incorrectSingle : defaultFeedback.incorrect;
+        const feedback = authorFeedback ??
+          (hint && !allCorrect ? (singleAnswer ? hint : `${generic} ${hint}`) : generic);
         this.hideStatus();
 
         const verdicts = new Map(inputs.map((input, index) => [input, answerResults[index]]));
@@ -4579,7 +4880,9 @@ window.PyWimsQuestion = (() => {
         const fields = this.fields();
         await Promise.all([
           animateFields(fields.filter(input => !isChoiceGroup(input)), input => {
-            const solution = this.solutionFor(input);
+            // Une valeur numérique (input_value) a une solution { text, value } : on écrit son texte.
+            const stored = this.solutionFor(input);
+            const solution = stored !== null && typeof stored === "object" ? stored.text : stored;
             input.classList.remove("is-incorrect", "is-correct");
             if (solution === null) {
               setFieldValue(input, input.matches("math-field") ? "\\ast" : freeValue);
