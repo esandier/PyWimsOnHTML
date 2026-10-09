@@ -1,4 +1,4 @@
-# Spécification — feuilles d’exercices et tirages précalculés
+# Spécification — feuilles de questions et tirages précalculés
 
 Ce document décrit PyWimsOnHTML tel qu’il est. Il sert de référence : une
 modification commence par lui, avant le code (§ 9).
@@ -10,10 +10,10 @@ modification commence par lui, avant le code (§ 9).
    solution (§ 2.6) : c’est le cas courant des questions à choix. Seules les
    questions qui ont un `apres` chargent Pyodide, en arrière-plan, et leur
    correction par Python reste complète.
-3. Une activité est une feuille d’exercices compacte dans une seule page :
+3. Une activité est une feuille de questions compacte dans une seule page :
    un seul chargement de Pyodide, MathJax et MathLive pour toutes les questions.
 4. L’apparence suit la charte (§ 11.4) : la charte neutre `css/brand.css`, ou
-   le `brand.css` du dossier d’exercices, y compris pour les activités.
+   le `brand.css` du dossier de questions, y compris pour les activités.
 5. L’élève travaille sur ordinateur comme sur téléphone : les deux usages
    comptent autant, et la page doit être confortable sur un petit écran tactile
    comme avec un clavier et une souris. Le fichier HTML reste unique et de taille
@@ -45,7 +45,7 @@ refusé.
 
 ### 2.2 Python
 
-- Chaque exercice importe explicitement ce qu’il utilise :
+- Chaque question importe explicitement ce qu’elle utilise :
   `import sympy as sp`, `from sympy import …`, `import random`, etc.
 - Les outils PyWims viennent d’un module dédié :
   `from pywims import py_wims, is_nombre, math_expression, decimal_fr`.
@@ -137,7 +137,7 @@ Les champs MathLive ont leur propre clavier virtuel et ne sont pas concernés.
 
 ### 2.4 Contrôles à la compilation
 
-Le compilateur refuse l’exercice, avec un message précis, si :
+Le compilateur refuse la question, avec un message précis, si :
 - une balise n’a pas de `solution=` ou désigne une variable absente ;
 - la solution n’a pas la forme attendue par le champ (dimensions de matrice) ;
 - un nom de champ est déjà défini par `avant`, ou réservé (`ok_answer`,
@@ -148,7 +148,7 @@ Le compilateur refuse l’exercice, avec un message précis, si :
   tabulation), qu’il faut écrire en chaîne brute `r'…'` (le champ et la ligne
   sont indiqués) ;
 - `avant` lève une exception pour l’un des tirages (la graine est indiquée) ;
-- l’exercice est incohérent pour l’un des tirages : la solution, saisie comme
+- la question est incohérente pour l’un des tirages : la solution, saisie comme
   par un élève, est jugée fausse par `apres`, ou `apres` lève une exception
   (§ 3, « Cohérence ») ;
 - une question à choix ne respecte pas les règles du § 10.6.
@@ -279,7 +279,7 @@ sans `apres` : la comparaison y est sans ambiguïté.
 - Le compilateur charge Pyodide (version **0.27.7**, la même que le fichier
   généré, pour que le rendu LaTeX soit identique).
 - Pour chaque question, il exécute **20 tirages**, ou le nombre du champ
-  `tirages` : moins pour un exercice peu varié (inutile de calculer 20 fois les
+  `tirages` : moins pour une question peu variée (inutile de calculer 20 fois les
   mêmes valeurs), plus pour qu’un élève qui s’entraîne longtemps revoie moins
   souvent le même énoncé, au prix d’un fichier plus lourd. Chaque tirage part d’un
   espace de noms neuf, initialisé avec une graine (`random.seed`, et
@@ -294,7 +294,7 @@ sans `apres` : la comparaison y est sans ambiguïté.
   contrôle de cohérence, est limitée à **30 s** (comptées comme au § 5.1).
   Au-delà, la compilation s’arrête : « « avant » n’a pas terminé en 30 s pour
   la graine 7 (boucle sans fin ?) ». Le compilateur garde la main et reste
-  utilisable. Le premier import des bibliothèques de l’exercice (SymPy :
+  utilisable. Le premier import des bibliothèques de la question (SymPy :
   quelques secondes, bien plus sur un navigateur lent) n’est pas compté : il
   est fait au chargement des paquets, avant toute exécution limitée.
 - **Reproductibilité.** Chaque graine est exécutée deux fois, dans deux espaces
@@ -364,11 +364,11 @@ sans `apres` : la comparaison y est sans ambiguïté.
 - L’auteur peut ajouter ses propres outils à `pywims.py` ; tout nom exporté
   (`__all__`) doit aussi être un nom réservé de `runtime/template.js`, ce que
   vérifient les tests.
-- **Aperçu.** La page réelle de l’exercice s’affiche dans un cadre isolé
+- **Aperçu.** La page réelle de la question s’affiche dans un cadre isolé
   (`sandbox="allow-scripts"`), sans Python et avec des boutons inactifs :
   d’abord un tirage provisoire où chaque variable porte son nom, puis un tirage
   réel calculé par le Python de la page du compilateur, chargé une seule fois et
-  gardé en mémoire pour chaque exercice.
+  gardé en mémoire pour chaque question.
 
 ## 4. Structure du fichier généré
 
@@ -533,19 +533,19 @@ sans `apres` : la comparaison y est sans ambiguïté.
 | `layouts/standard.html` | mise en page commune aux feuilles et aux questions seules |
 | `css/exercise.css` | styles des feuilles, à partir des variables de la charte |
 | `css/brand.css` | charte neutre, par défaut (§ 11.4) |
-| `css/chartes/*.css` | exemples de chartes à copier en `brand.css` dans son dossier d’exercices (UPEC) |
+| `css/chartes/*.css` | exemples de chartes à copier en `brand.css` dans son dossier de questions (UPEC) |
 | `compiler/format.js` | analyse d’un fichier `.pwq`, types de ses champs de réponse |
 | `compiler/draws.js` | tirages avec Pyodide, contrôles de l’auteur, cohérence, ordre des choix |
 | `compiler/assemble.js` | ressources du projet, assemblage des feuilles, empreinte d’une activité |
 | `compiler/zip.js` | archive ZIP des pages séparées |
-| `compiler/compiler.js` | interface du compilateur : dossier d’exercices, liste, aperçu, compilation, téléchargement ; lit en ligne les fichiers du projet (§ 11.1) |
+| `compiler/compiler.js` | interface du compilateur : dossier de questions, liste, aperçu, compilation, téléchargement ; lit en ligne les fichiers du projet (§ 11.1) |
 | `compiler/lancer-local.ps1` | serveur local et compilateur, pour essayer une modification du moteur avant de la publier |
 | `index.html`, `guide/`, `css/site.css`, `favicon.svg` | site du projet : accueil, mode d’emploi et ses modèles (`guide/modeles/`), styles et icône communs (§ 11.5, § 11.6) |
 | `demos/` | exemple de l’accueil et feuille complète, produits par `tests/outils/demos.py` |
 
-## 7. Exercices PyWims existants
+## 7. Questions PyWims existantes
 
-L’export des exercices de la base Django PyWims vers des fichiers `.pwq` est
+L’export des questions de la base Django PyWims vers des fichiers `.pwq` est
 un sous-projet distinct, traité plus tard.
 
 ## 8. Tests
@@ -555,15 +555,15 @@ un sous-projet distinct, traité plus tard.
 - `tests/runtime-tests.html` : cycle de vie des questions, progression, mémoire,
   délais, avec un Python simulé ; quelques secondes.
 - `tests/python-tests.html` : vrai Pyodide (module `pywims`, isolement des
-  questions, calcul sans fin, chaque exercice compilé puis corrigé, seul et
-  dans une activité) et balayage des tirages ; « chaque exercice » : ceux de la
+  questions, calcul sans fin, chaque question compilée puis corrigée, seule et
+  dans une activité) et balayage des tirages ; « chaque question » : celles de la
   racine d’`exercises/` et les modèles du mode d’emploi (`guide/modeles/`).
 - `tests/outils/essai_compilateur.py` : l’interface du compilateur, de bout en
-  bout (ouverture d’un dossier d’exercices, liste, « Tout sélectionner »,
+  bout (ouverture d’un dossier de questions, liste, « Tout sélectionner »,
   aperçu réel, compilation, fichier téléchargé, dossier mémorisé, « Relire »,
   « Rouvrir », et le chemin de Firefox et Safari imité sans
   `showDirectoryPicker`), sans erreur JavaScript. Le
-  dossier ouvert est une copie des seuls exercices de la racine d’`exercises/` :
+  dossier ouvert est une copie des seules questions de la racine d’`exercises/` :
   comme les autres tests, il ne dépend pas du contenu des sous-dossiers.
 - `tests/outils/lancer-tests.ps1` lance le tout dans Edge sans interface.
 - Le pilotage d’Edge passe par Playwright pour Python (`pip install
@@ -577,7 +577,7 @@ un sous-projet distinct, traité plus tard.
 - **Un seul analyseur `.pwq`**, celui du compilateur. Le balayage des tirages
   (chaque tirage exécuté, ses solutions converties, saisies comme par un élève
   et jugées justes) passe par lui et par le vrai Pyodide, dans
-  `tests/python-tests.html` : 20 tirages par exercice par défaut,
+  `tests/python-tests.html` : 20 tirages par question par défaut,
   `?tirages=200` pour un balayage complet, plus lent (quelques minutes). Un
   balayage rapide hors du navigateur demandera Node.js, plus tard.
 
@@ -707,7 +707,7 @@ directive absente d’un barème donné prend la valeur indiquée :
 
 ### 10.6 Contrôles à la compilation
 
-En plus du § 2.4, le compilateur refuse l’exercice si, pour l’un des tirages :
+En plus du § 2.4, le compilateur refuse la question si, pour l’un des tirages :
 - `choices` n’est pas une liste d’au moins deux choix ;
 - `solution` n’est pas un indice valide (`input_radio`) ou une liste
   d’indices valides et distincts (`input_checkbox`) ;
@@ -757,8 +757,8 @@ En plus du § 2.4, le compilateur refuse l’exercice si, pour l’un des tirage
 ## 11. Site du projet : compilateur hébergé, accueil, mode d’emploi
 
 Le projet est publié en ligne : une page d’accueil qui le présente et le montre,
-le compilateur, où l’on ne choisit plus que son dossier d’exercices, et un mode
-d’emploi pour créer un exercice, avec ou sans IA. La cohérence (§ 3) et la
+le compilateur, où l’on ne choisit plus que son dossier de questions, et un mode
+d’emploi pour créer une question, avec ou sans IA. La cohérence (§ 3) et la
 liste par titre (§ 11.3) sont déjà en place dans le compilateur local.
 
 ### 11.1 Publication
@@ -787,13 +787,13 @@ liste par titre (§ 11.3) sont déjà en place dans le compilateur local.
   essaie ainsi une modification du moteur avant de la publier. Ouvert
   directement depuis le disque (`file://`), le compilateur ne peut pas lire
   ses fichiers : il le dit, et indique ce script.
-- Les exercices ne sont jamais envoyés : la page les lit sur l’ordinateur.
+- Les questions ne sont jamais envoyées : la page les lit sur l’ordinateur.
 - L’extension reste `.pwq` : le format est celui de PyWims, que ce projet
   ressuscite.
 
-### 11.2 Dossier des exercices
+### 11.2 Dossier des questions
 
-- Un seul dossier d’exercices à la fois, n’importe où sur le disque. Les
+- Un seul dossier de questions à la fois, n’importe où sur le disque. Les
   fichiers `.pwq` de ses sous-dossiers sont lus aussi.
 - **Chrome et Edge** : le dossier est choisi une fois et mémorisé (accès
   conservé par le navigateur, dans IndexedDB). À la visite suivante, un bouton
@@ -810,22 +810,22 @@ liste par titre (§ 11.3) sont déjà en place dans le compilateur local.
 - La page détecte ce que le navigateur permet ; aucun message d’erreur ne
   signale l’absence de mémorisation.
 
-### 11.3 Liste des exercices
+### 11.3 Liste des questions
 
-- Chaque exercice est désigné par son **titre**. Dessous, en petit et en gris,
+- Chaque question est désignée par son **titre**. Dessous, en petit et en gris,
   les types de champs de réponse qu’il utilise, dans l’ordre de l’énoncé et
   sans répétition : « texte », « formule », « matrice », « matrice
   redimensionnable », « choix unique », « choix multiple ».
-- Les exercices sont regroupés par sous-dossier (le dossier choisi d’abord,
+- Les questions sont regroupées par sous-dossier (le dossier choisi d’abord,
   puis chaque sous-dossier sous son chemin, en intertitre), et triés par titre
   dans l’ordre naturel (« (2) » avant « (10) ») dans chaque groupe. Sans
   sous-dossier, la liste n’a pas d’intertitre.
 - Un fichier illisible est listé sous son nom de fichier, avec la mention
   « fichier illisible » ; son erreur s’affiche quand on le choisit.
 - La recherche porte sur le titre, les mots-clés et le chemin.
-- Un bouton « Tout sélectionner » coche les exercices visibles, c’est-à-dire
+- Un bouton « Tout sélectionner » coche les questions visibles, c’est-à-dire
   ceux que la recherche laisse affichés ; quand ils sont tous cochés, il devient
-  « Tout désélectionner » et les décoche. Les exercices masqués par la
+  « Tout désélectionner » et les décoche. Les questions masquées par la
   recherche gardent leur état.
 - Un fichier modifié ou supprimé après l’ouverture du dossier, quand le
   navigateur ne peut pas le relire (Firefox, Safari) : la compilation
@@ -839,23 +839,23 @@ liste par titre (§ 11.3) sont déjà en place dans le compilateur local.
 - **Par défaut, une charte neutre** : `css/brand.css`, sans logo ni couleurs
   d’établissement. La charte de l’UPEC devient un exemple,
   `css/chartes/upec.css`.
-- **Charte du dossier** : si le dossier d’exercices contient un fichier
+- **Charte du dossier** : si le dossier de questions contient un fichier
   `brand.css` à sa racine, il remplace la charte par défaut, pour l’aperçu
   comme pour les fichiers générés. Un enseignant y met la charte de son
   établissement, une fois pour toutes.
 - Le compilateur indique la charte utilisée (« Charte : brand.css du dossier »
   ou « Charte neutre »).
 
-### 11.5 Mode d’emploi : créer un exercice
+### 11.5 Mode d’emploi : créer une question
 
 Une page `guide/` (« Créer »), en sections :
 
 - **Avec une IA** : trois boutons. « Copier le prompt » copie le texte de
   `PROMPT.md` ; « Voir le prompt » le déplie dans un cadre sous les boutons,
   qu’on referme du même bouton ; « Télécharger le prompt » l’enregistre. On le
-  colle dans son assistant, on décrit l’exercice voulu (ou on donne une
+  colle dans son assistant, on décrit la question voulue (ou on donne une
   question AMC à convertir), on enregistre la réponse dans un fichier `.pwq`
-  du dossier d’exercices, puis on l’ouvre dans le compilateur.
+  du dossier de questions, puis on l’ouvre dans le compilateur.
 - **Sans IA** : deux modèles commentés, chacun avec « Télécharger » et
   « Voir » (le fichier déplié dans un cadre, comme le prompt) : un QCM sans
   Python (`guide/modeles/qcm.pwq`) et une question à données aléatoires et
@@ -866,15 +866,16 @@ Une page `guide/` (« Créer »), en sections :
   type de champ, le barème et `LIBRE`.
 - **Compiler et publier**, **Bon à savoir** (entraînement seulement, poids de
   Python, renvoi à `PROMPT.md`, référence complète du format).
-- Les modèles sont des exercices vérifiés par les tests, comme ceux de la
+- Les modèles sont des questions vérifiées par les tests, comme celles de la
   racine d’`exercises/`.
 
 ### 11.6 Page d’accueil, bandeau commun
 
 - **Bandeau commun** aux trois pages (accueil, Créer, compilateur) :
   « PWOH », « questions à données aléatoires dans une page HTML », et les
-  boutons Accueil, Créer, Compilateur, Code source. Sur le compilateur, il
-  remplace le titre et reste compact (la page tient dans la fenêtre).
+  boutons Accueil, Créer, Compilateur, Code source, à droite. Sur le
+  compilateur, il remplace le titre (la page tient dans la fenêtre), et les
+  messages se placent entre la devise et les boutons.
 - **Style** : celui du compilateur (accent orange, panneaux blancs sur fond
   gris), pour tout le site.
 - `index.html` : ce que fait PWOH en un paragraphe ; un **exemple d’activité à
@@ -882,7 +883,7 @@ Une page `guide/` (« Créer »), en sections :
   l’élève et pour l’enseignant ; « Pour commencer » en cinq étapes ; mention
   de la licence en bas. Un lien discret mène à une feuille plus complète.
 - **Démonstrations** (`demos/`) : `exemple.html` (l’activité de l’accueil) et
-  `feuille.html` (tous les exercices de la racine d’`exercises/`), compilées
+  `feuille.html` (toutes les questions de la racine d’`exercises/`), compilées
   avec la charte neutre. Un script (`tests/outils/demos.py`) les recompile par
   le vrai compilateur ; on le lance avant de publier une modification du
   moteur.
@@ -900,25 +901,52 @@ Une page `guide/` (« Créer »), en sections :
 5. **Mode d’emploi et modèles**, puis **page d’accueil et démonstrations**,
    publiés ensemble.
 
-### 11.8 Ordre des questions d’une activité
+### 11.8 Disposition du compilateur
+
+- **Bandeau** sur le fond de la page, séparé du reste par un filet sur toute
+  la largeur de la fenêtre (sur les trois pages).
+- **Deux colonnes, deux rangées.** En haut, à gauche la ligne du dossier
+  (« Dossier ouvert : nom », « Relire », « Autre dossier »), à droite la ligne
+  de compilation ; toutes deux sans cadre, alignées et de même hauteur (celle
+  des boutons du bandeau). Dessous, les cadres commencent à la même hauteur :
+  - à gauche, **Questions**, sans titre : « Filtrer les questions par nom ou
+    mot-clé », compte de la sélection, « Tout sélectionner », liste, et la
+    charte utilisée en petit, en bas ;
+  - à droite, sans titre, la liste d’ordre (§ 11.9) dans son cadre quand elle
+    sert, puis l’**Aperçu** (ligne d’état et page de la question) sur la hauteur
+    restante.
+- **Ligne de compilation** : le bouton « Compiler la sélection », puis le
+  choix « Activité unique » ou « Pages séparées (ZIP) », présent seulement si
+  plusieurs questions sont cochées, puis « Titre » et son champ, présents
+  seulement pour une activité unique.
+- Sur téléphone, tout s’empile : dossier, Questions, ligne de compilation,
+  liste d’ordre, Aperçu.
+
+### 11.9 Ordre des questions d’une activité
 
 Une activité suit l’ordre dans lequel les questions ont été cochées. Cet ordre
 était invisible, ne se changeait qu’en décochant et recochant, et « Relire » le
 remplaçait par l’ordre de la liste.
 
-- **Liste d’ordre.** En mode « Activité unique », le panneau d’aperçu montre,
-  sous sa ligne de titre et sur toute sa largeur, la liste numérotée des
-  questions cochées, une par ligne, avec deux boutons « ↑ » et « ↓ » (le
-  premier sans « ↑ », le dernier sans « ↓ »). La liste défile seule au-delà
-  d’une hauteur fixe (environ six lignes, quatre sur téléphone), pour laisser
-  la place à l’aperçu.
-  Après un déplacement, le focus suit la question déplacée : on la monte de
-  plusieurs rangs au clavier sans la perdre. On a écarté le glisser-déposer :
-  le glisser-déposer HTML ne marche pas au toucher, et le refaire avec les
-  événements de pointeur coûte beaucoup pour un gain faible.
-- **Aperçu.** Un clic sur le titre d’une question de la liste d’ordre affiche
-  son aperçu, comme dans la liste des exercices.
-- **Rang dans la liste des exercices.** En mode « Activité unique », chaque
+- **Liste d’ordre.** En mode « Activité unique », un cadre montre « Ordre des
+  questions » et la liste numérotée des questions cochées, une par ligne. La
+  liste défile seule au-delà d’une hauteur fixe (environ six lignes, quatre
+  sur téléphone), pour laisser la place à l’aperçu.
+- **Question choisie, flèches fixes.** Un clic sur une ligne choisit la
+  question : sa ligne passe en surbrillance et son aperçu s’affiche (la
+  question affichée par la liste des questions, si elle est cochée, est
+  choisie de même). Deux boutons fixes, « ↑ » et « ↓ », à côté de « Ordre des
+  questions », déplacent la question choisie d’un rang ; ils sont inactifs sans
+  question choisie, « ↑ » en tête et « ↓ » en fin. Des clics répétés au même
+  endroit déplacent donc toujours la même question, à la souris comme au
+  clavier ; la liste défile pour la garder visible. On a écarté :
+  - des flèches sur chaque ligne : la question déplacée quitte sa ligne, et un
+    second clic au même endroit déplaçait l’autre question, ce qui annulait le
+    premier ;
+  - le glisser-déposer : le glisser-déposer HTML ne marche pas au toucher, et
+    le refaire avec les événements de pointeur coûte beaucoup pour un gain
+    faible.
+- **Rang dans la liste des questions.** En mode « Activité unique », chaque
   question cochée porte son rang (1, 2, …) à côté de sa case.
 - **Ordre gardé.** Cocher ajoute la question à la fin, décocher la retire ;
   « Tout sélectionner » ajoute les questions visibles non cochées à la fin,
@@ -945,7 +973,7 @@ remplaçait par l’ordre de la liste.
   quand toutes les réponses sont des nombres positifs).
 - **Autres écritures des nombres** (notation scientifique pour la physique).
 - **KaTeX à la place de MathJax** : plus léger et plus rapide ; à étudier
-  (couverture de l’écriture des exercices, par exemple `@{\;}` dans un
+  (couverture de l’écriture des questions, par exemple `@{\;}` dans un
   `array`, rendu, MathLive). Mesure d’octobre 2026 : MathJax pèse 603 Ko, et
   compose les 21 questions d’une activité en 2,5 s sur un processeur ralenti
   4 fois.

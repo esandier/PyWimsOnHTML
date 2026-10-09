@@ -1,6 +1,6 @@
 ﻿# Lance le compilateur en local : un serveur à la racine du projet, puis le compilateur dans le
 # navigateur. Sert à essayer une modification du moteur (runtime/, widgets/, css/…) avant de la
-# publier ; pour compiler ses exercices, la version en ligne suffit.
+# publier ; pour compiler ses questions, la version en ligne suffit.
 # Pourquoi un serveur : ouvert depuis le disque (file://), le compilateur ne peut pas lire les
 # fichiers du projet, que le navigateur refuse de lui donner (SPECIFICATION.md, § 11.1).
 # Prérequis : Python (son module http.server). Usage : .\compiler\lancer-local.ps1 [-Port 8800]

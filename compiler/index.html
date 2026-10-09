@@ -36,20 +36,26 @@
       display: flex;
       min-width: 0;
       min-height: 3.5rem;
+      padding-bottom: 0.5rem;
       align-items: center;
       justify-content: space-between;
       gap: 1rem;
     }
 
-    /* Le bandeau (../css/bandeau.css) laisse la place aux messages : il ne s’étire pas. */
+    /* Bandeau (../css/bandeau.css) sur une ligne : « PWOH » et la devise, les messages, puis les
+       boutons du site à droite (SPECIFICATION.md, § 11.6). Ses deux parties deviennent des éléments
+       de la barre, pour que les messages se glissent entre elles. */
     h1 { margin: 0; font-size: inherit; }
-    .titlebar .bandeau { flex: 0 1 auto; gap: 0.35rem 1.25rem; }
+    .titlebar .bandeau { display: contents; }
+    .titlebar .bandeau-titre { flex: 0 1 auto; }
+    .titlebar .message-stack { order: 1; }
+    .titlebar .bandeau-nav { flex: 0 0 auto; order: 2; }
     h2, h3 { margin-top: 0; }
     button, input { font: inherit; }
 
     .message-stack {
       display: flex;
-      flex: 0 1 34rem;
+      flex: 1 1 0;
       flex-direction: column;
       justify-content: center;
       min-width: 0;
@@ -73,21 +79,31 @@
       line-clamp: 2;
     }
 
-    /* Contrôle du dossier et affichage de son nom sélectionné. */
+    /* Ligne du dossier, sous « PWOH » : sans cadre, de la hauteur des boutons du bandeau (§ 11.8). */
     .folder-row {
       display: flex;
       min-width: 0;
       align-items: center;
-      gap: 0.8rem;
-      padding: 0.75rem;
-      border: 1px solid #d7dbe0;
-      border-radius: 0.5rem;
-      background: #fff;
+      gap: 0.6rem;
     }
+
+    /* Une seule hauteur pour les boutons et champs des deux lignes du haut, fixée et non laissée au
+       contenu : une liste déroulante est naturellement plus haute qu’un bouton, et son apparition
+       (plusieurs questions cochées) décalait toute la ligne de compilation. */
+    .folder-button,
+    #compile-exercise,
+    #output-mode,
+    #activity-title {
+      flex: 0 0 auto;
+      height: 2.1rem;
+      padding: 0 0.75rem;
+      font-size: 0.9rem;
+      line-height: 1;
+    }
+    .folder-row, .compile-row { min-height: 2.1rem; }
 
     .folder-button,
     #compile-exercise {
-      padding: 0.55rem 0.9rem;
       border: 1px solid #9b5700;
       border-radius: 0.35rem;
       color: #fff;
@@ -110,28 +126,34 @@
       white-space: nowrap;
     }
     #reload-folder, #other-folder { flex: 0 0 auto; }
-    #brand-status { margin: -0.35rem 0 0 0.25rem; font-size: 0.85rem; }
+    #brand-status { margin: 0.6rem 0 0; font-size: 0.8rem; }
 
-    /* Répartition de la liste des exercices et du panneau de prévisualisation. */
+    /* Deux colonnes, deux rangées : les lignes du dossier et de la compilation en haut, alignées et de
+       même hauteur ; les cadres dessous commencent à la même hauteur (§ 11.8). */
     .workspace {
       display: grid;
       grid-template-columns: minmax(17rem, 0.8fr) minmax(0, 1.7fr);
-      gap: 1rem;
+      grid-template-rows: auto minmax(0, 1fr);
+      grid-template-areas: "dossier compilation" "questions droite";
+      gap: 0.75rem 1rem;
       min-width: 0;
       min-height: 0;
     }
+    .folder-row { grid-area: dossier; }
+    .panel-exercises { grid-area: questions; }
+    .compile-row { grid-area: compilation; }
+    .main-column { grid-area: droite; }
 
-    /* Colonne de gauche : le dossier au-dessus de la liste, qui prend la hauteur restante. L’aperçu,
-       à droite, garde ainsi toute la hauteur de la fenêtre. */
-    .sidebar {
+    /* À droite : l’ordre des questions quand il sert, puis l’aperçu sur la hauteur restante. */
+    .main-column {
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
       min-width: 0;
       min-height: 0;
     }
-
-    .sidebar .panel-exercises { flex: 1 1 auto; }
+    .panel-order { flex: 0 0 auto; padding: 0.75rem 1rem; }
+    .main-column .panel-preview { flex: 1 1 auto; }
 
     .panel {
       display: flex;
@@ -246,30 +268,21 @@
       font-weight: 400;
     }
 
-    .panel-heading {
+    /* Cadre Compilation : le bouton, puis le mode et le titre quand ils servent, sur une ligne. */
+    .compile-row {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
+      gap: 0.5rem 0.75rem;
     }
-
-    #preview-heading { margin: 0; }
-    #preview-heading .muted { font-size: 0.85rem; font-weight: 400; }
-
-    #multi-output-controls {
-      display: grid;
-      gap: 0.5rem;
-      min-width: min(14rem, 45%);
-      align-content: start;
-      font-size: 0.9rem;
-    }
-
-    #multi-output-controls select,
-    #activity-title { width: 100%; min-width: 0; padding: 0.4rem; }
+    #output-mode, #activity-title { padding: 0 0.4rem; border: 1px solid #aeb5bd; border-radius: 0.3rem; background: #fff; }
+    .activity-title-field { display: flex; flex: 1 1 14rem; align-items: center; gap: 0.4rem; min-width: 0; }
+    #activity-title { flex: 1 1 auto; min-width: 0; }
 
     /* Liste d’ordre : environ six lignes visibles, puis elle défile seule et l’aperçu garde sa place. */
-    #activity-order { flex: 0 0 auto; margin-top: 0.75rem; }
-    #activity-order h3 { margin: 0 0 0.3rem; font-size: 0.95rem; }
+    .order-heading { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.5rem; margin-bottom: 0.5rem; }
+    .order-heading h3 { margin: 0 0.25rem 0 0; font-size: 0.95rem; }
+    #order-hint { font-size: 0.8rem; }
     #activity-order-list {
       max-height: 13.5rem;
       overflow-y: auto;
@@ -281,7 +294,7 @@
     }
     #activity-order-list li {
       display: grid;
-      grid-template-columns: 1.6rem minmax(0, 1fr) auto auto;
+      grid-template-columns: 1.6rem minmax(0, 1fr);
       align-items: center;
       gap: 0.25rem;
       padding: 0.1rem 0.35rem;
@@ -289,6 +302,7 @@
     #activity-order-list li + li { border-top: 1px solid #eef0f2; }
     .order-rank { color: #656b72; font-size: 0.85rem; text-align: right; }
     .order-title {
+      width: 100%;
       overflow: hidden;
       padding: 0.3rem 0.4rem;
       border: 0;
@@ -301,6 +315,8 @@
     }
     .order-title:hover { background: #f1f3f5; }
     .order-title[aria-current="true"] { color: #633900; background: #fff0d8; font-weight: 600; }
+    /* Question choisie, celle que déplacent les flèches. */
+    #activity-order-list li.is-chosen { background: #fff6e8; box-shadow: inset 3px 0 0 #a95f00; }
     .order-move {
       width: 2rem;
       height: 2rem;
@@ -311,9 +327,8 @@
       background: #fff;
       cursor: pointer;
     }
-    .order-move:hover { background: #fff0d8; }
-    /* Le premier n’a pas de « ↑ », le dernier pas de « ↓ » : la place reste, les flèches restent alignées. */
-    .order-move[hidden] { display: block !important; visibility: hidden; }
+    .order-move:hover:not(:disabled) { background: #fff0d8; }
+    .order-move:disabled { cursor: not-allowed; opacity: 0.4; }
 
     /* Rang d’une question cochée dans la liste des exercices, en mode « Activité unique ». */
     .exercise-rank {
@@ -331,7 +346,8 @@
     }
     .exercise-rank:empty { display: none; }
 
-    #preview-notice { margin: 0.6rem 0 0; font-size: 0.85rem; }
+    #preview-notice { margin: 0 0 0.6rem; font-size: 0.85rem; }
+    .panel-exercises .filter-row label { font-size: 0.9rem; }
     #preview-notice:empty { display: none; }
 
     /* Cadre de l’aperçu : il occupe la hauteur restante du panneau et défile lui-même. */
@@ -340,7 +356,6 @@
       flex: 1 1 auto;
       width: 100%;
       min-height: 0;
-      margin-top: 0.75rem;
       border: 1px solid #e0e3e7;
       border-radius: 0.35rem;
       background: #fff;
@@ -371,38 +386,37 @@
         align-items: center;
         gap: 0.2rem 0.75rem;
       }
-      .titlebar .bandeau { display: contents; }
+      .titlebar .message-stack { grid-column: 2; grid-row: 1; }
       .titlebar .bandeau-nav { grid-column: 1 / -1; grid-row: 2; gap: 0.25rem; }
       .titlebar .bandeau-nav a { padding: 0.15rem 0.4rem; font-size: 0.78rem; }
-      .message-stack { flex-basis: 45%; height: 2.5rem; }
+      .message-stack { height: 2.5rem; }
       .header-message { font-size: 0.72rem; }
-      .folder-row { gap: 0.5rem; padding: 0.5rem; }
-      .sidebar { gap: 0.5rem; }
-      .folder-button { flex: 0 0 auto; padding: 0.45rem 0.6rem; font-size: 0.85rem; }
+      .folder-row { gap: 0.5rem; }
+      .main-column { gap: 0.5rem; }
+      .folder-button { font-size: 0.85rem; }
       /* Panneaux empilés : la page défile, au lieu de tout faire tenir dans la hauteur de la fenêtre,
          où la liste finissait réduite à rien (0 px de haut dans une fenêtre de 600 × 600). La liste
          occupe au plus 45 % de l’écran et défile seule ; l’aperçu a sa propre hauteur, en dessous.
          La barre de titre reste visible en haut : elle porte les messages de la compilation. */
       body { height: auto; overflow: visible; }
-      .titlebar { position: sticky; top: 0; z-index: 2; background: #f5f6f8; }
+      .titlebar { position: sticky; top: 0; z-index: 2; }
+      /* Empilés dans l’ordre du code : dossier, Questions, compilation, ordre et aperçu. */
       .workspace {
         grid-template-columns: minmax(0, 1fr);
-        grid-template-rows: auto auto;
+        grid-template-rows: none;
+        grid-template-areas: none;
         gap: 0.5rem;
       }
+      .folder-row, .panel-exercises, .compile-row, .main-column { grid-area: auto; }
       .panel-exercises { overflow: visible; }
       /* Le filtre n’a plus à rester collé : la liste défile seule, sous lui. */
       .filter-row { position: static; }
       #exercise-list { flex: 0 1 auto; max-height: 45vh; max-height: 45dvh; }
-      .panel-preview { height: 85vh; height: 85dvh; }
+      .main-column .panel-preview { flex: none; height: 85vh; height: 85dvh; }
       .panel { padding: 0.65rem; }
       .panel h2 { margin-bottom: 0.45rem; }
-      .panel-heading { gap: 0.5rem; }
-      #compile-exercise { flex: 0 0 auto; }
-      #multi-output-controls { min-width: 100%; }
-      /* Environ quatre lignes : sous les réglages de l’activité, l’aperçu doit rester visible. */
+      /* Environ quatre lignes : la liste ne doit pas repousser l’aperçu trop loin. */
       #activity-order-list { max-height: 9.5rem; }
-      .panel-heading { flex-wrap: wrap; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -412,9 +426,9 @@
 </head>
 <body>
   <!-- Barre de titre et deux emplacements de notification transitoires. -->
-  <header class="titlebar">
-    <!-- Bandeau commun au site (SPECIFICATION.md, § 11.6), à côté des messages ; sur téléphone, sans
-         la devise. -->
+  <header class="titlebar bandeau-pleine-largeur">
+    <!-- Bandeau commun au site (SPECIFICATION.md, § 11.6), les messages entre ses deux parties ; sur
+         téléphone, sans la devise. -->
     <div class="bandeau">
       <div class="bandeau-titre">
         <h1><a class="marque" href="../">PWOH</a></h1>
@@ -432,66 +446,77 @@
       <p id="messages" class="header-message transient-message" role="status" hidden></p>
     </div>
   </header>
-  <!-- La zone principale : à gauche le dossier et la liste filtrable, à droite l’aperçu sur toute la hauteur. -->
+  <!-- La zone principale : à gauche le dossier et la liste filtrable, à droite la compilation et l’aperçu. -->
+  <!-- Deux colonnes, deux rangées (SPECIFICATION.md, § 11.8) : en haut, la ligne du dossier et celle de
+       la compilation, alignées ; dessous, Questions à gauche, ordre et aperçu à droite. Dans le code,
+       l’ordre est celui de l’empilement sur téléphone ; la grille les place sur grand écran. -->
   <main class="workspace">
-    <div class="sidebar">
-      <!-- Le sélecteur donne au compilateur accès local au dossier d’exercices choisi par l’utilisateur ;
-           les fichiers du projet, eux, sont lus en ligne à côté de cette page. -->
-      <div class="folder-row">
-        <!-- Le bouton devient « Dossier ouvert : » une fois un dossier choisi ; il permet d’en ouvrir un autre.
-             Sur Chrome et Edge, il propose d’abord de rouvrir le dernier dossier (SPECIFICATION.md, § 11.2). -->
-        <button class="folder-button" id="choose-folder" type="button">Ouvrir un dossier d’exercices</button>
-        <input id="exercise-folder" type="file" webkitdirectory directory multiple>
-        <span id="folder-name" aria-live="polite">Aucun dossier ouvert</span>
-        <button id="reload-folder" class="link-button" type="button" hidden>Relire</button>
-        <button id="other-folder" class="link-button" type="button" hidden>Autre dossier</button>
-      </div>
-      <!-- Charte des feuilles : brand.css du dossier d’exercices s’il en a un, charte neutre sinon. -->
-      <p id="brand-status" class="muted" hidden></p>
-      <!-- Filtres et liste des fichiers d’exercice chargés depuis le dossier. -->
-      <section class="panel panel-exercises" aria-labelledby="exercise-list-heading">
-        <h2 id="exercise-list-heading">Questions / exercices</h2>
-        <div class="filter-row">
-          <label for="exercise-search">Filtrer par nom ou mot-clé</label>
-          <input id="exercise-search" type="search" placeholder="ex. arithmétique, PGCD" autocomplete="off">
-        </div>
-        <div class="selection-row">
-          <p id="selection-count" class="muted" aria-live="polite">Aucune question sélectionnée.</p>
-          <!-- Agit sur les exercices visibles, ceux que la recherche laisse affichés. -->
-          <button id="select-visible" class="link-button" type="button" hidden>Tout sélectionner</button>
-        </div>
-        <ul id="exercise-list" aria-label="Fichiers d’exercice"></ul>
-        <p id="list-empty" class="muted">Ouvrez un dossier pour afficher ses fichiers d’exercice.</p>
-      </section>
+    <!-- Le sélecteur donne au compilateur accès local au dossier d’exercices choisi par l’utilisateur ;
+         les fichiers du projet, eux, sont lus en ligne à côté de cette page. -->
+    <div class="folder-row">
+      <!-- Le bouton devient « Dossier ouvert : » une fois un dossier choisi ; il permet d’en ouvrir un autre.
+           Sur Chrome et Edge, il propose d’abord de rouvrir le dernier dossier (SPECIFICATION.md, § 11.2). -->
+      <button class="folder-button" id="choose-folder" type="button">Ouvrir un dossier de questions</button>
+      <input id="exercise-folder" type="file" webkitdirectory directory multiple>
+      <span id="folder-name" aria-live="polite">Aucun dossier ouvert</span>
+      <button id="reload-folder" class="link-button" type="button" hidden>Relire</button>
+      <button id="other-folder" class="link-button" type="button" hidden>Autre dossier</button>
     </div>
 
-    <!-- Aperçu de l’exercice et bouton de génération du fichier autonome. -->
-    <section class="panel panel-preview" aria-labelledby="preview-heading">
-      <div class="panel-heading">
-        <h2 id="preview-heading">Aperçu de l’exercice <span class="muted">(compiler pour le tester)</span></h2>
-        <div id="multi-output-controls" hidden>
-          <label for="output-mode">Compilation de la sélection</label>
-          <select id="output-mode">
-            <option value="separate">Pages séparées (ZIP)</option>
-            <option value="activity">Activité unique</option>
-          </select>
-          <label id="activity-title-label" for="activity-title" hidden>Titre de l’activité</label>
-          <input id="activity-title" type="text" autocomplete="off" placeholder="Titre de l’activité" hidden>
-        </div>
-        <button id="compile-exercise" type="button" disabled>Compiler</button>
+    <!-- Filtre et liste des fichiers d’exercice chargés depuis le dossier. -->
+    <section class="panel panel-exercises" aria-label="Questions">
+      <div class="filter-row">
+        <label for="exercise-search">Filtrer les questions par nom ou mot-clé</label>
+        <input id="exercise-search" type="search" placeholder="ex. arithmétique, PGCD" autocomplete="off">
       </div>
-      <!-- Ordre des questions d’une activité (SPECIFICATION.md, § 11.8), en mode « Activité unique ». -->
-      <section id="activity-order" aria-labelledby="activity-order-heading" hidden>
-        <h3 id="activity-order-heading">Ordre des questions</h3>
+      <div class="selection-row">
+        <p id="selection-count" class="muted" aria-live="polite">Aucune question sélectionnée.</p>
+        <!-- Agit sur les exercices visibles, ceux que la recherche laisse affichés. -->
+        <button id="select-visible" class="link-button" type="button" hidden>Tout sélectionner</button>
+      </div>
+      <ul id="exercise-list" aria-label="Questions du dossier"></ul>
+      <p id="list-empty" class="muted">Ouvrez un dossier pour afficher ses questions.</p>
+      <!-- Charte des feuilles : brand.css du dossier d’exercices s’il en a un, charte neutre sinon. -->
+      <p id="brand-status" class="muted" hidden></p>
+    </section>
+
+    <!-- Compilation : le bouton, puis le mode (plusieurs questions cochées) et le titre (activité). -->
+    <div class="compile-row">
+      <button id="compile-exercise" type="button" disabled>Compiler la sélection</button>
+      <span id="multi-output-controls" hidden>
+        <select id="output-mode" aria-label="Compilation de la sélection">
+          <option value="separate">Pages séparées (ZIP)</option>
+          <option value="activity">Activité unique</option>
+        </select>
+      </span>
+      <span class="activity-title-field" id="activity-title-label" hidden>
+        <label for="activity-title">Titre</label>
+        <input id="activity-title" type="text" autocomplete="off" placeholder="Titre de l’activité">
+      </span>
+    </div>
+
+    <div class="main-column">
+      <!-- Ordre des questions d’une activité (SPECIFICATION.md, § 11.9), en mode « Activité unique » :
+           les flèches, fixes, déplacent la question choisie. -->
+      <section id="activity-order" class="panel panel-order" aria-labelledby="activity-order-heading" hidden>
+        <div class="order-heading">
+          <h3 id="activity-order-heading">Ordre des questions</h3>
+          <button id="move-up" class="order-move" type="button" aria-label="Monter la question choisie" disabled>↑</button>
+          <button id="move-down" class="order-move" type="button" aria-label="Descendre la question choisie" disabled>↓</button>
+          <span id="order-hint" class="muted">Cliquez sur une question pour la choisir.</span>
+        </div>
         <ol id="activity-order-list"></ol>
       </section>
-      <!-- Ligne d’état : attente du tirage réel ou erreur ; vide une fois l’aperçu prêt. -->
-      <p id="preview-notice" class="muted">Choisissez un exercice dans la liste pour afficher son aperçu.</p>
-      <!-- La page réelle de l’exercice, isolée : sans « allow-same-origin », son HTML ne peut pas
-           agir sur le compilateur. compiler.js y remplace Python par une version inerte. Le cadre
-           occupe la hauteur restante du panneau et défile lui-même. -->
-      <iframe id="preview-frame" title="Aperçu de l’exercice" sandbox="allow-scripts" hidden></iframe>
-    </section>
+
+      <section class="panel panel-preview" aria-label="Aperçu">
+        <!-- Ligne d’état : attente du tirage réel ou erreur ; vide une fois l’aperçu prêt. -->
+        <p id="preview-notice" class="muted">Choisissez une question dans la liste pour afficher son aperçu.</p>
+        <!-- La page réelle de l’exercice, isolée : sans « allow-same-origin », son HTML ne peut pas
+             agir sur le compilateur. compiler.js y remplace Python par une version inerte. Le cadre
+             occupe la hauteur restante du panneau et défile lui-même. -->
+        <iframe id="preview-frame" title="Aperçu de la question" sandbox="allow-scripts" hidden></iframe>
+      </section>
+    </div>
   </main>
   <!-- Le contrôleur relie les interactions de cette page au compilateur. -->
   <script src="../runtime/template.js"></script>

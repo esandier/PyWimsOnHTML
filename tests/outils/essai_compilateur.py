@@ -107,8 +107,8 @@ def dossier_memorise(page, fichiers):
         raise AssertionError("Le fichier compilé n’utilise pas le brand.css du dossier.")
     print("charte du dossier : annoncée et intégrée au fichier compilé")
 
-    # Ordre d’une activité (§ 11.8) : celui des cases cochées, changé par « ↓ », gardé par « Relire »,
-    # et suivi par le fichier compilé.
+    # Ordre d’une activité (§ 11.9) : celui des cases cochées, changé par « ↓ » sur la question choisie,
+    # gardé par « Relire », et suivi par le fichier compilé.
     for case in page.query_selector_all(".exercise-selection"):
         if case.is_checked():
             case.uncheck()
@@ -120,12 +120,13 @@ def dossier_memorise(page, fichiers):
     rangs = "[...document.querySelectorAll('#exercise-list .exercise-rank')].map(r => r.textContent)"
     if page.evaluate(ordre) != ["PGCD", "Titre compilé"] or page.evaluate(rangs) != ["2", "1"]:
         raise AssertionError(f"ordre des cases cochées non suivi : {page.evaluate(ordre)}, rangs {page.evaluate(rangs)}")
-    page.click("[aria-label='Descendre « PGCD »']")
+    page.click(".order-title >> text=PGCD")
+    page.click("#move-down")
     if page.evaluate(ordre) != ["Titre compilé", "PGCD"]:
-        raise AssertionError(f"« ↓ » n’a pas déplacé la question : {page.evaluate(ordre)}")
-    # Arrivée en fin, la question n’a plus de « ↓ » : le focus passe à son « ↑ ».
-    if page.evaluate("document.activeElement.getAttribute('aria-label')") != "Monter « PGCD »":
-        raise AssertionError("Le focus n’a pas suivi la question déplacée.")
+        raise AssertionError(f"« ↓ » n’a pas déplacé la question choisie : {page.evaluate(ordre)}")
+    # Arrivée en fin, « ↓ » est inactif : le focus passe à « ↑ ».
+    if not page.is_disabled("#move-down") or page.evaluate("document.activeElement.id") != "move-up":
+        raise AssertionError("En fin de liste, « ↓ » devait être inactif et le focus passer à « ↑ ».")
     page.click("#reload-folder")
     page.wait_for_function("document.getElementById('project-status').textContent.includes('chargé')")
     if page.evaluate(ordre) != ["Titre compilé", "PGCD"] or page.evaluate(rangs) != ["1", "2"]:
@@ -250,6 +251,23 @@ def main():
                 if any(page.evaluate(coches)):
                     raise AssertionError("« Tout désélectionner » n’a pas décoché les exercices.")
                 print("tout sélectionner / désélectionner : exercices visibles seulement")
+
+                # Ordre (§ 11.9) : trois clics sur « ↓ » descendent trois fois la question choisie, sans
+                # qu’un clic annule le précédent.
+                page.click("#select-visible")
+                page.select_option("#output-mode", "activity")
+                ordre = "[...document.querySelectorAll('#activity-order-list .order-title')].map(b => b.textContent)"
+                avant = page.evaluate(ordre)
+                page.click(".order-title >> nth=0")
+                for _ in range(3):
+                    page.click("#move-down")
+                attendu = avant[1:4] + avant[:1] + avant[4:]
+                choisie = page.evaluate("document.querySelector('#activity-order-list li.is-chosen .order-title').textContent")
+                if page.evaluate(ordre) != attendu or choisie != avant[0]:
+                    raise AssertionError(f"ordre après trois « ↓ » : {page.evaluate(ordre)}, attendu {attendu}")
+                page.select_option("#output-mode", "separate")
+                page.click("#select-visible")
+                print("ordre : trois « ↓ » descendent trois fois la question choisie")
 
                 # Une question sans « apres » : la compilation lit le module pywims et le script du
                 # Worker pour ses tirages, mais le fichier n’en contient aucun (il ne charge pas Python).

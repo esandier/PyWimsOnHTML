@@ -28,10 +28,13 @@
   const messages = document.getElementById("messages");
   const activityOrder = document.getElementById("activity-order");
   const activityOrderList = document.getElementById("activity-order-list");
+  const moveUpButton = document.getElementById("move-up");
+  const moveDownButton = document.getElementById("move-down");
+  const orderHint = document.getElementById("order-hint");
 
   let exercises = [];
   let selectedExercise;
-  // Questions cochées, dans l’ordre de l’activité (SPECIFICATION.md, § 11.8) : un tableau, et non
+  // Questions cochées, dans l’ordre de l’activité (SPECIFICATION.md, § 11.9) : un tableau, et non
   // plus un Set, pour pouvoir déplacer une question.
   let selectedExercises = [];
   // Pastille de rang de chaque exercice affiché dans la liste, mise à jour sans reconstruire la
@@ -191,10 +194,10 @@
       folderName.textContent = openName;
     } else if (rememberedHandle) {
       chooseFolderButton.textContent = `Rouvrir « ${rememberedHandle.name} »`;
-      chooseFolderButton.title = "Rouvrir le dernier dossier d’exercices";
+      chooseFolderButton.title = "Rouvrir le dernier dossier de questions";
       folderName.textContent = "";
     } else {
-      chooseFolderButton.textContent = "Ouvrir un dossier d’exercices";
+      chooseFolderButton.textContent = "Ouvrir un dossier de questions";
       chooseFolderButton.removeAttribute("title");
       let lastName = null;
       try {
@@ -334,7 +337,7 @@
     previewDrawCache.clear();
     previewFrame.hidden = true;
     previewFrame.removeAttribute("srcdoc");
-    showPreviewNotice("Choisissez un exercice dans la liste pour afficher son aperçu.");
+    showPreviewNotice("Choisissez une question dans la liste pour afficher son aperçu.");
 
     updateFolderControls(name);
     folderBrand = brand;
@@ -342,7 +345,7 @@
       ? "Charte : brand.css du dossier."
       : "Charte neutre : ajoutez un brand.css au dossier pour celle de votre établissement.";
     brandStatus.hidden = false;
-    showMessage(projectStatus, "Chargement des fichiers d’exercice…");
+    showMessage(projectStatus, "Chargement des questions…");
 
     for (const { path, read } of sources) {
       const exercise = { path, read };
@@ -369,7 +372,7 @@
     }
     showMessage(
       projectStatus,
-      `${count} fichier${count === 1 ? "" : "s"} d’exercice chargé${count === 1 ? "" : "s"}.`,
+      `${count} question${count === 1 ? "" : "s"} chargée${count === 1 ? "" : "s"}.`,
       "success",
       2500
     );
@@ -490,7 +493,7 @@
     if (exercise.error) {
       previewGeneration += 1;
       previewFrame.hidden = true;
-      showPreviewNotice("Impossible de lire cet exercice.", "error");
+      showPreviewNotice("Impossible de lire cette question.", "error");
       clearMessage(messages);
       showMessage(messages, exercise.error.message, "error");
       updateCompilationControls();
@@ -515,9 +518,6 @@
     activityTitleLabel.hidden = !activityMode;
     compileButton.disabled = selected.length === 0 ||
       (activityMode && !activityTitleInput.value.trim());
-    compileButton.textContent = selected.length > 1
-      ? `Compiler (${selected.length})`
-      : "Compiler";
     updateRanks();
     renderActivityOrder();
   }
@@ -536,55 +536,54 @@
     }
   }
 
-  // Liste d’ordre de l’activité : rang, titre (qui affiche l’aperçu), « ↑ » et « ↓ ».
+  // Liste d’ordre de l’activité (SPECIFICATION.md, § 11.9) : rang et titre. La question choisie est
+  // celle de l’aperçu ; un clic sur une ligne la choisit. Les flèches, fixes, la déplacent : des
+  // flèches sur chaque ligne laissaient le pointeur sur l’autre question après un déplacement, et un
+  // second clic au même endroit annulait le premier.
   function renderActivityOrder() {
     activityOrder.hidden = !activityOrderShown();
     activityOrderList.replaceChildren();
     if (activityOrder.hidden) {
       return;
     }
-    const last = selectedExercises.length - 1;
     for (const [index, exercise] of selectedExercises.entries()) {
-      const label = exerciseLabel(exercise);
       const item = document.createElement("li");
+      item.classList.toggle("is-chosen", exercise === selectedExercise);
       const rank = document.createElement("span");
       rank.className = "order-rank";
       rank.textContent = `${index + 1}.`;
       const title = document.createElement("button");
       title.className = "order-title";
       title.type = "button";
-      title.textContent = label;
+      title.textContent = exerciseLabel(exercise);
       title.title = exercise.path;
       title.setAttribute("aria-current", String(exercise === selectedExercise));
       title.addEventListener("click", () => selectExercise(exercise));
-      const up = orderMoveButton("↑", `Monter « ${label} »`, index === 0, () => moveSelected(index, -1));
-      const down = orderMoveButton("↓", `Descendre « ${label} »`, index === last, () => moveSelected(index, 1));
-      item.append(rank, title, up, down);
+      item.append(rank, title);
       activityOrderList.append(item);
     }
+    const chosen = selectedExercises.indexOf(selectedExercise);
+    moveUpButton.disabled = chosen <= 0;
+    moveDownButton.disabled = chosen < 0 || chosen === selectedExercises.length - 1;
+    orderHint.hidden = chosen >= 0;
   }
 
-  function orderMoveButton(text, label, hidden, onClick) {
-    const button = document.createElement("button");
-    button.className = "order-move";
-    button.type = "button";
-    button.textContent = text;
-    button.setAttribute("aria-label", label);
-    button.hidden = hidden;
-    button.addEventListener("click", onClick);
-    return button;
-  }
-
-  // Déplace la question d’un rang, puis rend le focus à la même flèche de la question déplacée, ou à
-  // l’autre si celle-ci a disparu (arrivée en tête ou en fin) : on la monte de plusieurs rangs au
-  // clavier sans la perdre.
-  function moveSelected(index, step) {
+  // Déplace la question choisie d’un rang, et garde sa ligne visible dans la liste qui défile. Arrivée
+  // en tête ou en fin, la flèche utilisée devient inactive : le focus passe à l’autre, pour ne pas
+  // retomber sur la page.
+  function moveChosen(step) {
+    const index = selectedExercises.indexOf(selectedExercise);
     const target = index + step;
+    if (index < 0 || target < 0 || target >= selectedExercises.length) {
+      return;
+    }
     [selectedExercises[index], selectedExercises[target]] = [selectedExercises[target], selectedExercises[index]];
     updateCompilationControls();
-    const [up, down] = activityOrderList.children[target].querySelectorAll(".order-move");
-    const [same, other] = step < 0 ? [up, down] : [down, up];
-    (same.hidden ? other : same).focus();
+    activityOrderList.children[target].scrollIntoView({ block: "nearest" });
+    const [same, other] = step < 0 ? [moveUpButton, moveDownButton] : [moveDownButton, moveUpButton];
+    if (same.disabled && document.activeElement === same) {
+      other.focus();
+    }
   }
 
   // Fichiers dont Python a besoin pour calculer des tirages, qu’une question ait un « apres » ou non.
@@ -656,7 +655,7 @@
       return;
     }
 
-    showMessage(messages, "Compilation de l’exercice…");
+    showMessage(messages, "Compilation de la sélection…");
     compileButton.disabled = true;
     try {
       // Tous les fichiers du projet sont lus une fois, au début : ceux des tirages et ceux de
@@ -783,4 +782,6 @@
   compileButton.addEventListener("click", downloadExercise);
   outputMode.addEventListener("change", updateCompilationControls);
   activityTitleInput.addEventListener("input", updateCompilationControls);
+  moveUpButton.addEventListener("click", () => moveChosen(-1));
+  moveDownButton.addEventListener("click", () => moveChosen(1));
 })();

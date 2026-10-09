@@ -34,7 +34,7 @@ footer {
 
 .bandeau { padding-top: 1rem; padding-bottom: 0.75rem; }
 
-main { padding-top: 0.5rem; padding-bottom: 2.5rem; }
+main { padding-top: 1.25rem; padding-bottom: 2.5rem; }
 
 h1 { margin: 1rem 0 0.5rem; font-size: clamp(1.5rem, 4vw, 1.9rem); line-height: 1.25; }
 h2 { margin: 2.25rem 0 0.6rem; font-size: 1.35rem; line-height: 1.3; }

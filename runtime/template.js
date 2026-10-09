@@ -279,7 +279,7 @@ window.PyWimsTemplate = (() => {
     const withTags = template.replace(tagPattern, (_match, source) => renderTag(parseTag(source)));
     return withTags.replace(variablePattern, (_match, name) => {
       if (!Object.hasOwn(context, name)) {
-        throw new Error(`Variable d’exercice inconnue : ${name}`);
+        throw new Error(`Variable de question inconnue : ${name}`);
       }
       return escapeHtml(context[name]);
     });

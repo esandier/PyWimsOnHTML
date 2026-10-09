@@ -1,17 +1,17 @@
 # PyWimsOnHTML
 
-PyWimsOnHTML compile des exercices PyWims (fichiers `.pwq`) en fichiers HTML
+PyWimsOnHTML compile des questions PyWims (fichiers `.pwq`) en fichiers HTML
 interactifs et autonomes. Le compilateur est une page web statique ; le fichier
 généré fonctionne sans serveur et charge Pyodide, SymPy, MathJax et, si besoin,
 MathLive depuis Internet. Il est conçu pour l’ordinateur comme pour le
 téléphone.
 
 Le site du projet, <https://esandier.github.io/PyWimsOnHTML/>, présente l’outil
-avec des démonstrations, donne un mode d’emploi pour créer un exercice (avec ou
+avec des démonstrations, donne un mode d’emploi pour créer une question (avec ou
 sans IA, avec des modèles) et héberge le compilateur.
 
 La conception d’ensemble est décrite dans [`SPECIFICATION.md`](SPECIFICATION.md),
-qui fait référence ; le format des exercices est détaillé dans
+qui fait référence ; le format des questions est détaillé dans
 [`PROMPT.md`](PROMPT.md).
 
 ## Structure du projet
@@ -19,12 +19,12 @@ qui fait référence ; le format des exercices est détaillé dans
 - `compiler/` — page du compilateur (`index.html`), son interface (`compiler.js`) et ses modules :
   format `.pwq` (`format.js`), tirages et contrôles (`draws.js`), assemblage (`assemble.js`),
   archive ZIP (`zip.js`)
-- `exercises/` — fichiers d’exercice `.pwq`
+- `exercises/` — fichiers de questions `.pwq`
 - `layouts/` — mise en page HTML commune aux questions seules et aux activités
 - `widgets/` — champs de saisie : texte, MathLive, matrices fixes et redimensionnables, choix
   unique ou multiple
 - `css/` — charte neutre par défaut (`brand.css`), exemples de chartes (`chartes/`, dont
-  celle de l’UPEC) et styles des exercices (`exercise.css`)
+  celle de l’UPEC) et styles des questions (`exercise.css`)
 - `runtime/` — code intégré au fichier généré : grammaire des balises
   (`template.js`), correction sans Python (`correction.js`), Python dans un
   Worker (`python.js`, `python-worker.js`) et module `pywims` (`pywims.py`),
@@ -35,13 +35,13 @@ qui fait référence ; le format des exercices est détaillé dans
 ## Utiliser le compilateur
 
 Ouvre le compilateur en ligne, <https://esandier.github.io/PyWimsOnHTML/compiler/>,
-dans un navigateur récent, puis clique sur **Ouvrir un dossier d’exercices** et
+dans un navigateur récent, puis clique sur **Ouvrir un dossier de questions** et
 choisis le dossier où sont tes fichiers `.pwq` (ceux de ses sous-dossiers sont
 lus aussi). Le bouton devient **Dossier ouvert :** suivi du nom du dossier ; il
-permet d’en ouvrir un autre. Les exercices restent sur l’ordinateur : rien n’est
+permet d’en ouvrir un autre. Les questions restent sur l’ordinateur : rien n’est
 téléversé. Sur Chrome et Edge, le dossier est mémorisé : à la visite suivante,
 **Rouvrir « nom »** suffit, et **Relire** prend en compte les fichiers modifiés,
-ajoutés ou supprimés ; la compilation relit d’elle-même les exercices choisis.
+ajoutés ou supprimés ; la compilation relit d’elle-même les questions choisies.
 Sur Firefox et Safari, on choisit le dossier à chaque visite.
 
 Pour essayer une modification du moteur (`runtime/`, `widgets/`, `css/`,
@@ -50,16 +50,16 @@ un serveur local à la racine du projet et ouvre le compilateur. Ouvert
 directement depuis le disque (`file://`), le compilateur ne peut pas lire ses
 fichiers, et il le dit.
 
-À gauche, la liste des exercices se filtre par nom ou par mot-clé. Un clic sur
-un exercice en affiche l’aperçu à droite, dans une fenêtre qui défile : la vraie
-page de l’exercice, aux boutons inactifs. Il apparaît tout de suite, avec chaque
+À gauche, la liste des questions se filtre par nom ou par mot-clé. Un clic sur
+une question en affiche l’aperçu à droite, dans une fenêtre qui défile : la vraie
+page de la question, aux boutons inactifs. Il apparaît tout de suite, avec chaque
 variable de l’énoncé sous son nom, puis il est remplacé par un tirage réel dès
-que Python l’a calculé, environ une seconde par exercice. Python se charge dès
+que Python l’a calculé, environ une seconde par question. Python se charge dès
 l’ouverture du compilateur, en arrière-plan (10 à 20 secondes) : le premier
 aperçu ne l’attend que s’il est demandé tout de suite. Une erreur dans `avant` est
 signalée au-dessus de l’aperçu, qui reste provisoire.
 
-Coche une ou plusieurs questions, puis **Compiler** :
+Coche une ou plusieurs questions, puis **Compiler la sélection** :
 
 - une question : un fichier HTML ;
 - plusieurs questions : soit une **activité**, un seul fichier HTML qui les
@@ -130,26 +130,26 @@ doit aussi être réservé dans `runtime/template.js`, ce que vérifient les tes
   majuscule ni de correction automatiques), avec le clavier complet.
 
 La vérification se fait dans le navigateur : elle sert à l’entraînement, pas à
-une évaluation sécurisée. Les champs de l’exercice et ses tirages sont intégrés
+une évaluation sécurisée. Les champs de la question et ses tirages sont intégrés
 au HTML comme blocs de texte lisibles et échappés (sans `avant` pour une
 question sans `apres`, qui ne charge pas Python).
 
 Les couleurs, polices et couleurs de correction sont les variables CSS d’une
 charte : par défaut la charte neutre, `css/brand.css`. Pour celle de son
 établissement, on place un fichier `brand.css` à la racine de son dossier
-d’exercices (exemple complet, avec logo : `css/chartes/upec.css`) ; le
+de questions (exemple complet, avec logo : `css/chartes/upec.css`) ; le
 compilateur l’utilise et l’indique. Les bibliothèques en ligne sont figées sur une
 version exacte : Pyodide 0.27.7, MathJax 3.2.2 (rendu SVG), MathLive 0.111.0.
 MathJax reconnaît `$...$`, `$$...$$`, `\(...\)` et `\[...\]`.
 
-## Format des exercices
+## Format des questions
 
 Un fichier `.pwq` contient les champs `title`, `keywords`, `layout` (`STD`),
 `avant` (tirage et calcul des solutions), `enonce` (modèle de l’énoncé, avec
 `{{variable}}` et des balises de saisie) et, facultativement, `apres`
 (correction) et `tirages` (nombre de tirages calculés, de 1 à 200 ; 20 par
 défaut). Chaque balise de saisie désigne sa solution
-(`solution=variable`). L’exercice importe lui-même ses bibliothèques, ainsi que
+(`solution=variable`). La question importe elle-même ses bibliothèques, ainsi que
 les outils du module `pywims` (`py_wims`, `is_nombre`, `math_expression`,
 `decimal_fr`, `LIBRE`). `apres` peut définir la variable `feedback`, et `avant`
 la variable `explication_solution`.
@@ -206,10 +206,10 @@ projet :
 - `tests/runtime-tests.html` : cycle de vie des questions, progression et aide,
   avec un Python simulé ; quelques secondes ;
 - `tests/python-tests.html` : vrai Pyodide (module `pywims`, isolement des
-  questions, chaque exercice du dossier `exercises/` compilé puis corrigé, seul
-  et dans une activité), et balayage des tirages de chaque exercice : chaque
+  questions, chaque question du dossier `exercises/` compilée puis corrigée, seule
+  et dans une activité), et balayage des tirages de chaque question : chaque
   tirage est exécuté deux fois, ses solutions converties, saisies comme par un
-  élève et jugées justes. 20 tirages par exercice par défaut, quelques minutes ;
+  élève et jugées justes. 20 tirages par question par défaut, quelques minutes ;
   `?tirages=200` pour un balayage complet, plus long.
 
 Sous Windows, `tests/outils/lancer-tests.ps1` lance tout automatiquement (Edge

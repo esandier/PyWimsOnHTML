@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="../css/site.css">
 </head>
 <body>
-  <header class="bandeau">
+  <header class="bandeau bandeau-pleine-largeur">
     <div class="bandeau-titre">
       <a class="marque" href="../">PWOH</a>
       <span class="devise">questions à données aléatoires dans une page HTML</span>
@@ -43,10 +43,10 @@
       complet et correct.</p>
     <ol>
       <li>Copiez le prompt, et collez-le au début d’une conversation avec votre assistant.</li>
-      <li>Décrivez l’exercice voulu : « un QCM sur la dérivée de x ↦ ax² + bx, avec des valeurs tirées au
+      <li>Décrivez la question voulue : « un QCM sur la dérivée de x ↦ ax² + bx, avec des valeurs tirées au
         hasard », ou collez une question d’AMC à convertir.</li>
-      <li>Enregistrez la réponse dans un fichier <code>.pwq</code> de votre dossier d’exercices, puis
-        ouvrez ce dossier dans le <a href="../compiler/">compilateur</a> : l’aperçu montre l’exercice, et
+      <li>Enregistrez la réponse dans un fichier <code>.pwq</code> de votre dossier de questions, puis
+        ouvrez ce dossier dans le <a href="../compiler/">compilateur</a> : l’aperçu montre la question, et
         signale une erreur s’il y en a une.</li>
     </ol>
     <div class="actions">
@@ -58,7 +58,7 @@
     <div class="cadre-texte" id="cadre-prompt" hidden><pre></pre></div>
 
     <h2 id="sans-ia">2. Sans IA : le format <code>.pwq</code></h2>
-    <p>Le plus simple est de partir d’un modèle commenté, de le copier dans votre dossier d’exercices et de
+    <p>Le plus simple est de partir d’un modèle commenté, de le copier dans votre dossier de questions et de
       le modifier :</p>
 
     <div class="panneau">
@@ -260,10 +260,10 @@
 
     <h2 id="publier">5. Compiler et publier</h2>
     <ol>
-      <li>Ouvrez le <a href="../compiler/">compilateur</a> et choisissez votre dossier d’exercices (ses
+      <li>Ouvrez le <a href="../compiler/">compilateur</a> et choisissez votre dossier de questions (ses
         sous-dossiers sont lus aussi). Sur Chrome et Edge, il est mémorisé pour la visite suivante.</li>
-      <li>Cliquez sur un exercice pour le voir. Cochez ceux à compiler, puis <strong>Compiler</strong> : un
-        exercice donne un fichier HTML ; plusieurs, une <strong>activité</strong> (une seule page, dans
+      <li>Cliquez sur une question pour la voir. Cochez celles à compiler, puis <strong>Compiler la sélection</strong> : une
+        question donne un fichier HTML ; plusieurs, une <strong>activité</strong> (une seule page, dans
         l’ordre où vous les avez cochés, que les flèches ↑ ↓ de « Ordre des questions » changent) ou des
         pages séparées (archive ZIP).</li>
       <li>Sur Moodle, ajoutez une ressource <strong>Fichier</strong> et déposez-y le fichier HTML : les élèves
@@ -272,7 +272,7 @@
     </ol>
     <p><strong>Votre charte</strong> : les feuilles ont une apparence neutre. Pour les couleurs et le logo
       de votre établissement, placez un fichier <code>brand.css</code> à la racine de votre dossier
-      d’exercices ; <a href="../css/chartes/upec.css">celui de l’UPEC</a> sert d’exemple.</p>
+      de questions ; <a href="../css/chartes/upec.css">celui de l’UPEC</a> sert d’exemple.</p>
 
     <h2 id="bon-a-savoir">6. Bon à savoir</h2>
     <div class="encadre">

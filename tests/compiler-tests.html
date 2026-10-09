@@ -202,7 +202,7 @@
       try {
         PyWimsTemplate.renderTemplate("{{ inconnue }}", {}, () => "");
       } catch (error) {
-        rejected = error.message.includes("Variable d’exercice inconnue : inconnue");
+        rejected = error.message.includes("Variable de question inconnue : inconnue");
       }
       if (!rejected) throw new Error("Une variable absente du contexte a été acceptée.");
     });
@@ -730,7 +730,7 @@
           // Les contrôles suivants couvrent l’interface, le runtime et les exercices fournis.
           test("la page du compilateur propose deux panneaux et une prévisualisation", () => {
             if (!compilerPage.includes('id="folder-name"') ||
-                !compilerPage.includes('id="choose-folder" type="button">Ouvrir un dossier d’exercices</button>') ||
+                !compilerPage.includes('id="choose-folder" type="button">Ouvrir un dossier de questions</button>') ||
                 !compilerScript.includes('chooseFolderButton.textContent = "Dossier ouvert :"') ||
                 !compilerPage.includes('id="exercise-list"') ||
                 !compilerPage.includes('id="exercise-search"') ||
@@ -738,14 +738,14 @@
                 !compilerPage.includes('id="selection-count"') ||
                 !compilerPage.includes('id="output-mode"') ||
                 !compilerPage.includes('id="activity-title"') ||
-                !compilerPage.includes('id="compile-exercise" type="button" disabled>Compiler</button>') ||
+                !compilerPage.includes('id="compile-exercise" type="button" disabled>Compiler la sélection</button>') ||
                 !compilerPage.includes("#exercise-folder { display: none; }") ||
                 !/#exercise-list\s*\{[^}]*overflow-y:\s*auto/s.test(compilerPage)) {
               throw new Error("La page ne contient pas les panneaux, filtres, aperçu ou défilement attendus.");
             }
           });
           test("les messages sont dans la barre de titre et les panneaux défilent indépendamment", () => {
-            if (!/<header class="titlebar">[\s\S]*?id="project-status"[\s\S]*?id="messages"[\s\S]*?<\/header>/.test(compilerPage) ||
+            if (!/<header class="titlebar[^"]*">[\s\S]*?id="project-status"[\s\S]*?id="messages"[\s\S]*?<\/header>/.test(compilerPage) ||
                 !/#exercise-list\s*\{[^}]*overflow-y:\s*auto/s.test(compilerPage) ||
             !/\.panel-preview\s*\{[^}]*overflow:\s*hidden/s.test(compilerPage) ||
             !/#preview-frame\s*\{[^}]*flex:\s*1 1 auto/s.test(compilerPage) ||

@@ -1,5 +1,5 @@
 /* Exemple de charte : celle de l’UPEC (couleurs, polices, logo). Pour l’utiliser, copier ce fichier
-   sous le nom brand.css à la racine de son dossier d’exercices : il remplace alors la charte neutre
+   sous le nom brand.css à la racine de son dossier de questions : il remplace alors la charte neutre
    (css/brand.css) dans l’aperçu et les fichiers générés (SPECIFICATION.md, § 11.4). */
 @import url("https://fonts.googleapis.com/css2?family=Cabin:wght@400;700&family=Source+Sans+3:wght@400;600;700&display=swap");
 

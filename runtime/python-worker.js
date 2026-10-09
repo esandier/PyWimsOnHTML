@@ -282,7 +282,7 @@ if importlib.util.find_spec("numpy") is not None:
     const globals = sessionGlobals(sessionId);
     return enqueuePythonOperation(() => {
       if (!globals.has(name)) {
-        throw new Error(`Variable d’exercice inconnue : ${name}`);
+        throw new Error(`Variable de question inconnue : ${name}`);
       }
       // __import__ évite d’ajouter le nom « pywims » à l’espace de noms de l’auteur.
       return pyodide.runPython(`__import__("pywims")._template_value(${name})`, { globals });

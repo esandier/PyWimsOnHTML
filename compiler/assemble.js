@@ -174,7 +174,7 @@ ${renderDrawData(draws)}
       WIDGETS: [resources.textWidget, resources.mathWidget, resources.matrixWidget, resources.choiceWidget]
         .filter(Boolean).join("\n"),
       MATHLIVE_LOADER: usesMathWidget
-        ? `// Charge le clavier mathématique uniquement pour les exercices qui en ont besoin.
+        ? `// Charge le clavier mathématique uniquement pour les questions qui en ont besoin.
 window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
   const script = document.createElement("script");
   script.src = "https://unpkg.com/mathlive@0.111.0";
@@ -207,7 +207,7 @@ window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
       .replace(/[^\p{L}\p{N}_-]+/gu, "-")
       .replace(/-+/g, "-")
       .replace(/^-|-$/g, "");
-    return `${slug || "exercice"}.html`;
+    return `${slug || "question"}.html`;
   }
 
   window.PyWimsCompiler = Object.freeze({

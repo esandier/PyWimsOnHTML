@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Mise en page commune aux feuilles d’exercices (activités) et aux questions seules. -->
+<!-- Mise en page commune aux activités et aux questions seules. -->
 <html lang="fr">
 <head>
   <meta charset="utf-8">
@@ -8,7 +8,7 @@
   <!-- /* Charte neutre, utilisée par défaut (SPECIFICATION.md, § 11.4). Une charte ne définit que ces
    variables, la barre de titre et, si elle en a un, le logo (.pw-brand-logo) : exercise.css en tire
    tout le reste. Pour la charte de son établissement, on place un fichier brand.css à la racine de
-   son dossier d’exercices ; css/chartes/upec.css en est un exemple complet, avec logo.
+   son dossier de questions ; css/chartes/upec.css en est un exemple complet, avec logo.
    Polices du système, sans téléchargement : une charte neutre n’a pas à dépendre d’un service en
    ligne. */
 :root {
@@ -1086,7 +1086,7 @@ mjx-assistive-mml {
 /* Charte neutre, utilisée par défaut (SPECIFICATION.md, § 11.4). Une charte ne définit que ces
    variables, la barre de titre et, si elle en a un, le logo (.pw-brand-logo) : exercise.css en tire
    tout le reste. Pour la charte de son établissement, on place un fichier brand.css à la racine de
-   son dossier d’exercices ; css/chartes/upec.css en est un exemple complet, avec logo.
+   son dossier de questions ; css/chartes/upec.css en est un exemple complet, avec logo.
    Polices du système, sans téléchargement : une charte neutre n’a pas à dépendre d’un service en
    ligne. */
 :root {
@@ -2175,7 +2175,7 @@ mjx-assistive-mml {
   </script>
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js"></script>
   <!-- Charge MathLive uniquement si une question contient un champ mathématique. -->
-  <script>// Charge le clavier mathématique uniquement pour les exercices qui en ont besoin.
+  <script>// Charge le clavier mathématique uniquement pour les questions qui en ont besoin.
 window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
   const script = document.createElement("script");
   script.src = "https://unpkg.com/mathlive@0.111.0";
@@ -2870,7 +2870,7 @@ window.PyWimsTemplate = (() => {
     const withTags = template.replace(tagPattern, (_match, source) => renderTag(parseTag(source)));
     return withTags.replace(variablePattern, (_match, name) => {
       if (!Object.hasOwn(context, name)) {
-        throw new Error(`Variable d’exercice inconnue : ${name}`);
+        throw new Error(`Variable de question inconnue : ${name}`);
       }
       return escapeHtml(context[name]);
     });
@@ -3883,7 +3883,7 @@ if importlib.util.find_spec("numpy") is not None:
     const globals = sessionGlobals(sessionId);
     return enqueuePythonOperation(() => {
       if (!globals.has(name)) {
-        throw new Error(`Variable d’exercice inconnue : ${name}`);
+        throw new Error(`Variable de question inconnue : ${name}`);
       }
       // __import__ évite d’ajouter le nom « pywims » à l’espace de noms de l’auteur.
       return pyodide.runPython(`__import__("pywims")._template_value(${name})`, { globals });
@@ -4056,7 +4056,7 @@ window.PyWimsPython = (() => {
 
   function initialize(code, sessionId = "default") {
     if (typeof code !== "string") {
-      throw new Error("Le code Python de l’exercice est invalide.");
+      throw new Error("Le code Python de la question est invalide.");
     }
     return call("initialize", [sessionId, code]);
   }

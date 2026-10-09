@@ -1,6 +1,6 @@
-# Prompt de génération des exercices PyWimsOnHTML
+# Prompt de génération des questions PyWimsOnHTML
 
-Tu rédiges un fichier source d’exercice pour PyWimsOnHTML. Réponds uniquement
+Tu rédiges un fichier source de question pour PyWimsOnHTML. Réponds uniquement
 avec un fichier `.pwq` complet, sans bloc Markdown ni commentaire.
 
 ## Structure obligatoire
@@ -38,7 +38,7 @@ français, séparés par des virgules.
   rejoue le tirage affiché avec la même graine. Une autre source de hasard
   (heure, `secrets`, `numpy.random.default_rng()` sans graine…) rendrait le
   tirage impossible à reproduire : le compilateur exécute chaque graine deux
-  fois et refuse l’exercice si les deux tirages diffèrent.
+  fois et refuse la question si les deux tirages diffèrent.
 - Les outils PyWims s’importent depuis le module `pywims` :
   `from pywims import py_wims, is_nombre, math_expression, decimal_fr, LIBRE`.
   - `math_expression(saisie)` analyse une expression écrite par un élève
@@ -73,7 +73,7 @@ français, séparés par des virgules.
 
 - **Sans `apres`**, l’élève doit donner ce qu’affiche le bouton « Solution » :
   chaque saisie est comparée à la solution du tirage, sans Python, ce qui rend
-  l’exercice plus léger et plus rapide. Sont seulement ignorés les espaces, le
+  la question plus légère et plus rapide. Sont seulement ignorés les espaces, le
   signe moins typographique « − » et le codage des accents. Tout le reste
   compte : majuscules, ordre des termes (`1 + x^2` est faux pour `x^2 + 1`),
   fractions équivalentes (`14/24` est faux pour `7/12`), séparateur décimal
@@ -167,7 +167,7 @@ français, séparés par des virgules.
 - La solution doit être jugée juste : pour chaque tirage, le compilateur la
   saisit comme le ferait un élève (texte de la solution, `1` pour une valeur
   `LIBRE`, indices pour une question à choix), la corrige (par `apres`, ou par
-  comparaison sans `apres`) et refuse l’exercice si un champ est jugé faux, si
+  comparaison sans `apres`) et refuse la question si un champ est jugé faux, si
   `apres` plante, ou si une solution texte est vide.
 
 ## Retour à l’élève
@@ -182,7 +182,7 @@ sont interprétées, sans attribut : `<b>`, `<i>`, `<strong>`, `<em>`, `<sup>`,
 
 N’invente pas de mises en page, de composants, d’API d’exécution ni de
 bibliothèques Python. La seule mise en page prise en charge est `STD`.
-N’utilise pas d’autres balises ou filtres Django. Si l’exercice demandé
+N’utilise pas d’autres balises ou filtres Django. Si la question demandée
 nécessite une fonctionnalité non prise en charge, signale-le séparément au lieu
 de proposer une approximation silencieuse.
 

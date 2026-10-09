@@ -172,7 +172,7 @@
         try {
           await session.getTemplateValue("absente");
         } catch (error) {
-          rejected = error.message.includes("Variable d’exercice inconnue : absente");
+          rejected = error.message.includes("Variable de question inconnue : absente");
         }
         if (!rejected) throw new Error("Une variable absente n’est pas signalée clairement.");
       });

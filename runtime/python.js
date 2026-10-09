@@ -146,7 +146,7 @@ window.PyWimsPython = (() => {
 
   function initialize(code, sessionId = "default") {
     if (typeof code !== "string") {
-      throw new Error("Le code Python de l’exercice est invalide.");
+      throw new Error("Le code Python de la question est invalide.");
     }
     return call("initialize", [sessionId, code]);
   }

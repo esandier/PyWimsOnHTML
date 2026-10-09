@@ -14,7 +14,7 @@ STD
 % avant
 %
 # Modèle de question à réponse calculée, avec des valeurs tirées au hasard. Copiez ce fichier
-# dans votre dossier d’exercices, puis remplacez le titre, les mots-clés, le calcul et l’énoncé.
+# dans votre dossier de questions, puis remplacez le titre, les mots-clés, le calcul et l’énoncé.
 # Les lignes qui commencent par # sont des commentaires : elles n’apparaissent pas aux élèves.
 from random import randint
 

@@ -1,6 +1,39 @@
 /* Bandeau commun au site et au compilateur (SPECIFICATION.md, § 11.6), dans la palette du
    compilateur : accent orange sur fond gris clair. Fichier à part, et non dans site.css, parce que
    le compilateur garde ses propres styles de mise en page et ne prend que le bandeau. */
+/* Le fond est celui de la page (un fond teinté a été essayé, puis écarté par l’auteur) ; seul un
+   filet marque la séparation. Il est opaque : sur téléphone, le bandeau du compilateur reste collé
+   en haut, et la page défile sous lui. */
+:root {
+  --bandeau-fond: #f5f6f8;
+  --bandeau-filet: #d7dbe0;
+}
+
+/* Fond et filet sur toute la largeur de la fenêtre, alors que le contenu du bandeau garde la largeur
+   de la page : une ombre très étendue, coupée sur les côtés seulement (et 1 rem au-dessus, la marge du
+   compilateur) ; le filet est un pseudo-élément d’un pixel, étendu de même. Une seule ombre pour les
+   deux, décalée d’un pixel, ne marchait pas : l’ombre du fond recouvrait celle du filet. On a écarté
+   un élément englobant pleine largeur : le compilateur, où le bandeau est une rangée de la grille de
+   la page, aurait dû changer de structure. */
+.bandeau-pleine-largeur {
+  position: relative;
+  background: var(--bandeau-fond);
+  box-shadow: 0 0 0 100vmax var(--bandeau-fond);
+  clip-path: inset(-1rem -100vmax 0 -100vmax);
+}
+
+.bandeau-pleine-largeur::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 1px;
+  background: var(--bandeau-filet);
+  box-shadow: 0 0 0 100vmax var(--bandeau-filet);
+  clip-path: inset(0 -100vmax);
+  content: "";
+}
+
 .bandeau {
   display: flex;
   flex-wrap: wrap;
