@@ -1,14 +1,16 @@
-/* Pages du site (accueil, mode d’emploi) : sobres, dans la palette de la charte neutre
-   (css/brand.css), lisibles sur téléphone. Polices du système : rien à télécharger. */
+/* Pages du site (accueil, Créer) : dans la palette du compilateur (SPECIFICATION.md, § 11.6),
+   panneaux blancs sur fond gris, lisibles sur téléphone. Le bandeau est dans bandeau.css, partagé
+   avec le compilateur. Polices du système : rien à télécharger. */
 :root {
   color-scheme: light;
-  --primaire: #2f5d7c;
-  --primaire-fonce: #234a63;
-  --texte: #1f2933;
-  --gris: #52606d;
-  --filet: #d9dee3;
+  --accent: #a95f00;
+  --accent-fonce: #874c00;
+  --lien: #8a4d00;
+  --texte: #242424;
+  --gris: #656b72;
+  --filet: #d7dbe0;
   --fond: #f5f6f8;
-  --code: #eef1f4;
+  --code: #f1f3f5;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
   color: var(--texte);
   background: var(--fond);
@@ -22,72 +24,79 @@ body {
   background: var(--fond);
 }
 
-.bandeau {
-  color: #fff;
-  background: var(--primaire);
-}
-
-.bandeau-interieur,
+.bandeau,
 main,
 footer {
-  width: min(100%, 50rem);
+  width: min(100%, 56rem);
   margin: 0 auto;
   padding: 0 16px;
 }
 
-.bandeau-interieur {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.25rem 1.5rem;
-  padding-top: 0.9rem;
-  padding-bottom: 0.9rem;
-}
+.bandeau { padding-top: 1rem; padding-bottom: 0.75rem; }
 
-.bandeau a { color: #fff; }
-.marque { color: #fff; font-size: 1.25rem; font-weight: 700; text-decoration: none; }
-.bandeau nav { display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; font-size: 0.95rem; }
+main { padding-top: 0.5rem; padding-bottom: 2.5rem; }
 
-main { padding-top: 1.75rem; padding-bottom: 2.5rem; }
-
-h1 { margin: 0 0 0.5rem; font-size: clamp(1.6rem, 5vw, 2.2rem); line-height: 1.2; }
-h2 { margin: 2.25rem 0 0.6rem; padding-top: 0.25rem; font-size: 1.35rem; line-height: 1.3; }
+h1 { margin: 1rem 0 0.5rem; font-size: clamp(1.5rem, 4vw, 1.9rem); line-height: 1.25; }
+h2 { margin: 2.25rem 0 0.6rem; font-size: 1.35rem; line-height: 1.3; }
 h3 { margin: 1.5rem 0 0.4rem; font-size: 1.05rem; }
 p, ul, ol { margin: 0 0 0.85rem; }
 li { margin-bottom: 0.3rem; }
-a { color: var(--primaire); }
+a { color: var(--lien); }
 
-.chapeau { margin-bottom: 1.5rem; color: var(--gris); font-size: 1.1rem; }
+.chapeau { margin: 1rem 0 1.25rem; font-size: 1.1rem; }
 
-/* Boutons d’action : liens mis en forme, ou vrais boutons (copier le prompt). */
-.actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin: 1.25rem 0; }
-.bouton {
-  display: inline-block;
-  padding: 0.6rem 1.1rem;
-  border: 1px solid var(--primaire);
-  border-radius: 0.4rem;
-  color: #fff;
-  background: var(--primaire);
-  font: inherit;
-  font-weight: 600;
-  text-decoration: none;
-  cursor: pointer;
-}
-.bouton:hover { background: var(--primaire-fonce); }
-.bouton.secondaire { color: var(--primaire); background: #fff; }
-.bouton.secondaire:hover { background: var(--code); }
-
-/* Cartes des démonstrations et des points clés. */
-.cartes { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1rem; margin: 1rem 0; }
-.carte {
+/* Panneau blanc, comme ceux du compilateur. */
+.panneau {
+  margin: 1rem 0;
   padding: 1rem 1.1rem;
   border: 1px solid var(--filet);
   border-radius: 0.5rem;
   background: #fff;
+  box-shadow: 0 1px 3px #0000000a;
 }
-.carte h3 { margin-top: 0; }
-.carte p:last-child { margin-bottom: 0; }
+.panneau > :last-child { margin-bottom: 0; }
+.panneau h2, .panneau h3 { margin-top: 0; }
+
+/* Caractéristiques, élève et enseignant, côte à côte sur grand écran. */
+.colonnes { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: 1rem; margin: 1rem 0; }
+.colonnes .panneau { margin: 0; }
+
+/* Boutons : ceux du compilateur (plein pour l’action principale, contour pour les autres). */
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin: 1rem 0; }
+.bouton {
+  display: inline-block;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid #9b5700;
+  border-radius: 0.35rem;
+  color: #fff;
+  background: var(--accent);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+.bouton:hover { background: var(--accent-fonce); }
+.bouton.secondaire { color: var(--lien); background: #fff; }
+.bouton.secondaire:hover { background: #fff0d8; }
+
+.statut { color: var(--gris); font-size: 0.9rem; }
+
+/* Cadre déplié par « Voir » (prompt, modèles) : il défile seul, la page garde sa longueur. */
+.cadre-texte { margin: 0 0 1rem; }
+.cadre-texte pre { max-height: 28rem; overflow: auto; margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* Exemple d’activité de l’accueil : la vraie page compilée, qui défile dans son cadre. */
+.exemple {
+  display: block;
+  width: 100%;
+  height: min(80vh, 46rem);
+  height: min(80dvh, 46rem);
+  border: 1px solid var(--filet);
+  border-radius: 0.5rem;
+  background: #fff;
+}
+.sous-exemple { margin-top: 0.4rem; color: var(--gris); font-size: 0.9rem; }
 
 code, pre { font-family: Consolas, "Cascadia Mono", Menlo, monospace; font-size: 0.9em; }
 code { padding: 0.05rem 0.3rem; border-radius: 0.25rem; background: var(--code); }
@@ -101,6 +110,27 @@ pre {
   line-height: 1.45;
 }
 pre code { padding: 0; background: none; }
+
+/* Sous-parties d’un champ (a, b, c…) : la lettre, puis le texte. */
+ol.lettres { list-style: lower-alpha; }
+
+/* Champs de réponse : un élément dépliable chacun, pour voir la liste d’un coup d’œil. */
+details.champ {
+  margin: 0 0 0.5rem;
+  border: 1px solid var(--filet);
+  border-radius: 0.4rem;
+  background: #fff;
+}
+details.champ > summary {
+  padding: 0.55rem 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+details.champ > summary:hover { background: var(--code); }
+details.champ[open] > summary { border-bottom: 1px solid var(--filet); }
+details.champ > :not(summary) { margin-left: 0.9rem; margin-right: 0.9rem; }
+details.champ > :nth-child(2) { margin-top: 0.75rem; }
+details.champ > :last-child { margin-bottom: 0.9rem; }
 
 /* Tableaux de paramètres : ils défilent seuls sur un écran étroit, jamais la page. */
 .tableau { overflow-x: auto; margin: 0 0 1rem; }
@@ -129,14 +159,12 @@ th { background: var(--code); font-weight: 600; }
 .encadre {
   margin: 1rem 0;
   padding: 0.8rem 1rem;
-  border-left: 4px solid var(--primaire);
+  border-left: 4px solid var(--accent);
   border-radius: 0.25rem;
   background: #fff;
 }
 
 .sommaire { padding: 0.8rem 1rem 0.5rem 2rem; border: 1px solid var(--filet); border-radius: 0.5rem; background: #fff; }
-
-.statut { margin-left: 0.5rem; color: var(--gris); font-size: 0.9rem; }
 
 footer {
   padding-top: 1rem;

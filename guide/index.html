@@ -3,33 +3,36 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Créer un exercice — PyWimsOnHTML</title>
-  <meta name="description" content="Mode d’emploi de PyWimsOnHTML : créer un exercice avec ou sans IA, les champs de réponse, compiler et publier sur Moodle.">
+  <title>Créer une question — PWOH</title>
+  <meta name="description" content="Créer une question PWOH (PyWimsOnHTML) avec ou sans IA : le format .pwq, les champs de réponse, compiler et publier sur Moodle.">
   <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../css/bandeau.css">
   <link rel="stylesheet" href="../css/site.css">
 </head>
 <body>
   <header class="bandeau">
-    <div class="bandeau-interieur">
-      <a class="marque" href="../">PyWimsOnHTML</a>
-      <nav aria-label="Site">
-        <a href="../">Accueil</a>
-        <a href="./" aria-current="page">Créer un exercice</a>
-        <a href="../compiler/">Compilateur</a>
-        <a href="https://github.com/esandier/PyWimsOnHTML">Code source</a>
-      </nav>
+    <div class="bandeau-titre">
+      <a class="marque" href="../">PWOH</a>
+      <span class="devise">questions à données aléatoires dans une page HTML</span>
     </div>
+    <nav class="bandeau-nav" aria-label="Site">
+      <a href="../">Accueil</a>
+      <a href="./" aria-current="page">Créer</a>
+      <a href="../compiler/">Compilateur</a>
+      <a href="https://github.com/esandier/PyWimsOnHTML">Code source</a>
+    </nav>
   </header>
 
   <main>
-    <h1>Créer un exercice</h1>
-    <p class="chapeau">Un exercice est un petit fichier texte, d’extension <code>.pwq</code>. On l’écrit avec
+    <h1>Créer une question</h1>
+    <p class="chapeau">Une question est un petit fichier texte, d’extension <code>.pwq</code>. On l’écrit avec
       l’aide d’une IA, ou à la main à partir d’un modèle, puis le compilateur en fait une page HTML à
       donner aux élèves.</p>
 
     <ol class="sommaire">
       <li><a href="#avec-ia">Avec une IA</a></li>
       <li><a href="#sans-ia">Sans IA : le format <code>.pwq</code></a></li>
+      <li><a href="#structure">Structure d’un fichier</a></li>
       <li><a href="#champs">Les champs de réponse</a></li>
       <li><a href="#publier">Compiler et publier</a></li>
       <li><a href="#bon-a-savoir">Bon à savoir</a></li>
@@ -48,64 +51,45 @@
     </ol>
     <div class="actions">
       <button class="bouton" id="copier-prompt" type="button">Copier le prompt</button>
-      <a class="bouton secondaire" href="../PROMPT.md">Voir le prompt</a>
+      <button class="bouton secondaire" type="button" data-voir="../PROMPT.md" aria-controls="cadre-prompt" aria-expanded="false">Voir le prompt</button>
+      <a class="bouton secondaire" href="../PROMPT.md" download="PROMPT.md">Télécharger le prompt</a>
       <span class="statut" id="statut-copie" role="status" aria-live="polite"></span>
     </div>
-    <p>Relisez toujours l’exercice produit : le compilateur vérifie que la solution est jugée juste, pas
-      que l’énoncé est mathématiquement correct.</p>
+    <div class="cadre-texte" id="cadre-prompt" hidden><pre></pre></div>
 
     <h2 id="sans-ia">2. Sans IA : le format <code>.pwq</code></h2>
     <p>Le plus simple est de partir d’un modèle commenté, de le copier dans votre dossier d’exercices et de
       le modifier :</p>
-    <div class="cartes">
-      <div class="carte">
-        <h3>QCM</h3>
-        <p>Des choix, dont un bon, mélangés à chaque tirage ; sans aléatoire ni Python à écrire.</p>
-        <p><a href="modeles/qcm.pwq" download>Télécharger qcm.pwq</a></p>
+
+    <div class="panneau">
+      <h3>Exemple de QCM</h3>
+      <p>Sans aléatoire ni Python à écrire.</p>
+      <div class="actions">
+        <a class="bouton" href="modeles/qcm.pwq" download>Télécharger</a>
+        <button class="bouton secondaire" type="button" data-voir="modeles/qcm.pwq" aria-controls="cadre-qcm" aria-expanded="false">Voir</button>
       </div>
-      <div class="carte">
-        <h3>Réponse calculée</h3>
-        <p>Des valeurs tirées au hasard et une réponse calculée en Python, à écrire dans un champ.</p>
-        <p><a href="modeles/calcul.pwq" download>Télécharger calcul.pwq</a></p>
-      </div>
+      <div class="cadre-texte" id="cadre-qcm" hidden><pre></pre></div>
     </div>
 
-    <h3>Structure d’un fichier</h3>
+    <div class="panneau">
+      <h3>Exemple avec Python</h3>
+      <p>Données aléatoires et réponse calculée.</p>
+      <div class="actions">
+        <a class="bouton" href="modeles/calcul.pwq" download>Télécharger</a>
+        <button class="bouton secondaire" type="button" data-voir="modeles/calcul.pwq" aria-controls="cadre-calcul" aria-expanded="false">Voir</button>
+      </div>
+      <div class="cadre-texte" id="cadre-calcul" hidden><pre></pre></div>
+    </div>
+
+    <h2 id="structure">3. Structure d’un fichier</h2>
     <p>Un fichier est une suite de <strong>champs</strong>. Chacun commence par trois lignes : <code>%</code>,
       <code>% nom_du_champ</code>, <code>%</code> ; son contenu suit. Une ligne <code>%</code> seule ferme le
-      dernier champ. Voici le modèle « réponse calculée » en entier :</p>
-<pre><code>%
-% title
-%
-Modèle : réponse calculée
-%
-% keywords
-%
-modèle, calcul, aléatoire
-%
-% layout
-%
-STD
-%
-% avant
-%
-from random import randint
-a = randint(2, 9)
-b = randint(11, 19)
-produit = a * b
-explication_solution = rf"${a}\times {b} = {produit}$."
-%
-% enonce
-%
-Calculez ${{a}} \times {{b}}$ :
-{% input_text 'reponse' solution=produit style='width:4em' %}
-%</code></pre>
-
+      dernier champ.</p>
     <div class="tableau">
       <table>
         <thead><tr><th>Champ</th><th>Statut</th><th>Contenu</th></tr></thead>
         <tbody>
-          <tr><td><code>title</code></td><td>obligatoire</td><td>titre de l’exercice, affiché aux élèves</td></tr>
+          <tr><td><code>title</code></td><td>obligatoire</td><td>titre de la question, affiché aux élèves</td></tr>
           <tr><td><code>keywords</code></td><td>obligatoire</td><td>mots-clés séparés par des virgules (recherche dans le compilateur)</td></tr>
           <tr><td><code>layout</code></td><td>obligatoire</td><td>toujours <code>STD</code></td></tr>
           <tr><td><code>avant</code></td><td>obligatoire</td><td>code Python : tirage des valeurs et calcul des solutions</td></tr>
@@ -117,41 +101,46 @@ Calculez ${{a}} \times {{b}}$ :
     </div>
 
     <h3>Le champ <code>avant</code></h3>
-    <ul>
+    <ol class="lettres">
       <li>C’est du Python. Importez ce dont vous avez besoin (<code>from random import randint</code>,
-        <code>from sympy import *</code>…). Tirez le hasard avec le module <code>random</code> seulement :
-        le compilateur prépare 20 tirages, et la page les rejoue à l’identique.</li>
-      <li>Une chaîne qui contient une formule s’écrit avec <code>r</code> devant les guillemets
-        (<code>r"$\frac{1}{2}$"</code>), à cause des barres obliques ; avec des valeurs à insérer,
-        <code>rf"${a}\times {b}$"</code>.</li>
-      <li>Facultatif : <code>explication_solution</code>, un texte affiché avec la solution (formules
-        admises, et les balises <code>&lt;b&gt;</code>, <code>&lt;i&gt;</code>, <code>&lt;br&gt;</code>).</li>
-    </ul>
+        <code>from sympy import *</code>…). Utilisez le module <code>random</code> pour des données
+        aléatoires.</li>
+      <li>Une chaîne qui contient une formule s’écrit avec <code>r</code> devant les guillemets :
+        <code>r"$\frac{1}{2}$"</code>. C’est indispensable dès qu’elle contient une barre oblique inverse
+        <code>\</code>, que Python interpréterait sinon. Pour y insérer la valeur d’une variable, ajoutez
+        <code>f</code> et mettez la variable entre accolades : avec <code>a = 3</code> et <code>b = 17</code>,
+        <code>rf"${a}\times {b}$"</code> donne le texte <code>$3\times 17$</code>, affiché 3 × 17. Les
+        accolades de LaTeX se doublent alors : <code>rf"$\frac{{1}}{{{a}}}$"</code> donne
+        <code>$\frac{1}{3}$</code>.</li>
+      <li>On peut fournir un texte <code>explication_solution</code>, affiché avec la solution (formules
+        admises entre <code>$</code>, ainsi que les balises HTML <code>&lt;b&gt;</code>,
+        <code>&lt;i&gt;</code>, <code>&lt;br&gt;</code>).</li>
+    </ol>
 
     <h3>Le champ <code>enonce</code></h3>
-    <ul>
-      <li>Du texte et du HTML ; les formules s’écrivent en LaTeX entre <code>$…$</code> (dans la ligne) ou
-        <code>$$…$$</code> (centrées).</li>
-      <li><code>{{nom}}</code> affiche la valeur d’une variable de <code>avant</code> ; une expression SymPy
+    <ol class="lettres">
+      <li>C’est du HTML.</li>
+      <li>Les formules s’écrivent en LaTeX entre <code>$…$</code> (dans la ligne) ou <code>$$…$$</code>
+        (centrées).</li>
+      <li><code>{{nom}}</code> affiche la valeur d’une variable de <code>avant</code> : une expression SymPy
         s’affiche en LaTeX, à mettre donc dans une formule : <code>$f(x) = {{f}}$</code>. Dans une commande
         LaTeX, laissez des espaces autour : <code>\frac{ {{n}} }{ {{m}} }</code>.</li>
-      <li>Les champs de réponse sont des balises <code>{% … %}</code>, détaillées ci-dessous.</li>
-    </ul>
+      <li>Les champs de réponse sont des balises <code>{% … %}</code>, détaillées ci-dessous ; chacune
+        contient sa solution.</li>
+    </ol>
 
-    <h3>La correction</h3>
-    <ul>
-      <li><strong>Sans <code>apres</code></strong> (le cas courant) : la réponse de l’élève est comparée à la
-        solution, telle que l’affiche le bouton « Solution ». Seuls les espaces, le signe moins « − » et le
-        codage des accents sont ignorés : <code>7/12</code> est faux si la solution est <code>14/24</code>,
-        <code>0,5</code> faux si c’est <code>0.5</code>. C’est parfait pour un QCM, un entier, un mot.</li>
-      <li><strong>Avec <code>apres</code></strong> : du Python qui reçoit la saisie de chaque champ dans la
-        variable de même nom, et décide <code>ok_answer['nom'] = True</code> ou <code>False</code> ; il peut
-        aussi définir <code>feedback</code>, un retour qui explique l’erreur sans donner la réponse. Il est
-        nécessaire pour une formule (<code>input_math</code>) ou plusieurs écritures justes. Le
-        <a href="../PROMPT.md">prompt</a> en donne des exemples.</li>
-    </ul>
+    <h3>Le champ <code>apres</code></h3>
+    <p>Si le champ n’est pas fourni, la réponse de l’élève est comparée à la solution, telle que l’affiche
+      le bouton « Solution ». Cela convient pour un QCM, ou une saisie très simple. Mais attention :
+      <code>7/12</code> est faux si la solution est <code>14/24</code>, <code>0,5</code> faux si c’est
+      <code>0.5</code>. La comparaison de la réponse et de la solution est purement visuelle.</p>
+    <p>Le champ facultatif <code>apres</code> est du Python qui étudie la saisie de chaque champ de réponse
+      (une variable de même nom que le champ), et décide <code>ok_answer['nom'] = True</code> ou
+      <code>False</code> ; il peut aussi définir la variable <code>feedback</code>, un retour qui explique
+      l’erreur sans donner la réponse. Il est nécessaire pour une formule (<code>input_math</code>), ou
+      lorsque plusieurs réponses sont justes, par exemple.</p>
 
-    <h2 id="champs">3. Les champs de réponse</h2>
+    <h2 id="champs">4. Les champs de réponse</h2>
     <p>Un champ s’écrit dans <code>enonce</code>, à l’endroit où il doit apparaître :</p>
 <pre><code>{% type 'nom' paramètre=valeur paramètre=valeur … %}</code></pre>
     <ul>
@@ -163,99 +152,113 @@ Calculez ${{a}} \times {{b}}$ :
         réponse.</li>
     </ul>
 
-    <h3><code>input_text</code> : réponse écrite</h3>
+    <details class="champ">
+      <summary><code>input_text</code> : réponse écrite</summary>
 <pre><code>{% input_text 'reponse' solution=produit style='width:4em' %}</code></pre>
-    <div class="tableau"><table>
-      <thead><tr><th>Paramètre</th><th>Statut</th><th>Rôle</th></tr></thead>
-      <tbody>
-        <tr><td><code>solution</code></td><td>obligatoire</td><td>nombre, expression SymPy ou texte ; affiché comme un élève l’écrirait (<code>19/12</code>, <code>x^2 + 1</code>). Pour un décimal à virgule, utilisez <code>decimal_fr</code> du module <code>pywims</code>.</td></tr>
-        <tr><td><code>style</code></td><td>facultatif</td><td>style CSS du champ, le plus souvent sa largeur : <code>'width:4em'</code></td></tr>
-      </tbody>
-    </table></div>
-    <p>Dans <code>apres</code>, la saisie arrive comme un texte.</p>
+      <div class="tableau"><table>
+        <thead><tr><th>Paramètre</th><th>Statut</th><th>Rôle</th></tr></thead>
+        <tbody>
+          <tr><td><code>solution</code></td><td>obligatoire</td><td>nombre, expression SymPy ou texte ; affiché comme un élève l’écrirait (<code>19/12</code>, <code>x^2 + 1</code>). Pour un décimal à virgule, utilisez <code>decimal_fr</code> du module <code>pywims</code>.</td></tr>
+          <tr><td><code>style</code></td><td>facultatif</td><td>style CSS du champ, le plus souvent sa largeur : <code>'width:4em'</code></td></tr>
+        </tbody>
+      </table></div>
+      <p>Dans <code>apres</code>, la saisie arrive comme un texte.</p>
+    </details>
 
-    <h3><code>input_math</code> : formule, avec clavier mathématique</h3>
+    <details class="champ">
+      <summary><code>input_math</code> : formule, avec clavier mathématique</summary>
 <pre><code>{% input_math 'derivee' solution=f_prime %}</code></pre>
-    <div class="tableau"><table>
-      <thead><tr><th>Paramètre</th><th>Statut</th><th>Rôle</th></tr></thead>
-      <tbody>
-        <tr><td><code>solution</code></td><td>obligatoire</td><td>expression SymPy, affichée en formule</td></tr>
-      </tbody>
-    </table></div>
-    <p>L’élève écrit avec un clavier mathématique (MathLive). Ce champ exige un <code>apres</code> : la saisie
-      y arrive en écriture texte (<code>x^2+1</code>), à lire avec <code>math_expression</code> puis à
-      comparer, par exemple <code>simplify(math_expression(derivee) - f_prime) == 0</code>.</p>
+      <div class="tableau"><table>
+        <thead><tr><th>Paramètre</th><th>Statut</th><th>Rôle</th></tr></thead>
+        <tbody>
+          <tr><td><code>solution</code></td><td>obligatoire</td><td>expression SymPy, affichée en formule</td></tr>
+        </tbody>
+      </table></div>
+      <p>L’élève écrit avec un clavier mathématique (MathLive). Ce champ exige un <code>apres</code> : la
+        saisie y arrive en écriture texte (<code>x^2+1</code>), à lire avec <code>math_expression</code>
+        puis à comparer, par exemple <code>simplify(math_expression(derivee) - f_prime) == 0</code>.</p>
+    </details>
 
-    <h3><code>input_matrix</code> : matrice de taille fixe</h3>
+    <details class="champ">
+      <summary><code>input_matrix</code> : matrice de taille fixe</summary>
 <pre><code>{% input_matrix 'M' rows=2 cols=3 solution=produit input_style='width:2.5em' %}</code></pre>
-    <div class="tableau"><table>
-      <thead><tr><th>Paramètre</th><th>Statut</th><th>Rôle</th></tr></thead>
-      <tbody>
-        <tr><td><code>solution</code></td><td>obligatoire</td><td><code>Matrix</code> SymPy ou liste de lignes</td></tr>
-        <tr><td><code>size</code></td><td rowspan="2">l’un ou l’autre</td><td>matrice carrée <code>size × size</code></td></tr>
-        <tr><td><code>rows</code>, <code>cols</code></td><td>nombre de lignes et de colonnes</td></tr>
-        <tr><td><code>input_style</code></td><td>facultatif</td><td>style CSS de chaque case (largeur 2em par défaut)</td></tr>
-      </tbody>
-    </table></div>
-    <p>Les dimensions sont des entiers de 1 à 10, ou des variables de <code>avant</code>. Dans
-      <code>apres</code>, la saisie arrive comme une liste de lignes de textes ; chaque case se corrige à
-      part : <code>ok_answer["M[0][1]"] = …</code>.</p>
+      <div class="tableau"><table>
+        <thead><tr><th>Paramètre</th><th>Statut</th><th>Rôle</th></tr></thead>
+        <tbody>
+          <tr><td><code>solution</code></td><td>obligatoire</td><td><code>Matrix</code> SymPy ou liste de lignes</td></tr>
+          <tr><td><code>size</code></td><td rowspan="2">l’un ou l’autre</td><td>matrice carrée <code>size × size</code></td></tr>
+          <tr><td><code>rows</code>, <code>cols</code></td><td>nombre de lignes et de colonnes</td></tr>
+          <tr><td><code>input_style</code></td><td>facultatif</td><td>style CSS de chaque case (largeur 2em par défaut)</td></tr>
+        </tbody>
+      </table></div>
+      <p>Les dimensions sont des entiers de 1 à 10, ou des variables de <code>avant</code>. Dans
+        <code>apres</code>, la saisie arrive comme une liste de lignes de textes ; chaque case se corrige à
+        part : <code>ok_answer["M[0][1]"] = …</code>.</p>
+    </details>
 
-    <h3><code>input_vmatrix</code> : matrice dont l’élève choisit la taille</h3>
+    <details class="champ">
+      <summary><code>input_vmatrix</code> : matrice dont l’élève choisit la taille</summary>
 <pre><code>{% input_vmatrix 'M' max_rows=5 max_cols=5 solution=produit %}</code></pre>
-    <div class="tableau"><table>
-      <thead><tr><th>Paramètre</th><th>Statut</th><th>Rôle</th></tr></thead>
-      <tbody>
-        <tr><td><code>solution</code></td><td>obligatoire</td><td><code>Matrix</code> SymPy ou liste de lignes ; la solution affichée prend ses dimensions</td></tr>
-        <tr><td><code>max_rows</code>, <code>max_cols</code></td><td>facultatif</td><td>taille maximale (10 par défaut)</td></tr>
-        <tr><td><code>input_style</code></td><td>facultatif</td><td>style CSS de chaque case</td></tr>
-        <tr><td><code>cell_width</code>, <code>cell_height</code></td><td>facultatif</td><td>taille imposée des cases, par exemple <code>'3em'</code></td></tr>
-      </tbody>
-    </table></div>
-    <p>L’élève agrandit ou réduit la grille avec une poignée (ou les flèches du clavier). Sans
-      <code>apres</code>, une grille aux mauvaises dimensions est fausse.</p>
+      <div class="tableau"><table>
+        <thead><tr><th>Paramètre</th><th>Statut</th><th>Rôle</th></tr></thead>
+        <tbody>
+          <tr><td><code>solution</code></td><td>obligatoire</td><td><code>Matrix</code> SymPy ou liste de lignes ; la solution affichée prend ses dimensions</td></tr>
+          <tr><td><code>max_rows</code>, <code>max_cols</code></td><td>facultatif</td><td>taille maximale (10 par défaut)</td></tr>
+          <tr><td><code>input_style</code></td><td>facultatif</td><td>style CSS de chaque case</td></tr>
+          <tr><td><code>cell_width</code>, <code>cell_height</code></td><td>facultatif</td><td>taille imposée des cases, par exemple <code>'3em'</code></td></tr>
+        </tbody>
+      </table></div>
+      <p>L’élève agrandit ou réduit la grille avec une poignée (ou les flèches du clavier). Sans
+        <code>apres</code>, une grille aux mauvaises dimensions est fausse.</p>
+    </details>
 
-    <h3><code>input_radio</code> et <code>input_checkbox</code> : choix unique, choix multiple</h3>
+    <details class="champ">
+      <summary><code>input_radio</code> et <code>input_checkbox</code> : choix unique, choix multiple</summary>
 <pre><code>{% input_radio 'reponse' choices=choix solution=bonne columns=4 fixed_last=1 %}
 {% input_checkbox 'reponses' choices=choix solution=bonnes bareme='b=1,m=-0.5' %}</code></pre>
-    <div class="tableau"><table>
-      <thead><tr><th>Paramètre</th><th>Statut</th><th>Rôle</th></tr></thead>
-      <tbody>
-        <tr><td><code>choices</code></td><td>obligatoire</td><td>liste de <code>avant</code> : au moins deux choix, dans votre ordre (textes avec formules, ou expressions SymPy)</td></tr>
-        <tr><td><code>solution</code></td><td>obligatoire</td><td><code>input_radio</code> : le numéro du bon choix ; <code>input_checkbox</code> : la liste des numéros des bons choix, éventuellement vide. Les numéros commencent à <strong>0</strong>.</td></tr>
-        <tr><td><code>columns</code></td><td>facultatif</td><td>nombre de colonnes sur grand écran, de 1 (par défaut) à 6 ; réservé aux choix courts. Sur téléphone, les colonnes se réduisent d’elles-mêmes.</td></tr>
-        <tr><td><code>fixed_last</code></td><td>facultatif</td><td>nombre de derniers choix laissés à la fin, non mélangés (0 par défaut) : pour « Aucune de ces réponses ».</td></tr>
-        <tr><td><code>bareme</code></td><td>facultatif</td><td>note indicative, dans la syntaxe d’AMC (voir ci-dessous)</td></tr>
-      </tbody>
-    </table></div>
-    <p>Les choix sont mélangés à chaque tirage. Aucun choix n’est ajouté automatiquement : pour « Aucune de
-      ces réponses », écrivez-le en dernier, avec <code>fixed_last=1</code>. Dans <code>apres</code>, la
-      saisie arrive comme le numéro choisi (choix unique) ou la liste croissante des numéros cochés.</p>
+      <div class="tableau"><table>
+        <thead><tr><th>Paramètre</th><th>Statut</th><th>Rôle</th></tr></thead>
+        <tbody>
+          <tr><td><code>choices</code></td><td>obligatoire</td><td>liste de <code>avant</code> : au moins deux choix, dans votre ordre (textes avec formules, ou expressions SymPy)</td></tr>
+          <tr><td><code>solution</code></td><td>obligatoire</td><td><code>input_radio</code> : le numéro du bon choix ; <code>input_checkbox</code> : la liste des numéros des bons choix, éventuellement vide. Les numéros commencent à <strong>0</strong>.</td></tr>
+          <tr><td><code>columns</code></td><td>facultatif</td><td>nombre de colonnes sur grand écran, de 1 (par défaut) à 6 ; réservé aux choix courts. Sur téléphone, les colonnes se réduisent d’elles-mêmes.</td></tr>
+          <tr><td><code>fixed_last</code></td><td>facultatif</td><td>nombre de derniers choix laissés à la fin, non mélangés (0 par défaut) : pour « Aucune de ces réponses ».</td></tr>
+          <tr><td><code>bareme</code></td><td>facultatif</td><td>note indicative, dans la syntaxe d’AMC (voir « Le barème »)</td></tr>
+        </tbody>
+      </table></div>
+      <p>Les choix sont mélangés à chaque tirage. Aucun choix n’est ajouté automatiquement : pour « Aucune de
+        ces réponses », écrivez-le en dernier, avec <code>fixed_last=1</code>. Dans <code>apres</code>, la
+        saisie arrive comme le numéro choisi (choix unique) ou la liste croissante des numéros cochés.</p>
+    </details>
 
-    <h3>Le barème (questions à choix)</h3>
-    <p>Il affiche une note indicative à chaque vérification, sans rien évaluer. La syntaxe est celle
-      d’<a href="https://www.auto-multiple-choice.net/fr/doc/scoring/">AMC</a>, et un barème d’AMC se
-      recopie tel quel : <code>bareme='b=1,m=-0.5,p=0'</code>. Un barème n’est admis que si le champ à choix
-      est le seul champ de la question.</p>
-    <div class="tableau"><table>
-      <thead><tr><th>Directive</th><th>Rôle</th></tr></thead>
-      <tbody>
-        <tr><td><code>b</code>, <code>m</code></td><td>points d’une bonne, d’une mauvaise réponse (par case, en choix multiple) ; 1 et 0 par défaut</td></tr>
-        <tr><td><code>v</code></td><td>points si rien n’est coché</td></tr>
-        <tr><td><code>d</code></td><td>décalage ajouté au score</td></tr>
-        <tr><td><code>p</code>, <code>P</code></td><td>plancher, plafond</td></tr>
-        <tr><td><code>mz</code></td><td>tout ou rien : <code>mz</code> points si tout est juste, 0 sinon</td></tr>
-        <tr><td><code>haut</code>, <code>MAX</code></td><td>comme dans AMC</td></tr>
-        <tr><td><code>e</code></td><td>accepté, sans effet</td></tr>
-      </tbody>
-    </table></div>
+    <details class="champ">
+      <summary>Le barème (questions à choix)</summary>
+      <p>Il affiche une note indicative à chaque vérification, sans rien évaluer. La syntaxe est celle
+        d’<a href="https://www.auto-multiple-choice.net/fr/doc/scoring/">AMC</a>, et un barème d’AMC se
+        recopie tel quel : <code>bareme='b=1,m=-0.5,p=0'</code>. Un barème n’est admis que si le champ à
+        choix est le seul champ de la question.</p>
+      <div class="tableau"><table>
+        <thead><tr><th>Directive</th><th>Rôle</th></tr></thead>
+        <tbody>
+          <tr><td><code>b</code>, <code>m</code></td><td>points d’une bonne, d’une mauvaise réponse (par case, en choix multiple) ; 1 et 0 par défaut</td></tr>
+          <tr><td><code>v</code></td><td>points si rien n’est coché</td></tr>
+          <tr><td><code>d</code></td><td>décalage ajouté au score</td></tr>
+          <tr><td><code>p</code>, <code>P</code></td><td>plancher, plafond</td></tr>
+          <tr><td><code>mz</code></td><td>tout ou rien : <code>mz</code> points si tout est juste, 0 sinon</td></tr>
+          <tr><td><code>haut</code>, <code>MAX</code></td><td>comme dans AMC</td></tr>
+          <tr><td><code>e</code></td><td>accepté, sans effet</td></tr>
+        </tbody>
+      </table></div>
+    </details>
 
-    <h3>Plusieurs réponses justes : <code>LIBRE</code></h3>
-    <p>Dans une solution, <code>LIBRE</code> (de <code>from pywims import LIBRE</code>) marque une valeur
-      quelconque : toute réponse y est juste, et le bouton « Solution » y affiche « ∗ ». Par exemple, pour
-      une matrice triangulaire : <code>Matrix(n, n, lambda i, j: 0 if i &gt; j else LIBRE)</code>.</p>
+    <details class="champ">
+      <summary>Plusieurs réponses justes : <code>LIBRE</code></summary>
+      <p>Dans une solution, <code>LIBRE</code> (de <code>from pywims import LIBRE</code>) marque une valeur
+        quelconque : toute réponse y est juste, et le bouton « Solution » y affiche « ∗ ». Par exemple, pour
+        une matrice triangulaire : <code>Matrix(n, n, lambda i, j: 0 if i &gt; j else LIBRE)</code>.</p>
+    </details>
 
-    <h2 id="publier">4. Compiler et publier</h2>
+    <h2 id="publier">5. Compiler et publier</h2>
     <ol>
       <li>Ouvrez le <a href="../compiler/">compilateur</a> et choisissez votre dossier d’exercices (ses
         sous-dossiers sont lus aussi). Sur Chrome et Edge, il est mémorisé pour la visite suivante.</li>
@@ -270,45 +273,69 @@ Calculez ${{a}} \times {{b}}$ :
       de votre établissement, placez un fichier <code>brand.css</code> à la racine de votre dossier
       d’exercices ; <a href="../css/chartes/upec.css">celui de l’UPEC</a> sert d’exemple.</p>
 
-    <h2 id="bon-a-savoir">5. Bon à savoir</h2>
+    <h2 id="bon-a-savoir">6. Bon à savoir</h2>
     <div class="encadre">
-      <p><strong>Pour l’entraînement, pas pour l’évaluation.</strong> La correction se fait dans le navigateur
-        de l’élève : les solutions sont lisibles dans le code de la page, et la note n’est qu’indicative.</p>
+      <p><strong>Pour l’entraînement, pas pour l’évaluation.</strong> La solution est toujours visible. La
+        note (pour les QCM, si un barème est défini) n’est qu’une indication fournie à l’élève ; elle n’est
+        transmise ni à Moodle ni à l’enseignant.</p>
     </div>
     <ul>
-      <li>Une question sans <code>apres</code> se corrige sans Python : la page reste légère. Une question
-        avec <code>apres</code> charge Python (environ 10 Mo) au premier contact de l’élève.</li>
-      <li><strong>Edge</strong> peut rendre la compilation très lente : sa « sécurité renforcée » ralentit
-        Python sur les sites peu visités. Dans <code>edge://settings/privacy</code>, rubrique
-        « Améliorez votre sécurité sur le web », ajoutez une exception pour
-        <code>https://esandier.github.io</code>.</li>
-      <li>Le compilateur prépare 20 tirages par question ; « Nouvel énoncé » en propose un autre à l’élève.
-        Le champ <code>tirages</code> change ce nombre.</li>
+      <li>Une question sans champ <code>apres</code> se corrige sans Python : la page reste légère. Une
+        question avec <code>apres</code> doit charger Python dans le navigateur de l’élève (environ
+        10 Mo).</li>
       <li>La référence complète du format est le <a href="../PROMPT.md">prompt</a> : il s’adresse à une IA,
         mais se lit aussi très bien.</li>
     </ul>
   </main>
 
   <footer>
-    <p>PyWimsOnHTML ressuscite PyWims, des exercices interactifs de mathématiques écrits en Python.
-      Logiciel libre (<a href="https://github.com/esandier/PyWimsOnHTML/blob/master/LICENCE">CeCILL 2.1</a>),
-      © 2026 Etienne Sandier.</p>
+    <p>Logiciel libre (<a href="https://github.com/esandier/PyWimsOnHTML/blob/master/LICENCE">CeCILL 2.1</a>),
+      © 2026 Etienne Sandier. <a href="https://github.com/esandier/PyWimsOnHTML">Code source</a>.</p>
   </footer>
 
   <script>
-    // Copie le texte de PROMPT.md, lu à côté du site : toujours la version publiée. Sans presse-papiers
-    // (page ouverte depuis le disque, navigateur ancien), on renvoie vers le texte à copier à la main.
+    // Lit un fichier du site (prompt, modèle) à côté de la page : toujours la version publiée.
+    async function lire(adresse) {
+      const reponse = await fetch(adresse, { cache: "no-cache" });
+      if (!reponse.ok) throw new Error(String(reponse.status));
+      return reponse.text();
+    }
+
+    // Sans presse-papiers (page ouverte depuis le disque, navigateur ancien), on renvoie vers
+    // « Voir le prompt », où le texte se copie à la main.
     document.getElementById("copier-prompt").addEventListener("click", async () => {
       const statut = document.getElementById("statut-copie");
       try {
-        const reponse = await fetch("../PROMPT.md", { cache: "no-cache" });
-        if (!reponse.ok) throw new Error(String(reponse.status));
-        await navigator.clipboard.writeText(await reponse.text());
+        await navigator.clipboard.writeText(await lire("../PROMPT.md"));
         statut.textContent = "Prompt copié : collez-le dans votre assistant.";
       } catch {
         statut.textContent = "Copie impossible : ouvrez « Voir le prompt » et copiez le texte.";
       }
     });
+
+    // « Voir » déplie le fichier dans le cadre qui suit les boutons, et le replie au second clic. Le
+    // texte n’est lu qu’à la première ouverture : le prompt fait plusieurs dizaines de Ko, inutiles à
+    // qui ne le regarde pas. On a écarté <details>, dont le résumé ne peut pas se ranger parmi les
+    // boutons « Copier » et « Télécharger ».
+    for (const bouton of document.querySelectorAll("[data-voir]")) {
+      const libelle = bouton.textContent;
+      bouton.addEventListener("click", async () => {
+        const cadre = document.getElementById(bouton.getAttribute("aria-controls"));
+        const ouvrir = cadre.hidden;
+        if (ouvrir && !cadre.dataset.lu) {
+          const pre = cadre.querySelector("pre");
+          try {
+            pre.textContent = await lire(bouton.dataset.voir);
+            cadre.dataset.lu = "1";
+          } catch {
+            pre.textContent = "Lecture impossible : utilisez « Télécharger ».";
+          }
+        }
+        cadre.hidden = !ouvrir;
+        bouton.setAttribute("aria-expanded", String(ouvrir));
+        bouton.textContent = ouvrir ? "Refermer" : libelle;
+      });
+    }
   </script>
 </body>
 </html>

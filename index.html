@@ -3,95 +3,102 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PyWimsOnHTML — exercices de mathématiques aléatoires en une page HTML</title>
-  <meta name="description" content="Des exercices de mathématiques aléatoires, corrigés dans le navigateur, en un seul fichier HTML, sans serveur ni compte : pour l’entraînement, sur ordinateur et téléphone.">
+  <title>PWOH — questions à données aléatoires dans une page HTML</title>
+  <meta name="description" content="PWOH (PyWimsOnHTML) fait d’un fichier descriptif simple, en Python et HTML, une page HTML autonome de questions à données aléatoires, à déposer sur Moodle : pour l’entraînement, sur ordinateur et téléphone.">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/bandeau.css">
   <link rel="stylesheet" href="css/site.css">
 </head>
 <body>
   <header class="bandeau">
-    <div class="bandeau-interieur">
-      <a class="marque" href="./">PyWimsOnHTML</a>
-      <nav aria-label="Site">
-        <a href="./" aria-current="page">Accueil</a>
-        <a href="guide/">Créer un exercice</a>
-        <a href="compiler/">Compilateur</a>
-        <a href="https://github.com/esandier/PyWimsOnHTML">Code source</a>
-      </nav>
+    <div class="bandeau-titre">
+      <a class="marque" href="./">PWOH</a>
+      <span class="devise">questions à données aléatoires dans une page HTML</span>
     </div>
+    <nav class="bandeau-nav" aria-label="Site">
+      <a href="./" aria-current="page">Accueil</a>
+      <a href="guide/">Créer</a>
+      <a href="compiler/">Compilateur</a>
+      <a href="https://github.com/esandier/PyWimsOnHTML">Code source</a>
+    </nav>
   </header>
 
   <main>
-    <h1>Des exercices de mathématiques aléatoires, en une seule page HTML</h1>
-    <p class="chapeau">Chaque exercice est tiré au hasard et corrigé dans le navigateur de l’élève : on dépose
-      le fichier sur Moodle, ou on l’envoie, et les élèves s’entraînent, sur ordinateur comme sur téléphone,
-      sans rien demander à personne.</p>
+    <p class="chapeau"><strong>PWOH</strong> (PyWimsOnHTML) prend en entrée un fichier descriptif simple, à
+      base de code Python pour la logique de la question, et de HTML pour son aspect visuel, et produit un
+      fichier HTML autonome qui peut être déposé tel quel sur Moodle, ou distribué par courriel…</p>
 
-    <div class="actions">
-      <a class="bouton" href="#demonstrations">Essayer</a>
-      <a class="bouton secondaire" href="guide/">Créer un exercice</a>
-      <a class="bouton secondaire" href="compiler/">Ouvrir le compilateur</a>
+    <h2>Exemple : une activité de deux questions</h2>
+    <!-- La vraie page compilée (demos/exemple.html, produite par tests/outils/demos.py). -->
+    <iframe class="exemple" id="exemple" src="demos/exemple.html" title="Exemple d’activité de deux questions"></iframe>
+    <p class="sous-exemple"><a href="demos/exemple.html">Ouvrir l’exemple en pleine page</a> ·
+      <a href="demos/feuille.html">une feuille plus complète</a> (sept questions : choix, texte, formule,
+      matrices)</p>
+
+    <div class="colonnes">
+      <section class="panneau">
+        <h2>Pour l’élève ou l’étudiant</h2>
+        <ul>
+          <li>Sa progression dans l’activité est gardée, s’il la reprend après avoir fermé le navigateur.</li>
+          <li>Les données restent dans son navigateur.</li>
+          <li>Ses scores et son activité restent connus de lui seul.</li>
+          <li>Bonne ergonomie sur un téléphone.</li>
+          <li>Chaque question contient sa solution.</li>
+        </ul>
+      </section>
+      <section class="panneau">
+        <h2>Pour l’enseignant</h2>
+        <ul>
+          <li>Une charte graphique en <code>.css</code> peut accompagner les questions, pour un visuel
+            cohérent entre elles.</li>
+          <li>Les codes sources des questions, des activités et de la charte graphique restent sur son
+            ordinateur.</li>
+          <li>Pas besoin de compte ni d’inscription. Aucun programme à télécharger.</li>
+          <li>L’activité de l’élève ou de l’étudiant et ses scores restent connus de lui seul.</li>
+          <li>Chaque question doit contenir sa solution. C’est un outil pour l’entraînement uniquement.</li>
+        </ul>
+      </section>
     </div>
 
-    <div class="cartes">
-      <div class="carte">
-        <h3>Toujours un nouvel énoncé</h3>
-        <p>Les valeurs sont tirées au hasard : « Nouvel énoncé » propose la même question avec d’autres
-          nombres, autant de fois qu’on veut.</p>
-      </div>
-      <div class="carte">
-        <h3>Un fichier, rien d’autre</h3>
-        <p>Ni serveur, ni compte, ni installation : une page HTML qui s’ouvre dans n’importe quel
-          navigateur, et se dépose sur Moodle comme un simple fichier.</p>
-      </div>
-      <div class="carte">
-        <h3>Correction immédiate</h3>
-        <p>Champs verts ou rouges, commentaire, solution et explication ; la progression de la feuille est
-          gardée sur l’appareil de l’élève.</p>
-      </div>
-      <div class="carte">
-        <h3>Écrit en Python</h3>
-        <p>Les exercices s’écrivent en Python avec SymPy, à la main à partir d’un modèle, ou avec l’aide
-          d’une IA qui suit un prompt fourni.</p>
-      </div>
-    </div>
-
-    <h2 id="demonstrations">Démonstrations</h2>
-    <p>De vraies feuilles, produites par le compilateur : répondez, vérifiez, demandez la solution ou un
-      nouvel énoncé.</p>
-    <div class="cartes">
-      <div class="carte">
-        <h3>Une feuille d’exercices</h3>
-        <p>Sept questions réunies en une page : QCM, réponse écrite, formule, matrices ; avec la
-          progression de la feuille et une note indicative.</p>
-        <p><a class="bouton" href="demos/feuille.html">Ouvrir la feuille</a></p>
-      </div>
-      <div class="carte">
-        <h3>Une question seule</h3>
-        <p>Un QCM à choix multiple sur les nombres premiers, avec des retours ciblés selon les réponses
-          cochées.</p>
-        <p><a class="bouton" href="demos/question.html">Ouvrir la question</a></p>
-      </div>
-    </div>
-
-    <h2>Pour l’entraînement</h2>
-    <p>La correction se fait chez l’élève : les solutions sont lisibles dans le code de la page, et la note
-      affichée n’est qu’indicative. PyWimsOnHTML sert à s’entraîner, pas à évaluer.</p>
-
-    <h2>Commencer</h2>
+    <h2>Pour commencer</h2>
     <ol>
-      <li><a href="guide/">Créez un exercice</a> : avec une IA, en copiant le prompt fourni, ou à la main à
-        partir d’un modèle.</li>
-      <li>Ouvrez votre dossier d’exercices dans le <a href="compiler/">compilateur</a> : l’aperçu montre
-        chaque exercice, la compilation produit la page HTML.</li>
-      <li>Déposez la page sur Moodle, ou envoyez-la à vos élèves.</li>
+      <li>Créez un dossier pour vos questions.</li>
+      <li>Créez une question, <a href="guide/#avec-ia">à l’aide d’une IA de votre choix</a> ou
+        <a href="guide/#sans-ia">à partir d’un modèle</a>.</li>
+      <li>Ouvrez votre dossier d’exercices dans la <a href="compiler/">page du compilateur</a>.</li>
+      <li>Choisissez la ou les questions à compiler, cliquez sur « Compiler » : la page HTML correspondante
+        est téléchargée (ou des messages d’erreur sont affichés).</li>
+      <li>Déposez votre page sur Moodle, ou partagez-la.</li>
     </ol>
   </main>
 
   <footer>
-    <p>PyWimsOnHTML ressuscite PyWims, des exercices interactifs de mathématiques écrits en Python.
-      Logiciel libre (<a href="https://github.com/esandier/PyWimsOnHTML/blob/master/LICENCE">CeCILL 2.1</a>),
+    <p>Logiciel libre (<a href="https://github.com/esandier/PyWimsOnHTML/blob/master/LICENCE">CeCILL 2.1</a>),
       © 2026 Etienne Sandier. <a href="https://github.com/esandier/PyWimsOnHTML">Code source</a>.</p>
   </footer>
+
+  <script>
+    // Le cadre de l’exemple prend la hauteur de son contenu, et la suit (solution, retour affichés) :
+    // l’activité se lit comme une partie de la page, sans second ascenseur. Cela suppose la même
+    // origine que l’accueil ; sinon (page ouverte depuis le disque), le cadre garde sa hauteur fixe
+    // de site.css et défile seul. On a écarté la question à formule pour cet exemple : dans un cadre
+    // aussi haut que son contenu, le clavier mathématique s’ouvrirait hors de l’écran.
+    const cadre = document.getElementById("exemple");
+    cadre.addEventListener("load", () => {
+      try {
+        // On mesure le bas des questions, et non la hauteur du document : le corps d’une activité a
+        // une hauteur minimale de 100vh, qui dans un cadre vaut la hauteur du cadre ; mesuré ainsi,
+        // le cadre ne pourrait que grandir.
+        const feuille = cadre.contentDocument.querySelector(".pw-sheet");
+        const ajuster = () => {
+          cadre.style.height = `${Math.ceil(feuille.getBoundingClientRect().bottom + cadre.contentWindow.scrollY) + 24}px`;
+        };
+        new ResizeObserver(ajuster).observe(feuille);
+        ajuster();
+      } catch {
+        // Origine différente : hauteur fixe.
+      }
+    });
+  </script>
 </body>
 </html>

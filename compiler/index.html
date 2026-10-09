@@ -4,8 +4,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Compilateur PyWimsOnHTML</title>
+  <title>Compilateur — PWOH</title>
   <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../css/bandeau.css">
   <style>
     /* Palette neutre de l’interface du compilateur, distincte de la charte des exercices. */
     :root {
@@ -40,10 +41,9 @@
       gap: 1rem;
     }
 
-    h1 { margin: 0; color: #a95f00; font-size: clamp(1.4rem, 3vw, 2rem); }
-    .titre { min-width: 0; }
-    .liens-site { font-size: 0.85rem; }
-    .liens-site a { color: #8a4d00; }
+    /* Le bandeau (../css/bandeau.css) laisse la place aux messages : il ne s’étire pas. */
+    h1 { margin: 0; font-size: inherit; }
+    .titlebar .bandeau { flex: 0 1 auto; gap: 0.35rem 1.25rem; }
     h2, h3 { margin-top: 0; }
     button, input { font: inherit; }
 
@@ -296,6 +296,20 @@
     @media (max-width: 720px) {
       body { gap: 0.5rem; padding: 0.5rem; }
       .titlebar { min-height: 3rem; gap: 0.5rem; }
+      /* La devise cède sa place aux messages : sur l’accueil, elle reste lisible. */
+      .titlebar .devise { display: none; }
+      /* Deux rangées : « PWOH » et les messages, puis les quatre boutons sur toute la largeur. La barre
+         reste collée en haut : elle doit rester basse. Côte à côte, les messages laissaient aux
+         boutons à peine la moitié de la largeur, et ils passaient sur deux lignes. */
+      .titlebar {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        align-items: center;
+        gap: 0.2rem 0.75rem;
+      }
+      .titlebar .bandeau { display: contents; }
+      .titlebar .bandeau-nav { grid-column: 1 / -1; grid-row: 2; gap: 0.25rem; }
+      .titlebar .bandeau-nav a { padding: 0.15rem 0.4rem; font-size: 0.78rem; }
       .message-stack { flex-basis: 45%; height: 2.5rem; }
       .header-message { font-size: 0.72rem; }
       .folder-row { gap: 0.5rem; padding: 0.5rem; }
@@ -333,10 +347,19 @@
 <body>
   <!-- Barre de titre et deux emplacements de notification transitoires. -->
   <header class="titlebar">
-    <div class="titre">
-      <h1>Compilateur PyWimsOnHTML</h1>
-      <!-- Le mode d’emploi et l’accueil du site, à côté du compilateur (SPECIFICATION.md, § 11.5). -->
-      <nav class="liens-site" aria-label="Site"><a href="../guide/">Mode d’emploi</a> · <a href="../">Accueil</a></nav>
+    <!-- Bandeau commun au site (SPECIFICATION.md, § 11.6), à côté des messages ; sur téléphone, sans
+         la devise. -->
+    <div class="bandeau">
+      <div class="bandeau-titre">
+        <h1><a class="marque" href="../">PWOH</a></h1>
+        <span class="devise">questions à données aléatoires dans une page HTML</span>
+      </div>
+      <nav class="bandeau-nav" aria-label="Site">
+        <a href="../">Accueil</a>
+        <a href="../guide/">Créer</a>
+        <a href="./" aria-current="page">Compilateur</a>
+        <a href="https://github.com/esandier/PyWimsOnHTML">Code source</a>
+      </nav>
     </div>
     <div class="message-stack" aria-live="polite">
       <p id="project-status" class="header-message muted transient-message" role="status" hidden></p>

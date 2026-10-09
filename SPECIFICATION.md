@@ -541,7 +541,7 @@ sans `apres` : la comparaison y est sans ambiguïté.
 | `compiler/compiler.js` | interface du compilateur : dossier d’exercices, liste, aperçu, compilation, téléchargement ; lit en ligne les fichiers du projet (§ 11.1) |
 | `compiler/lancer-local.ps1` | serveur local et compilateur, pour essayer une modification du moteur avant de la publier |
 | `index.html`, `guide/`, `css/site.css`, `favicon.svg` | site du projet : accueil, mode d’emploi et ses modèles (`guide/modeles/`), styles et icône communs (§ 11.5, § 11.6) |
-| `demos/` | démonstrations de l’accueil, produites par `tests/outils/demos.py` |
+| `demos/` | exemple de l’accueil et feuille complète, produits par `tests/outils/demos.py` |
 
 ## 7. Exercices PyWims existants
 
@@ -848,36 +848,45 @@ liste par titre (§ 11.3) sont déjà en place dans le compilateur local.
 
 ### 11.5 Mode d’emploi : créer un exercice
 
-Une page `guide/`, liée depuis l’accueil et le compilateur, en deux chemins :
+Une page `guide/` (« Créer »), en sections :
 
-- **Avec une IA** : un bouton « Copier le prompt » copie le texte de
-  `PROMPT.md`. On le colle dans son assistant, on décrit l’exercice voulu (ou
-  on donne une question AMC à convertir), on enregistre la réponse dans un
-  fichier `.pwq` du dossier d’exercices, puis on l’ouvre dans le compilateur.
-- **Sans IA** : l’essentiel du format en une page (les champs, `{{variable}}`,
-  les balises de saisie, la correction avec ou sans `apres`), et deux modèles
-  commentés à télécharger et modifier : un QCM sans Python
-  (`guide/modeles/qcm.pwq`) et une question à réponse calculée
-  (`guide/modeles/calcul.pwq`). `PROMPT.md` reste la référence complète,
-  lisible aussi par un humain ; le guide y renvoie au lieu de la recopier.
-- **Publier** : compiler, puis déposer le fichier HTML sur Moodle comme
-  ressource « Fichier » (ou l’envoyer aux élèves) ; rappel que le fichier sert
-  à l’entraînement (§ 1).
+- **Avec une IA** : trois boutons. « Copier le prompt » copie le texte de
+  `PROMPT.md` ; « Voir le prompt » le déplie dans un cadre sous les boutons,
+  qu’on referme du même bouton ; « Télécharger le prompt » l’enregistre. On le
+  colle dans son assistant, on décrit l’exercice voulu (ou on donne une
+  question AMC à convertir), on enregistre la réponse dans un fichier `.pwq`
+  du dossier d’exercices, puis on l’ouvre dans le compilateur.
+- **Sans IA** : deux modèles commentés, chacun avec « Télécharger » et
+  « Voir » (le fichier déplié dans un cadre, comme le prompt) : un QCM sans
+  Python (`guide/modeles/qcm.pwq`) et une question à données aléatoires et
+  réponse calculée (`guide/modeles/calcul.pwq`).
+- **Structure d’un fichier** : tableau des champs, puis `avant`, `enonce` et
+  `apres` ; pas d’exemple recopié, les modèles se déplient juste au-dessus.
+- **Les champs de réponse** : syntaxe commune, puis un élément dépliable par
+  type de champ, le barème et `LIBRE`.
+- **Compiler et publier**, **Bon à savoir** (entraînement seulement, poids de
+  Python, renvoi à `PROMPT.md`, référence complète du format).
 - Les modèles sont des exercices vérifiés par les tests, comme ceux de la
   racine d’`exercises/`.
 
-### 11.6 Page d’accueil
+### 11.6 Page d’accueil, bandeau commun
 
-- `index.html` à la racine : ce que fait PyWimsOnHTML en quelques lignes
-  (exercices aléatoires corrigés dans le navigateur, un seul fichier HTML, sans
-  serveur ni compte, pour l’entraînement, sur ordinateur et téléphone), des
-  démonstrations à essayer, et deux liens : « Créer un exercice » (guide) et
-  « Compiler » (compilateur).
-- **Démonstrations** : des feuilles compilées à partir des exercices de la
-  racine d’`exercises/`, avec la charte neutre, enregistrées dans `demos/`. Un
-  script (`tests/outils/demos.py`) les recompile par le vrai compilateur ; on
-  le lance avant de publier une modification du moteur.
-- Charte neutre, page sobre, lisible sur téléphone.
+- **Bandeau commun** aux trois pages (accueil, Créer, compilateur) :
+  « PWOH », « questions à données aléatoires dans une page HTML », et les
+  boutons Accueil, Créer, Compilateur, Code source. Sur le compilateur, il
+  remplace le titre et reste compact (la page tient dans la fenêtre).
+- **Style** : celui du compilateur (accent orange, panneaux blancs sur fond
+  gris), pour tout le site.
+- `index.html` : ce que fait PWOH en un paragraphe ; un **exemple d’activité à
+  deux questions**, intégré à la page dans un cadre ; les caractéristiques pour
+  l’élève et pour l’enseignant ; « Pour commencer » en cinq étapes ; mention
+  de la licence en bas. Un lien discret mène à une feuille plus complète.
+- **Démonstrations** (`demos/`) : `exemple.html` (l’activité de l’accueil) et
+  `feuille.html` (tous les exercices de la racine d’`exercises/`), compilées
+  avec la charte neutre. Un script (`tests/outils/demos.py`) les recompile par
+  le vrai compilateur ; on le lance avant de publier une modification du
+  moteur.
+- Lisible sur téléphone : aucune page ne défile en largeur.
 
 ### 11.7 Étapes
 

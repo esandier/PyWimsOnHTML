@@ -1,0 +1,53 @@
+/* Bandeau commun au site et au compilateur (SPECIFICATION.md, § 11.6), dans la palette du
+   compilateur : accent orange sur fond gris clair. Fichier à part, et non dans site.css, parce que
+   le compilateur garde ses propres styles de mise en page et ne prend que le bandeau. */
+.bandeau {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  min-width: 0;
+}
+
+.bandeau-titre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.75rem;
+  min-width: 0;
+}
+
+.marque {
+  color: #a95f00;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+}
+
+.devise { color: #656b72; font-size: 0.95rem; }
+
+.bandeau-nav { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+
+/* Les liens du bandeau ont l’allure de boutons ; la page courante est pleine, comme « Compiler ». */
+.bandeau-nav a {
+  padding: 0.3rem 0.75rem;
+  border: 1px solid #c9a06c;
+  border-radius: 0.35rem;
+  color: #8a4d00;
+  background: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.bandeau-nav a:hover { background: #fff0d8; }
+.bandeau-nav a[aria-current="page"] { border-color: #9b5700; color: #fff; background: #a95f00; }
+
+@media (max-width: 640px) {
+  .marque { font-size: 1.4rem; }
+  .devise { font-size: 0.85rem; }
+  .bandeau-nav a { padding: 0.25rem 0.55rem; font-size: 0.85rem; }
+}

@@ -1,5 +1,6 @@
-# Recompile les démonstrations de la page d’accueil (demos/) avec le vrai compilateur, à partir des
-# exercices de la racine d’exercises/ et de la charte neutre (SPECIFICATION.md, § 11.6). À lancer
+# Recompile les démonstrations de l’accueil (demos/) avec le vrai compilateur, à partir des exercices
+# de la racine d’exercises/ et de la charte neutre (SPECIFICATION.md, § 11.6) : l’exemple de deux
+# questions, intégré à l’accueil, et la feuille de tous les exercices. À lancer
 # avant de publier une modification du moteur : les démonstrations intègrent le moteur du moment.
 # Prérequis : Python avec playwright (voir navigateur.py).
 # Usage : python tests/outils/demos.py
@@ -20,7 +21,10 @@ from navigateur import lancer_edge  # noqa: E402
 PROJECT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 DEMOS = os.path.join(PROJECT, "demos")
 FEUILLE = "PyWimsOnHTML : feuille de démonstration"
-QUESTION_SEULE = "Reconnaître des nombres premiers"
+EXEMPLE = "Exemple d’activité"
+# Un choix multiple à retours ciblés, puis une réponse écrite corrigée par Python ; on a écarté la
+# formule (input_math) : dans le cadre de l’accueil, son clavier s’ouvrirait au bas du cadre.
+QUESTIONS_EXEMPLE = ["Reconnaître des nombres premiers", "Addition de fractions"]
 
 
 def port_libre():
@@ -71,7 +75,7 @@ def main():
             tous = page.eval_on_selector_all("#exercise-list li:not(.exercise-group)",
                                              "items => items.map(li => li.querySelector('.exercise-title').textContent)")
             compiler(page, tous, os.path.join(DEMOS, "feuille.html"), FEUILLE)
-            compiler(page, [QUESTION_SEULE], os.path.join(DEMOS, "question.html"))
+            compiler(page, QUESTIONS_EXEMPLE, os.path.join(DEMOS, "exemple.html"), EXEMPLE)
             navigateur.close()
     finally:
         serveur.terminate()
