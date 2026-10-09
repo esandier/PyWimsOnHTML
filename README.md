@@ -170,7 +170,9 @@ une virgule, `decimal_comma(x, 2)` donne la solution (`"1,41"`).
 Les questions à choix unique (`input_radio`) ou multiple (`input_checkbox`)
 prennent leurs choix dans une liste de `question_setup` (`choices=`) et leur solution
 dans un indice ou une liste d’indices ; un barème facultatif (`scoring=`) suit la
-syntaxe d’AMC. Plutôt que d’analyser le LaTeX d’AMC, le projet confie la
+syntaxe d’AMC. Une liste déroulante (`input_select`) fait d’une phrase un texte
+à trous ; une réponse numérique (`input_value`) se compare par sa valeur, avec
+une tolérance et une forme exigée facultatives. Plutôt que d’analyser le LaTeX d’AMC, le projet confie la
 conversion d’une question AMC à un LLM : `PROMPT.md` contient la table de
 correspondance et un exemple complet.
 

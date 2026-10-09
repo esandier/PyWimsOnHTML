@@ -112,10 +112,12 @@ définie par `question_setup` :
 {% input_vmatrix 'matrix' max_rows=5 max_cols=5 solution=product %}
 {% input_radio 'answer' choices=choices solution=correct %}
 {% input_checkbox 'answers' choices=choices solution=correct columns=2 %}
+{% input_select 'verb' choices=forms solution=correct %}
 ```
 
 Les questions à choix (`input_radio`, `input_checkbox`) sont décrites au § 10,
-les valeurs numériques (`input_value`) au § 2.8.
+les valeurs numériques (`input_value`) au § 2.8, les listes déroulantes d’un
+texte à trous (`input_select`) au § 2.9.
 
 **Conversion de la solution.** À la compilation, pour chaque tirage, la
 valeur Python de la variable de solution (calculée par `question_setup`) est convertie
@@ -409,6 +411,47 @@ n’exigent plus un `question_check`.
 - On a écarté une tolérance relative (`1%`) et une tolérance calculée par
   tirage (variable de `question_setup`) : l’écart absolu couvre les exercices
   courants, et l’un ou l’autre s’ajoutera sans rien changer à l’existant.
+
+### 2.9 Texte à trous : `input_select`
+
+Une liste déroulante placée dans une phrase, pour un texte à trous : « La
+fonction est {% input_select 'sens' choices=senses solution=correct %} sur
+$[0 ; +\infty[$. »
+
+```
+{% input_select 'verb' choices=forms solution=correct shuffle=0 %}
+```
+
+| Attribut | Statut | Rôle |
+|---|---|---|
+| `choices` | obligatoire | liste de `question_setup` : au moins deux choix, en texte simple |
+| `solution` | obligatoire | indice du bon choix |
+| `shuffle` | facultatif | `shuffle=0` garde l’ordre de l’auteur (§ 10.2) |
+| `fixed_last` | facultatif | nombre de derniers choix non mélangés (§ 10.2) |
+
+- **Aspect : le champ se fond dans le texte.** Ni cadre, ni fond : le choix
+  s’écrit dans la police et la taille du texte, souligné en pointillé de la
+  couleur de la charte, suivi d’une petite flèche. Avant tout choix, le champ
+  montre « … ». La largeur est celle du plus long choix, dès l’affichage :
+  choisir ne déplace pas le texte. Après vérification, le texte et le
+  soulignement prennent la couleur du verdict, sur un fond léger.
+- **Saisie.** C’est un `<select>` natif : sur téléphone, le sélecteur du
+  système s’ouvre, plus facile au doigt qu’une liste dessinée par la page ; au
+  clavier, il se manie comme tout champ. Le champ compte comme rempli dès
+  qu’un choix est fait.
+- **Choix en texte simple.** Une option de liste n’affiche ni HTML ni formule :
+  un choix qui contient `$` ou `\(` est refusé à la compilation ; un objet
+  SymPy s’écrit comme dans un champ texte (`x^2 + 1`).
+- **Mélange et tirages** : comme pour les questions à choix (§ 10.2), y
+  compris `shuffle=0` et le refus de deux choix de même texte (§ 10.6).
+  `mcq` (§ 10.9) peut tirer les choix.
+- **Correction** : sans Python, le choix est juste s’il est celui de la
+  solution ; `question_check` reçoit l’indice choisi dans l’ordre de
+  l’auteur, ou `None`. Pas de barème : une liste est un trou parmi d’autres.
+- **Solution** : le bon choix est sélectionné, en vert.
+- On a écarté une liste dessinée par la page (pour y afficher des formules) :
+  elle se manie mal au doigt et au clavier, et le natif suffit aux mots d’un
+  texte à trous.
 
 ## 3. Compilation
 

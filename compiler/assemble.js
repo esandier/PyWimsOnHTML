@@ -48,7 +48,7 @@
       (!["pywims", "pythonWorker"].includes(key) || usesPython) &&
       (key !== "mathWidget" || tagTypes.has("input_math")) &&
       (key !== "matrixWidget" || tagTypes.has("input_matrix") || tagTypes.has("input_vmatrix")) &&
-      (key !== "choiceWidget" || tagTypes.has("input_radio") || tagTypes.has("input_checkbox"))
+      (key !== "choiceWidget" || ["input_radio", "input_checkbox", "input_select"].some(type => tagTypes.has(type)))
     );
   }
 

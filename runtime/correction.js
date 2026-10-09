@@ -2,7 +2,7 @@
 // donner ce qu’affiche le bouton « Solution ». Partagée par le fichier généré et par le compilateur
 // (contrôle de cohérence).
 window.PyWimsCorrection = (() => {
-  const choiceTypes = new Set(["input_radio", "input_checkbox"]);
+  const choiceTypes = new Set(["input_radio", "input_checkbox", "input_select"]);
 
   // Écriture comparée d’un champ texte : seules des différences purement typographiques sont
   // effacées, celles qu’un élève ne voit pas ou ne choisit pas :

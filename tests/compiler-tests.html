@@ -70,13 +70,13 @@
       expectTagError("input_text 'lambda' solution=s", "Le nom de champ « lambda » est réservé");
     });
     test("les balises invalides produisent un message précis", () => {
-      expectTagError("input_select 'choix'", "Balise de modèle non prise en charge");
+      expectTagError("input_drag 'choix'", "Balise de modèle non prise en charge");
       expectTagError("input_text 'x' couleur='rouge'", "Attribut « couleur » inconnu pour input_text");
       expectTagError("input_vmatrix 'm' max_rows=n", "doit être un entier");
       expectTagError("input_text 'x' style='a' style='b'", "Attribut « style » répété");
       expectTagError("input_text 'x' style=", "Syntaxe d’attribut invalide");
       const errors = PyWimsTemplate.validateTemplate(
-        "{% input_text 'ok' solution=s %} {% input_select 'a' %} {% input_math 'b' taille=2 %}"
+        "{% input_text 'ok' solution=s %} {% input_drag 'a' %} {% input_math 'b' taille=2 %}"
       );
       if (errors.length !== 2) {
         throw new Error(`Toutes les balises invalides doivent être signalées : ${errors.join(" ; ")}`);
@@ -182,6 +182,21 @@
       for (const [input, solution, match, expected] of cases) {
         if (sameText(input, solution, match) !== expected) throw new Error(`« ${input} » / « ${solution} » (${match}) : ${!expected}`);
       }
+    });
+    test("une liste déroulante affiche « … », puis ses choix dans l’ordre du tirage, échappés", () => {
+      const html = PyWimsWidgets.inputSelect("verb", { texts: ["<b>", "{{ a }}", "est"], order: [2, 0, 1], idPrefix: "q2-" });
+      const host = document.createElement("div");
+      host.innerHTML = html;
+      const select = host.querySelector("select.pw-select");
+      const options = [...select.options].map(option => [option.value, option.textContent]);
+      if (select.id !== "q2-form_select_verb" || select.dataset.name !== "verb" || select.value !== "" ||
+          JSON.stringify(options) !== JSON.stringify([["", "…"], ["2", "est"], ["0", "<b>"], ["1", "{{ a }}"]]) ||
+          !select.options[0].disabled) {
+        throw new Error(`Rendu inattendu : ${html}`);
+      }
+      expectTagError("input_select 's' choices=c solution=s columns=2", "Attribut « columns » inconnu pour input_select");
+      expectTagError("input_select 's' choices=c solution=s scoring='b=1'", "Attribut « scoring » inconnu pour input_select");
+      expectTagError("input_select 's' solution=s", "doit indiquer ses choix");
     });
     test("le barème suit la syntaxe d’AMC et n’est admis que pour un champ seul", () => {
       const scoring = PyWimsTemplate.parseScoring("b=2,m=-0.5, v=0,e=-1,mz=3,haut=4,MAX=5,p=0,P=6,d=.5");

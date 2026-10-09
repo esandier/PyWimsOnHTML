@@ -929,6 +929,49 @@ mjx-assistive-mml {
   content: "✗";
 }
 
+/* Liste déroulante d’un texte à trous (SPECIFICATION.md, § 2.9) : elle se fond dans le texte. Ni
+   cadre ni fond, la police et la taille du texte ; seuls un soulignement pointillé et une petite
+   flèche, de la couleur de la charte, signalent le trou. Solution écartée : l’aspect des autres
+   champs (cadre arrondi), qui coupe la phrase en morceaux. */
+.pw-select {
+  display: inline-block;
+  margin: 0 0.1em;
+  padding: 0 1.1em 0 0.15em;
+  border: 0;
+  border-bottom: 2px dotted var(--pw-brand-navy);
+  border-radius: 0;
+  color: var(--pw-brand-navy);
+  background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23888' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 0.2em center / 0.6em;
+  font: inherit;
+  line-height: inherit;
+  vertical-align: baseline;
+  appearance: none;
+  cursor: pointer;
+}
+
+.pw-select:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--pw-brand-navy) 40%, transparent);
+  outline-offset: 2px;
+}
+
+/* Figée après vérification : la couleur du verdict, sans le gris d’un champ inactif. */
+.pw-select:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.pw-select.is-correct {
+  border-bottom: 2px solid var(--pw-correct-text);
+  color: var(--pw-correct-text);
+  background-color: var(--pw-correct-background);
+}
+
+.pw-select.is-incorrect {
+  border-bottom: 2px solid var(--pw-incorrect-text);
+  color: var(--pw-incorrect-text);
+  background-color: var(--pw-incorrect-background);
+}
+
 /* Champ fantôme qui conserve les dimensions du champ texte pendant l’animation. */
 .absolute {
   position: absolute;

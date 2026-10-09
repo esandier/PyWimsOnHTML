@@ -1,4 +1,5 @@
-// Fournit les champs à choix unique (input_radio) ou multiple (input_checkbox).
+// Fournit les champs à choix unique (input_radio) ou multiple (input_checkbox), et la liste
+// déroulante d’un texte à trous (input_select).
 window.PyWimsWidgets = (() => {
   const existing = window.PyWimsWidgets || {};
   const { escapeHtml } = PyWimsTemplate;
@@ -35,6 +36,26 @@ window.PyWimsWidgets = (() => {
     return `<fieldset class="pw-choices${compact ? " is-compact" : ""}" data-name="${name}" data-multiple="${multiple}" data-columns="${columns}" style="--pw-choice-columns:${columns}"><legend class="pw-sr-only">${legend}</legend>${items}</fieldset>`;
   }
 
+  // Liste déroulante d’un texte à trous (SPECIFICATION.md, § 2.9) : un <select> natif, dont le
+  // sélecteur du système s’ouvre sur téléphone. La première option, « … », montre le trou avant tout
+  // choix ; masquée et inactive, elle ne peut pas être choisie de nouveau. Chaque option porte
+  // l’indice du choix dans la liste de l’auteur, que reçoit « question_check ». Le navigateur donne au
+  // champ la largeur de la plus longue option : choisir ne déplace pas le texte.
+  function inputSelect(name, { texts, order, idPrefix = "" } = {}) {
+    if (!/^[A-Za-z_]\w*$/.test(name)) {
+      throw new Error(`Nom invalide pour une liste déroulante : ${name}`);
+    }
+    idPrefix = PyWimsTemplate.checkIdPrefix(idPrefix);
+    if (!Array.isArray(texts) || texts.length < 2 || !Array.isArray(order) ||
+        order.length !== texts.length || [...order].sort((a, b) => a - b).some((index, rank) => index !== rank)) {
+      throw new Error(`Choix invalides pour le champ « ${name} »`);
+    }
+    // Accolades échappées, comme pour les choix : le modèle ne doit pas toucher au texte d’une option.
+    const options = order.map(index =>
+      `<option value="${index}">${escapeHtml(texts[index]).replaceAll("{", "&#123;").replaceAll("}", "&#125;")}</option>`).join("");
+    return `<select class="pw-select" id="${idPrefix}form_select_${name}" data-name="${name}" aria-label="${escapeHtml(name)}"><option value="" selected disabled hidden>…</option>${options}</select>`;
+  }
+
   // Retire des colonnes à un groupe de choix tant qu’un choix déborde de sa colonne.
   //
   // Pourquoi : sur téléphone, columns=2 ou plus donne des colonnes d’environ 130 px. Une formule
@@ -61,5 +82,5 @@ window.PyWimsWidgets = (() => {
     }
   }
 
-  return Object.freeze({ ...existing, inputChoice, fitChoiceColumns });
+  return Object.freeze({ ...existing, inputChoice, inputSelect, fitChoiceColumns });
 })();

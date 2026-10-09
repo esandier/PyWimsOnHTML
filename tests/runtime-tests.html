@@ -686,6 +686,32 @@ window.PyWimsPython = (() => {
         frame.remove();
       });
 
+      await test("une liste déroulante se corrige sans Python et affiche sa solution", async () => {
+        const question = {
+          question_title: "Sens de variation", question_layout: "STD", question_setup: "senses = ['croissante', 'décroissante']\ncorrect = 1",
+          question_statement: "La fonction est {% input_select 'sense' choices=senses solution=correct %} sur cet intervalle."
+        };
+        const draws = [{ seed: 0, context: {}, dimensions: {}, solutions: { sense: 1 },
+          choices: { sense: ["croissante", "décroissante"] }, orders: { sense: [0, 1] } }];
+        const { $, role, frame } = await openQuestion(question, draws, {});
+        await waitFor(() => $("#q1-form_select_sense"), "affichage de la liste");
+        const select = $("#q1-form_select_sense");
+        if (!role("check").disabled) throw new Error("« Vérifier » doit attendre un choix.");
+        select.value = "0";
+        select.dispatchEvent(new Event("input", { bubbles: true }));
+        role("check").click();
+        await waitFor(() => role("feedback").classList.contains("is-visible"), "retour faux");
+        if (role("feedback").textContent !== "Réponse incorrecte." || !select.classList.contains("is-incorrect") || !select.disabled) {
+          throw new Error(`Vérification inattendue : ${role("feedback").textContent}`);
+        }
+        role("solution").click();
+        await waitFor(() => $("#q1").dataset.state === "solution", "solution affichée");
+        if (select.value !== "1" || !select.classList.contains("is-correct")) {
+          throw new Error(`Solution inattendue : ${select.value}`);
+        }
+        frame.remove();
+      });
+
       await test("l’aperçu avec « Afficher la solution » s’ouvre sur la solution et son explication", async () => {
         const radio = { ...choiceWithoutApres, question_statement: "Le plus petit ? {% input_radio 'r' choices=choix solution=bonne %}",
           question_solution_explanation: "Le plus petit est {{ a }}." };

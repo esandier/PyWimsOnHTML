@@ -128,6 +128,12 @@ français, séparés par des virgules.
     matrice que l’élève redimensionne lui-même. Comme pour une matrice fixe,
     une case prend la taille de son champ (2em de large par défaut) ;
     `cell_width` et `cell_height` l’imposent si besoin.
+  - `{% input_select 'nom' choices=liste solution=indice %}` : liste
+    déroulante placée dans une phrase, pour un texte à trous (« La fonction
+    est {% input_select 'sense' choices=senses solution=correct %} sur
+    $\mathbb{R}$. »). Les choix sont du texte simple, sans formule ni HTML ;
+    `shuffle=0` garde leur ordre (« croissante », « décroissante »). La
+    saisie arrive dans `question_check` comme un indice, ou `None`.
   - `{% input_radio 'nom' choices=liste solution=indice %}` (choix unique) et
     `{% input_checkbox 'nom' choices=liste solution=indices %}` (choix
     multiple) : voir « Questions à choix » ci-dessous.

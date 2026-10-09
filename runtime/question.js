@@ -223,6 +223,12 @@ window.PyWimsQuestion = (() => {
               idPrefix
             }
           );
+        case "input_select":
+          return PyWimsWidgets.inputSelect(tag.name, {
+            texts: draw.choices?.[tag.name],
+            order: draw.orders?.[tag.name],
+            idPrefix
+          });
         case "input_radio":
         case "input_checkbox":
           return PyWimsWidgets.inputChoice(tag.name, {
@@ -410,7 +416,7 @@ window.PyWimsQuestion = (() => {
         }
         // Les textes des choix sont affichés : ils sont contrôlés comme les valeurs de l’énoncé.
         for (const tag of this.choiceTags) {
-          const texts = await python.getChoiceTexts(tag.attributes.choices);
+          const texts = await python.getChoiceTexts(tag.attributes.choices, tag.type === "input_select");
           if (JSON.stringify(texts) !== JSON.stringify(selected.choices?.[tag.name])) {
             throw new Error(`Le tirage n’a pas pu être reproduit (« ${tag.attributes.choices} » diffère) : la vérification est indisponible.`);
           }
@@ -508,6 +514,10 @@ window.PyWimsQuestion = (() => {
         }
         const fieldName = matrixName ?? name;
         const type = this.typeOf.get(fieldName);
+        // Liste déroulante : l’indice choisi dans l’ordre de l’auteur (« » : aucun choix).
+        if (type === "input_select") {
+          return isCorrect(type, input.value === "" ? null : Number(input.value), this.draw.solutions[name]);
+        }
         const attributes = this.attributesOf.get(fieldName) ?? {};
         const solution = this.solutionFor(input);
         if (type === "input_value" && solution !== null &&
@@ -539,6 +549,10 @@ window.PyWimsQuestion = (() => {
         if (isChoiceGroup(input)) {
           const indices = checkedIndices(input);
           await python.setChoice(input.dataset.name, input.dataset.multiple === "true" ? indices : indices[0] ?? null);
+          continue;
+        }
+        if (input.matches("select")) {
+          await python.setChoice(input.dataset.name, input.value === "" ? null : Number(input.value));
           continue;
         }
         if (matrixName === undefined) {

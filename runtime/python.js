@@ -189,11 +189,11 @@ window.PyWimsPython = (() => {
     return call("set", [sessionId, name, value]);
   }
 
-  function getChoiceTexts(name, sessionId = "default") {
+  function getChoiceTexts(name, sessionId = "default", plain = false) {
     if (!namePattern.test(name)) {
       throw new Error(`Liste de choix non prise en charge : ${name}`);
     }
-    return call("getChoiceTexts", [sessionId, name]);
+    return call("getChoiceTexts", [sessionId, name, Boolean(plain)]);
   }
 
   function getTemplateValue(name, sessionId = "default") {
@@ -227,7 +227,7 @@ window.PyWimsPython = (() => {
       set: (name, value) => set(name, value, sessionId),
       setMatrix: (name, values) => setMatrix(name, values, sessionId),
       setChoice: (name, value) => setChoice(name, value, sessionId),
-      getChoiceTexts: name => getChoiceTexts(name, sessionId),
+      getChoiceTexts: (name, plain = false) => getChoiceTexts(name, sessionId, plain),
       resetAnswers: () => resetAnswers(sessionId),
       getTemplateValue: name => getTemplateValue(name, sessionId),
       getBoolean: expression => getBoolean(expression, sessionId)

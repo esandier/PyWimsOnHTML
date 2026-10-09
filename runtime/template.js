@@ -26,13 +26,15 @@ window.PyWimsTemplate = (() => {
       choices: "variable", solution: "variable",
       columns: "integer", shuffle: "integer", fixed_last: "integer", scoring: "text"
     },
+    // Liste déroulante d’un texte à trous (SPECIFICATION.md, § 2.9) : ni colonnes ni barème.
+    input_select: { choices: "variable", solution: "variable", shuffle: "integer", fixed_last: "integer" },
     input_checkbox: {
       choices: "variable", solution: "variable",
       columns: "integer", shuffle: "integer", fixed_last: "integer", scoring: "text"
     }
   };
   // Champs à choix : leurs choix viennent d’une liste de « question_setup » et peuvent porter un barème.
-  const choiceTypes = new Set(["input_radio", "input_checkbox"]);
+  const choiceTypes = new Set(["input_radio", "input_checkbox", "input_select"]);
   // Directives de barème d’AMC prises en charge. « e » est acceptée sans effet, car une saisie
   // incohérente est impossible ici : un barème d’AMC se recopie ainsi tel quel.
   const scoringDirectives = new Set(["b", "m", "d", "p", "P", "mz", "haut", "MAX", "v", "e"]);

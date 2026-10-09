@@ -256,15 +256,15 @@ if importlib.util.find_spec("numpy") is not None:
   },
 
   // Textes des choix d’une liste de « question_setup », convertis comme à la compilation : le navigateur
-  // vérifie ainsi que le tirage rejoué affiche les mêmes choix.
-  getChoiceTexts(sessionId, name) {
+  // vérifie ainsi que le tirage rejoué affiche les mêmes choix. plain : liste déroulante, en texte simple.
+  getChoiceTexts(sessionId, name, plain = false) {
     const globals = sessionGlobals(sessionId);
     return enqueuePythonOperation(() => {
       if (!globals.has(name)) {
         throw new Error(`Liste de choix inconnue : ${name}`);
       }
       return JSON.parse(pyodide.runPython(
-        `__import__("json").dumps(__import__("pywims")._choice_texts(${name}), ensure_ascii=False)`, { globals }
+        `__import__("json").dumps(__import__("pywims")._choice_texts(${name}, plain=${plain ? "True" : "False"}), ensure_ascii=False)`, { globals }
       ));
     });
   },

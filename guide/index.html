@@ -260,6 +260,21 @@
     </details>
 
     <details class="field-item">
+      <summary><code>input_select</code> : texte à trous</summary>
+<pre><code>La fonction est {% input_select 'sense' choices=senses solution=correct shuffle=0 %} sur cet intervalle.</code></pre>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Paramètre</th><th>Statut</th><th>Rôle</th></tr></thead>
+        <tbody>
+          <tr><td><code>choices</code></td><td>obligatoire</td><td>liste de <code>question_setup</code> : au moins deux choix, en texte simple (ni formule, ni HTML)</td></tr>
+          <tr><td><code>solution</code></td><td>obligatoire</td><td>le numéro du bon choix, à partir de <strong>0</strong></td></tr>
+          <tr><td><code>shuffle</code>, <code>fixed_last</code></td><td>facultatifs</td><td>comme pour <code>input_radio</code></td></tr>
+        </tbody>
+      </table></div>
+      <p>Une liste déroulante qui se fond dans la phrase : ni cadre ni fond, un simple soulignement en
+        pointillé. Sur téléphone, le sélecteur du système s’ouvre.</p>
+    </details>
+
+    <details class="field-item">
       <summary>Le barème (questions à choix)</summary>
       <p>Il affiche une note indicative à chaque vérification, sans rien évaluer. La syntaxe est celle
         d’<a href="https://www.auto-multiple-choice.net/fr/doc/scoring/">AMC</a>, et un barème d’AMC se

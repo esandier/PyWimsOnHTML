@@ -506,6 +506,16 @@ json.dumps({
         }
       });
 
+      await test("une liste déroulante enregistre des choix en texte simple", async () => {
+        const [draw] = await PyWimsCompiler.computeDraws({
+          question_setup: "from sympy import symbols\nx = symbols('x')\nforms = ['croissante', x**2 + 1, 0.5]\ncorrect = 0",
+          question_statement: "La fonction est {% input_select 'sense' choices=forms solution=correct shuffle=0 %}."
+        }, { count: 1 });
+        if (JSON.stringify(draw.choices.sense) !== JSON.stringify(["croissante", "x^2 + 1", "0.5"]) || draw.solutions.sense !== 0) {
+          throw new Error(`Tirage inattendu : ${JSON.stringify(draw)}`);
+        }
+      });
+
       await test("une valeur numérique enregistre sa valeur exacte et la solution affichée", async () => {
         const draw = async (setup, tag, check) => (await PyWimsCompiler.computeDraws({
           question_setup: setup, question_statement: tag, ...(check ? { question_check: check } : {})
@@ -569,6 +579,8 @@ json.dumps({
           [{ question_setup: "from pywims import mcq\nchoices, s = mcq(correct=1, wrong=[1, 2], count=3)",
              question_statement: "{% input_radio 'r' choices=choices solution=s %}" },
             ["graine 0", "mcq : il faut 2 mauvaises réponses distinctes (et différentes des bonnes), mais wrong n’en donne que 1"]],
+          [{ question_setup: "c = ['$x$', 'y']\ns = 0", question_statement: "{% input_select 'r' choices=c solution=s %}" },
+            ["une liste déroulante n’affiche pas de formule : « $x$ » doit être du texte simple."]],
           // Deux choix de même texte, aux espaces près : l’élève ne pourrait pas les distinguer.
           [{ question_setup: "c = ['x+1', '2', 'x + 1']\ns = 0", question_statement: "{% input_radio 'r' choices=c solution=s %}" },
             ["Graine 0", "Les choix 0 et 2 du champ « r » ont le même texte (« x + 1 »)"]],

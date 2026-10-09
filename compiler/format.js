@@ -194,7 +194,8 @@
     input_matrix: "matrice",
     input_vmatrix: "matrice redimensionnable",
     input_radio: "choix unique",
-    input_checkbox: "choix multiple"
+    input_checkbox: "choix multiple",
+    input_select: "liste déroulante"
   };
 
   // Types de champs de réponse d’un énoncé, dans l’ordre et sans répétition : « choix unique ».

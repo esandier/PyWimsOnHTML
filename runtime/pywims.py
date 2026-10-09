@@ -128,11 +128,22 @@ def _value_solution(value):
     return {"value": "{}/{}".format(ratio.numerator, ratio.denominator), "exact": exact}
 
 
-def _choice_texts(value):
-    """Textes des choix d’un champ à choix : un texte reste tel quel, un objet SymPy devient une formule."""
+def _choice_texts(value, plain=False):
+    """Textes des choix d’un champ à choix : un texte reste tel quel, un objet SymPy devient une formule.
+
+    plain : choix d’une liste déroulante (input_select, SPECIFICATION.md, § 2.9), qui n’affiche ni
+    HTML ni formule : un objet SymPy s’y écrit comme dans un champ texte, et une formule TeX est
+    refusée, au lieu de s’afficher en code brut.
+    """
     if isinstance(value, (str, bytes)) or not isinstance(value, (list, tuple)) or len(value) < 2:
         raise TypeError("ce doit être une liste d’au moins deux choix.")
-    return [_choice_text(choice) for choice in value]
+    if not plain:
+        return [_choice_text(choice) for choice in value]
+    texts = [_solution_text(choice) for choice in value]
+    for text in texts:
+        if "$" in text or "\\(" in text or "\\[" in text:
+            raise TypeError("une liste déroulante n’affiche pas de formule : « {} » doit être du texte simple.".format(text))
+    return texts
 
 
 def _choice_text(choice):
@@ -219,13 +230,13 @@ def _collect_draw(namespace, spec):
             errors.append("La solution « {} » du champ « {} » n’est pas définie par « question_setup ».".format(variable, name))
             continue
         value = namespace[variable]
-        if kind in ("input_radio", "input_checkbox"):
+        if kind in ("input_radio", "input_checkbox", "input_select"):
             source = field["choices"]
             if source not in namespace:
                 errors.append("Les choix « {} » du champ « {} » ne sont pas définis par « question_setup ».".format(source, name))
                 continue
             try:
-                choices[name] = _choice_texts(namespace[source])
+                choices[name] = _choice_texts(namespace[source], plain=kind == "input_select")
             except TypeError as error:
                 errors.append("Les choix « {} » du champ « {} » : {}".format(source, name, error))
                 continue
