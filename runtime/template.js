@@ -43,7 +43,7 @@ window.PyWimsTemplate = (() => {
   // Un champ porte le nom de la variable Python qui reçoit la saisie : il ne doit pas
   // écraser une variable du contrat de question, un outil pywims ni un mot-clé Python.
   const reservedNames = new Set([
-    "ok_answer", "feedback",
+    "ok_answer", "answer_text", "feedback",
     "py_wims", "is_number", "math_expression", "decimal_comma", "mcq", "ANY", "pywims",
     "False", "None", "True", "and", "as", "assert", "async", "await", "break",
     "class", "continue", "def", "del", "elif", "else", "except", "finally", "for",

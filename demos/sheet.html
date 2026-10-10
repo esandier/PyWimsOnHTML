@@ -2330,7 +2330,7 @@ window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
 </head>
 <!-- data-sheet : « single » pour une question seule, « activity » pour une feuille de plusieurs questions. -->
 <!-- data-sheet-id : empreinte d’une activité, clé de la mémoire de sa progression (absente pour une question seule). -->
-<body data-sheet="activity" data-sheet-id="297c11ji2bm">
+<body data-sheet="activity" data-sheet-id="jgbi13i2vs">
   <!-- En-tête : titre, progression (activité seulement), aide et logo. Il reste visible au défilement d’une activité. -->
   <div class="pw-top">
     <!-- Le logo de marque est décoratif ; son image et son style sont définis dans brand.css. -->
@@ -2505,7 +2505,6 @@ for i in range(size):
 <pre data-field="question_layout">STD</pre>
 <pre data-field="question_setup">from random import randint
 from sympy import *
-from pywims import py_wims, is_number
 
 # Tire deux entiers et calcule leur plus grand diviseur commun.
 x = randint(26,145)
@@ -2523,18 +2522,16 @@ euclid_steps = &quot; ; &quot;.join(steps)</pre>
 &lt;br&gt;
 Réponse : {% input_value &#39;answer&#39; solution=result style=&#39;width :5em&#39; %}</pre>
 <pre data-field="question_solution_explanation">Algorithme d’Euclide : {{euclid_steps}}. Le dernier reste non nul est ${{result}}$.</pre>
-<pre data-field="question_check"># Convertit la saisie, puis explique l’erreur sans donner la réponse.
-value = py_wims(answer)
-ok_answer[&#39;answer&#39;] = is_number(value) and value == result
-
+<pre data-field="question_check"># La saisie arrive comme sa valeur (None si ce n’est pas un nombre), et ok_answer est déjà
+# rempli par la correction par défaut : il ne reste qu’à expliquer l’erreur sans donner la réponse.
 if ok_answer[&#39;answer&#39;]:
     feedback = &#39;Bravo, c’est exact !&#39;
-elif not is_number(value) or not value.is_Integer or value &lt;= 0:
+elif answer is None or not answer.is_Integer or answer &lt;= 0:
     feedback = &#39;Saisissez un nombre entier positif.&#39;
-elif x % value == 0 and y % value == 0:
-    feedback = &#39;{} divise bien {} et {}, mais ce n’est pas le plus grand diviseur commun.&#39;.format(value, x, y)
+elif x % answer == 0 and y % answer == 0:
+    feedback = &#39;{} divise bien {} et {}, mais ce n’est pas le plus grand diviseur commun.&#39;.format(answer, x, y)
 else:
-    feedback = &#39;{} ne divise pas {}.&#39;.format(value, x if x % value else y)</pre>
+    feedback = &#39;{} ne divise pas {}.&#39;.format(answer, x if x % answer else y)</pre>
 <pre data-draws>[{&quot;seed&quot;:0,&quot;context&quot;:{&quot;x&quot;:&quot;134&quot;,&quot;y&quot;:&quot;121&quot;,&quot;euclid_steps&quot;:&quot;$134 = 1 \\times 121 + 13$ ; $121 = 9 \\times 13 + 4$ ; $13 = 3 \\times 4 + 1$ ; $4 = 4 \\times 1 + 0$&quot;,&quot;result&quot;:&quot;1&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:{&quot;text&quot;:&quot;1&quot;,&quot;value&quot;:&quot;1/1&quot;}},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:1,&quot;context&quot;:{&quot;x&quot;:&quot;43&quot;,&quot;y&quot;:&quot;168&quot;,&quot;euclid_steps&quot;:&quot;$168 = 3 \\times 43 + 39$ ; $43 = 1 \\times 39 + 4$ ; $39 = 9 \\times 4 + 3$ ; $4 = 1 \\times 3 + 1$ ; $3 = 3 \\times 1 + 0$&quot;,&quot;result&quot;:&quot;1&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:{&quot;text&quot;:&quot;1&quot;,&quot;value&quot;:&quot;1/1&quot;}},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:2,&quot;context&quot;:{&quot;x&quot;:&quot;136&quot;,&quot;y&quot;:&quot;240&quot;,&quot;euclid_steps&quot;:&quot;$240 = 1 \\times 136 + 104$ ; $136 = 1 \\times 104 + 32$ ; $104 = 3 \\times 32 + 8$ ; $32 = 4 \\times 8 + 0$&quot;,&quot;result&quot;:&quot;8&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:{&quot;text&quot;:&quot;8&quot;,&quot;value&quot;:&quot;8/1&quot;}},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:3,&quot;context&quot;:{&quot;x&quot;:&quot;56&quot;,&quot;y&quot;:&quot;174&quot;,&quot;euclid_steps&quot;:&quot;$174 = 3 \\times 56 + 6$ ; $56 = 9 \\times 6 + 2$ ; $6 = 3 \\times 2 + 0$&quot;,&quot;result&quot;:&quot;2&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:{&quot;text&quot;:&quot;2&quot;,&quot;value&quot;:&quot;2/1&quot;}},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:4,&quot;context&quot;:{&quot;x&quot;:&quot;56&quot;,&quot;y&quot;:&quot;100&quot;,&quot;euclid_steps&quot;:&quot;$100 = 1 \\times 56 + 44$ ; $56 = 1 \\times 44 + 12$ ; $44 = 3 \\times 12 + 8$ ; $12 = 1 \\times 8 + 4$ ; $8 = 2 \\times 4 + 0$&quot;,&quot;result&quot;:&quot;4&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:{&quot;text&quot;:&quot;4&quot;,&quot;value&quot;:&quot;4/1&quot;}},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:5,&quot;context&quot;:{&quot;x&quot;:&quot;105&quot;,&quot;y&quot;:&quot;88&quot;,&quot;euclid_steps&quot;:&quot;$105 = 1 \\times 88 + 17$ ; $88 = 5 \\times 17 + 3$ ; $17 = 5 \\times 3 + 2$ ; $3 = 1 \\times 2 + 1$ ; $2 = 2 \\times 1 + 0$&quot;,&quot;result&quot;:&quot;1&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:{&quot;text&quot;:&quot;1&quot;,&quot;value&quot;:&quot;1/1&quot;}},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:6,&quot;context&quot;:{&quot;x&quot;:&quot;127&quot;,&quot;y&quot;:&quot;169&quot;,&quot;euclid_steps&quot;:&quot;$169 = 1 \\times 127 + 42$ ; $127 = 3 \\times 42 + 1$ ; $42 = 42 \\times 1 + 0$&quot;,&quot;result&quot;:&quot;1&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:{&quot;text&quot;:&quot;1&quot;,&quot;value&quot;:&quot;1/1&quot;}},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:7,&quot;context&quot;:{&quot;x&quot;:&quot;67&quot;,&quot;y&quot;:&quot;61&quot;,&quot;euclid_steps&quot;:&quot;$67 = 1 \\times 61 + 6$ ; $61 = 10 \\times 6 + 1$ ; $6 = 6 \\times 1 + 0$&quot;,&quot;result&quot;:&quot;1&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:{&quot;text&quot;:&quot;1&quot;,&quot;value&quot;:&quot;1/1&quot;}},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:8,&quot;context&quot;:{&quot;x&quot;:&quot;55&quot;,&quot;y&quot;:&quot;117&quot;,&quot;euclid_steps&quot;:&quot;$117 = 2 \\times 55 + 7$ ; $55 = 7 \\times 7 + 6$ ; $7 = 1 \\times 6 + 1$ ; $6 = 6 \\times 1 + 0$&quot;,&quot;result&quot;:&quot;1&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:{&quot;text&quot;:&quot;1&quot;,&quot;value&quot;:&quot;1/1&quot;}},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:9,&quot;context&quot;:{&quot;x&quot;:&quot;85&quot;,&quot;y&quot;:&quot;179&quot;,&quot;euclid_steps&quot;:&quot;$179 = 2 \\times 85 + 9$ ; $85 = 9 \\times 9 + 4$ ; $9 = 2 \\times 4 + 1$ ; $4 = 4 \\times 1 + 0$&quot;,&quot;result&quot;:&quot;1&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:{&quot;text&quot;:&quot;1&quot;,&quot;value&quot;:&quot;1/1&quot;}},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:10,&quot;context&quot;:{&quot;x&quot;:&quot;99&quot;,&quot;y&quot;:&quot;31&quot;,&quot;euclid_steps&quot;:&quot;$99 = 3 \\times 31 + 6$ ; $31 = 5 \\times 6 + 1$ ; $6 = 6 \\times 1 + 0$&quot;,&quot;result&quot;:&quot;1&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:{&quot;text&quot;:&quot;1&quot;,&quot;value&quot;:&quot;1/1&quot;}},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:11,&quot;context&quot;:{&quot;x&quot;:&quot;83&quot;,&quot;y&quot;:&quot;244&quot;,&quot;euclid_steps&quot;:&quot;$244 = 2 \\times 83 + 78$ ; $83 = 1 \\times 78 + 5$ ; $78 = 15 \\times 5 + 3$ ; $5 = 1 \\times 3 + 2$ ; $3 = 1 \\times 2 + 1$ ; $2 = 2 \\times 1 + 0$&quot;,&quot;result&quot;:&quot;1&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:{&quot;text&quot;:&quot;1&quot;,&quot;value&quot;:&quot;1/1&quot;}},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:12,&quot;context&quot;:{&quot;x&quot;:&quot;86&quot;,&quot;y&quot;:&quot;91&quot;,&quot;euclid_steps&quot;:&quot;$91 = 1 \\times 86 + 5$ ; $86 = 17 \\times 5 + 1$ ; $5 = 5 \\times 1 + 0$&quot;,&quot;result&quot;:&quot;1&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:{&quot;text&quot;:&quot;1&quot;,&quot;value&quot;:&quot;1/1&quot;}},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:13,&quot;context&quot;:{&quot;x&quot;:&quot;59&quot;,&quot;y&quot;:&quot;97&quot;,&quot;euclid_steps&quot;:&quot;$97 = 1 \\times 59 + 38$ ; $59 = 1 \\times 38 + 21$ ; $38 = 1 \\times 21 + 17$ ; $21 = 1 \\times 17 + 4$ ; $17 = 4 \\times 4 + 1$ ; $4 = 4 \\times 1 + 0$&quot;,&quot;result&quot;:&quot;1&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:{&quot;text&quot;:&quot;1&quot;,&quot;value&quot;:&quot;1/1&quot;}},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:14,&quot;context&quot;:{&quot;x&quot;:&quot;39&quot;,&quot;y&quot;:&quot;180&quot;,&quot;euclid_steps&quot;:&quot;$180 = 4 \\times 39 + 24$ ; $39 = 1 \\times 24 + 15$ ; $24 = 1 \\times 15 + 9$ ; $15 = 1 \\times 9 + 6$ ; $9 = 1 \\times 6 + 3$ ; $6 = 2 \\times 3 + 0$&quot;,&quot;result&quot;:&quot;3&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:{&quot;text&quot;:&quot;3&quot;,&quot;value&quot;:&quot;3/1&quot;}},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:15,&quot;context&quot;:{&quot;x&quot;:&quot;52&quot;,&quot;y&quot;:&quot;25&quot;,&quot;euclid_steps&quot;:&quot;$52 = 2 \\times 25 + 2$ ; $25 = 12 \\times 2 + 1$ ; $2 = 2 \\times 1 + 0$&quot;,&quot;result&quot;:&quot;1&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:{&quot;text&quot;:&quot;1&quot;,&quot;value&quot;:&quot;1/1&quot;}},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:16,&quot;context&quot;:{&quot;x&quot;:&quot;72&quot;,&quot;y&quot;:&quot;143&quot;,&quot;euclid_steps&quot;:&quot;$143 = 1 \\times 72 + 71$ ; $72 = 1 \\times 71 + 1$ ; $71 = 71 \\times 1 + 0$&quot;,&quot;result&quot;:&quot;1&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:{&quot;text&quot;:&quot;1&quot;,&quot;value&quot;:&quot;1/1&quot;}},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:17,&quot;context&quot;:{&quot;x&quot;:&quot;92&quot;,&quot;y&quot;:&quot;129&quot;,&quot;euclid_steps&quot;:&quot;$129 = 1 \\times 92 + 37$ ; $92 = 2 \\times 37 + 18$ ; $37 = 2 \\times 18 + 1$ ; $18 = 18 \\times 1 + 0$&quot;,&quot;result&quot;:&quot;1&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:{&quot;text&quot;:&quot;1&quot;,&quot;value&quot;:&quot;1/1&quot;}},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:18,&quot;context&quot;:{&quot;x&quot;:&quot;49&quot;,&quot;y&quot;:&quot;54&quot;,&quot;euclid_steps&quot;:&quot;$54 = 1 \\times 49 + 5$ ; $49 = 9 \\times 5 + 4$ ; $5 = 1 \\times 4 + 1$ ; $4 = 4 \\times 1 + 0$&quot;,&quot;result&quot;:&quot;1&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:{&quot;text&quot;:&quot;1&quot;,&quot;value&quot;:&quot;1/1&quot;}},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:19,&quot;context&quot;:{&quot;x&quot;:&quot;112&quot;,&quot;y&quot;:&quot;34&quot;,&quot;euclid_steps&quot;:&quot;$112 = 3 \\times 34 + 10$ ; $34 = 3 \\times 10 + 4$ ; $10 = 2 \\times 4 + 2$ ; $4 = 2 \\times 2 + 0$&quot;,&quot;result&quot;:&quot;2&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:{&quot;text&quot;:&quot;2&quot;,&quot;value&quot;:&quot;2/1&quot;}},&quot;choices&quot;:{},&quot;orders&quot;:{}}]</pre>
 </div>
 </section>
@@ -2766,7 +2763,7 @@ window.PyWimsTemplate = (() => {
   // Un champ porte le nom de la variable Python qui reçoit la saisie : il ne doit pas
   // écraser une variable du contrat de question, un outil pywims ni un mot-clé Python.
   const reservedNames = new Set([
-    "ok_answer", "feedback",
+    "ok_answer", "answer_text", "feedback",
     "py_wims", "is_number", "math_expression", "decimal_comma", "mcq", "ANY", "pywims",
     "False", "None", "True", "and", "as", "assert", "async", "await", "break",
     "class", "continue", "def", "del", "elif", "else", "except", "finally", "for",
@@ -3166,6 +3163,14 @@ window.PyWimsCorrection = (() => {
     return null;
   }
 
+  // Valeur d’une saisie numérique transmise à « question_check » (§ 2.8) : [numérateur, dénominateur] en
+  // textes (un BigInt ne passe pas tel quel vers Python), ou null si ce n’est pas un nombre. Python
+  // la reçoit ainsi lue par le même code que la correction par défaut, et non par un second lecteur.
+  function exactValue(text) {
+    const parsed = typeof text === "string" ? parseNumber(text) : null;
+    return parsed ? [String(parsed.value.n), String(parsed.value.d)] : null;
+  }
+
   // La saisie est-elle écrite sous la forme demandée (form, § 2.8) ?
   function hasForm(parsed, form) {
     switch (form) {
@@ -3333,7 +3338,7 @@ window.PyWimsCorrection = (() => {
 
   return Object.freeze({
     normalizedText, matchedText, sameText, sameChoice, isCorrect,
-    parseNumber, valueVerdict, valueSolutionText, formHint
+    parseNumber, exactValue, valueVerdict, valueSolutionText, formHint
   });
 })();
 </script>
@@ -3969,6 +3974,28 @@ def _collect_draw(namespace, spec):
     }, ensure_ascii=False)
 
 
+def _prepare_check(namespace, data):
+    """Prépare « question_check » (SPECIFICATION.md, §§ 2.6 et 2.8), avant chaque vérification.
+
+    data (JSON) : {"verdicts": {clé: booléen}, "texts": {champ: texte}, "values": {champ: [n, d] ou null}}.
+    Les verdicts de la correction par défaut pré-remplissent ok_answer ; chaque champ input_value
+    reçoit sa valeur exacte, lue par la page (runtime/correction.js), et son texte va dans
+    answer_text. Le feedback d’une vérification précédente est retiré.
+    """
+    import json
+    data = json.loads(data)
+    values = data.get("values") or {}
+    if values:
+        # Une question peut ne pas importer SymPy ; la page l’a alors chargé avant cet appel.
+        from sympy import Rational
+        for name, value in values.items():
+            # Rational(n, 1) est un Integer : un entier saisi se compare comme un entier.
+            namespace[name] = None if value is None else Rational(int(value[0]), int(value[1]))
+    namespace["ok_answer"] = dict(data.get("verdicts") or {})
+    namespace["answer_text"] = dict(data.get("texts") or {})
+    namespace.pop("feedback", None)
+
+
 _CONTROL_NAMES = {"\t": r"\t", "\r": r"\r", "\f": r"\f", "\b": r"\b", "\a": r"\a", "\v": r"\v"}
 
 
@@ -4438,11 +4465,21 @@ if importlib.util.find_spec("numpy") is not None:
     });
   },
 
-  // Réinitialise les résultats de correction avant chaque vérification.
-  resetAnswers(sessionId) {
+  // Prépare « question_check » avant chaque vérification : verdicts par défaut, textes et valeurs des
+  // champs input_value (voir _prepare_check). Une valeur est un Rational : SymPy est chargé s’il
+  // ne l’est pas encore, comme pour une question qui l’importe.
+  async prepareCheck(sessionId, data) {
     const globals = sessionGlobals(sessionId);
-    return enqueuePythonOperation(async () => {
-      await pyodide.runPythonAsync("ok_answer = {}\nglobals().pop('feedback', None)", { globals });
+    if (Object.keys(data.values ?? {}).length) {
+      await ensurePackages("import sympy");
+    }
+    return enqueuePythonOperation(() => {
+      const prepare = pyodide.runPython('__import__("pywims")._prepare_check');
+      try {
+        prepare(globals, JSON.stringify(data));
+      } finally {
+        prepare.destroy();
+      }
     });
   },
 
@@ -4667,6 +4704,22 @@ window.PyWimsPython = (() => {
     return call("set", [sessionId, name, value]);
   }
 
+  // Préparation de « question_check » (SPECIFICATION.md, §§ 2.6 et 2.8) : verdicts par défaut ({ clé: booléen },
+  // « m[0][1] » pour une case), textes saisis et valeurs [n, d] (ou null) des champs input_value.
+  function prepareCheck({ verdicts = {}, texts = {}, values = {} } = {}, sessionId = "default") {
+    const keyPattern = /^[A-Za-z_]\w*(\[\d+\]\[\d+\])?$/;
+    const integer = /^-?\d+$/;
+    const valid = (record, check, pattern = namePattern) =>
+      record && typeof record === "object" && Object.entries(record).every(([key, value]) => pattern.test(key) && check(value));
+    if (!valid(verdicts, value => typeof value === "boolean", keyPattern) ||
+        !valid(texts, value => typeof value === "string") ||
+        !valid(values, value => value === null ||
+          (Array.isArray(value) && value.length === 2 && value.every(part => typeof part === "string" && integer.test(part))))) {
+      throw new Error("Les données de la vérification sont invalides.");
+    }
+    return call("prepareCheck", [sessionId, { verdicts, texts, values }]);
+  }
+
   function getChoiceTexts(name, sessionId = "default", plain = false) {
     if (!namePattern.test(name)) {
       throw new Error(`Liste de choix non prise en charge : ${name}`);
@@ -4688,7 +4741,6 @@ window.PyWimsPython = (() => {
   // Sans Worker, il n’y a aucune session à libérer (page neuve, ou Worker arrêté).
   const dispose = (sessionId = "default") => (worker ? call("dispose", [sessionId]) : Promise.resolve());
   const set = (name, value, sessionId = "default") => call("set", [sessionId, name, value]);
-  const resetAnswers = (sessionId = "default") => call("resetAnswers", [sessionId]);
   const getBoolean = (expression, sessionId = "default") => call("getBoolean", [sessionId, expression]);
 
   // Lie l’API de réponse à l’espace Python privé d’une question.
@@ -4706,7 +4758,7 @@ window.PyWimsPython = (() => {
       setMatrix: (name, values) => setMatrix(name, values, sessionId),
       setChoice: (name, value) => setChoice(name, value, sessionId),
       getChoiceTexts: (name, plain = false) => getChoiceTexts(name, sessionId, plain),
-      resetAnswers: () => resetAnswers(sessionId),
+      prepareCheck: data => prepareCheck(data, sessionId),
       getTemplateValue: name => getTemplateValue(name, sessionId),
       getBoolean: expression => getBoolean(expression, sessionId)
     });
@@ -4729,7 +4781,7 @@ window.PyWimsPython = (() => {
     setMatrix,
     setChoice,
     getChoiceTexts,
-    resetAnswers,
+    prepareCheck,
     getTemplateValue,
     getBoolean,
     createSession
@@ -5326,12 +5378,13 @@ window.PyWimsQuestion = (() => {
     }
 
     // Verdicts de la correction par défaut (SPECIFICATION.md, § 2.6), un par champ de fields() :
-    // chaque saisie est comparée à la solution du tirage, sans Python. Renvoie aussi l’indication
-    // d’un champ input_value dont la valeur est juste mais pas l’écriture (§ 2.8), ou null.
+    // chaque saisie est comparée à la solution du tirage, sans Python ; null pour input_math, qui
+    // n’a pas de correction par défaut. Renvoie aussi, par champ, l’indication d’une valeur juste
+    // mais mal écrite (input_value, § 2.8), ou null.
     defaultVerdicts(inputs) {
       const { isCorrect, valueVerdict, formHint } = PyWimsCorrection;
-      let hint = null;
-      const answerResults = inputs.map(input => {
+      const hints = inputs.map(() => null);
+      const answerResults = inputs.map((input, index) => {
         const { name, matrixName, vmatrixName } = input.dataset;
         if (isChoiceGroup(input)) {
           const indices = checkedIndices(input);
@@ -5350,6 +5403,9 @@ window.PyWimsQuestion = (() => {
         }
         const fieldName = matrixName ?? name;
         const type = this.typeOf.get(fieldName);
+        if (type === "input_math") {
+          return null;
+        }
         // Liste déroulante : l’indice choisi dans l’ordre de l’auteur (« » : aucun choix).
         if (type === "input_select") {
           return isCorrect(type, input.value === "" ? null : Number(input.value), this.draw.solutions[name]);
@@ -5358,15 +5414,23 @@ window.PyWimsQuestion = (() => {
         const solution = this.solutionFor(input);
         if (type === "input_value" && solution !== null &&
             valueVerdict(fieldValue(input), solution, attributes) === "form") {
-          hint ??= formHint(attributes.form);
+          hints[index] = formHint(attributes.form);
         }
         return isCorrect(type, fieldValue(input), solution, attributes);
       });
-      return { answerResults, hint };
+      return { answerResults, hints };
+    }
+
+    // Clé d’une saisie dans ok_answer : le nom du champ, ou « matrice[i][j] » pour une case.
+    answerKey(input) {
+      const { name, matrixName, matrixRow, matrixColumn } = input.dataset;
+      return matrixName === undefined ? name : `${matrixName}[${matrixRow}][${matrixColumn}]`;
     }
 
     // Transmet toutes les saisies à Python et exécute « question_check ». Renvoie les verdicts, un par champ de
-    // fields(), et le retour de l’auteur (null s’il n’a pas défini « feedback »).
+    // fields(), les indications de forme de la correction par défaut, et le retour de l’auteur (null
+    // s’il n’a pas défini « feedback »). ok_answer est pré-rempli par la correction par défaut, et un
+    // champ input_value arrive comme sa valeur lue, son texte dans answer_text (§§ 2.6 et 2.8).
     async pythonVerdicts(inputs) {
       const { python } = this;
       this.activatePython();
@@ -5379,6 +5443,16 @@ window.PyWimsQuestion = (() => {
         this.showStatus("Chargement du moteur Python…");
       }
       await this.pythonReady;
+      const { exactValue } = PyWimsCorrection;
+      const { answerResults: defaults, hints } = this.defaultVerdicts(inputs);
+      const verdicts = {};
+      const texts = {};
+      const values = {};
+      inputs.forEach((input, index) => {
+        if (defaults[index] !== null) {
+          verdicts[this.answerKey(input)] = defaults[index];
+        }
+      });
       const matrices = new Map();
       for (const input of inputs) {
         const { matrixName, matrixRow, matrixColumn, vmatrixName } = input.dataset;
@@ -5389,6 +5463,11 @@ window.PyWimsQuestion = (() => {
         }
         if (input.matches("select")) {
           await python.setChoice(input.dataset.name, input.value === "" ? null : Number(input.value));
+          continue;
+        }
+        if (this.typeOf.get(input.dataset.name) === "input_value") {
+          texts[input.dataset.name] = fieldValue(input);
+          values[input.dataset.name] = exactValue(fieldValue(input));
           continue;
         }
         if (matrixName === undefined) {
@@ -5409,21 +5488,17 @@ window.PyWimsQuestion = (() => {
       for (const [name, matrix] of matrices) {
         await python.setMatrix(name, matrix);
       }
-      await python.resetAnswers();
+      await python.prepareCheck({ verdicts, texts, values });
       await python.run(this.definition.question_check, { timeoutMs: checkTimeoutMs }).catch(error => {
         throw error.name === "PyWimsTimeout" ? new Error(checkTimeoutMessage) : error;
       });
 
-      const answerResults = await Promise.all(inputs.map(input => {
-        const key = input.dataset.matrixName === undefined
-          ? input.dataset.name
-          : `${input.dataset.matrixName}[${input.dataset.matrixRow}][${input.dataset.matrixColumn}]`;
-        return python.getBoolean(`bool(ok_answer.get(${JSON.stringify(key)}, False))`);
-      }));
+      const answerResults = await Promise.all(inputs.map(input =>
+        python.getBoolean(`bool(ok_answer.get(${JSON.stringify(this.answerKey(input))}, False))`)));
       const feedback = await python.getBoolean("'feedback' in globals()")
         ? await python.getTemplateValue("feedback")
         : null;
-      return { answerResults, feedback };
+      return { answerResults, hints, feedback };
     }
 
     // Corrige les saisies (avec « question_check » ou par défaut), colore les champs ouverts et affiche le retour.
@@ -5433,12 +5508,14 @@ window.PyWimsQuestion = (() => {
       try {
         await this.mathLiveReady();
         const inputs = this.fields();
-        const { answerResults, feedback: authorFeedback, hint = null } = this.usesPython
+        const { answerResults, feedback: authorFeedback, hints } = this.usesPython
           ? await this.pythonVerdicts(inputs)
           : { ...this.defaultVerdicts(inputs), feedback: null };
         const allCorrect = inputs.length > 0 && answerResults.every(Boolean);
         // La variable « feedback » de « question_check » est facultative : sans elle, un retour générique s’affiche.
-        // Une valeur juste mais mal écrite (input_value) le dit : l’élève sait ce qui reste à corriger.
+        // Une valeur juste mais mal écrite (input_value) le dit, si le champ est resté faux (« question_check »
+        // peut accepter l’écriture) : l’élève sait ce qui reste à corriger.
+        const hint = hints.find((text, index) => text !== null && !answerResults[index]) ?? null;
         const singleAnswer = inputs.length === 1 && isSingleAnswer(inputs[0]);
         const generic = allCorrect ? defaultFeedback.correct
           : singleAnswer ? defaultFeedback.incorrectSingle : defaultFeedback.incorrect;

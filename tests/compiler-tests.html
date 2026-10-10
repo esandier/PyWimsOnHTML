@@ -67,6 +67,7 @@
       expectTagError("input_text 'x' solution='12'", "doit être un nom de variable");
       expectTagError("input_math 'derivee'", "Le champ « derivee » doit indiquer sa solution");
       expectTagError("input_text 'feedback' solution=s", "Le nom de champ « feedback » est réservé");
+      expectTagError("input_value 'answer_text' solution=s", "Le nom de champ « answer_text » est réservé");
       expectTagError("input_text 'lambda' solution=s", "Le nom de champ « lambda » est réservé");
     });
     test("les balises invalides produisent un message précis", () => {

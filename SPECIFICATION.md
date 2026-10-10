@@ -74,9 +74,11 @@ refusé.
   Ses fonctions internes ne sont pas visibles par l’auteur, qui ne peut donc
   pas les perturber (par exemple en écrivant `E = 3`).
 - `question_check` partage l’espace de noms de `question_setup` et y trouve les saisies de
-  l’élève sous le nom de chaque champ.
+  l’élève sous le nom de chaque champ : le texte saisi, sauf pour un champ à
+  choix (indice, § 10.3) et pour `input_value` (valeur lue, § 2.8).
 - Contrat de sortie de `question_check` : `ok_answer[nom_du_champ] = True/False` pour
-  chaque champ (`"matrice[i][j]"` pour une case), et, facultativement, une
+  chaque champ (`"matrice[i][j]"` pour une case), pré-rempli par la correction
+  par défaut (§ 2.6), et, facultativement, une
   variable `feedback` : un texte (formules TeX admises) qui explique l’erreur
   sans donner la réponse. Sans elle, le retour est générique : « Bravo, c’est
   exact ! », ou en cas d’erreur « Réponse incorrecte. » pour une question qui
@@ -167,7 +169,7 @@ Le compilateur refuse la question, avec un message précis, si :
 - une balise n’a pas de `solution=` ou désigne une variable absente ;
 - la solution n’a pas la forme attendue par le champ (dimensions de matrice) ;
 - un nom de champ est déjà défini par `question_setup`, ou réservé (`ok_answer`,
-  `feedback`, noms du module `pywims`, mots-clés Python) ;
+  `answer_text`, `feedback`, noms du module `pywims`, mots-clés Python) ;
 - une chaîne de `question_setup` ou de `question_check` contient un caractère de contrôle autre
   que le retour à la ligne : c’est presque toujours une formule TeX écrite dans
   une chaîne ordinaire (`'\frac'` contient un saut de page, `'\times'` une
@@ -247,8 +249,19 @@ même approchée, se corrige avec `input_value` (§ 2.8).
 **Principe : sans `question_check`, l’élève doit donner ce qu’affiche le bouton
 « Solution ».** L’auteur le vérifie dans l’aperçu du compilateur.
 
-- **Avec `question_check`** : `question_check` décide seul de la réussite de chaque champ. Pas de correction partielle : `ok_answer` n’est pas pré-rempli
-  par la correction par défaut.
+- **Avec `question_check`** : `ok_answer` est pré-rempli par la correction par
+  défaut, champ par champ (case par case pour une matrice), et `question_check`
+  le change là où il veut juger autrement. L’auteur n’écrit donc que ce qui
+  diffère de la correction par défaut : le retour ciblé, ou le verdict d’un
+  champ qui admet plusieurs écritures. `input_math`, sans correction par
+  défaut, n’est pas pré-rempli : sans affectation, il est faux. Conséquences :
+  un `if …: ok_answer['x'] = True` sans `else` laisse, sinon, le verdict par
+  défaut ; et le compilateur ne voit plus un champ oublié dans
+  `question_check`, puisque son verdict par défaut est juste pour la solution.
+  On avait d’abord écarté ce pré-remplissage (v1.0, `question_check` décidait
+  seul) ; il est revenu avec `input_value` (§ 2.8), où le verdict par défaut
+  (tolérance, forme) est le point de départ naturel d’un retour ciblé, et
+  s’étend à tous les champs pour garder une seule règle.
 - **Python** n’est chargé que par les questions qui ont un `question_check` (§ 5.1).
 
 | Champ | Saisie juste si |
@@ -406,9 +419,28 @@ n’exigent plus un `question_check`.
   tolérance non nulle ; une fraction est demandée pour une solution
   rationnelle ; et, comme pour tout champ, la solution affichée est jugée juste
   (§ 3, « Cohérence »).
-- **Avec `question_check`**, le champ arrive à Python comme un `input_text`
-  (le texte saisi) : `tolerance` et `form` ne servent qu’à la correction par
-  défaut et à la solution affichée.
+- **Avec `question_check`**, qui ne sert alors qu’au retour ciblé selon l’erreur
+  (« tu as oublié de retirer P(A ∩ B) »), le moteur lit la saisie avant de
+  lancer Python, avec les règles ci-dessus, et `question_check` reçoit :
+
+  | Nom | Contenu | Pour `14/40`, `form=irreducible`, solution `7/20` |
+  |---|---|---|
+  | `nom` | la valeur exacte, `Rational` de SymPy (`Integer` pour un entier), ou `None` si la saisie n’est pas un nombre | `Rational(7, 20)` |
+  | `ok_answer['nom']` | pré-rempli par le verdict de la correction par défaut (tolérance et forme, § 2.6) ; `question_check` peut le changer | `False` |
+  | `answer_text['nom']` | le texte saisi, pour juger l’écriture | `"14/40"` |
+
+  `question_check` compare donc des nombres (`nom == pa + pb`,
+  `abs(nom - solution) <= 0.01`), sans relire le texte. Si `question_check` ne
+  définit pas `feedback`, le retour est celui de la correction par défaut, y
+  compris « La valeur est juste, mais… » pour un champ resté faux à cause de
+  sa forme : l’auteur n’écrit que les erreurs qu’il veut repérer.
+  Un seul lecteur de nombres, celui de la correction par défaut
+  (`runtime/correction.js`), sert ainsi à l’élève, au compilateur (§ 3,
+  « Cohérence ») et à `question_check`. On a écarté une fonction Python de
+  lecture (`read_number`) : un second lecteur, à garder identique au premier ;
+  et un dictionnaire par champ (`nom["value"]`, `nom["ok"]`) pour tous les
+  types : il changeait le format de toutes les questions, alourdissait le cas
+  courant (un champ texte n’a que son texte) et se prêtait mal aux matrices.
 - On a écarté une tolérance relative (`1%`) et une tolérance calculée par
   tirage (variable de `question_setup`) : l’écart absolu couvre les exercices
   courants, et l’un ou l’autre s’ajoutera sans rien changer à l’existant.
@@ -505,6 +537,8 @@ $[0 ; +\infty[$. »
   une réponse que la correction refuse, et `question_check` ne plante pour aucun tirage.
   Saisie utilisée :
   - `input_text`, case de matrice : le texte de la solution (§ 2.3) ;
+  - `input_value` : la solution affichée, lue comme une saisie d’élève (valeur,
+    verdict et texte, § 2.8) ;
   - `input_math` : la solution écrite comme pour `input_text` (`x^2 + 1`),
     proche de ce que MathLive transmet ;
   - valeur `ANY` : `1`, une valeur quelconque ;

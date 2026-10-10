@@ -22,19 +22,31 @@ def main():
         try:
             page = browser.new_page()
             page.goto(url)
+            finished = True
             try:
                 page.wait_for_function("document.body && document.body.dataset.done === 'true'",
                                        timeout=TIMEOUT_SECONDS * 1000, polling=1000)
             except PlaywrightTimeout:
-                print("Délai dépassé : les tests ne se sont pas terminés.")
-                return 1
-            results = page.eval_on_selector_all("#results li", "items => items.map(li => li.textContent)")
+                finished = False
+            # Les résultats déjà obtenus sont lus même après un délai dépassé : ils disent où les tests
+            # se sont arrêtés. data-seconds : durée du test, si la page la mesure.
+            results = page.eval_on_selector_all(
+                "#results li", "items => items.map(li => [li.textContent, Number(li.dataset.seconds ?? NaN)])")
         finally:
             browser.close()
-    failed = [line for line in results if line.startswith("ÉCHEC")]
+    failed = [line for line, _ in results if line.startswith("ÉCHEC")]
     print(f"{len(results)} résultats, {len(failed)} échec(s)")
     for line in failed:
         print(line)
+    timed = sorted((item for item in results if item[1] == item[1]), key=lambda item: -item[1])
+    if timed:
+        total = sum(seconds for _, seconds in timed)
+        print(f"Durée des tests : {total:.0f} s ; les plus lents :")
+        for line, seconds in timed[:8]:
+            print(f"  {seconds:6.1f} s  {line.split(' — ')[0][:110]}")
+    if not finished:
+        print(f"Délai dépassé ({TIMEOUT_SECONDS} s) : les tests ne se sont pas terminés.")
+        return 1
     return 1 if failed else 0
 
 

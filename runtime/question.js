@@ -494,12 +494,13 @@ window.PyWimsQuestion = (() => {
     }
 
     // Verdicts de la correction par défaut (SPECIFICATION.md, § 2.6), un par champ de fields() :
-    // chaque saisie est comparée à la solution du tirage, sans Python. Renvoie aussi l’indication
-    // d’un champ input_value dont la valeur est juste mais pas l’écriture (§ 2.8), ou null.
+    // chaque saisie est comparée à la solution du tirage, sans Python ; null pour input_math, qui
+    // n’a pas de correction par défaut. Renvoie aussi, par champ, l’indication d’une valeur juste
+    // mais mal écrite (input_value, § 2.8), ou null.
     defaultVerdicts(inputs) {
       const { isCorrect, valueVerdict, formHint } = PyWimsCorrection;
-      let hint = null;
-      const answerResults = inputs.map(input => {
+      const hints = inputs.map(() => null);
+      const answerResults = inputs.map((input, index) => {
         const { name, matrixName, vmatrixName } = input.dataset;
         if (isChoiceGroup(input)) {
           const indices = checkedIndices(input);
@@ -518,6 +519,9 @@ window.PyWimsQuestion = (() => {
         }
         const fieldName = matrixName ?? name;
         const type = this.typeOf.get(fieldName);
+        if (type === "input_math") {
+          return null;
+        }
         // Liste déroulante : l’indice choisi dans l’ordre de l’auteur (« » : aucun choix).
         if (type === "input_select") {
           return isCorrect(type, input.value === "" ? null : Number(input.value), this.draw.solutions[name]);
@@ -526,15 +530,23 @@ window.PyWimsQuestion = (() => {
         const solution = this.solutionFor(input);
         if (type === "input_value" && solution !== null &&
             valueVerdict(fieldValue(input), solution, attributes) === "form") {
-          hint ??= formHint(attributes.form);
+          hints[index] = formHint(attributes.form);
         }
         return isCorrect(type, fieldValue(input), solution, attributes);
       });
-      return { answerResults, hint };
+      return { answerResults, hints };
+    }
+
+    // Clé d’une saisie dans ok_answer : le nom du champ, ou « matrice[i][j] » pour une case.
+    answerKey(input) {
+      const { name, matrixName, matrixRow, matrixColumn } = input.dataset;
+      return matrixName === undefined ? name : `${matrixName}[${matrixRow}][${matrixColumn}]`;
     }
 
     // Transmet toutes les saisies à Python et exécute « question_check ». Renvoie les verdicts, un par champ de
-    // fields(), et le retour de l’auteur (null s’il n’a pas défini « feedback »).
+    // fields(), les indications de forme de la correction par défaut, et le retour de l’auteur (null
+    // s’il n’a pas défini « feedback »). ok_answer est pré-rempli par la correction par défaut, et un
+    // champ input_value arrive comme sa valeur lue, son texte dans answer_text (§§ 2.6 et 2.8).
     async pythonVerdicts(inputs) {
       const { python } = this;
       this.activatePython();
@@ -547,6 +559,16 @@ window.PyWimsQuestion = (() => {
         this.showStatus("Chargement du moteur Python…");
       }
       await this.pythonReady;
+      const { exactValue } = PyWimsCorrection;
+      const { answerResults: defaults, hints } = this.defaultVerdicts(inputs);
+      const verdicts = {};
+      const texts = {};
+      const values = {};
+      inputs.forEach((input, index) => {
+        if (defaults[index] !== null) {
+          verdicts[this.answerKey(input)] = defaults[index];
+        }
+      });
       const matrices = new Map();
       for (const input of inputs) {
         const { matrixName, matrixRow, matrixColumn, vmatrixName } = input.dataset;
@@ -557,6 +579,11 @@ window.PyWimsQuestion = (() => {
         }
         if (input.matches("select")) {
           await python.setChoice(input.dataset.name, input.value === "" ? null : Number(input.value));
+          continue;
+        }
+        if (this.typeOf.get(input.dataset.name) === "input_value") {
+          texts[input.dataset.name] = fieldValue(input);
+          values[input.dataset.name] = exactValue(fieldValue(input));
           continue;
         }
         if (matrixName === undefined) {
@@ -577,21 +604,17 @@ window.PyWimsQuestion = (() => {
       for (const [name, matrix] of matrices) {
         await python.setMatrix(name, matrix);
       }
-      await python.resetAnswers();
+      await python.prepareCheck({ verdicts, texts, values });
       await python.run(this.definition.question_check, { timeoutMs: checkTimeoutMs }).catch(error => {
         throw error.name === "PyWimsTimeout" ? new Error(checkTimeoutMessage) : error;
       });
 
-      const answerResults = await Promise.all(inputs.map(input => {
-        const key = input.dataset.matrixName === undefined
-          ? input.dataset.name
-          : `${input.dataset.matrixName}[${input.dataset.matrixRow}][${input.dataset.matrixColumn}]`;
-        return python.getBoolean(`bool(ok_answer.get(${JSON.stringify(key)}, False))`);
-      }));
+      const answerResults = await Promise.all(inputs.map(input =>
+        python.getBoolean(`bool(ok_answer.get(${JSON.stringify(this.answerKey(input))}, False))`)));
       const feedback = await python.getBoolean("'feedback' in globals()")
         ? await python.getTemplateValue("feedback")
         : null;
-      return { answerResults, feedback };
+      return { answerResults, hints, feedback };
     }
 
     // Corrige les saisies (avec « question_check » ou par défaut), colore les champs ouverts et affiche le retour.
@@ -601,12 +624,14 @@ window.PyWimsQuestion = (() => {
       try {
         await this.mathLiveReady();
         const inputs = this.fields();
-        const { answerResults, feedback: authorFeedback, hint = null } = this.usesPython
+        const { answerResults, feedback: authorFeedback, hints } = this.usesPython
           ? await this.pythonVerdicts(inputs)
           : { ...this.defaultVerdicts(inputs), feedback: null };
         const allCorrect = inputs.length > 0 && answerResults.every(Boolean);
         // La variable « feedback » de « question_check » est facultative : sans elle, un retour générique s’affiche.
-        // Une valeur juste mais mal écrite (input_value) le dit : l’élève sait ce qui reste à corriger.
+        // Une valeur juste mais mal écrite (input_value) le dit, si le champ est resté faux (« question_check »
+        // peut accepter l’écriture) : l’élève sait ce qui reste à corriger.
+        const hint = hints.find((text, index) => text !== null && !answerResults[index]) ?? null;
         const singleAnswer = inputs.length === 1 && isSingleAnswer(inputs[0]);
         const generic = allCorrect ? defaultFeedback.correct
           : singleAnswer ? defaultFeedback.incorrectSingle : defaultFeedback.incorrect;

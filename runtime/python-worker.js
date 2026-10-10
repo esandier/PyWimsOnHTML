@@ -269,11 +269,21 @@ if importlib.util.find_spec("numpy") is not None:
     });
   },
 
-  // Réinitialise les résultats de correction avant chaque vérification.
-  resetAnswers(sessionId) {
+  // Prépare « question_check » avant chaque vérification : verdicts par défaut, textes et valeurs des
+  // champs input_value (voir _prepare_check). Une valeur est un Rational : SymPy est chargé s’il
+  // ne l’est pas encore, comme pour une question qui l’importe.
+  async prepareCheck(sessionId, data) {
     const globals = sessionGlobals(sessionId);
-    return enqueuePythonOperation(async () => {
-      await pyodide.runPythonAsync("ok_answer = {}\nglobals().pop('feedback', None)", { globals });
+    if (Object.keys(data.values ?? {}).length) {
+      await ensurePackages("import sympy");
+    }
+    return enqueuePythonOperation(() => {
+      const prepare = pyodide.runPython('__import__("pywims")._prepare_check');
+      try {
+        prepare(globals, JSON.stringify(data));
+      } finally {
+        prepare.destroy();
+      }
     });
   },
 

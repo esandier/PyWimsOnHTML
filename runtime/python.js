@@ -189,6 +189,22 @@ window.PyWimsPython = (() => {
     return call("set", [sessionId, name, value]);
   }
 
+  // Préparation de « question_check » (SPECIFICATION.md, §§ 2.6 et 2.8) : verdicts par défaut ({ clé: booléen },
+  // « m[0][1] » pour une case), textes saisis et valeurs [n, d] (ou null) des champs input_value.
+  function prepareCheck({ verdicts = {}, texts = {}, values = {} } = {}, sessionId = "default") {
+    const keyPattern = /^[A-Za-z_]\w*(\[\d+\]\[\d+\])?$/;
+    const integer = /^-?\d+$/;
+    const valid = (record, check, pattern = namePattern) =>
+      record && typeof record === "object" && Object.entries(record).every(([key, value]) => pattern.test(key) && check(value));
+    if (!valid(verdicts, value => typeof value === "boolean", keyPattern) ||
+        !valid(texts, value => typeof value === "string") ||
+        !valid(values, value => value === null ||
+          (Array.isArray(value) && value.length === 2 && value.every(part => typeof part === "string" && integer.test(part))))) {
+      throw new Error("Les données de la vérification sont invalides.");
+    }
+    return call("prepareCheck", [sessionId, { verdicts, texts, values }]);
+  }
+
   function getChoiceTexts(name, sessionId = "default", plain = false) {
     if (!namePattern.test(name)) {
       throw new Error(`Liste de choix non prise en charge : ${name}`);
@@ -210,7 +226,6 @@ window.PyWimsPython = (() => {
   // Sans Worker, il n’y a aucune session à libérer (page neuve, ou Worker arrêté).
   const dispose = (sessionId = "default") => (worker ? call("dispose", [sessionId]) : Promise.resolve());
   const set = (name, value, sessionId = "default") => call("set", [sessionId, name, value]);
-  const resetAnswers = (sessionId = "default") => call("resetAnswers", [sessionId]);
   const getBoolean = (expression, sessionId = "default") => call("getBoolean", [sessionId, expression]);
 
   // Lie l’API de réponse à l’espace Python privé d’une question.
@@ -228,7 +243,7 @@ window.PyWimsPython = (() => {
       setMatrix: (name, values) => setMatrix(name, values, sessionId),
       setChoice: (name, value) => setChoice(name, value, sessionId),
       getChoiceTexts: (name, plain = false) => getChoiceTexts(name, sessionId, plain),
-      resetAnswers: () => resetAnswers(sessionId),
+      prepareCheck: data => prepareCheck(data, sessionId),
       getTemplateValue: name => getTemplateValue(name, sessionId),
       getBoolean: expression => getBoolean(expression, sessionId)
     });
@@ -251,7 +266,7 @@ window.PyWimsPython = (() => {
     setMatrix,
     setChoice,
     getChoiceTexts,
-    resetAnswers,
+    prepareCheck,
     getTemplateValue,
     getBoolean,
     createSession

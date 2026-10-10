@@ -138,8 +138,9 @@
       <code>7/12</code> est faux si la solution est <code>14/24</code>, <code>0,5</code> faux si c’est
       <code>0.5</code>. La comparaison de la réponse et de la solution est purement visuelle.</p>
     <p>Le champ facultatif <code>question_check</code> est du Python qui étudie la saisie de chaque champ de réponse
-      (une variable de même nom que le champ), et décide <code>ok_answer['nom'] = True</code> ou
-      <code>False</code> ; il peut aussi définir la variable <code>feedback</code>, un retour qui explique
+      (une variable de même nom que le champ). Le verdict <code>ok_answer['nom']</code> y arrive déjà rempli
+      par la comparaison ci-dessus ; <code>question_check</code> le change (<code>True</code> ou <code>False</code>)
+      là où il juge autrement, et peut définir la variable <code>feedback</code>, un retour qui explique
       l’erreur sans donner la réponse. Il est nécessaire pour une formule (<code>input_math</code>), ou
       lorsque plusieurs réponses sont justes, par exemple.</p>
 
@@ -175,6 +176,10 @@
         la même valeur. Une valeur juste dans une autre forme que celle demandée est refusée, et le retour le dit
         (« La valeur est juste, mais elle doit être écrite sous forme décimale. »). La solution affichée suit la
         forme demandée, arrondie selon la tolérance.</p>
+      <p>Avec <code>question_check</code>, utile seulement pour un retour selon l’erreur, le champ arrive comme sa
+        valeur exacte (<code>14/40</code> donne <code>Rational(7, 20)</code>, une saisie qui n’est pas un nombre
+        donne <code>None</code>), et le texte saisi dans <code>answer_text['nom']</code> :
+        <code>if answer == a + b: feedback = "…"</code>.</p>
     </details>
 
     <details class="field-item">

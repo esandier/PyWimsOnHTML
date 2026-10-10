@@ -267,6 +267,28 @@ def _collect_draw(namespace, spec):
     }, ensure_ascii=False)
 
 
+def _prepare_check(namespace, data):
+    """Prépare « question_check » (SPECIFICATION.md, §§ 2.6 et 2.8), avant chaque vérification.
+
+    data (JSON) : {"verdicts": {clé: booléen}, "texts": {champ: texte}, "values": {champ: [n, d] ou null}}.
+    Les verdicts de la correction par défaut pré-remplissent ok_answer ; chaque champ input_value
+    reçoit sa valeur exacte, lue par la page (runtime/correction.js), et son texte va dans
+    answer_text. Le feedback d’une vérification précédente est retiré.
+    """
+    import json
+    data = json.loads(data)
+    values = data.get("values") or {}
+    if values:
+        # Une question peut ne pas importer SymPy ; la page l’a alors chargé avant cet appel.
+        from sympy import Rational
+        for name, value in values.items():
+            # Rational(n, 1) est un Integer : un entier saisi se compare comme un entier.
+            namespace[name] = None if value is None else Rational(int(value[0]), int(value[1]))
+    namespace["ok_answer"] = dict(data.get("verdicts") or {})
+    namespace["answer_text"] = dict(data.get("texts") or {})
+    namespace.pop("feedback", None)
+
+
 _CONTROL_NAMES = {"\t": r"\t", "\r": r"\r", "\f": r"\f", "\b": r"\b", "\a": r"\a", "\v": r"\v"}
 
 

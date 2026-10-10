@@ -96,24 +96,37 @@
     }
     // Une valeur ANY accepte n’importe quelle saisie : « 1 » en tient lieu.
     const typed = value => value ?? "1";
+    // Python est préparé comme dans la page (runtime/question.js) : ok_answer pré-rempli par la
+    // correction par défaut, valeur et texte des champs input_value (SPECIFICATION.md, §§ 2.6 et 2.8).
+    const { isCorrect, exactValue } = PyWimsCorrection;
+    const verdicts = {};
+    const texts = {};
+    const values = {};
     for (const tag of tags) {
       const { name, type, attributes } = tag;
       const solution = draw.solutions[name];
       if (PyWimsTemplate.choiceTypes.has(type)) {
         await session.setChoice(name, solution);
+        verdicts[name] = isCorrect(type, solution, solution);
       } else if (type === "input_text") {
         await session.set(name, typed(solution));
+        verdicts[name] = isCorrect(type, typed(solution), solution, attributes);
       } else if (type === "input_value") {
-        await session.set(name, typed(solution?.text));
+        texts[name] = typed(solution?.text);
+        values[name] = exactValue(texts[name]);
+        verdicts[name] = isCorrect(type, texts[name], solution, attributes);
       } else if (type === "input_math") {
         // MathLive transmet une expression en texte (« x^2 + 1 »), et non le LaTeX affiché par la
         // solution : on saisit donc la forme texte, la plus proche de ce que reçoit « question_check ».
         await session.set(name, typed(await session.run(`__import__("pywims")._solution_text(${attributes.solution})`)));
       } else {
         await session.setMatrix(name, solution.map(row => row.map(typed)));
+        solution.forEach((row, i) => row.forEach((cell, j) => {
+          verdicts[`${name}[${i}][${j}]`] = isCorrect(type, typed(cell), cell, attributes);
+        }));
       }
     }
-    await session.resetAnswers();
+    await session.prepareCheck({ verdicts, texts, values });
     try {
       await session.run(question_check, { timeoutMs });
     } catch (error) {

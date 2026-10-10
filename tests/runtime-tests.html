@@ -30,7 +30,7 @@
     }
 
     // Imitation de PyWimsPython, une session par question : « question_check » compare chaque saisie à la réponse
-    // attendue du tirage ({ choice: … } pour un champ à choix, comparé à l’indice ou à la liste reçue). Une saisie « sans retour » fait omettre la variable feedback ; mismatch simule
+    // attendue du tirage ({ choice: … } pour un champ à choix, comparé à l’indice ou à la liste reçue). Une saisie « sans retour », ou silent, fait omettre la variable feedback ; mismatch simule
     // un tirage non reproduit. Le journal de chaque session est dans pythonLogs[identifiant].
     const fakePython = options => `
 window.PyWimsPython = (() => {
@@ -56,7 +56,13 @@ window.PyWimsPython = (() => {
       setMatrix: async (name, value) => { values[name] = value; },
       setChoice: async (name, value) => { values[name] = value; log.push("choix " + name + " " + JSON.stringify(value)); },
       getChoiceTexts: async variable => question.mismatch ? ["autre"] : question.choices[seed][variable],
-      resetAnswers: async () => { ok = {}; feedback = null; },
+      // Verdicts par défaut pré-remplis, textes et valeurs des champs input_value : le journal les garde.
+      prepareCheck: async (data = {}) => {
+        ok = { ...data.verdicts };
+        feedback = null;
+        Object.assign(values, data.values);
+        log.push("prepare " + JSON.stringify(data));
+      },
       run: async () => {
         if (Object.values(values).includes("boucle")) {
           epoch += 1;
@@ -82,7 +88,9 @@ window.PyWimsPython = (() => {
             allOk &&= ok[name];
           }
         }
-        if (!Object.values(values).includes("sans retour")) {
+        // override : verdicts que l’auteur impose, quelle que soit la saisie.
+        Object.assign(ok, question.override);
+        if (!question.silent && !Object.values(values).includes("sans retour")) {
           feedback = allOk ? "Bravo, retour de l’auteur." : "Non : retour de l’auteur avec $x^2$.";
         }
       },
@@ -727,6 +735,50 @@ window.PyWimsPython = (() => {
         role("solution").click();
         await waitFor(() => $("#q1").dataset.state === "solution", "solution affichée");
         if ($("#q1-form_txt_r").value !== "1,5") throw new Error(`Solution affichée : ${$("#q1-form_txt_r").value}`);
+        frame.remove();
+      });
+
+      // Avec « question_check » (SPECIFICATION.md, § 2.8) : Python reçoit la valeur lue, le texte et le verdict par
+      // défaut. Un « question_check » qui ne change rien et ne définit pas feedback garde le retour de forme.
+      await test("un input_value avec « question_check » reçoit sa valeur, son texte et son verdict par défaut", async () => {
+        const question = {
+          question_title: "Moitié", question_layout: "STD", question_setup: "s = 1.5",
+          question_statement: "La moitié de 3 ? {% input_value 'r' solution=s form=decimal %}",
+          question_check: "pass"
+        };
+        const draws = [{ seed: 0, context: {}, dimensions: {}, solutions: { r: { text: "1,5", value: "3/2" } } }];
+        const silent = { silent: true, answers: { 0: {} }, contexts: { 0: {} } };
+        let { $, role, frame, window: frameWindow } = await openQuestion(question, draws, silent);
+        await waitFor(() => $("#q1-form_txt_r"), "affichage du champ");
+        type($("#q1-form_txt_r"), "6/4");
+        role("check").click();
+        await waitFor(() => role("feedback").classList.contains("is-visible"), "retour de forme");
+        const prepared = frameWindow.pythonLogs.q1.find(entry => entry.startsWith("prepare "));
+        if (prepared !== 'prepare {"verdicts":{"r":false},"texts":{"r":"6/4"},"values":{"r":["3","2"]}}') {
+          throw new Error(`Préparation inattendue : ${prepared}`);
+        }
+        if (role("feedback").textContent !== "La valeur est juste, mais elle doit être écrite sous forme décimale." ||
+            !$("#q1-form_txt_r").classList.contains("is-incorrect")) {
+          throw new Error(`Retour inattendu : ${role("feedback").textContent}`);
+        }
+        role("check").click();
+        type($("#q1-form_txt_r"), "1,5");
+        role("check").click();
+        await waitFor(() => role("feedback").classList.contains("is-correct"), "verdict par défaut juste");
+        if (role("feedback").textContent !== "Bravo, c’est exact !") {
+          throw new Error(`Retour inattendu : ${role("feedback").textContent}`);
+        }
+        frame.remove();
+
+        // L’auteur accepte l’écriture : le champ est juste, sans retour de forme.
+        ({ $, role, frame } = await openQuestion(question, draws, { ...silent, override: { r: true } }));
+        await waitFor(() => $("#q1-form_txt_r"), "affichage du champ");
+        type($("#q1-form_txt_r"), "6/4");
+        role("check").click();
+        await waitFor(() => role("feedback").classList.contains("is-correct"), "verdict de l’auteur");
+        if (role("feedback").textContent !== "Bravo, c’est exact !") {
+          throw new Error(`Retour inattendu : ${role("feedback").textContent}`);
+        }
         frame.remove();
       });
 

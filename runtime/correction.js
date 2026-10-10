@@ -108,6 +108,14 @@ window.PyWimsCorrection = (() => {
     return null;
   }
 
+  // Valeur d’une saisie numérique transmise à « question_check » (§ 2.8) : [numérateur, dénominateur] en
+  // textes (un BigInt ne passe pas tel quel vers Python), ou null si ce n’est pas un nombre. Python
+  // la reçoit ainsi lue par le même code que la correction par défaut, et non par un second lecteur.
+  function exactValue(text) {
+    const parsed = typeof text === "string" ? parseNumber(text) : null;
+    return parsed ? [String(parsed.value.n), String(parsed.value.d)] : null;
+  }
+
   // La saisie est-elle écrite sous la forme demandée (form, § 2.8) ?
   function hasForm(parsed, form) {
     switch (form) {
@@ -275,6 +283,6 @@ window.PyWimsCorrection = (() => {
 
   return Object.freeze({
     normalizedText, matchedText, sameText, sameChoice, isCorrect,
-    parseNumber, valueVerdict, valueSolutionText, formHint
+    parseNumber, exactValue, valueVerdict, valueSolutionText, formHint
   });
 })();

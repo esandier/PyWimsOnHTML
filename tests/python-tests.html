@@ -21,8 +21,10 @@
   <script>
     const results = document.getElementById("results");
     // Exécute un contrôle asynchrone ; un échec n’interrompt pas les suivants.
+    // La durée de chaque test (data-seconds) permet au lanceur de signaler les plus lents.
     async function test(name, callback) {
       const item = document.createElement("li");
+      const start = performance.now();
       try {
         await callback();
         item.textContent = `RÉUSSI : ${name}`;
@@ -30,6 +32,7 @@
         item.textContent = `ÉCHEC : ${name} — ${error.message}`;
         item.style.color = "red";
       }
+      item.dataset.seconds = ((performance.now() - start) / 1000).toFixed(1);
       results.append(item);
     }
 
@@ -157,6 +160,28 @@
         await expectPython(second, "x == 2 and ok_answer == {}", "La seconde question voit les variables de la première");
       });
 
+      // Avant « question_check » (SPECIFICATION.md, §§ 2.6 et 2.8) : verdicts par défaut, textes saisis et
+      // valeurs exactes des champs input_value. La question n’importe pas SymPy : le moteur le charge.
+      await test("« question_check » reçoit les verdicts par défaut, et la valeur et le texte d’un input_value", async () => {
+        const session = PyWimsPython.createSession("preparation");
+        await session.initialize("a = 1");
+        await session.run("a = 1\nfeedback = 'ancien'\nok_answer['vieux'] = True");
+        await session.prepareCheck({
+          verdicts: { r: false, "m[0][1]": true },
+          texts: { r: "14/40", e: "deux" },
+          values: { r: ["7", "20"], e: null, n: ["-3", "1"] }
+        });
+        await expectPython(session,
+          "type(r).__name__ == 'Rational' and r == __import__('sympy').Rational(7, 20) and e is None" +
+          " and type(n).__name__ == 'Integer' and n == -3" +
+          " and ok_answer == {'r': False, 'm[0][1]': True} and answer_text == {'r': '14/40', 'e': 'deux'}" +
+          " and 'feedback' not in globals()",
+          "Préparation de « question_check » inattendue");
+        await session.prepareCheck({});
+        await expectPython(session, "ok_answer == {} and answer_text == {}", "Les verdicts d’une vérification restent pour la suivante");
+        await session.dispose();
+      });
+
       await test("les valeurs affichées sont converties en LaTeX ou en texte", async () => {
         const session = PyWimsPython.createSession("affichage");
         await session.initialize("import sympy");
@@ -277,25 +302,34 @@ json.dumps({
           // plus bas, la vérifie dans la page générée. Ici, « question_setup » et les solutions suffisent.
           if (fields.question_check === undefined) return;
 
-          // Saisit la solution comme un élève (texte ASCII, « 1 » pour une case libre), puis corrige.
+          // Saisit la solution comme un élève (texte ASCII, « 1 » pour une case libre), puis corrige. Le
+          // verdict par défaut de la solution, pré-rempli, est juste (sauf input_math, qui n’en a pas).
+          const verdicts = {};
+          const texts = {};
+          const exactValues = {};
           for (const tag of PyWimsTemplate.parseTags(fields.question_statement)) {
             const variable = tag.attributes.solution;
             if (PyWimsTemplate.choiceTypes.has(tag.type)) {
               await session.setChoice(tag.name, JSON.parse(await session.run(solutionJson(tag))));
+              verdicts[tag.name] = true;
             } else if (tag.type === "input_value") {
               // Le texte qu’affiche « Solution », calculé comme à la compilation.
               const raw = JSON.parse(await session.run(solutionJson(tag)));
-              await session.set(tag.name, PyWimsCorrection.valueSolutionText(raw, tag.attributes));
+              texts[tag.name] = PyWimsCorrection.valueSolutionText(raw, tag.attributes);
+              exactValues[tag.name] = PyWimsCorrection.exactValue(texts[tag.name]);
+              verdicts[tag.name] = true;
             } else if (tag.type === "input_text" || tag.type === "input_math") {
               await session.set(tag.name, await session.run(`__import__("pywims")._solution_text(${variable})`));
+              if (tag.type === "input_text") verdicts[tag.name] = true;
             } else {
               const cells = JSON.parse(await session.run(
                 `__import__("json").dumps(__import__("pywims")._solution_cells(${variable}))`
               ));
               await session.setMatrix(tag.name, cells.map(row => row.map(cell => cell ?? "1")));
+              cells.forEach((row, i) => row.forEach((_, j) => { verdicts[`${tag.name}[${i}][${j}]`] = true; }));
             }
           }
-          await session.resetAnswers();
+          await session.prepareCheck({ verdicts, texts, values: exactValues });
           await session.run(fields.question_check);
           const verdict = JSON.parse(await session.run(
             `__import__("json").dumps({"ok": {k: bool(v) for k, v in ok_answer.items()}, "feedback": str(feedback)})`
@@ -525,8 +559,10 @@ json.dumps({
           [await draw("s = 0.1 + 0.2", "{% input_value 'r' solution=s %}"), { text: "0,3", value: "3/10" }],
           [await draw("from sympy import sqrt\ns = sqrt(2)", "{% input_value 'r' solution=s tolerance=0.001 %}"), { text: "1,414", value: "141421356237309504880168872421/100000000000000000000000000000" }],
           [await draw("s = 1500", "{% input_value 'r' solution=s form=scientific %}"), { text: "1,5×10^3", value: "1500/1" }],
-          // Avec « question_check », le champ reçoit le texte saisi, comme un input_text.
-          [await draw("from fractions import Fraction\ns = Fraction(3, 4)", "{% input_value 'r' solution=s form=fraction %}", "ok_answer['r'] = r == '3/4'"), { text: "3/4", value: "3/4" }]
+          // Avec « question_check », le champ reçoit la valeur lue, et answer_text le texte saisi : la
+          // compilation saisit la solution affichée, juste par défaut.
+          [await draw("from fractions import Fraction\ns = Fraction(3, 4)", "{% input_value 'r' solution=s form=fraction %}",
+            "assert r == s and answer_text['r'] == '3/4' and ok_answer['r'] is True"), { text: "3/4", value: "3/4" }]
         ];
         for (const [actual, expected] of cases) {
           if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -597,11 +633,15 @@ json.dumps({
           [{ question_setup: "a = 1", question_statement: "{% input_text 'r' solution=a %}", question_check: "ok_answer['r'] = True\nx = 1 / 0" },
             ["Graine 0 : « question_check » lève une erreur quand on saisit la solution, ligne 2", "ZeroDivisionError"]],
           [{ question_setup: "M = [[1, 2], [3, 4]]", question_statement: "{% input_matrix 'm' size=2 solution=M %}",
-             question_check: "ok_answer['m[0][0]'] = ok_answer['m[1][1]'] = True" },
+             question_check: "ok_answer['m[0][1]'] = ok_answer['m[1][0]'] = False" },
             ["la solution du champ « m » (cases [0][1], [1][0]) est jugée fausse par « question_check »"]],
           [{ question_setup: "c = ['a', 'b', 'c']\ns = [2, 0]", question_statement: "{% input_checkbox 'r' choices=c solution=s %}",
              question_check: "ok_answer['r'] = r == s" },
             ["la solution du champ « r » est jugée fausse par « question_check »"]],
+          // Le verdict par défaut, pré-rempli, est juste pour la solution : seul ce que l’auteur change compte.
+          [{ question_setup: "a = 1\nb = 2", question_statement: "{% input_text 'r' solution=a %} {% input_value 'v' solution=b %}",
+             question_check: "ok_answer['v'] = v == 3" },
+            ["la solution du champ « v » est jugée fausse par « question_check »"]],
           // Hasard que la graine ne fixe pas : un compteur gardé hors de l’espace de noms change à
           // chaque exécution, à coup sûr (l’heure le ferait presque toujours, mais pas toujours).
           [{ question_setup: "import sys\nsys.compteur_essai = getattr(sys, 'compteur_essai', 0) + 1\na = sys.compteur_essai",
