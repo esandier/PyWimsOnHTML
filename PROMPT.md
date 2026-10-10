@@ -29,6 +29,23 @@ Tout le contenu destiné à l’élève doit être en français, y compris le ti
 les mots-clés, l’énoncé et les messages de correction. Écris les mots-clés en
 français, séparés par des virgules.
 
+## Ce que les tirages font varier
+
+Les tirages permettent à l’élève de refaire la question avec un nouvel énoncé.
+Ce qui doit varier dépend de la compétence visée :
+
+- **Un calcul** (fractions, calcul littéral, développer, dériver…) : faire
+  varier les nombres et les expressions suffit, car refaire le calcul est
+  l’entraînement lui-même.
+- **Un choix** (traduire un énoncé en notation, choisir une méthode ou une
+  formule, reconnaître un modèle ou une loi) : faire varier seulement les
+  nombres ne sert à rien, puisqu’une fois la méthode trouvée, l’élève refait
+  le même calcul. Fais varier la situation : écris dans `question_setup` une
+  liste d’au moins une quinzaine de situations (contextes et tournures
+  différents), tirée avec `choice`. Fais revenir un même contexte avec des
+  questions différentes, pour que ce soit la question posée, et non le
+  contexte, qui décide de la réponse.
+
 ## Python
 
 - Le code Python va dans `question_setup` (tirage aléatoire et calcul des solutions) et,
@@ -56,6 +73,8 @@ français, séparés par des virgules.
     décimales, avec une virgule et sans zéros finaux : `decimal_comma(sqrt(2), 2)`
     donne `"1,41"`, `decimal_comma(1.5, 2)` donne `"1,5"`. Il sert à afficher
     un nombre dans un texte ; pour une réponse numérique, préfère `input_value`.
+    Dans une formule TeX, remplace la virgule par `{,}` (voir « Énoncé et
+    champs de saisie ») : `decimal_comma(p, 2).replace(",", "{,}")`.
   - `mcq(correct=…, wrong=[…], count=4)` tire les choix d’un QCM : voir
     « Questions à choix ».
 - Toute chaîne Python qui contient une formule TeX s’écrit en **chaîne brute**,
@@ -66,13 +85,17 @@ français, séparés par des virgules.
   les choix et toute autre chaîne ; pour une chaîne
   formatée, écris `rf'…'`. Le compilateur refuse une chaîne qui contient un
   tel caractère.
-- Si tu écris `question_check`, affecte `True` ou `False` à `ok_answer['nom_du_champ']`
-  pour chaque champ. Pour une matrice, ajoute une entrée par case, nommée exactement
+- Dans `question_check`, `ok_answer['nom_du_champ']` arrive déjà rempli par la
+  correction sans `question_check` (voir plus bas) : affecte `True` ou `False`
+  seulement aux champs que tu juges autrement, par exemple quand plusieurs
+  écritures sont justes. Un champ `input_math` n’est pas pré-rempli : affecte
+  toujours son verdict. Pour une matrice, une entrée par case, nommée exactement
   `ok_answer["nom_du_champ[{}][{}]".format(i, j)]`.
 - Définis aussi dans `question_check` la variable `feedback`, le retour affiché à
   l’élève (formules TeX admises). Elle est facultative : sans elle, le retour
   est « Bravo, c’est exact ! », ou en cas d’erreur « Réponse incorrecte. »
-  (une seule réponse attendue) ou « Certaines réponses sont incorrectes. ».
+  (une seule réponse attendue) ou « Certaines réponses sont incorrectes. »,
+  complété par « La valeur est juste, mais… » pour un `input_value` mal écrit.
 
 ## Correction : avec ou sans `question_check`
 
@@ -84,7 +107,8 @@ français, séparés par des virgules.
   fractions équivalentes (`14/24` est faux pour `7/12`), séparateur décimal
   (`0,5` est faux pour `0.5`).
 - **N’écris pas `question_check`** pour une question à choix corrigée en tout ou rien,
-  ni pour une réponse numérique (`input_value`, même approchée ou en fraction),
+  ni pour une réponse numérique (`input_value`, même approchée ou en fraction)
+  sauf pour un retour ciblé selon l’erreur (voir « Valeurs numériques »),
   ni pour un champ texte dont la réponse a une seule écriture (un mot).
 - **Écris `question_check`** quand plusieurs écritures d’une expression sont justes
   (termes dans un autre ordre), pour un retour ciblé
@@ -107,6 +131,14 @@ français, séparés par des virgules.
   Les objets SymPy s’affichent en LaTeX, à la taille du texte : pour une
   fraction en grand dans une ligne, écris `$\displaystyle {{f}}$`. Écris les formules TeX avec `$...$`, `$$...$$`,
   `\(...\)` ou `\[...\]`. Le HTML est autorisé.
+- Dans une formule TeX, écris la virgule décimale `{,}` : `$0{,}35$`. Une
+  virgule seule est lue comme une ponctuation, suivie d’une espace : `$0,35$`
+  s’affiche « 0, 35 ». C’est vrai aussi pour une valeur calculée affichée par
+  `{{variable}}` dans une formule.
+- Le HTML d’une valeur `{{variable}}` n’est pas interprété (sauf quelques
+  balises de mise en forme, voir « Retour à l’élève ») : un tableau s’écrit
+  dans l’énoncé, avec une `{{variable}}` par case, et ne peut pas être
+  construit par `question_setup`.
 - Une figure fournie par l’enseignant s’affiche avec `<img src="figure.png"
   alt="description">`, dans l’énoncé ou l’explication. Dis à l’enseignant de
   réunir le `.pwq` et ses images dans une archive `.pwqa` (un fichier `.zip`
@@ -142,8 +174,9 @@ français, séparés par des virgules.
   seule à la ligne suivante, et l’élève est tenté de l’écrire dans le champ.
 - Le nom d’un champ est aussi le nom de la variable Python qui reçoit la
   saisie dans `question_check` (une chaîne, une liste de listes de chaînes pour une
-  matrice, un indice ou une liste d’indices pour une question à choix). Il ne doit pas reprendre un nom de `question_setup`, ni `ok_answer`,
-  `feedback`, un outil de `pywims` ou un mot-clé Python. Donne-lui un nom anglais
+  matrice, un indice ou une liste d’indices pour une question à choix, un nombre
+  pour `input_value`). Il ne doit pas reprendre un nom de `question_setup`, ni `ok_answer`,
+  `answer_text`, `feedback`, un outil de `pywims` ou un mot-clé Python. Donne-lui un nom anglais
   (`answer`, `result`, `matrix`…), comme aux variables de `question_setup`.
 
 ## Valeurs numériques
@@ -161,6 +194,19 @@ français, séparés par des virgules.
   retour qui le dit. N’impose une forme que si l’énoncé la demande.
 - La solution affichée est écrite dans la forme demandée, arrondie selon la
   tolérance : `tolerance=0.01` affiche deux décimales.
+- **Avec `question_check`**, écrit seulement pour un retour ciblé selon
+  l’erreur, le champ arrive comme sa valeur exacte, un `Rational` de SymPy
+  (`0,35`, `7/20` et `14/40` donnent tous `Rational(7, 20)`), ou `None` si la
+  saisie n’est pas un nombre. N’utilise pas `py_wims` pour le relire.
+  `ok_answer['nom']` est déjà rempli, tolérance et forme comprises, et le texte
+  saisi est dans `answer_text['nom']`. Il ne reste qu’à reconnaître les
+  erreurs prévues :
+  ```python
+  if p == pa + pb:
+      feedback = r"Tu as oublié de retirer $P(A \cap B)$."
+  ```
+  Sans `feedback`, l’élève reçoit le retour habituel, y compris pour une
+  valeur juste mal écrite.
 
 ## Questions à choix
 
@@ -366,7 +412,6 @@ STD
 %
 from random import randint
 from sympy import gcd
-from pywims import py_wims, is_number
 
 x = randint(10, 100)
 y = randint(10, 100)
@@ -384,11 +429,10 @@ l’algorithme d’Euclide permet de le trouver.
 %
 % question_check
 %
-value = py_wims(answer)
-ok_answer['answer'] = is_number(value) and value == result
+# answer est la valeur saisie (None si ce n’est pas un nombre) ; ok_answer est déjà rempli.
 if ok_answer['answer']:
     feedback = 'Bravo, c’est exact !'
-elif is_number(value) and value != 0 and x % value == 0 and y % value == 0:
+elif answer is not None and answer.is_Integer and answer > 0 and x % answer == 0 and y % answer == 0:
     feedback = 'C’est bien un diviseur commun, mais ce n’est pas le plus grand.'
 else:
     feedback = 'Ce nombre ne divise pas les deux entiers.'
