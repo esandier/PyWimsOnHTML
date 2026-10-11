@@ -895,6 +895,14 @@ mjx-assistive-mml {
   height: 1px;
 }
 
+/* Formule d’un choix : 1 px de marge à droite, compté dans la largeur de la case mais pas dans ce qui
+   déborde. Sans lui, à certains zooms (110 % dans Edge, constaté en octobre 2026 sur « min(m, n) »), la
+   largeur fractionnaire de la formule, arrondie, dépassait la case d’un pixel : la case, qui défile en
+   dernier recours (overflow-x: auto), affichait une barre de défilement sous la formule. */
+.pw-choice-text mjx-container {
+  margin-right: 1px;
+}
+
 /* Choix coché, sans verdict. Le « :not(…) » est nécessaire : « :has(input:checked) » est plus
    spécifique que « .is-correct » et l’emporterait sur les couleurs de correction. */
 .pw-choice:not(.is-correct, .is-incorrect):has(input:checked) {
