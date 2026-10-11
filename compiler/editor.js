@@ -266,7 +266,10 @@ window.PyWimsEditor = (() => {
     async function settle(tab) {
       clearTimeout(tab.timer);
       tab.timer = 0;
-      const text = tab.area.getValue();
+      // CodeMirror ne connaît que les fins de ligne LF : celles du fichier (CRLF sous Windows) sont
+      // rétablies. Sans cela, ouvrir un fichier CRLF le faisait paraître modifié, et l’atelier le
+      // réécrivait aussitôt, fins de ligne changées.
+      const text = tab.crlf ? tab.area.getValue().replace(/\r?\n/g, "\r\n") : tab.area.getValue();
       let fields = null;
       tab.formatError = null;
       try {
@@ -333,7 +336,7 @@ window.PyWimsEditor = (() => {
         return;
       }
       const CodeMirror = await loadCodeMirror();
-      const tab = { question, timer: 0, saving: null, formatError: null, previewError: null };
+      const tab = { question, timer: 0, saving: null, formatError: null, previewError: null, crlf: /\r\n/.test(question.text) };
 
       tab.button = document.createElement("div");
       tab.button.className = "left-tab";

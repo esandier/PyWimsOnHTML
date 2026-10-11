@@ -293,6 +293,19 @@ def editor_and_paste(browser, url, pgcd):
     titles = sorted(page.eval_on_selector_all("#question-list li:not(.question-group)", TITLES))
     if titles != ["Collée", "PGCD", "PGCD modifié"]:
         raise AssertionError(f"liste inattendue après le collage : {titles}")
+    # Un fichier aux fins de ligne Windows (CRLF), seulement ouvert, n’est pas réécrit : CodeMirror ne
+    # connaît que LF, et l’atelier croyait le fichier modifié.
+    crlf = pgcd.replace("\nPGCD\n", "\nPGCD CRLF\n", 1).replace("\n", "\r\n")
+    page.evaluate(WRITE_OPFS, ["questions-edition/crlf.pwq", crlf])
+    page.click("#questions-tab")
+    page.click("#reload-folder")
+    page.wait_for_function("[...document.querySelectorAll('.question-title')].some(item => item.textContent === 'PGCD CRLF')")
+    page.click(".question-preview-button >> text=PGCD CRLF")
+    page.click("#edit-question")
+    page.wait_for_function("document.querySelector('.left-tab[aria-selected=\"true\"]')?.title === 'crlf.pwq'")
+    page.wait_for_timeout(2000)
+    if page.evaluate(READ_OPFS, "questions-edition/crlf.pwq") != crlf:
+        raise AssertionError("Un fichier CRLF seulement ouvert dans l’atelier a été réécrit.")
     page.close()
     print("collage : deux questions découpées, écrites dans le dossier, chacune dans son onglet")
 
