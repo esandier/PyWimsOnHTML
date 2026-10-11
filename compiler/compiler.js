@@ -607,8 +607,9 @@
         mark.textContent = "nouvelle";
         kinds.append(mark);
       }
-      // Le chemin reste accessible au survol : deux questions peuvent porter le même titre.
-      button.title = question.path;
+      // Au survol : titre et types entiers (la ligne les coupe), et le chemin, car deux questions
+      // peuvent porter le même titre.
+      button.title = `${questionLabel(question)} (${kinds.textContent})\n${question.path}`;
       button.append(title, kinds);
       // Un clic montre l’aperçu ; « Modifier », dans l’aperçu, ouvre la question dans l’atelier (§ 11.10).
       button.addEventListener("click", () => selectQuestion(question));

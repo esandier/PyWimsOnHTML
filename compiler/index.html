@@ -175,11 +175,21 @@
     .panel-preview { overflow: hidden; }
 
     .panel h2 { margin-bottom: 0.75rem; font-size: 1.15rem; }
-    .filter-row { margin-bottom: 0.65rem; }
+    .filter-row { margin-bottom: 0.4rem; }
+    /* Lu par les lecteurs d’écran, invisible à l’écran : le texte d’exemple du champ suffit à l’œil. */
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
 
     #question-search {
       width: 100%;
-      padding: 0.55rem 0.65rem;
+      padding: 0.3rem 0.5rem;
+      font-size: 0.9rem;
       border: 1px solid #aeb5bd;
       border-radius: 0.3rem;
     }
@@ -196,11 +206,11 @@
 
     .filter-row { position: sticky; top: -1rem; z-index: 1; padding-top: 0.25rem; background: #fff; }
 
-    #question-list li + li { margin-top: 0.25rem; }
+    #question-list li + li { margin-top: 1px; }
     /* Intertitre d’un sous-dossier dans la liste. */
     #question-list .question-group {
       display: block;
-      margin: 0.75rem 0 0.15rem;
+      margin: 0.5rem 0 0.1rem;
       padding: 0 0.2rem;
       color: #656b72;
       font-size: 0.8rem;
@@ -223,9 +233,9 @@
       align-items: baseline;
       justify-content: space-between;
       gap: 0 0.75rem;
-      margin: 0.25rem 0 0.5rem;
+      margin: 0 0 0.3rem;
     }
-    #selection-count { margin: 0; font-size: 0.85rem; }
+    #selection-count { margin: 0; font-size: 0.8rem; }
     /* Action secondaire de la liste : un lien plutôt qu’un bouton plein, pour ne pas concurrencer
        « Compiler ». */
     .link-button {
@@ -233,14 +243,20 @@
       border: 0;
       background: none;
       color: #8a4d00;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       text-decoration: underline;
       cursor: pointer;
     }
 
+    /* Une ligne par question : titre, puis types de champs alignés à droite. Le titre trop long est
+       coupé par « … » (le survol donne le texte entier) ; les types, rarement, au-delà de 45 %. */
     #question-list button {
+      display: flex;
+      align-items: baseline;
+      gap: 0.6rem;
       width: 100%;
-      padding: 0.6rem 0.65rem;
+      padding: 0.2rem 0.45rem;
+      font-size: 0.9rem;
       border: 0;
       border-radius: 0.3rem;
       background: transparent;
@@ -255,18 +271,20 @@
       font-weight: 600;
     }
 
-    /* Titre de la question ; un titre long passe à la ligne au lieu d’élargir la liste. */
-    .question-title {
-      display: block;
-      overflow-wrap: anywhere;
+    .question-title, .question-fields {
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
     }
+    .question-title { flex: 0 1 auto; min-width: 0; }
 
-    /* Types de champs de réponse, en petit et en gris, sous le titre. */
+    /* Types de champs de réponse, en petit et en gris, à droite du titre. */
     .question-fields {
-      display: block;
-      margin-top: 0.15rem;
+      flex: 0 0 auto;
+      max-width: 45%;
+      margin-left: auto;
       color: #656b72;
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       font-weight: 400;
     }
 
@@ -350,7 +368,6 @@
     .question-rank:empty { display: none; }
 
     #preview-notice { margin: 0 0 0.6rem; font-size: 0.85rem; }
-    .panel-questions .filter-row label { font-size: 0.9rem; }
     #preview-notice:empty { display: none; }
 
     /* Cadre de l’aperçu : il occupe la hauteur restante du panneau et défile lui-même. */
@@ -577,8 +594,8 @@
       </div>
       <div class="questions-view" id="questions-view">
       <div class="filter-row">
-        <label for="question-search">Filtrer les questions par nom ou mot-clé</label>
-        <input id="question-search" type="search" placeholder="ex. arithmétique, PGCD" autocomplete="off">
+        <label for="question-search" class="visually-hidden">Filtrer les questions par nom ou mot-clé</label>
+        <input id="question-search" type="search" placeholder="Filtrer par nom ou mot-clé (ex. PGCD)" autocomplete="off">
       </div>
       <div class="selection-row">
         <p id="selection-count" class="muted" aria-live="polite">Aucune question sélectionnée.</p>

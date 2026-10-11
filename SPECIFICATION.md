@@ -1185,10 +1185,13 @@ liste par titre (§ 11.3) sont déjà en place dans le compilateur local.
 
 ### 11.3 Liste des questions
 
-- Chaque question est désignée par son **titre**. Dessous, en petit et en gris,
-  les types de champs de réponse qu’il utilise, dans l’ordre de l’énoncé et
+- Une ligne par question : son **titre**, puis, à droite, en petit et en gris,
+  les types de champs de réponse qu’elle utilise, dans l’ordre de l’énoncé et
   sans répétition : « texte », « nombre », « formule », « matrice », « matrice
-  redimensionnable », « choix unique », « choix multiple ».
+  redimensionnable », « choix unique », « choix multiple ». Un titre trop long
+  est coupé par « … » ; le survol donne le titre, les types et le chemin. (Titre
+  et types sur deux lignes, d’abord : une question prenait 64 px de haut, 27 px
+  sur une ligne, pour une page de travail désormais compacte.)
 - Les questions sont regroupées par sous-dossier (le dossier choisi d’abord,
   puis chaque sous-dossier sous son chemin, en intertitre), et triés par titre
   dans l’ordre naturel (« (2) » avant « (10) ») dans chaque groupe. Sans
@@ -1289,7 +1292,7 @@ Une page `guide/` (« Créer »), en sections :
   la même hauteur :
   - à gauche, la bascule « Liste | Éditeur » et, sur sa ligne à droite,
     « Coller question(s) » (§ 11.10) ; la **Liste** :
-    « Filtrer les questions par nom ou mot-clé », compte de la sélection,
+    le champ « Filtrer par nom ou mot-clé » (libellé dans le champ), compte de la sélection,
     « Tout sélectionner », liste, et la charte utilisée en petit, en bas ;
     l’**Éditeur** : la question courante ;
   - à droite, sans titre, la liste d’ordre (§ 11.9) dans son cadre quand elle
