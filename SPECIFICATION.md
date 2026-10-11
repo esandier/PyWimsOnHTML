@@ -820,7 +820,7 @@ réunies dans un `span` insécable.
 | `compiler/draws.js` | tirages avec Pyodide, contrôles de l’auteur, cohérence, ordre des choix |
 | `compiler/assemble.js` | ressources du projet, assemblage des feuilles, empreinte d’une activité |
 | `compiler/zip.js` | archive ZIP des pages séparées |
-| `compiler/editor.js` | atelier : onglets des questions ouvertes, éditeur d’un seul bloc (CodeMirror 5, une coloration par section), validation, enregistrement automatique (§ 11.10) |
+| `compiler/editor.js` | atelier : éditeur d’un seul bloc de la question courante (CodeMirror 5, une coloration par section), validation, enregistrement automatique (§ 11.10) |
 | `compiler/compiler.js` | interface du compilateur : dossier de questions, liste, aperçu, compilation, téléchargement ; lit en ligne les fichiers du projet (§ 11.1) |
 | `compiler/run-local.ps1` | serveur local et compilateur, pour essayer une modification du moteur avant de la publier |
 | `index.html`, `guide/`, `css/site.css`, `favicon.svg` | site du projet : accueil, mode d’emploi et ses modèles (`guide/templates/`), styles et icône communs (§ 11.5, § 11.6) |
@@ -1270,16 +1270,16 @@ Une page `guide/` (« Créer »), en sections :
 - **Bandeau** sur le fond de la page, séparé du reste par un filet sur toute
   la largeur de la fenêtre (sur les trois pages).
 - **Deux colonnes, deux rangées.** En haut, à gauche la ligne du dossier
-  (« Dossier ouvert : nom », « Relire », « Autre dossier »), à droite la ligne
+  (« Dossier ouvert : nom », « Relire », « Autre dossier », puis, à droite,
+  « Copier le prompt » et « Coller question(s) », § 11.10), à droite la ligne
   de compilation ; toutes deux sans cadre, alignées, de même hauteur et
   discrètes (petits boutons) : le compilateur est un environnement de travail,
   dont l’éditeur et l’aperçu sont l’essentiel. Dessous, les cadres commencent à
   la même hauteur :
-  - à gauche, en tête et toujours visibles, « Copier le prompt » et « Coller
-    question(s) » (§ 11.10), petits et sur une ligne ; puis les onglets
-    (« Liste » et les questions ouvertes, § 11.10) ; la **Liste** : « Filtrer
-    les questions par nom ou mot-clé », compte de la sélection, « Tout
-    sélectionner », liste, et la charte utilisée en petit, en bas ;
+  - à gauche, la bascule « Liste | Éditeur » (§ 11.10) ; la **Liste** :
+    « Filtrer les questions par nom ou mot-clé », compte de la sélection,
+    « Tout sélectionner », liste, et la charte utilisée en petit, en bas ;
+    l’**Éditeur** : la question courante ;
   - à droite, sans titre, la liste d’ordre (§ 11.9) dans son cadre quand elle
     sert, puis l’**Aperçu** (ligne d’état et page de la question) sur la hauteur
     restante.
@@ -1323,11 +1323,20 @@ remplaçait par l’ordre de la liste.
   est retirée). L’ordre n’est pas retenu d’une visite à l’autre.
 - Pages séparées (ZIP) : l’ordre est sans effet, la liste d’ordre est masquée.
 
-### 11.10 Atelier : retoucher et coller des questions dans le compilateur
+### 11.10 Atelier : parcourir, retoucher et coller des questions dans le compilateur
 
-L’usage visé : retoucher une question écrite par une IA, ou parcourir les
-questions d’un dossier et y corriger de petites choses, en voyant le résultat à
-côté, sans jamais passer par un téléchargement.
+La page sert trois parcours :
+
+1. **Composer une activité** : parcourir les questions d’un dossier avec leur
+   aperçu, cocher, ordonner, compiler (§ 11.9).
+2. **Vérifier et retoucher** : parcourir la liste, essayer chaque question dans
+   l’aperçu, corriger de petites choses.
+3. **Coller une question écrite par une IA**, la vérifier et la retoucher.
+
+Tous tournent autour d’**une seule question courante** : celle qu’on choisit dans
+la liste, que montre l’aperçu, et que montre l’éditeur. Des onglets, une
+question ouverte chacun, ont été essayés (octobre 2026) : ils faisaient une
+seconde « question courante », et on ne savait plus laquelle l’aperçu montrait.
 
 **Edge et Chrome seulement.** Firefox et Safari interdisent à une page d’écrire
 dans un dossier : il fallait télécharger le fichier, le remettre dans le
@@ -1344,19 +1353,18 @@ bureau (installateurs et signature à maintenir).
 lecture et écriture : le navigateur demande l’autorisation une fois, à
 l’ouverture (ou à la réouverture du dossier mémorisé).
 
-**Ouvrir.** Cliquer sur une question de la liste montre son aperçu, comme sous
-Firefox ; le bouton « Modifier », au-dessus de l’aperçu, ouvre la question dans
-l’atelier. On regarde d’abord, et on décide de modifier en voyant la question.
-(Ouvrir l’atelier d’un simple clic a été essayé d’abord.) La case à cocher garde
-son rôle (composer une feuille). Un fichier mal formé s’ouvre aussi : c’est là
-qu’on le corrige. Le panneau de gauche est en
-onglets : « Liste », puis un onglet par question ouverte (son titre, « × » pour
-le fermer). Une question déjà ouverte ne s’ouvre pas deux fois. Fermer l’onglet
-actif active son voisin, ou « Liste ». Un onglet de question élargit le panneau
-de gauche aux trois cinquièmes de la largeur ; l’aperçu reste à droite. La barre
-d’onglets n’apparaît qu’avec un onglet de question. Une archive `.pwqa`, qui
-contient aussi ses images, ne s’ouvre pas dans l’atelier : son « Modifier » est
-inactif, avec une infobulle qui le dit.
+**Liste ou éditeur.** En tête du panneau de gauche, une bascule « Liste |
+Éditeur » ; l’éditeur montre toujours la question courante. Cliquer sur une
+question de la liste en fait la question courante et montre son aperçu ; les
+flèches ↑ ↓ du clavier, dans la liste, passent à la question précédente ou
+suivante, avec son aperçu. Le bouton « Modifier », au-dessus de l’aperçu, est
+toujours actif : il bascule sur l’éditeur. On regarde d’abord, et on décide de
+modifier en voyant la question. Changer de question ne perd rien :
+l’enregistrement est automatique. En mode Éditeur, le panneau de gauche s’élargit
+aux trois cinquièmes de la largeur ; l’aperçu reste à droite. La case à cocher
+garde son rôle (composer une feuille). Un fichier mal formé s’ouvre aussi dans
+l’éditeur : c’est là qu’on le corrige. Une archive `.pwqa`, qui contient aussi
+ses images, ne s’édite pas : l’éditeur le dit.
 
 **Un seul bloc.** La question s’édite en entier, comme dans un éditeur de code :
 une question se lit d’un bloc, les variables de `question_setup` servent dans
@@ -1366,14 +1374,16 @@ colore chaque section selon son contenu : les lignes `%` et `% question_…` en
 intertitres, Python pour `question_setup` et `question_check`, HTML pour
 l’énoncé et l’explication, avec en couleur les balises `{% … %}`, les variables
 `{{ … }}` et les formules. Chaque section se replie par son intertitre.
-Numéros de ligne, Tab (quatre espaces), retour à la ligne indenté, Ctrl+Z.
-CodeMirror 6 a été écarté : il demande un outil de construction (bundler).
+Numéros de ligne, Tab (quatre espaces), retour à la ligne indenté, Ctrl+Z (chaque
+question garde son historique pendant la visite). CodeMirror 6 a été écarté : il
+demande un outil de construction (bundler).
 
 **Aperçu vivant.** Après une courte pause de la frappe, l’aperçu montre la
-version de l’atelier, avec un tirage réel calculé par Python. Il garde la même
+version de l’éditeur, avec un tirage réel calculé par Python. Il garde la même
 graine d’une mise à jour à l’autre, pour ne pas changer de nombres à chaque
 lettre ; le bouton « Nouveau tirage », à côté de « Afficher la solution », en
-change. L’aperçu précédent reste affiché pendant le calcul.
+change. L’aperçu précédent reste affiché pendant le calcul. (Un bouton
+« Essayer », d’abord, obligeait à le demander.)
 
 **Erreurs.** Sous l’éditeur, une ligne d’état donne l’erreur de format ou de
 balise (à la frappe) et l’erreur Python du tirage de l’aperçu, avec un lien
@@ -1384,25 +1394,30 @@ balise (à la frappe) et l’erreur Python du tirage de l’aperçu, avec un lie
 signale, et la ligne d’état la montre. Un témoin discret dit « Enregistrement… »
 puis « Enregistré ». Si le fichier a changé sur le disque depuis sa dernière
 lecture (modifié dans un autre éditeur), le compilateur demande avant de
-l’écraser. Fermer un onglet ou la page enregistre ce qui ne l’est pas encore.
-« Relire » met à jour les onglets ouverts dont le fichier a changé sur le disque.
+l’écraser. Changer de question, ou de dossier, enregistre d’abord ce qui ne l’est
+pas encore ; quitter la page pendant une pause de la frappe demande
+confirmation. Les fins de ligne du fichier (CRLF ou LF) sont gardées. « Relire »
+met à jour la question de l’éditeur si son fichier a changé sur le disque.
 
-**Coller des questions.** En tête du panneau de gauche, au-dessus des onglets
-(visibles quand une question est ouverte), deux petits boutons sur une ligne,
-suivis de leur message bref :
+**Prompt et collage.** Sur la ligne du dossier, à droite, hors du panneau de
+gauche, deux petits boutons, suivis de leur message bref :
 
 - **Copier le prompt** : copie `PROMPT.md`, comme la page Créer ;
 - **Coller question(s)** (infobulle : « Coller le code d’une ou plusieurs
-  questions ») : lit le presse-papiers ; si le navigateur refuse, une fenêtre
-  s’ouvre : « Collez ici le code d’une ou plusieurs questions (Ctrl+V) ».
+  questions ») : bascule sur l’éditeur, vide, avec « Collez ici le code d’une ou
+  plusieurs questions (Ctrl+V) », le curseur dedans. Sans dossier ouvert, le
+  bouton demande d’en ouvrir un.
 
 Le texte collé est découpé en questions aux lignes `=== nom.pwq ===` que
 `PROMPT.md` demande pour plusieurs questions ; à défaut, avant chaque
 `% question_title`. Les lignes de bloc de code (```) et le texte qui précède le
 premier `%` sont retirés : les IA en ajoutent malgré la consigne. Chaque question
 est aussitôt écrite à la racine du dossier, sous le nom de la ligne `===` ou un
-nom tiré du titre (`loi-binomiale.pwq`), rendu unique s’il est déjà pris, puis
-s’ouvre dans son onglet. Sans dossier ouvert, le bouton demande d’en ouvrir un.
+nom tiré du titre (`loi-binomiale.pwq`), rendu unique s’il est déjà pris, et
+marquée « nouvelle » dans la liste pendant la visite. Une seule question : elle
+devient la question courante, et l’éditeur la montre. Plusieurs : la page
+bascule sur la liste, où on les voit toutes, et la première devient la question
+courante ; sinon, on pourrait croire perdues les suivantes.
 
 ## 12. Points ouverts
 
