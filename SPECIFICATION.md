@@ -747,6 +747,55 @@ $[0 ; +\infty[$. »
 - Le même texte, abrégé, apparaît en bulle au survol, au focus ou au toucher du
   pourcentage.
 
+### 5.7 Style compact d’une activité
+
+L’auteur d’une activité peut choisir un style « compact », qui ressemble à une
+feuille de TD : case « Style compact » du compilateur, sur la ligne du titre de
+l’activité (§ 11.8). La page porte alors `data-style="compact"` sur `<body>`.
+Une question seule garde toujours le style habituel. Le style compact ne change
+que la présentation : mêmes questions, même cycle de vie, même progression, même
+charte (couleurs, polices, logo).
+
+- **Page** : fond blanc, une colonne de texte d’environ 46 em (la largeur d’une
+  page A4), sans cartes ; les questions sont séparées par un filet fin.
+  L’en-tête garde la charte, en bande plus fine.
+- **Numéro** : « 3. » en gras au début de l’énoncé ; le titre de la question
+  n’est pas affiché (il reste lu par les lecteurs d’écran). Une question
+  réussie a un ✓ vert dans la marge, devant son numéro, qui reste visible.
+- **Boutons** : les trois icônes, sans libellé, en petit et en gris, au bout de
+  la première ligne de l’énoncé ; une infobulle donne leur nom. « Vérifier »
+  prend la couleur de la charte quand il est actif. La note indicative
+  (§ 10.7) est sous les icônes. Sur écran étroit, les icônes et la note sont
+  sur une ligne au-dessus de l’énoncé.
+- **Choix** : à la suite dans le texte, sans cadre, chacun à sa largeur ; ils
+  passent à la ligne quand la place manque. Le verdict colore le texte et le
+  fond léger du choix. Sur écran tactile, chaque choix garde 44 px de haut.
+- **Champs** : traits fins (1 px).
+- **Retour sur grand écran (> 1000 px)** : une zone commune dans la marge
+  droite, qui reste visible au défilement. Elle affiche le dernier retour ou la
+  dernière explication, sous « Question 3 », qu’on peut cliquer pour revenir à
+  la question. Le verdict des champs reste sur la question. Quand sa question
+  sort de l’écran, la zone est grisée, sans être effacée ; un retour effacé
+  (« Corriger ma réponse », « Nouvel énoncé ») vide la zone, si c’était le sien.
+  Le retour précédent n’est pas gardé : vérifier de nouveau le fait revenir.
+  Avant tout retour, la zone dit « Les commentaires et les solutions s’affichent
+  ici. ». Le retour est un nœud unique, déplacé de la question dans la zone et
+  ramené à sa question au retour suivant ; il n’est jamais copié (formules en
+  double, annonces en double aux lecteurs d’écran).
+- **Retour sur écran étroit** : sous la question, comme dans le style habituel,
+  sans encadré coloré ni animation d’apparition : texte dans la police de la
+  charte, avec un filet de la couleur du verdict à gauche.
+- Un tiroir montant du bas, sur téléphone, a été essayé (octobre 2026) et
+  écarté au profit du retour sous la question.
+
+### 5.8 Espaces avant la ponctuation
+
+Une espace ordinaire avant « : ; ! ? » ou « » », ou après « « », permet au
+navigateur de couper la ligne à cet endroit : un « : » se retrouve seul en
+début de ligne. Après la composition des formules, la page remplace cette espace
+par une espace insécable dans le texte de l’énoncé, des choix et du retour,
+jamais dans une formule ni dans un champ. Les fichiers `.pwq` ne changent pas.
+
 ## 6. Organisation du code
 
 | Fichier | Rôle |
@@ -984,7 +1033,8 @@ En plus du § 2.4, le compilateur refuse la question si, pour l’un des tirages
   - les choix empilés à la largeur du plus long (essayé en octobre 2026) :
     une liste de nombres occupait toute la hauteur de l’écran pour rien ;
   - les choix à la suite, chacun à sa largeur (essayé aussi) : des boîtes
-    inégales ne s’alignent pas.
+    inégales ne s’alignent pas. Le style compact (§ 5.7) les met pourtant à
+    la suite : sans cadre, l’inégalité ne se voit plus.
 - **Place de l’icône du verdict.** Elle est réservée par une largeur
   (`width: 1.2em`), et non par une base flexible (`flex-basis`) : Firefox ne
   compte pas une base flexible dans la largeur naturelle d’une case tant que
@@ -1227,8 +1277,9 @@ Une page `guide/` (« Créer »), en sections :
     restante.
 - **Ligne de compilation** : le bouton « Compiler la sélection », puis le
   choix « Activité unique » ou « Pages séparées (ZIP) », présent seulement si
-  plusieurs questions sont cochées, puis « Titre » et son champ, présents
-  seulement pour une activité unique.
+  plusieurs questions sont cochées, puis « Titre » et son champ, et la case
+  « Style compact » (§ 5.7), présents seulement pour une activité unique. La
+  case est décochée à l’ouverture d’un dossier, comme le titre est vidé.
 - Sur téléphone, tout s’empile : dossier, Questions, ligne de compilation,
   liste d’ordre, Aperçu.
 
