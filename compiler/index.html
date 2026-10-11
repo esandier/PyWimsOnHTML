@@ -210,7 +210,7 @@
 
     #question-list li {
       display: grid;
-      grid-template-columns: auto minmax(0, 1fr) auto;
+      grid-template-columns: auto minmax(0, 1fr);
       align-items: center;
       gap: 0.25rem;
     }
@@ -349,15 +349,16 @@
     .question-rank:empty { display: none; }
 
     #preview-notice { margin: 0 0 0.6rem; font-size: 0.85rem; }
+    /* Au-dessus de l’aperçu : « Afficher la solution » et « Nouveau tirage », sur une ligne. */
+    .preview-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 1rem; margin: 0 0 0.6rem; }
     .preview-option {
       display: inline-flex;
-      align-self: flex-start;
       align-items: center;
       gap: 0.4rem;
-      margin: 0 0 0.6rem;
       font-size: 0.9rem;
       cursor: pointer;
     }
+    .preview-controls .small-button { padding: 0.15rem 0.5rem; font-size: 0.75rem; }
     .panel-questions .filter-row label { font-size: 0.9rem; }
     #preview-notice:empty { display: none; }
 
@@ -417,38 +418,11 @@
     .left-tab-close { padding: 0 0.45rem; border: 0; color: #777; background: none; font-size: 1.05rem; cursor: pointer; }
     .left-tab-close:hover { color: #8a1111; }
 
-    /* Onglet d’une question : sous-onglets des champs, zone du champ, ligne d’état, boutons. */
-    .editor-tab { display: flex; flex: 1 1 auto; flex-direction: column; gap: 0.5rem; min-height: 0; }
-    .editor-subtabs { display: flex; flex-wrap: wrap; gap: 0.25rem; }
-    .editor-subtab {
-      padding: 0.25rem 0.55rem;
-      border: 1px solid #d7dbe0;
-      border-radius: 0.3rem;
-      color: #444;
-      background: #f5f6f8;
-      font-family: ui-monospace, Consolas, monospace;
-      font-size: 0.78rem;
-      cursor: pointer;
-    }
-    .editor-subtab[aria-selected="true"] { border-color: #a95f00; color: #633900; background: #fff0d8; }
-    .editor-subtab.has-error { border-color: #8a1111; box-shadow: inset 0 -2px 0 #8a1111; }
-    .editor-add { border-style: dashed; color: #8a4d00; background: #fff; }
-    /* Sous-onglet d’un champ facultatif : son nom et « × », qui le retire, d’un seul tenant. */
-    .editor-subtab-group { display: inline-flex; }
-    .editor-subtab-group .editor-subtab { border-right: 0; border-radius: 0.3rem 0 0 0.3rem; }
-    .editor-subtab-remove {
-      padding: 0 0.4rem;
-      border: 1px solid #d7dbe0;
-      border-radius: 0 0.3rem 0.3rem 0;
-      color: #777;
-      background: #f5f6f8;
-      font-size: 0.9rem;
-      cursor: pointer;
-    }
-    .editor-subtab-remove:hover { color: #8a1111; background: #fbe8ea; }
-    .editor-subpanels { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; }
-    .editor-subpanel { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; }
-    .editor-subpanel .CodeMirror, .editor-plain {
+    /* Onglet d’une question : l’éditeur sur toute la hauteur, puis la ligne d’état (erreurs, témoin
+       d’enregistrement). */
+    .editor-tab { display: flex; flex: 1 1 auto; flex-direction: column; gap: 0.4rem; min-height: 0; }
+    .editor-code { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; }
+    .editor-code .CodeMirror, .editor-plain {
       flex: 1 1 auto;
       height: auto;
       min-height: 12rem;
@@ -458,20 +432,32 @@
       font-size: 0.85rem;
     }
     .editor-plain { width: 100%; padding: 0.5rem; resize: none; }
-    /* Coloration propre au format : balises de champ, variables, formules (editor.js, mode pwq-html). */
+    /* Coloration propre au format (editor.js, modes pwq et pwq-html) : intertitres des sections,
+       balises de champ, variables, formules. */
+    .cm-pwq-header { color: #8a4d00; font-weight: 700; }
+    .cm-pwq-delimiter { color: #b0b6bd; }
     .cm-pwq-tag { color: #a95f00; font-weight: 600; }
     .cm-pwq-variable { color: #7a2fa0; font-weight: 600; }
     .cm-pwq-math { color: #0b7a75; }
-    /* Une petite marge : le cadre du champ actif n’est pas rogné par le bord du panneau, qui défile. */
-    .editor-header { display: grid; gap: 0.75rem; max-width: 36rem; padding: 0.2rem; }
-    .editor-header label { display: grid; gap: 0.25rem; font-size: 0.85rem; }
-    .editor-header input { padding: 0.45rem 0.55rem; border: 1px solid #aeb5bd; border-radius: 0.3rem; }
-    .editor-status { min-height: 1.2em; margin: 0; font-size: 0.82rem; overflow-wrap: anywhere; }
-    .editor-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
+    .editor-footer { display: flex; flex: 0 0 auto; align-items: flex-start; gap: 0.75rem; min-height: 1.3rem; }
+    .editor-problems { flex: 1 1 auto; min-width: 0; max-height: 6rem; overflow-y: auto; }
+    .editor-problem { margin: 0 0 0.2rem; color: #8a1111; font-size: 0.8rem; overflow-wrap: anywhere; }
+    .editor-line-link {
+      padding: 0 0.3rem;
+      border: 1px solid #e0b4b4;
+      border-radius: 0.25rem;
+      color: #8a1111;
+      background: #fbe8ea;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    /* Témoin discret de l’enregistrement automatique. */
+    .editor-save-state { flex: 0 0 auto; color: #8a9097; font-size: 0.75rem; }
+    .editor-save-state.error { color: #8a1111; }
     .editor-note { color: #656b72; font-size: 0.8rem; }
 
-    /* Petits boutons du panneau : copier le prompt, coller, boutons de l’éditeur. */
-    .small-button, .editor-button {
+    /* Petits boutons : copier le prompt, coller, nouveau tirage, fenêtre de collage. */
+    .small-button {
       padding: 0.3rem 0.65rem;
       border: 1px solid #c9a06c;
       border-radius: 0.3rem;
@@ -480,9 +466,9 @@
       font-size: 0.82rem;
       cursor: pointer;
     }
-    .small-button:hover, .editor-button:hover { background: #fff0d8; }
-    .small-button.is-primary, .editor-button.is-primary { border-color: #9b5700; color: #fff; background: #a95f00; font-weight: 600; }
-    .small-button.is-primary:hover, .editor-button.is-primary:hover { background: #874c00; }
+    .small-button:hover { background: #fff0d8; }
+    .small-button.is-primary { border-color: #9b5700; color: #fff; background: #a95f00; font-weight: 600; }
+    .small-button.is-primary:hover { background: #874c00; }
     /* Copier le prompt, coller : deux petits boutons sur une ligne, et leur message bref à côté. */
     .paste-row { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.65rem; }
     .paste-row .small-button { flex: 0 0 auto; padding: 0.15rem 0.5rem; font-size: 0.75rem; }
@@ -496,22 +482,6 @@
     #paste-text { width: 100%; height: 50vh; padding: 0.5rem; font-family: ui-monospace, Consolas, monospace; font-size: 0.82rem; }
     .paste-dialog-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.6rem; }
 
-    /* Ligne de la liste : case, question, crayon ✎ ; état d’une question modifiée. */
-    .question-edit {
-      width: 2rem;
-      height: 2rem;
-      padding: 0;
-      border: 0;
-      border-radius: 0.3rem;
-      color: #8a4d00;
-      background: none;
-      font-size: 1rem;
-      cursor: pointer;
-    }
-    #question-list .question-edit { width: 2rem; padding: 0; text-align: center; }
-    .question-edit:hover:not(:disabled) { background: #fff0d8; }
-    .question-edit:disabled { color: #bbb; cursor: not-allowed; }
-    .question-state { margin-left: 0.35rem; color: #a95f00; font-size: 0.75rem; font-weight: 600; }
 
     .muted { color: #656b72; }
     .error { color: #8a1111; }
@@ -681,7 +651,11 @@
 
       <section class="panel panel-preview" aria-label="Aperçu">
         <!-- Cochée, l’aperçu montre la question dans l’état « Solution affichée » (SPECIFICATION.md, § 3). -->
-        <label class="preview-option"><input id="preview-solution" type="checkbox" checked> Afficher la solution</label>
+        <div class="preview-controls">
+          <label class="preview-option"><input id="preview-solution" type="checkbox" checked> Afficher la solution</label>
+          <!-- Même question, autre graine (SPECIFICATION.md, § 11.10) : l’aperçu vivant garde sinon son tirage. -->
+          <button id="new-draw" class="small-button" type="button">Nouveau tirage</button>
+        </div>
         <!-- Ligne d’état : attente du tirage réel ou erreur ; vide une fois l’aperçu prêt. -->
         <p id="preview-notice" class="muted">Choisissez une question dans la liste pour afficher son aperçu.</p>
         <!-- La page réelle de la question, isolée : sans « allow-same-origin », son HTML ne peut pas

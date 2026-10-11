@@ -226,9 +226,10 @@ READ_OPFS = """async path => {
 }"""
 
 
-# Éditeur du compilateur (SPECIFICATION.md, § 11.10) : onglet d’une question, validation à la frappe,
-# Essayer, enregistrement dans le dossier (Chrome, Edge), collage de deux questions, puis téléchargement
-# là où le navigateur n’écrit pas dans un dossier (Firefox, Safari, imités dans Edge).
+# Atelier du compilateur (SPECIFICATION.md, § 11.10), sous Chrome et Edge : un clic ouvre la question,
+# une modification est enregistrée toute seule dans le dossier et l’aperçu la suit ; une erreur a son
+# lien vers la ligne ; « Nouveau tirage » ; collage de deux questions, écrites aussitôt dans le dossier.
+# Sous Firefox et Safari (imités dans Edge), une phrase remplace l’atelier.
 def editor_and_paste(browser, url, pgcd):
     page = browser.new_page(accept_downloads=True)
     errors = []
@@ -239,36 +240,42 @@ def editor_and_paste(browser, url, pgcd):
     page.evaluate(WRITE_OPFS, ["questions-edition/pgcd.pwq", pgcd])
     page.evaluate(PICK_OPFS.replace("questions-essai", "questions-edition"))
     page.click("#choose-folder")
-    page.wait_for_function("document.querySelectorAll('.question-edit').length === 1")
-    page.click(".question-edit")
-    page.wait_for_selector(".editor-tab .CodeMirror, .editor-tab .editor-plain", timeout=30_000)
-    page.click(".editor-subtab >> text=Paramètres")
-    page.fill(".editor-header input >> nth=0", "PGCD modifié")
-    page.wait_for_function("document.querySelector('.question-state')?.textContent === 'non enregistrée'")
-    if not page.is_visible(".left-tab-dot") or "is-editing" not in page.get_attribute(".workspace", "class"):
-        raise AssertionError("L’onglet modifié n’a pas son « ● », ou le panneau ne s’est pas élargi.")
-    # Une balise fautive marque son sous-onglet ; l’annuler efface l’erreur.
-    page.click(".editor-subtab >> text=\"statement\"")
-    statement = ".editor-subpanel:not([hidden]) .CodeMirror"
-    page.evaluate(f"document.querySelector('{statement}').CodeMirror.replaceRange(' {{% input_value %}}', {{ line: 0, ch: 0 }})")
-    page.wait_for_function("document.querySelector('.editor-subtab.has-error')?.textContent === 'statement'")
-    page.evaluate(f"document.querySelector('{statement}').CodeMirror.undo()")
-    page.wait_for_function("!document.querySelector('.editor-subtab.has-error')")
-    # Essayer : l’aperçu montre la version de l’éditeur, avec un tirage réel.
-    page.click(".editor-button >> text=\"Essayer\"")
-    page.wait_for_function(
-        "document.getElementById('preview-frame').srcdoc.includes('PGCD modifié') && "
-        "!document.getElementById('preview-notice').textContent.startsWith('Aperçu provisoire')", timeout=180_000)
-    # Ctrl+S : le fichier du dossier est réécrit, identique hors du titre.
-    page.click(statement)
-    page.keyboard.press("Control+s")
-    page.wait_for_function("!document.querySelector('.left-tab-dot:not([hidden])')")
+    page.wait_for_function("document.querySelectorAll('.question-preview-button').length === 1")
+    page.click(".question-preview-button")
+    page.wait_for_selector(".editor-tab .CodeMirror", timeout=30_000)
+    if "is-editing" not in page.get_attribute(".workspace", "class"):
+        raise AssertionError("Le panneau de l’atelier ne s’est pas élargi.")
+    # Le titre est la quatrième ligne du fichier : il est modifié dans l’éditeur, puis enregistré seul.
+    editor = "document.querySelector('.editor-tab .CodeMirror').CodeMirror"
+    page.evaluate(f"{editor}.replaceRange('PGCD modifié', {{ line: 3, ch: 0 }}, {{ line: 3, ch: 4 }})")
+    page.wait_for_function("document.querySelector('.editor-save-state').textContent === 'Enregistré'", timeout=30_000)
+    page.wait_for_function(f"(async () => (await ({READ_OPFS})('questions-edition/pgcd.pwq')).includes('PGCD modifié'))()")
     written = page.evaluate(READ_OPFS, "questions-edition/pgcd.pwq")
     if written != pgcd.replace("\nPGCD\n", "\nPGCD modifié\n", 1):
         raise AssertionError("Le fichier enregistré n’est pas l’original au titre près.")
-    print("éditeur : modification, erreur marquée, Essayer, Ctrl+S écrit le fichier à l’identique hors du titre")
+    # L’aperçu suit, avec un tirage réel.
+    page.wait_for_function(
+        "document.getElementById('preview-frame').srcdoc.includes('PGCD modifié') && "
+        "!document.getElementById('preview-notice').textContent.startsWith('Aperçu provisoire')", timeout=180_000)
+    print("atelier : un clic ouvre la question, la modification est enregistrée seule, l’aperçu suit")
 
-    # Collage à la main de deux questions, séparées par « === nom.pwq === », avec du texte autour.
+    # Une balise fautive : l’erreur s’affiche sous l’éditeur, avec un lien vers sa ligne ; l’annuler l’efface.
+    statement_line = page.evaluate(f"{editor}.getValue().split('\\n').indexOf('% question_statement') + 2")
+    page.evaluate(f"{editor}.replaceRange('{{% input_value %}} ', {{ line: {statement_line}, ch: 0 }})")
+    page.wait_for_selector(".editor-problem .editor-line-link", timeout=30_000)
+    link = page.text_content(".editor-line-link")
+    if link != f"ligne {statement_line + 1}":
+        raise AssertionError(f"lien inattendu : {link}, ligne attendue {statement_line + 1}")
+    page.evaluate(f"{editor}.undo()")
+    page.wait_for_function("!document.querySelector('.editor-problem')", timeout=30_000)
+    # « Nouveau tirage » : une autre graine, donc un autre aperçu.
+    page.evaluate("window.previewBefore = document.getElementById('preview-frame').srcdoc")
+    page.click("#new-draw")
+    page.wait_for_function("document.getElementById('preview-frame').srcdoc !== window.previewBefore", timeout=180_000)
+    print("atelier : erreur avec lien vers la ligne, effacée par Ctrl+Z ; « Nouveau tirage » change l’aperçu")
+
+    # Collage à la main de deux questions, séparées par « === nom.pwq === », avec du texte autour :
+    # écrites aussitôt dans le dossier, chacune dans son onglet.
     page.click("#questions-tab")
     page.evaluate("document.getElementById('paste-dialog').showModal()")
     page.fill("#paste-text", f"Voici :\n=== premiere.pwq ===\n```\n{pgcd.replace('PGCD', 'Collée')}```\n=== seconde.pwq ===\n{pgcd}")
@@ -277,40 +284,28 @@ def editor_and_paste(browser, url, pgcd):
     paths = page.eval_on_selector_all(".left-tab:not(.left-tab-questions)", "items => items.map(item => item.title)")
     if paths != ["pgcd.pwq", "premiere.pwq", "seconde.pwq"]:
         raise AssertionError(f"onglets inattendus après le collage : {paths}")
-    page.click(".editor-tab:not([hidden]) .editor-button >> text=Enregistrer et fermer")
-    page.wait_for_function("document.querySelectorAll('.left-tab-title').length === 2")
     if page.evaluate(READ_OPFS, "questions-edition/seconde.pwq") != pgcd:
         raise AssertionError("La question collée n’a pas été écrite dans le dossier.")
-    # « × » d’un champ facultatif : il est retiré (confirmé), et son « + » revient.
-    page.click(".editor-tab:not([hidden]) .editor-subtab-remove >> nth=0")
-    page.wait_for_function("document.querySelectorAll('.editor-tab:not([hidden]) .editor-add').length === 1")
-    # Fermer sans enregistrer (confirmé) une question collée la retire de la liste.
-    page.click(".editor-tab:not([hidden]) .editor-button >> text=\"Fermer\"")
-    page.wait_for_function("document.querySelectorAll('.left-tab-title').length === 1")
+    page.click(".left-tab:not([hidden]) .left-tab-close >> nth=2")
+    page.wait_for_function("document.querySelectorAll('.left-tab-title').length === 2")
     titles = sorted(page.eval_on_selector_all("#question-list li:not(.question-group)", TITLES))
-    if titles != ["PGCD", "PGCD modifié"]:
+    if titles != ["Collée", "PGCD", "PGCD modifié"]:
         raise AssertionError(f"liste inattendue après le collage : {titles}")
     page.close()
-    print("collage : deux questions découpées, l’une écrite dans le dossier, l’autre retirée en fermant son onglet")
+    print("collage : deux questions découpées, écrites dans le dossier, chacune dans son onglet")
 
-    # Sans écriture dans un dossier (Firefox, Safari) : « Enregistrer » télécharge le .pwq.
-    page = browser.new_page(accept_downloads=True)
-    page.add_init_script("delete window.showDirectoryPicker; delete window.showSaveFilePicker;")
+    # Firefox et Safari : pas d’atelier, une phrase le dit ; un clic montre seulement l’aperçu.
+    page = browser.new_page()
+    page.add_init_script("delete window.showDirectoryPicker;")
     page.on("pageerror", lambda error: errors.append(str(error)))
     page.goto(url)
     page.wait_for_function("!!window.PyWimsEditor")
-    page.evaluate("document.getElementById('paste-dialog').showModal()")
-    page.fill("#paste-text", pgcd)
-    page.click("#paste-confirm")
-    page.wait_for_selector(".editor-tab .editor-button >> text=\"Enregistrer\"")
-    with page.expect_download(timeout=30_000) as waiting:
-        page.click(".editor-tab .editor-button >> text=\"Enregistrer\"")
-    if waiting.value.suggested_filename != "PGCD.pwq" or open(waiting.value.path(), encoding="utf-8").read() != pgcd:
-        raise AssertionError(f"téléchargement inattendu : {waiting.value.suggested_filename}")
+    if not page.is_hidden("#paste-questions") or "Edge ou Chrome" not in page.text_content("#paste-status"):
+        raise AssertionError("Sans écriture dans un dossier, l’atelier devrait être remplacé par une phrase.")
     page.close()
-    print("sans écriture dans un dossier : « Enregistrer » télécharge le .pwq")
+    print("sans écriture dans un dossier : l’atelier est remplacé par une phrase")
     if errors:
-        raise AssertionError(f"erreurs JavaScript de l’éditeur : {errors}")
+        raise AssertionError(f"erreurs JavaScript de l’atelier : {errors}")
 
 
 # Firefox et Safari, imités dans Edge sans showDirectoryPicker : sélecteur classique, nom du dernier

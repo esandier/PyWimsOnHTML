@@ -1,29 +1,28 @@
-// Éditeur de questions du compilateur (SPECIFICATION.md, § 11.10) : un onglet par question ouverte dans
-// le panneau de gauche, un sous-onglet par champ, coloration par CodeMirror 5, validation à la frappe.
+// Atelier du compilateur (SPECIFICATION.md, § 11.10) : un onglet par question ouverte dans le panneau de
+// gauche, la question entière dans un seul éditeur (CodeMirror 5, une coloration par section),
+// validation et enregistrement automatique après chaque pause de la frappe.
 // Ce module ne connaît ni le dossier ni l’aperçu : compiler.js lui passe ses fonctions (callbacks) et
-// décide de ce que deviennent la liste, l’aperçu et l’enregistrement.
+// décide de ce que deviennent la liste, l’aperçu et le fichier.
 // Script classique (et non module ES), comme les autres scripts du compilateur ; il publie
 // window.PyWimsEditor.
 window.PyWimsEditor = (() => {
-  const { parseQuestionSource, splitQuestionSource, serializeQuestionSource, fieldAtLine } = PyWimsCompiler;
+  const { parseQuestionSource, splitQuestionSource } = PyWimsCompiler;
 
-  // Champs de l’en-tête, montrés en formulaire ; question_layout, toujours « STD », n’est pas montré.
-  const headerFields = ["question_title", "question_keywords", "question_layout", "question_draws"];
-  // Champs facultatifs qu’un « + » ajoute quand ils manquent.
-  const optionalFields = ["question_check", "question_solution_explanation"];
   const pythonFields = new Set(["question_setup", "question_check"]);
-  // Nom d’un sous-onglet : le champ sans « question_ », commun à tous (« statement », « check »).
-  const shortName = name => name.replace(/^question_/, "");
-  const validationDelayMs = 400;
+  const htmlFields = new Set(["question_statement", "question_solution_explanation"]);
+  // Pause de la frappe après laquelle la question est validée, prévisualisée et enregistrée.
+  const pauseMs = 600;
 
   // CodeMirror 5, chargé depuis cdnjs à l’ouverture du premier onglet (version fixée : une mise à jour
   // ne change rien sans qu’on le décide). CodeMirror 6 a été écarté : il demande un outil de
-  // construction (bundler). Sans réseau, l’éditeur reste utilisable : de simples zones de texte.
+  // construction (bundler). Sans réseau, l’atelier reste utilisable : une simple zone de texte.
   const codeMirrorBase = "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/";
   const codeMirrorScripts = [
     "codemirror.min.js", "mode/python/python.min.js", "mode/xml/xml.min.js", "mode/javascript/javascript.min.js",
-    "mode/css/css.min.js", "mode/htmlmixed/htmlmixed.min.js", "addon/mode/overlay.min.js", "addon/edit/matchbrackets.min.js"
+    "mode/css/css.min.js", "mode/htmlmixed/htmlmixed.min.js", "addon/mode/overlay.min.js",
+    "addon/edit/matchbrackets.min.js", "addon/fold/foldcode.min.js", "addon/fold/foldgutter.min.js"
   ];
+  const codeMirrorStyles = ["codemirror.min.css", "addon/fold/foldgutter.min.css"];
   let codeMirrorLoading = null;
 
   function loadScript(src) {
@@ -39,24 +38,26 @@ window.PyWimsEditor = (() => {
   // Charge CodeMirror une seule fois ; null s’il n’a pas pu l’être.
   function loadCodeMirror() {
     codeMirrorLoading ??= (async () => {
-      const style = document.createElement("link");
-      style.rel = "stylesheet";
-      style.href = `${codeMirrorBase}codemirror.min.css`;
-      document.head.append(style);
-      // Les modes dépendent du cœur, et htmlmixed des trois autres : chargement dans l’ordre.
+      for (const name of codeMirrorStyles) {
+        const style = document.createElement("link");
+        style.rel = "stylesheet";
+        style.href = codeMirrorBase + name;
+        document.head.append(style);
+      }
+      // Les modes et modules dépendent du cœur, et htmlmixed des trois autres : chargement dans l’ordre.
       for (const name of codeMirrorScripts) {
         await loadScript(codeMirrorBase + name);
       }
-      definePwqMode(window.CodeMirror);
+      defineModes(window.CodeMirror);
       return window.CodeMirror;
     })().catch(() => null);
     return codeMirrorLoading;
   }
 
-  // Mode de l’énoncé et de l’explication : HTML, avec en couleur les balises {% … %}, les variables
-  // {{ … }} et les formules ($…$, $$…$$, \( … \), \[ … \]). Une variable dans une formule reste une
-  // variable. Une formule peut s’étendre sur plusieurs lignes ; une balise, non.
-  function definePwqMode(CodeMirror) {
+  function defineModes(CodeMirror) {
+    // Énoncé et explication : HTML, avec en couleur les balises {% … %}, les variables {{ … }} et les
+    // formules ($…$, $$…$$, \( … \), \[ … \]). Une variable dans une formule reste une variable. Une
+    // formule peut s’étendre sur plusieurs lignes ; une balise, non.
     const closing = { "$$": "$$", "$": "$", "\\(": "\\)", "\\[": "\\]" };
     CodeMirror.defineMode("pwq-html", config => CodeMirror.overlayMode(CodeMirror.getMode(config, "htmlmixed"), {
       startState: () => ({ math: null }),
@@ -84,68 +85,145 @@ window.PyWimsEditor = (() => {
         return null;
       }
     }));
+
+    // Fichier .pwq entier : les lignes « % » et « % question_… » sont des intertitres, et chaque section
+    // est colorée selon son champ (Python ou HTML) ; les autres (titre, mots-clés…) restent en texte.
+    CodeMirror.defineMode("pwq", config => {
+      const inner = name => (pythonFields.has(name) ? CodeMirror.getMode(config, "python")
+        : htmlFields.has(name) ? CodeMirror.getMode(config, "pwq-html") : null);
+      return {
+        startState: () => ({ mode: null, state: null }),
+        copyState: ({ mode, state }) => ({ mode, state: mode ? CodeMirror.copyState(mode, state) : null }),
+        token(stream, state) {
+          if (stream.sol()) {
+            const line = stream.string.trim();
+            const header = line.match(/^%\s+([A-Za-z_][A-Za-z0-9_]*)$/);
+            if (line === "%" || header) {
+              stream.skipToEnd();
+              if (header) {
+                state.mode = inner(header[1]);
+                state.state = state.mode ? CodeMirror.startState(state.mode) : null;
+              }
+              return header ? "pwq-header" : "pwq-delimiter";
+            }
+          }
+          if (!state.mode) {
+            stream.skipToEnd();
+            return null;
+          }
+          return state.mode.token(stream, state.state);
+        },
+        blankLine: state => state.mode?.blankLine?.(state.state),
+        indent: (state, textAfter, line) => (state.mode?.indent
+          ? state.mode.indent(state.state, textAfter, line)
+          : CodeMirror.Pass),
+        innerMode: state => ({ state: state.state, mode: state.mode })
+      };
+    });
+
+    // Repli d’une section : de son intertitre « % question_… » jusqu’à la ligne qui précède le « % »
+    // suivant (ou la fin du fichier).
+    CodeMirror.registerHelper("fold", "pwq", (cm, start) => {
+      if (!/^%\s+[A-Za-z_]/.test(cm.getLine(start.line).trim())) return undefined;
+      let end = start.line + 2;
+      while (end < cm.lineCount() && cm.getLine(end).trim() !== "%") end += 1;
+      end -= 1;
+      if (end <= start.line) return undefined;
+      return { from: CodeMirror.Pos(start.line, cm.getLine(start.line).length), to: CodeMirror.Pos(end, cm.getLine(end).length) };
+    });
   }
 
-  // Zone de code d’un champ : CodeMirror s’il est chargé, une zone de texte sinon. Renvoie
-  // { getValue, refresh, focus }.
-  function createCodeArea(parent, value, mode, onChange, CodeMirror) {
+  // Éditeur de la question : CodeMirror s’il est chargé, une zone de texte sinon. Renvoie
+  // { getValue, setValue, refresh, focus, goToLine }.
+  function createCodeArea(parent, value, onChange, CodeMirror) {
     if (CodeMirror) {
       const editor = CodeMirror(parent, {
         value,
-        mode,
+        mode: "pwq",
         lineNumbers: true,
         lineWrapping: true,
         matchBrackets: true,
         indentUnit: 4,
         tabSize: 4,
         indentWithTabs: false,
+        foldGutter: true,
+        foldOptions: { rangeFinder: CodeMirror.fold.pwq, widget: " … " },
+        gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
         // Tab indente de quatre espaces, ou indente les lignes choisies ; Maj+Tab désindente.
         extraKeys: {
           Tab: cm => (cm.somethingSelected() ? cm.indentSelection("add") : cm.replaceSelection("    ")),
           "Shift-Tab": "indentLess"
         }
       });
-      editor.on("change", () => onChange(editor.getValue()));
-      return { getValue: () => editor.getValue(), refresh: () => editor.refresh(), focus: () => editor.focus() };
+      editor.on("change", (_editor, change) => {
+        // setValue (fichier relu sur le disque) n’est pas une frappe de l’auteur.
+        if (change.origin !== "setValue") onChange();
+      });
+      return {
+        getValue: () => editor.getValue(),
+        setValue: text => editor.setValue(text),
+        refresh: () => editor.refresh(),
+        focus: () => editor.focus(),
+        goToLine: line => {
+          editor.focus();
+          editor.setCursor({ line: line - 1, ch: 0 });
+          editor.scrollIntoView({ line: line - 1, ch: 0 }, 80);
+        }
+      };
     }
     const area = document.createElement("textarea");
     area.className = "editor-plain";
     area.value = value;
     area.spellcheck = false;
-    area.addEventListener("input", () => onChange(area.value));
+    area.addEventListener("input", onChange);
     parent.append(area);
-    return { getValue: () => area.value, refresh: () => {}, focus: () => area.focus() };
+    return {
+      getValue: () => area.value,
+      setValue: text => { area.value = text; },
+      refresh: () => {},
+      focus: () => area.focus(),
+      goToLine: line => {
+        const offset = area.value.split("\n").slice(0, line - 1).join("\n").length + (line > 1 ? 1 : 0);
+        area.focus();
+        area.setSelectionRange(offset, offset);
+      }
+    };
   }
 
-  // Champ d’une erreur de validation, pour marquer son sous-onglet : le nom cité par le message
-  // (« le champ obligatoire « question_setup »… »), ou la ligne « fichier:12 » rattachée à son champ.
-  function errorField(message, fields) {
-    const named = [...message.matchAll(/«\s*([A-Za-z_][A-Za-z0-9_]*)\s*»/g)]
-      .map(match => match[1]).find(name => fields.some(field => field.name === name) || name.startsWith("question_"));
-    if (named) return named;
-    const line = message.match(/:(\d+) :/);
-    return line ? fieldAtLine(fields, Number(line[1])) : null;
+  // Ligne du fichier où se trouve une erreur, ou null : « pgcd.pwq:12 : … » (erreur de format),
+  // « « question_setup », ligne 5 » (erreur Python, ligne comptée dans le champ), ou la ligne qui
+  // contient la balise {% … %} citée (erreur de balise, qui ne donne pas de ligne).
+  function errorLine(message, text) {
+    const fileLine = message.match(/\.pwq:(\d+) :/);
+    if (fileLine) return Number(fileLine[1]);
+    const lines = text.replace(/\r\n?/g, "\n").split("\n");
+    const fieldLine = message.match(/«\s*(question_[a-z_]+)\s*»[^]*?ligne (\d+)/);
+    if (fieldLine) {
+      const header = lines.findIndex(line => line.trim().match(/^%\s+([A-Za-z_]+)$/)?.[1] === fieldLine[1]);
+      return header < 0 ? null : header + 2 + Number(fieldLine[2]);
+    }
+    const tag = message.match(/\{%.*?%\}/);
+    const index = tag ? lines.findIndex(line => line.includes(tag[0])) : -1;
+    return index < 0 ? null : index + 1;
   }
 
-  function create({ tabBar, questionsTab, questionsView, editorView, onActivate, onChange, onTry, onSave, onClose }) {
+  function create({ tabBar, listTab, listView, editorView, onActivate, onChange, onSave, onClose }) {
     const tabs = [];
     let active = null;
 
     const label = question => question.fields?.question_title || question.path.split("/").pop();
-    const tabText = tab => tab.raw ?? serializeQuestionSource(tab.split.fields, tab.split);
-    const fieldEntry = (tab, name) => tab.split.fields.find(field => field.name === name);
 
     // Onglet « Liste » ou onglet d’une question ; null : « Liste ».
     function activate(tab) {
       active = tab;
-      questionsTab.setAttribute("aria-selected", String(!tab));
-      questionsView.hidden = Boolean(tab);
+      listTab.setAttribute("aria-selected", String(!tab));
+      listView.hidden = Boolean(tab);
       editorView.hidden = !tab;
       for (const other of tabs) {
         other.button.setAttribute("aria-selected", String(other === tab));
         other.panel.hidden = other !== tab;
       }
-      tab?.areas.forEach(area => area.refresh());
+      tab?.area.refresh();
       onActivate(tab?.question ?? null);
     }
 
@@ -154,228 +232,100 @@ window.PyWimsEditor = (() => {
       for (const tab of tabs) {
         tab.title.textContent = label(tab.question);
         tab.button.title = tab.question.path;
-        tab.dot.hidden = !tab.dirty;
       }
     }
 
-    // Ligne d’état de l’onglet et marques des sous-onglets.
-    function showValidation(tab, error, field) {
-      tab.status.textContent = error ?? "";
-      tab.status.className = `editor-status${error ? " error" : ""}`;
-      for (const [name, button] of tab.subButtons) {
-        const isHeader = name === "header" && headerFields.includes(field);
-        button.classList.toggle("has-error", Boolean(error) && (name === field || isHeader || (name === "raw" && error)));
-      }
-    }
-
-    // Valide le texte de l’onglet comme à l’ouverture du dossier : format, puis balises de l’énoncé.
-    function validate(tab) {
-      clearTimeout(tab.timer);
-      // Un fichier entier redevenu découpable retrouve ses sous-onglets.
-      if (tab.raw !== null) {
-        const split = splitQuestionSource(tab.raw);
-        if (split) {
-          tab.split = split;
-          tab.raw = null;
-          renderSubTabs(tab);
+    // Ligne d’état : erreur de format et erreur de l’aperçu, chacune avec son lien « ligne n ».
+    function renderProblems(tab) {
+      tab.problems.replaceChildren();
+      const text = tab.area.getValue();
+      for (const message of [tab.formatError, tab.previewError].filter(Boolean)) {
+        const item = document.createElement("p");
+        item.className = "editor-problem";
+        const line = errorLine(message, text);
+        if (line) {
+          const link = document.createElement("button");
+          link.type = "button";
+          link.className = "editor-line-link";
+          link.textContent = `ligne ${line}`;
+          link.title = "Aller à la ligne";
+          link.addEventListener("click", () => tab.area.goToLine(line));
+          item.append(link, " ");
         }
+        item.append(message);
+        tab.problems.append(item);
       }
-      const text = tabText(tab);
+    }
+
+    function showSaveState(tab, text, className = "") {
+      tab.saveState.textContent = text;
+      tab.saveState.className = `editor-save-state ${className}`.trim();
+    }
+
+    // Après une pause : validation, aperçu (par onChange), puis enregistrement.
+    async function settle(tab) {
+      clearTimeout(tab.timer);
+      tab.timer = 0;
+      const text = tab.area.getValue();
       let fields = null;
-      let error = null;
-      let field = null;
+      tab.formatError = null;
       try {
         fields = parseQuestionSource(text, tab.question.path);
         const tagErrors = PyWimsTemplate.validateTemplate(fields.question_statement);
         if (tagErrors.length) {
-          error = tagErrors.join(" ; ");
-          field = "question_statement";
+          tab.formatError = tagErrors.join(" ; ");
+          fields = null;
         }
-      } catch (caught) {
-        error = caught.message;
-        field = tab.split ? errorField(error, tab.split.fields) : "raw";
+      } catch (error) {
+        tab.formatError = error.message;
       }
-      showValidation(tab, error, field);
-      onChange(tab.question, { text, fields: error ? null : fields, error, dirty: tab.dirty });
+      renderProblems(tab);
+      onChange(tab.question, { text, fields, error: tab.formatError });
       renderTabBar();
+      // Une erreur n’empêche pas l’enregistrement : le fichier reste celui qu’on voit (§ 11.10).
+      if (text === tab.question.source) {
+        showSaveState(tab, "Enregistré");
+        return;
+      }
+      showSaveState(tab, "Enregistrement…");
+      tab.saving = onSave(tab.question, text);
+      const { saved, message, reload } = await tab.saving;
+      tab.saving = null;
+      // L’auteur a préféré la version du disque : l’atelier la reprend.
+      if (reload !== undefined) {
+        tab.area.setValue(reload);
+        await settle(tab);
+        return;
+      }
+      if (saved) {
+        showSaveState(tab, "Enregistré");
+      } else {
+        showSaveState(tab, message ?? "Non enregistré", "error");
+      }
     }
 
     function changed(tab) {
-      tab.dirty = true;
-      renderTabBar();
+      showSaveState(tab, "Modifié");
       clearTimeout(tab.timer);
-      tab.timer = setTimeout(() => validate(tab), validationDelayMs);
+      tab.timer = setTimeout(() => settle(tab), pauseMs);
     }
 
-    // Formulaire de l’en-tête : titre, mots-clés, nombre de tirages (vide : 20, le champ est retiré).
-    function headerForm(tab) {
-      const form = document.createElement("div");
-      form.className = "editor-header";
-      const rows = [
-        ["question_title", "Titre", "text"],
-        ["question_keywords", "Mots-clés (séparés par des virgules)", "text"],
-        ["question_draws", "Nombre de tirages (vide : 20)", "number"]
-      ];
-      for (const [name, text, type] of rows) {
-        const row = document.createElement("label");
-        const input = document.createElement("input");
-        input.type = type;
-        if (type === "number") {
-          input.min = "1";
-          input.max = "200";
-        }
-        input.value = fieldEntry(tab, name)?.content ?? "";
-        input.addEventListener("input", () => {
-          const entry = fieldEntry(tab, name);
-          if (name === "question_draws" && !input.value.trim()) {
-            tab.split.fields = tab.split.fields.filter(field => field !== entry);
-          } else if (entry) {
-            entry.content = input.value;
-          } else {
-            tab.split.fields.push({ name, content: input.value });
-          }
-          changed(tab);
-        });
-        row.append(text, input);
-        form.append(row);
-      }
-      return { element: form, area: { refresh: () => {}, focus: () => form.querySelector("input").focus() } };
-    }
-
-    // Sous-onglets : Paramètres, un par champ du fichier (même inconnu), « + » pour un champ facultatif
-    // absent ; « Fichier entier » seul si le fichier ne se découpe pas.
-    function renderSubTabs(tab, show = null) {
-      tab.subBar.replaceChildren();
-      tab.subPanels.replaceChildren();
-      tab.subButtons = new Map();
-      tab.areas = [];
-      const subTabs = [];
-      if (tab.raw !== null) {
-        subTabs.push({ key: "raw", text: "Fichier entier", build: parent => tab.code(parent, tab.raw, null, value => { tab.raw = value; }) });
-      } else {
-        subTabs.push({ key: "header", text: "Paramètres", build: parent => {
-          const { element, area } = headerForm(tab);
-          parent.append(element);
-          return area;
-        } });
-        for (const field of tab.split.fields.filter(entry => !headerFields.includes(entry.name))) {
-          const mode = pythonFields.has(field.name) ? "python" : "pwq-html";
-          subTabs.push({ key: field.name, text: shortName(field.name), build: parent => tab.code(parent, field.content, mode, value => { field.content = value; }) });
-        }
-      }
-      for (const subTab of subTabs) {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "editor-subtab";
-        button.setAttribute("role", "tab");
-        button.textContent = subTab.text;
-        const panel = document.createElement("div");
-        panel.className = "editor-subpanel";
-        panel.hidden = true;
-        let area = null;
-        const open = () => {
-          for (const [, other] of tab.subButtons) other.setAttribute("aria-selected", "false");
-          for (const other of tab.subPanels.children) other.hidden = true;
-          button.setAttribute("aria-selected", "true");
-          panel.hidden = false;
-          // La zone est créée à la première ouverture : CodeMirror mesure son cadre, qui doit être visible.
-          if (!area) {
-            area = subTab.build(panel);
-            tab.areas.push(area);
-          }
-          area.refresh();
-          tab.shown = subTab.key;
-        };
-        button.addEventListener("click", () => {
-          open();
-          area.focus();
-        });
-        tab.subButtons.set(subTab.key, button);
-        // Un champ facultatif se retire comme il s’ajoute : « × » à côté de son nom, et son « + »
-        // revient. Un champ qui a du contenu n’est retiré qu’après confirmation.
-        if (optionalFields.includes(subTab.key)) {
-          const group = document.createElement("span");
-          group.className = "editor-subtab-group";
-          const remove = document.createElement("button");
-          remove.type = "button";
-          remove.className = "editor-subtab-remove";
-          remove.textContent = "×";
-          remove.title = `Retirer le champ ${subTab.key}`;
-          remove.setAttribute("aria-label", remove.title);
-          remove.addEventListener("click", () => {
-            const field = fieldEntry(tab, subTab.key);
-            if (field?.content.trim() && !confirm(`Retirer le champ ${subTab.key} et son contenu ?`)) return;
-            tab.split.fields = tab.split.fields.filter(entry => entry !== field);
-            changed(tab);
-            renderSubTabs(tab, tab.shown === subTab.key ? "question_statement" : tab.shown);
-          });
-          group.append(button, remove);
-          tab.subBar.append(group);
-        } else {
-          tab.subBar.append(button);
-        }
-        tab.subPanels.append(panel);
-        subTab.open = open;
-      }
-      if (tab.raw === null) {
-        for (const name of optionalFields.filter(name => !fieldEntry(tab, name))) {
-          const add = document.createElement("button");
-          add.type = "button";
-          add.className = "editor-subtab editor-add";
-          add.textContent = `+ ${shortName(name)}`;
-          add.title = `Ajouter le champ ${name}`;
-          add.addEventListener("click", () => {
-            tab.split.fields.push({ name, content: "" });
-            changed(tab);
-            renderSubTabs(tab, name);
-          });
-          tab.subBar.append(add);
-        }
-      }
-      const shown = subTabs.find(subTab => subTab.key === (show ?? tab.shown)) ??
-        subTabs.find(subTab => subTab.key === "question_statement") ?? subTabs[0];
-      shown.open();
-    }
-
-    async function save(tab, { close = false } = {}) {
-      clearTimeout(tab.timer);
-      validate(tab);
-      const text = tabText(tab);
-      // onSave enregistre et tient la liste à jour ; il renvoie { saved, message, kind }. Le message
-      // s’affiche dans la ligne d’état de l’onglet, à côté des boutons : les messages de l’en-tête de
-      // la page passaient inaperçus pendant l’édition. La frappe suivante l’efface.
-      const { saved, message, kind } = await onSave(tab.question, text);
-      if (message) {
-        tab.status.textContent = message;
-        tab.status.className = `editor-status ${kind}`;
-      }
-      if (saved) {
-        tab.dirty = false;
-        renderTabBar();
-        if (close) closeTab(tab, { force: true });
-      }
-    }
-
-    // Ferme un onglet ; s’il a des modifications non enregistrées, demande confirmation.
-    function closeTab(tab, { force = false } = {}) {
-      if (!force && (tab.dirty || tab.question.isNew) && !confirm(tab.question.isNew
-        ? `« ${label(tab.question)} » n’est pas enregistrée : la fermer la retire de la liste. Fermer quand même ?`
-        : `Fermer « ${label(tab.question)} » sans enregistrer les modifications ?`)) {
-        return false;
-      }
-      clearTimeout(tab.timer);
+    // Ferme un onglet, après avoir enregistré ce qui ne l’est pas encore.
+    async function closeTab(tab) {
+      if (tab.timer) await settle(tab);
+      if (tab.saving) await tab.saving;
       const index = tabs.indexOf(tab);
+      if (index < 0) return;
       tabs.splice(index, 1);
       tab.button.remove();
       tab.panel.remove();
-      onClose(tab.question, { discarded: !force && (tab.dirty || tab.question.isNew) });
+      onClose(tab.question);
       renderTabBar();
       // Comme dans un navigateur : l’onglet voisin prend la place, « Liste » s’il n’en reste pas.
       if (active === tab) activate(tabs[Math.min(index, tabs.length - 1)] ?? null);
-      return true;
     }
 
-    // Ouvre l’onglet d’une question (question.text : son texte courant), ou revient à son onglet.
+    // Ouvre l’onglet d’une question (question.text : son texte), ou revient à son onglet.
     async function open(question) {
       const existing = tabs.find(tab => tab.question === question);
       if (existing) {
@@ -383,16 +333,7 @@ window.PyWimsEditor = (() => {
         return;
       }
       const CodeMirror = await loadCodeMirror();
-      const split = splitQuestionSource(question.text);
-      const tab = { question, split, raw: split ? null : question.text, dirty: Boolean(question.isNew), timer: 0, shown: null, areas: [] };
-      // question_layout vaut toujours « STD » et n’est pas montré : un fichier qui l’oublie le reçoit.
-      if (split && !split.fields.some(field => field.name === "question_layout")) {
-        const after = split.fields.findIndex(field => field.name === "question_keywords");
-        split.fields.splice(after < 0 ? split.fields.length : after + 1, 0, { name: "question_layout", content: "STD" });
-        tab.dirty = true;
-      }
-      tab.code = (parent, value, mode, store) =>
-        createCodeArea(parent, value, mode, text => { store(text); changed(tab); }, CodeMirror);
+      const tab = { question, timer: 0, saving: null, formatError: null, previewError: null };
 
       tab.button = document.createElement("div");
       tab.button.className = "left-tab";
@@ -401,86 +342,72 @@ window.PyWimsEditor = (() => {
       tab.title.type = "button";
       tab.title.className = "left-tab-title";
       tab.title.addEventListener("click", () => activate(tab));
-      tab.dot = document.createElement("span");
-      tab.dot.className = "left-tab-dot";
-      tab.dot.textContent = "●";
-      tab.dot.title = "Modifications non enregistrées";
       const close = document.createElement("button");
       close.type = "button";
       close.className = "left-tab-close";
       close.textContent = "×";
       close.setAttribute("aria-label", "Fermer l’onglet");
       close.addEventListener("click", () => closeTab(tab));
-      tab.button.append(tab.dot, tab.title, close);
+      tab.button.append(tab.title, close);
       tabBar.append(tab.button);
 
       tab.panel = document.createElement("div");
       tab.panel.className = "editor-tab";
-      tab.subBar = document.createElement("div");
-      tab.subBar.className = "editor-subtabs";
-      tab.subBar.setAttribute("role", "tablist");
-      tab.subPanels = document.createElement("div");
-      tab.subPanels.className = "editor-subpanels";
-      tab.status = document.createElement("p");
-      tab.status.className = "editor-status";
-      tab.status.setAttribute("aria-live", "polite");
-      const actions = document.createElement("div");
-      actions.className = "editor-actions";
-      const button = (text, title, action, primary = false) => {
-        const element = document.createElement("button");
-        element.type = "button";
-        element.className = primary ? "editor-button is-primary" : "editor-button";
-        element.textContent = text;
-        element.title = title;
-        element.addEventListener("click", action);
-        actions.append(element);
-      };
-      button("Essayer", "Aperçu de cette version, avec un nouveau tirage (Ctrl+Entrée)", () => {
-        validate(tab);
-        onTry(question);
-      });
-      button("Enregistrer", "Ctrl+S", () => save(tab), true);
-      button("Enregistrer et fermer", "", () => save(tab, { close: true }));
-      button("Fermer", "", () => closeTab(tab));
+      const code = document.createElement("div");
+      code.className = "editor-code";
+      const footer = document.createElement("div");
+      footer.className = "editor-footer";
+      tab.problems = document.createElement("div");
+      tab.problems.className = "editor-problems";
+      tab.problems.setAttribute("aria-live", "polite");
+      tab.saveState = document.createElement("span");
+      tab.saveState.className = "editor-save-state";
+      tab.saveState.setAttribute("role", "status");
+      footer.append(tab.problems, tab.saveState);
       if (!CodeMirror) {
         const note = document.createElement("span");
         note.className = "editor-note";
         note.textContent = "Éditeur simple : la coloration n’a pas pu être chargée.";
-        actions.append(note);
+        footer.append(note);
       }
-      tab.panel.append(tab.subBar, tab.subPanels, tab.status, actions);
-      // Raccourcis, en capture : avant CodeMirror, qui garderait Ctrl+Entrée pour lui.
-      tab.panel.addEventListener("keydown", event => {
-        if (!(event.ctrlKey || event.metaKey)) return;
-        if (event.key === "s" || event.key === "S") {
-          event.preventDefault();
-          event.stopPropagation();
-          save(tab);
-        } else if (event.key === "Enter") {
-          event.preventDefault();
-          event.stopPropagation();
-          validate(tab);
-          onTry(question);
-        }
-      }, true);
+      tab.panel.append(code, footer);
       editorView.append(tab.panel);
+      tab.area = createCodeArea(code, question.text, () => changed(tab), CodeMirror);
       tabs.push(tab);
-      renderSubTabs(tab);
       renderTabBar();
       activate(tab);
-      validate(tab);
+      showSaveState(tab, "Enregistré");
+      settle(tab);
     }
 
-    questionsTab.addEventListener("click", () => activate(null));
+    listTab.addEventListener("click", () => activate(null));
 
+    const tabOf = question => tabs.find(tab => tab.question === question);
     return {
       open,
-      activate: question => activate(tabs.find(tab => tab.question === question) ?? null),
-      isOpen: question => tabs.some(tab => tab.question === question),
-      // Questions dont l’onglet a des modifications non enregistrées (ou jamais enregistrées).
-      unsaved: () => tabs.filter(tab => tab.dirty || tab.question.isNew).map(tab => tab.question),
+      activate: question => activate(tabOf(question) ?? null),
+      isOpen: question => Boolean(tabOf(question)),
       openQuestions: () => tabs.map(tab => tab.question),
-      closeAll: () => [...tabs].forEach(tab => closeTab(tab, { force: true })),
+      // Questions dont une modification attend la fin de la pause ou de l’écriture.
+      pending: () => tabs.filter(tab => tab.timer || tab.saving).map(tab => tab.question),
+      // Enregistre tout ce qui attend, puis ferme les onglets (autre dossier).
+      closeAll: async () => {
+        for (const tab of [...tabs]) await closeTab(tab);
+      },
+      // Fichier relu sur le disque (« Relire ») : l’onglet montre la nouvelle version.
+      reload: (question, text) => {
+        const tab = tabOf(question);
+        if (!tab || tab.timer || tab.saving) return;
+        tab.area.setValue(text);
+        settle(tab);
+      },
+      // Erreur du tirage de l’aperçu (Python), affichée sous l’éditeur ; null l’efface.
+      showPreviewError: (question, message) => {
+        const tab = tabOf(question);
+        if (!tab || tab.previewError === message) return;
+        tab.previewError = message;
+        renderProblems(tab);
+      },
       refreshLabels: renderTabBar
     };
   }
