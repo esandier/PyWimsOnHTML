@@ -8,6 +8,7 @@
 # Usage : python compiler_e2e.py URL_DU_COMPILATEUR [CHEMIN_D’EDGE]
 # Code de sortie : 0 si tout est bon, 1 sinon.
 import base64
+import difflib
 import os
 import shutil
 import sys
@@ -226,10 +227,11 @@ READ_OPFS = """async path => {
 }"""
 
 
-# Atelier du compilateur (SPECIFICATION.md, § 11.10), sous Chrome et Edge : un clic ouvre la question,
-# une modification est enregistrée toute seule dans le dossier et l’aperçu la suit ; une erreur a son
-# lien vers la ligne ; « Nouveau tirage » ; collage de deux questions, écrites aussitôt dans le dossier.
-# Sous Firefox et Safari (imités dans Edge), une phrase remplace l’atelier.
+# Atelier du compilateur (SPECIFICATION.md, § 11.10), sous Chrome et Edge : une seule question courante ;
+# « Modifier » bascule sur l’éditeur, une modification est enregistrée seule et l’aperçu la suit ; une
+# erreur a son lien vers la ligne ; flèches ↑ ↓ dans la liste ; collage dans l’éditeur vide (plusieurs
+# questions : retour à la liste) ; un fichier CRLF n’est pas réécrit. Sous Firefox et Safari (imités dans
+# Edge), une phrase remplace l’atelier.
 def editor_and_paste(browser, url, pgcd):
     page = browser.new_page(accept_downloads=True)
     errors = []
@@ -241,25 +243,29 @@ def editor_and_paste(browser, url, pgcd):
     page.evaluate(PICK_OPFS.replace("questions-essai", "questions-edition"))
     page.click("#choose-folder")
     page.wait_for_function("document.querySelectorAll('.question-preview-button').length === 1")
-    # Un clic montre l’aperçu ; « Modifier », dans l’aperçu, ouvre la question dans l’atelier.
+    # Un clic montre l’aperçu ; « Modifier » bascule sur l’éditeur de cette question.
     page.click(".question-preview-button")
     page.click("#edit-question")
-    page.wait_for_selector(".editor-tab .CodeMirror", timeout=30_000)
-    if "is-editing" not in page.get_attribute(".workspace", "class"):
-        raise AssertionError("Le panneau de l’atelier ne s’est pas élargi.")
+    page.wait_for_selector("#editor-view .CodeMirror", timeout=30_000)
+    if "is-editing" not in page.get_attribute(".workspace", "class") or page.get_attribute("#show-editor", "aria-pressed") != "true":
+        raise AssertionError("« Modifier » n’a pas basculé sur l’éditeur élargi.")
     # Le titre est la quatrième ligne du fichier : il est modifié dans l’éditeur, puis enregistré seul.
-    editor = "document.querySelector('.editor-tab .CodeMirror').CodeMirror"
+    editor = "document.querySelector('#editor-view .CodeMirror').CodeMirror"
     page.evaluate(f"{editor}.replaceRange('PGCD modifié', {{ line: 3, ch: 0 }}, {{ line: 3, ch: 4 }})")
-    page.wait_for_function("document.querySelector('.editor-save-state').textContent === 'Enregistré'", timeout=30_000)
-    page.wait_for_function(f"(async () => (await ({READ_OPFS})('questions-edition/pgcd.pwq')).includes('PGCD modifié'))()")
-    written = page.evaluate(READ_OPFS, "questions-edition/pgcd.pwq")
+    # Attente de l’écriture, côté Python : wait_for_function tiendrait la promesse d’une lecture pour vraie.
+    for _ in range(60):
+        written = page.evaluate(READ_OPFS, "questions-edition/pgcd.pwq")
+        if "PGCD modifié" in written:
+            break
+        page.wait_for_timeout(500)
     if written != pgcd.replace("\nPGCD\n", "\nPGCD modifié\n", 1):
-        raise AssertionError("Le fichier enregistré n’est pas l’original au titre près.")
+        difference = "".join(difflib.unified_diff(pgcd.splitlines(True), written.splitlines(True)))
+        raise AssertionError(f"Le fichier enregistré n’est pas l’original au titre près :\n{difference[:800]}")
     # L’aperçu suit, avec un tirage réel.
     page.wait_for_function(
         "document.getElementById('preview-frame').srcdoc.includes('PGCD modifié') && "
         "!document.getElementById('preview-notice').textContent.startsWith('Aperçu provisoire')", timeout=180_000)
-    print("atelier : « Modifier » ouvre la question, la modification est enregistrée seule, l’aperçu suit")
+    print("atelier : « Modifier » ouvre l’éditeur, la modification est enregistrée seule, l’aperçu suit")
 
     # Une balise fautive : l’erreur s’affiche sous l’éditeur, avec un lien vers sa ligne ; l’annuler l’efface.
     statement_line = page.evaluate(f"{editor}.getValue().split('\\n').indexOf('% question_statement') + 2")
@@ -276,46 +282,48 @@ def editor_and_paste(browser, url, pgcd):
     page.wait_for_function("document.getElementById('preview-frame').srcdoc !== window.previewBefore", timeout=180_000)
     print("atelier : erreur avec lien vers la ligne, effacée par Ctrl+Z ; « Nouveau tirage » change l’aperçu")
 
-    # Collage à la main de deux questions, séparées par « === nom.pwq === », avec du texte autour :
-    # écrites aussitôt dans le dossier, chacune dans son onglet.
-    page.click("#questions-tab")
-    page.evaluate("document.getElementById('paste-dialog').showModal()")
-    page.fill("#paste-text", f"Voici :\n=== premiere.pwq ===\n```\n{pgcd.replace('PGCD', 'Collée')}```\n=== seconde.pwq ===\n{pgcd}")
-    page.click("#paste-confirm")
-    page.wait_for_function("document.querySelectorAll('.left-tab-title').length === 3", timeout=30_000)
-    paths = page.eval_on_selector_all(".left-tab:not(.left-tab-questions)", "items => items.map(item => item.title)")
-    if paths != ["pgcd.pwq", "premiere.pwq", "seconde.pwq"]:
-        raise AssertionError(f"onglets inattendus après le collage : {paths}")
+    # Collage de deux questions dans l’éditeur vide, séparées par « === nom.pwq === », avec du texte
+    # autour : écrites aussitôt dans le dossier, marquées « nouvelle », et retour à la liste.
+    page.click("#paste-questions")
+    page.wait_for_function(f"{editor}.getValue() === '' && document.querySelector('#editor-view .CodeMirror-placeholder')")
+    pasted = f"Voici :\n=== premiere.pwq ===\n```\n{pgcd.replace('PGCD', 'Collée')}```\n=== seconde.pwq ===\n{pgcd}"
+    page.evaluate(f"text => {editor}.replaceRange(text, {{ line: 0, ch: 0 }}, undefined, 'paste')", pasted)
+    page.wait_for_function("document.getElementById('show-list').getAttribute('aria-pressed') === 'true'", timeout=30_000)
     if page.evaluate(READ_OPFS, "questions-edition/seconde.pwq") != pgcd:
         raise AssertionError("La question collée n’a pas été écrite dans le dossier.")
-    page.click(".left-tab:not([hidden]) .left-tab-close >> nth=2")
-    page.wait_for_function("document.querySelectorAll('.left-tab-title').length === 2")
-    titles = sorted(page.eval_on_selector_all("#question-list li:not(.question-group)", TITLES))
-    if titles != ["Collée", "PGCD", "PGCD modifié"]:
-        raise AssertionError(f"liste inattendue après le collage : {titles}")
+    marked = page.eval_on_selector_all("#question-list li", "items => items.filter(li => li.querySelector('.question-state')).map(li => li.querySelector('.question-title').textContent)")
+    if sorted(marked) != ["Collée", "PGCD"]:
+        raise AssertionError(f"questions marquées « nouvelle » inattendues : {marked}")
+    # Flèches ↑ ↓ : la question suivante devient la question courante.
+    page.focus(".question-preview-button[aria-current='true']")
+    before = page.text_content(".question-preview-button[aria-current='true'] .question-title")
+    page.keyboard.press("ArrowDown")
+    page.wait_for_function(f"document.querySelector(\".question-preview-button[aria-current='true'] .question-title\").textContent !== {before!r}")
+    print("collage : deux questions découpées, écrites dans le dossier, marquées « nouvelle » ; flèches ↑ ↓")
+
     # Un fichier aux fins de ligne Windows (CRLF), seulement ouvert, n’est pas réécrit : CodeMirror ne
     # connaît que LF, et l’atelier croyait le fichier modifié.
     crlf = pgcd.replace("\nPGCD\n", "\nPGCD CRLF\n", 1).replace("\n", "\r\n")
     page.evaluate(WRITE_OPFS, ["questions-edition/crlf.pwq", crlf])
-    page.click("#questions-tab")
     page.click("#reload-folder")
     page.wait_for_function("[...document.querySelectorAll('.question-title')].some(item => item.textContent === 'PGCD CRLF')")
     page.click(".question-preview-button >> text=PGCD CRLF")
     page.click("#edit-question")
-    page.wait_for_function("document.querySelector('.left-tab[aria-selected=\"true\"]')?.title === 'crlf.pwq'")
+    page.wait_for_function(f"{editor}.getValue().includes('PGCD CRLF')")
     page.wait_for_timeout(2000)
     if page.evaluate(READ_OPFS, "questions-edition/crlf.pwq") != crlf:
-        raise AssertionError("Un fichier CRLF seulement ouvert dans l’atelier a été réécrit.")
+        raise AssertionError("Un fichier CRLF seulement ouvert dans l’éditeur a été réécrit.")
     page.close()
-    print("collage : deux questions découpées, écrites dans le dossier, chacune dans son onglet")
+    print("atelier : un fichier CRLF seulement ouvert n’est pas réécrit")
 
-    # Firefox et Safari : pas d’atelier, une phrase le dit ; un clic montre seulement l’aperçu.
+    # Firefox et Safari : pas d’atelier, une phrase le dit.
     page = browser.new_page()
     page.add_init_script("delete window.showDirectoryPicker;")
     page.on("pageerror", lambda error: errors.append(str(error)))
     page.goto(url)
     page.wait_for_function("!!window.PyWimsEditor")
-    if not page.is_hidden("#paste-questions") or "Edge ou Chrome" not in page.text_content("#paste-status"):
+    if (not page.is_hidden("#paste-questions") or not page.is_hidden("#view-toggle") or not page.is_hidden("#edit-question")
+            or "Edge ou Chrome" not in page.text_content("#paste-status")):
         raise AssertionError("Sans écriture dans un dossier, l’atelier devrait être remplacé par une phrase.")
     page.close()
     print("sans écriture dans un dossier : l’atelier est remplacé par une phrase")

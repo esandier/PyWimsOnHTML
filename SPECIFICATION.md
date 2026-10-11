@@ -1270,13 +1270,13 @@ Une page `guide/` (« Créer »), en sections :
 - **Bandeau** sur le fond de la page, séparé du reste par un filet sur toute
   la largeur de la fenêtre (sur les trois pages).
 - **Deux colonnes, deux rangées.** En haut, à gauche la ligne du dossier
-  (« Dossier ouvert : nom », « Relire », « Autre dossier », puis, à droite,
-  « Copier le prompt » et « Coller question(s) », § 11.10), à droite la ligne
+  (« Dossier ouvert : nom », « Relire », « Autre dossier »), à droite la ligne
   de compilation ; toutes deux sans cadre, alignées, de même hauteur et
   discrètes (petits boutons) : le compilateur est un environnement de travail,
   dont l’éditeur et l’aperçu sont l’essentiel. Dessous, les cadres commencent à
   la même hauteur :
-  - à gauche, la bascule « Liste | Éditeur » (§ 11.10) ; la **Liste** :
+  - à gauche, la bascule « Liste | Éditeur » et, sur sa ligne à droite, « Copier
+    le prompt » et « Coller question(s) » (§ 11.10) ; la **Liste** :
     « Filtrer les questions par nom ou mot-clé », compte de la sélection,
     « Tout sélectionner », liste, et la charte utilisée en petit, en bas ;
     l’**Éditeur** : la question courante ;
@@ -1399,8 +1399,9 @@ pas encore ; quitter la page pendant une pause de la frappe demande
 confirmation. Les fins de ligne du fichier (CRLF ou LF) sont gardées. « Relire »
 met à jour la question de l’éditeur si son fichier a changé sur le disque.
 
-**Prompt et collage.** Sur la ligne du dossier, à droite, hors du panneau de
-gauche, deux petits boutons, suivis de leur message bref :
+**Prompt et collage.** Sur la ligne de la bascule, à droite, deux petits boutons,
+précédés de leur message bref (sur la ligne du dossier, essayée d’abord, ils
+écrasaient le nom du dossier) :
 
 - **Copier le prompt** : copie `PROMPT.md`, comme la page Créer ;
 - **Coller question(s)** (infobulle : « Coller le code d’une ou plusieurs

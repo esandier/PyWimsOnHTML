@@ -36,8 +36,11 @@
   const workspace = document.querySelector(".workspace");
   const copyPromptButton = document.getElementById("copy-prompt");
   const pasteButton = document.getElementById("paste-questions");
-  const pasteDialog = document.getElementById("paste-dialog");
-  const pasteText = document.getElementById("paste-text");
+  const viewToggle = document.getElementById("view-toggle");
+  const showListButton = document.getElementById("show-list");
+  const showEditorButton = document.getElementById("show-editor");
+  const questionsView = document.getElementById("questions-view");
+  const editorView = document.getElementById("editor-view");
   const pasteStatus = document.getElementById("paste-status");
   const newDrawButton = document.getElementById("new-draw");
   const editButton = document.getElementById("edit-question");
@@ -387,8 +390,9 @@
     // Chemins dans l’ordre de l’activité : « Relire » garde cet ordre.
     const selectedPaths = selectedQuestions.map(question => question.path);
     const shownPath = selectedQuestion?.path;
-    // « Relire » garde les questions ouvertes dans l’atelier, avec leur onglet.
-    const kept = keepSelection ? questions.filter(question => editor.isOpen(question)) : [];
+    // « Relire » garde les questions passées par l’éditeur (leur historique d’annulation) et les
+    // questions collées pendant la visite (leur marque « nouvelle »).
+    const kept = keepSelection ? questions.filter(question => editor.knows(question) || question.isNew) : [];
     clearMessage(messages);
     clearMessage(projectStatus);
     questions = [];
@@ -409,7 +413,6 @@
     previewFrame.hidden = true;
     previewFrame.removeAttribute("srcdoc");
     showPreviewNotice("Choisissez une question dans la liste pour afficher son aperçu.");
-    updateEditButton(null);
 
     updateFolderControls(name);
     folderBrand = brand;
@@ -424,12 +427,12 @@
       if (old) {
         Object.assign(old, { read, handle });
         questions.push(old);
-        // Fichier changé sur le disque (autre éditeur) : l’onglet montre la nouvelle version, sauf si
-        // une modification de l’atelier attend d’être enregistrée (elle demandera alors).
+        // Fichier changé sur le disque (autre éditeur) : l’éditeur reprend la nouvelle version, sauf si
+        // une modification attend d’être enregistrée (elle demandera alors).
         try {
           const source = await read();
           if (source !== old.source && !editor.pending().includes(old)) {
-            old.source = source;
+            old.source = old.text = source;
             editor.reload(old, source);
           }
         } catch {
@@ -538,7 +541,13 @@
       kinds.className = "question-fields";
       kinds.textContent = !question.error
         ? fieldKindsLabel(question.fields.question_statement)
-        : editor.isOpen(question) ? "erreur : voir son onglet" : "fichier illisible";
+        : editor.knows(question) ? "erreur : voir l’éditeur" : "fichier illisible";
+      if (question.isNew) {
+        const mark = document.createElement("span");
+        mark.className = "question-state";
+        mark.textContent = "nouvelle";
+        kinds.append(mark);
+      }
       // Le chemin reste accessible au survol : deux questions peuvent porter le même titre.
       button.title = question.path;
       button.append(title, kinds);
@@ -585,7 +594,7 @@
   function selectQuestion(question) {
     selectedQuestion = question;
     renderQuestionList();
-    updateEditButton(question);
+    if (viewMode === "editor") showInEditor(question);
     if (question.error) {
       previewGeneration += 1;
       previewFrame.hidden = true;
@@ -601,16 +610,79 @@
     updateCompilationControls();
   }
 
-  // « Modifier », dans l’aperçu (§ 11.10) : sous Chrome et Edge, dossier ouvert en écriture. Une archive
-  // .pwqa, qui contient aussi ses images, ne s’ouvre pas dans l’atelier ; un fichier mal formé, si :
-  // c’est là qu’on le corrige.
-  function updateEditButton(question) {
-    editButton.hidden = !canEdit || !folderHandle || !question?.handle;
-    const archive = Boolean(question) && isArchive(question.path);
-    editButton.disabled = archive || typeof question?.text !== "string" || editor.isOpen(question);
-    editButton.title = archive
-      ? "Une archive .pwqa ne se modifie pas dans le compilateur."
-      : editor.isOpen(question) ? "Cette question est déjà ouverte dans l’atelier." : "Ouvrir cette question dans l’atelier";
+  // Bascule « Liste | Éditeur » (§ 11.10). L’éditeur montre toujours la question courante ; il est
+  // créé, et CodeMirror chargé, à sa première ouverture.
+  let viewMode = "list";
+  let editorReady = null;
+  function ensureEditor() {
+    editorReady ??= PyWimsEditor.create(editorView, {
+      // Après une pause de la frappe : le texte devient la version de la question, et l’aperçu suit,
+      // avec le même tirage.
+      onChange: (question, { text, fields, error }) => {
+        const changed = text !== question.text;
+        question.text = text;
+        if (fields) {
+          question.fields = fields;
+          delete question.error;
+        } else {
+          question.error = new Error(error);
+        }
+        refreshList();
+        if (!changed || selectedQuestion !== question) return;
+        previewDrawCache.delete(question);
+        if (fields) {
+          showPreview(question, { live: true });
+        } else {
+          showPreviewNotice("La question contient une erreur : voir sous l’éditeur.", "error");
+        }
+      },
+      onSave: saveQuestion,
+      onPaste: addPastedQuestions
+    }).then(created => {
+      editor = created;
+      return created;
+    });
+    return editorReady;
+  }
+
+  async function setViewMode(mode) {
+    viewMode = mode;
+    showListButton.setAttribute("aria-pressed", String(mode === "list"));
+    showEditorButton.setAttribute("aria-pressed", String(mode === "editor"));
+    questionsView.hidden = mode !== "list";
+    editorView.hidden = mode !== "editor";
+    // En mode Éditeur, le panneau de gauche s’élargit aux trois cinquièmes.
+    workspace.classList.toggle("is-editing", mode === "editor");
+    if (mode === "editor") {
+      await ensureEditor();
+      if (viewMode === "editor") await showInEditor(selectedQuestion);
+    } else {
+      await editor.flush?.();
+      questionList.querySelector('[aria-current="true"]')?.focus();
+    }
+  }
+
+  // Montre la question courante dans l’éditeur ; une archive .pwqa ne s’édite pas (§ 11.10).
+  async function showInEditor(question) {
+    const shown = await ensureEditor();
+    if (question && isArchive(question.path)) {
+      await shown.show(question, { readOnly: "Une archive .pwqa, qui contient aussi ses images, ne se modifie pas dans le compilateur." });
+    } else if (question && typeof question.text !== "string") {
+      await shown.show(question, { readOnly: "Ce fichier n’a pas pu être lu." });
+    } else {
+      await shown.show(question ?? null);
+    }
+    editor.refresh?.();
+  }
+
+  // Flèches ↑ ↓ dans la liste : la question précédente ou suivante devient la question courante.
+  function moveInList(step) {
+    const buttons = [...questionList.querySelectorAll(".question-preview-button")];
+    const index = buttons.findIndex(button => button.getAttribute("aria-current") === "true");
+    const target = buttons[Math.min(buttons.length - 1, Math.max(0, index + step))];
+    if (!target || (index >= 0 && buttons[index] === target)) return;
+    target.click();
+    questionList.querySelector('[aria-current="true"]')?.focus();
   }
 
   // Adapte les options de compilation au nombre et au mode des questions choisies.
@@ -745,14 +817,14 @@
       : assembleActivity(activityTitle, questions, needed, options);
   }
 
-  // Atelier, créé plus bas une fois la page prête (il n’existe pas dans les pages de tests).
-  let editor = { isOpen: () => false, pending: () => [], refreshLabels: () => {}, showPreviewError: () => {} };
+  // Éditeur de la question courante, créé à sa première ouverture (ensureEditor) ; d’ici là, et dans les
+  // pages de tests, cet éditeur qui ne connaît aucune question.
+  let editor = { knows: () => false, pending: () => [], showPreviewError: () => {} };
 
   // Reconstruit la liste et les contrôles après un changement d’une question.
   function refreshList() {
     renderQuestionList();
     updateCompilationControls();
-    editor.refreshLabels();
   }
 
   // Enregistrement automatique de l’atelier (SPECIFICATION.md, § 11.10) : écrit le texte dans le fichier
@@ -810,25 +882,17 @@
     }
   }
 
-  // « Coller le code… » : lit le presse-papiers ; si le navigateur refuse, ou s’il est vide, la fenêtre
-  // de collage à la main s’ouvre. Les questions sont écrites dans le dossier : il doit être ouvert.
+  // « Coller question(s) » : l’éditeur vide, où l’on colle (§ 11.10). Les questions sont écrites dans le
+  // dossier : il doit être ouvert.
   async function pasteQuestions() {
     if (!folderHandle) {
       showPasteStatus("Ouvrez d’abord un dossier de questions.", "error");
       return;
     }
-    let text = "";
-    try {
-      text = await navigator.clipboard.readText();
-    } catch {
-      // Lecture refusée : collage à la main.
-    }
-    if (text.trim()) {
-      addPastedQuestions(text);
-    } else {
-      pasteDialog.showModal();
-      pasteText.focus();
-    }
+    showPasteStatus("", "");
+    viewMode = "editor";
+    await setViewMode("editor");
+    await editor.showPaste();
   }
 
   // Nom de fichier libre à la racine du dossier : « x.pwq », sinon « x-2.pwq »…
@@ -843,14 +907,15 @@
     return candidate;
   }
 
-  // Écrit les questions d’un texte collé à la racine du dossier, et ouvre chacune dans son onglet (§ 11.10).
+  // Écrit les questions d’un texte collé à la racine du dossier (§ 11.10). Une seule : l’éditeur la
+  // montre. Plusieurs : retour à la liste, où on les voit toutes, la première étant la question
+  // courante ; sinon, on pourrait croire perdues les suivantes. Renvoie un message d’erreur, ou null.
   async function addPastedQuestions(text) {
     const pieces = splitPastedQuestions(text);
     if (!pieces.length) {
-      showPasteStatus("Aucune question : un fichier .pwq commence par une ligne « % ».", "error");
-      return;
+      return "Aucune question : le code d’une question commence par une ligne « % », puis « % question_title ».";
     }
-    showPasteStatus("", "");
+    const added = [];
     for (const { name, source } of pieces) {
       const title = splitQuestionSource(source)?.fields.find(field => field.name === "question_title")?.content.trim();
       const path = await uniquePath(name ?? createQuestionFilename(title || "question").replace(/\.html$/, ".pwq"));
@@ -859,20 +924,25 @@
         handle = await folderHandle.getFileHandle(path, { create: true });
         await writeFile(handle, source);
       } catch (error) {
-        showPasteStatus(`« ${path} » n’a pas pu être écrit : ${error.message}`, "error");
-        return;
+        return `« ${path} » n’a pas pu être écrit : ${error.message}`;
       }
-      const question = { path, handle, source, text: source, read: async () => questionText(await handle.getFile(), path) };
+      const question = { path, handle, source, text: source, isNew: true, read: async () => questionText(await handle.getFile(), path) };
       try {
         question.fields = parseQuestionSource(source, path);
       } catch (error) {
-        // L’erreur s’affiche dans l’onglet de la question, où on la corrige.
+        // L’erreur s’affiche sous l’éditeur, où on la corrige.
         question.error = error;
       }
       questions.push(question);
-      refreshList();
-      await editor.open(question);
+      added.push(question);
     }
+    refreshList();
+    if (added.length > 1) await setViewMode("list");
+    selectQuestion(added[0]);
+    if (added.length > 1) {
+      showPasteStatus(`${added.length} questions collées, marquées « nouvelle » dans la liste.`, "success");
+    }
+    return null;
   }
 
   // Propose le fichier au téléchargement ; l’adresse temporaire est libérée juste après, le temps
@@ -977,55 +1047,27 @@
     return;
   }
 
-  // Atelier (SPECIFICATION.md, § 11.10), sous Chrome et Edge : ce module lui dit quoi faire de la liste,
-  // de l’aperçu et du fichier. Sous Firefox et Safari, une phrase le remplace.
+  // Atelier (SPECIFICATION.md, § 11.10) sous Chrome et Edge : la bascule « Liste | Éditeur » et
+  // « Modifier ». Sous Firefox et Safari, une phrase les remplace.
   if (canEdit) {
-    editor = PyWimsEditor.create({
-      tabBar: document.getElementById("left-tabs"),
-      listTab: document.getElementById("questions-tab"),
-      listView: document.getElementById("questions-view"),
-      editorView: document.getElementById("editor-view"),
-      // L’aperçu suit l’onglet actif ; un onglet de question élargit le panneau de gauche.
-      onActivate: question => {
-        workspace.classList.toggle("is-editing", Boolean(question));
-        if (question && question !== selectedQuestion) selectQuestion(question);
-        updateEditButton(selectedQuestion);
-      },
-      // Après une pause de la frappe : le texte devient la version de la question, et l’aperçu suit,
-      // avec le même tirage.
-      onChange: (question, { text, fields, error }) => {
-        const changed = text !== question.text;
-        question.text = text;
-        if (fields) {
-          question.fields = fields;
-          delete question.error;
-        } else {
-          question.error = new Error(error);
-        }
-        refreshList();
-        if (!changed || selectedQuestion !== question) return;
-        previewDrawCache.delete(question);
-        if (fields) {
-          showPreview(question, { live: true });
-        } else {
-          showPreviewNotice("La question contient une erreur : voir sous l’éditeur.", "error");
-        }
-      },
-      onSave: saveQuestion,
-      onClose: () => {
-        refreshList();
-        updateEditButton(selectedQuestion);
-      }
-    });
+    viewToggle.hidden = false;
+    editButton.hidden = false;
+    showListButton.addEventListener("click", () => setViewMode("list"));
+    showEditorButton.addEventListener("click", () => setViewMode("editor"));
+    editButton.addEventListener("click", () => setViewMode("editor"));
   } else {
     pasteButton.hidden = true;
     showPasteStatus("Pour modifier les questions, ouvrez le compilateur dans Edge ou Chrome.", "muted");
   }
+  questionList.addEventListener("keydown", event => {
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+    event.preventDefault();
+    moveInList(event.key === "ArrowDown" ? 1 : -1);
+  });
 
-  // Ouvrir un autre dossier enregistre ce qui attend, puis ferme les onglets.
+  // Ouvrir un autre dossier enregistre d’abord ce qui attend.
   async function closeEditorTabs() {
-    await editor.closeAll?.();
-    workspace.classList.remove("is-editing");
+    await editor.reset?.();
   }
   // Une pause de la frappe pas encore écoulée : le navigateur demande avant de quitter la page.
   addEventListener("beforeunload", event => {
@@ -1056,9 +1098,6 @@
     await closeEditorTabs();
     pickFolder();
   });
-  editButton.addEventListener("click", () => {
-    if (selectedQuestion) editor.open(selectedQuestion);
-  });
   // « Nouveau tirage » : l’aperçu de la question affichée, avec une autre graine.
   newDrawButton.addEventListener("click", () => {
     const question = shownPreview?.question;
@@ -1069,10 +1108,6 @@
   });
   copyPromptButton.addEventListener("click", copyPrompt);
   pasteButton.addEventListener("click", pasteQuestions);
-  pasteDialog.addEventListener("close", () => {
-    if (pasteDialog.returnValue === "paste") addPastedQuestions(pasteText.value);
-    pasteText.value = "";
-  });
   reloadFolderButton.addEventListener("click", () => openHandle(folderHandle, { keepSelection: true }));
   // Préchargement de Python dès l’ouverture (SPECIFICATION.md, § 11.1) : Pyodide, SymPy et pywims
   // sont chargés et importés pendant que l’utilisateur choisit son dossier. La session sert

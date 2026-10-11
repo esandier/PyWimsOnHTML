@@ -379,52 +379,28 @@
     .questions-view, .editor-view { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; }
     .editor-view { overflow: hidden; }
 
-    /* Onglets du panneau de gauche : « Questions », puis une question ouverte par onglet. */
-    .left-tabs {
-      display: flex;
-      flex: 0 0 auto;
-      gap: 0.25rem;
-      margin: 0 0 0.75rem;
-      /* Beaucoup d’onglets : la barre défile de côté. Jamais en hauteur : les onglets descendent d’un
-         pixel sur le filet du dessous, et les barres de défilement classiques de Windows en faisaient
-         une barre verticale. */
-      overflow-x: auto;
-      overflow-y: hidden;
-      border-bottom: 1px solid #d7dbe0;
-    }
-    .left-tab {
-      display: inline-flex;
-      flex: 0 0 auto;
-      align-items: center;
-      max-width: 14rem;
-      margin-bottom: -1px;
-      border: 1px solid transparent;
-      border-radius: 0.35rem 0.35rem 0 0;
-      color: #555;
-      background: none;
+    /* Bascule « Liste | Éditeur », en tête du panneau de gauche (§ 11.10). */
+    .panel-top { display: flex; flex: 0 0 auto; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .view-toggle { display: inline-flex; flex: 0 0 auto; }
+    .view-toggle button {
+      padding: 0.25rem 0.9rem;
+      border: 1px solid #c9a06c;
+      color: #8a4d00;
+      background: #fff;
       font-size: 0.85rem;
-    }
-    .left-tab[aria-selected="true"] { border-color: #d7dbe0; border-bottom-color: #fff; color: #633900; background: #fff; font-weight: 600; }
-    .left-tab-questions { padding: 0.35rem 0.75rem; cursor: pointer; }
-    .left-tab-title {
-      min-width: 0;
-      overflow: hidden;
-      padding: 0.35rem 0.25rem 0.35rem 0.5rem;
-      border: 0;
-      color: inherit;
-      background: none;
-      font: inherit;
-      text-overflow: ellipsis;
-      white-space: nowrap;
       cursor: pointer;
     }
-    .left-tab-dot { padding-left: 0.4rem; color: #a95f00; font-size: 0.7rem; }
-    .left-tab-close { padding: 0 0.45rem; border: 0; color: #777; background: none; font-size: 1.05rem; cursor: pointer; }
-    .left-tab-close:hover { color: #8a1111; }
+    .view-toggle button:first-child { border-radius: 0.35rem 0 0 0.35rem; }
+    .view-toggle button:last-child { border-left: 0; border-radius: 0 0.35rem 0.35rem 0; }
+    .view-toggle button[aria-pressed="true"] { color: #fff; background: #a95f00; font-weight: 600; }
 
-    /* Onglet d’une question : l’éditeur sur toute la hauteur, puis la ligne d’état (erreurs, témoin
+    /* Éditeur de la question courante : sur toute la hauteur, puis la ligne d’état (erreurs, témoin
        d’enregistrement). */
-    .editor-tab { display: flex; flex: 1 1 auto; flex-direction: column; gap: 0.4rem; min-height: 0; }
+    .editor-view { gap: 0.4rem; }
+    .editor-notice { margin: 1rem 0; color: #656b72; font-size: 0.9rem; }
+    /* Invite de l’éditeur vide (collage), en gris comme toute invite ; sélecteur plus précis que celui
+       de CodeMirror, dont la feuille de style est chargée après celle-ci. */
+    .editor-code .CodeMirror pre.CodeMirror-placeholder { color: #8a9097; }
     .editor-code { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; }
     .editor-code .CodeMirror, .editor-plain {
       flex: 1 1 auto;
@@ -475,18 +451,15 @@
     .small-button.is-primary { border-color: #9b5700; color: #fff; background: #a95f00; font-weight: 600; }
     .small-button.is-primary:hover { background: #874c00; }
     /* Copier le prompt, coller : deux petits boutons sur une ligne, et leur message bref à côté. */
-    .paste-row { display: flex; flex: 0 0 auto; align-items: center; gap: 0.4rem; margin-bottom: 0.65rem; }
+    /* Sur la ligne de la bascule, à droite : copier le prompt, coller (§ 11.10). */
+    .paste-row { display: flex; flex: 0 0 auto; align-items: center; gap: 0.4rem; margin-left: auto; }
     .paste-row .small-button { flex: 0 0 auto; padding: 0.15rem 0.5rem; font-size: 0.75rem; }
-    .paste-status { min-width: 0; overflow: hidden; font-size: 0.75rem; text-overflow: ellipsis; white-space: nowrap; }
+    .paste-status { max-width: 16rem; min-width: 0; overflow: hidden; font-size: 0.75rem; text-overflow: ellipsis; white-space: nowrap; }
 
-    /* Collage à la main. */
-    .paste-dialog { width: min(44rem, calc(100vw - 2rem)); border: 0; border-radius: 0.5rem; box-shadow: 0 12px 40px #0004; }
-    .paste-dialog::backdrop { background: #0005; }
-    .paste-dialog h2 { font-size: 1.05rem; }
-    .paste-dialog p { font-size: 0.85rem; }
-    #paste-text { width: 100%; height: 50vh; padding: 0.5rem; font-family: ui-monospace, Consolas, monospace; font-size: 0.82rem; }
-    .paste-dialog-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.6rem; }
 
+
+    /* Question collée pendant la visite (§ 11.10). */
+    .question-state { margin-left: 0.35rem; color: #a95f00; font-size: 0.75rem; font-weight: 600; }
 
     .muted { color: #656b72; }
     .error { color: #8a1111; }
@@ -596,15 +569,20 @@
     <!-- Panneau de gauche en onglets (SPECIFICATION.md, § 11.10) : « Liste », la liste des questions, puis un onglet
          par question ouverte dans l’éditeur. La barre d’onglets n’apparaît qu’avec un onglet de question. -->
     <section class="panel panel-questions" aria-label="Questions">
-      <!-- Questions écrites par une IA : copier le prompt, puis coller sa réponse. Au-dessus des onglets,
-           pour rester visibles quand une question est ouverte. -->
-      <div class="paste-row">
-        <button id="copy-prompt" class="small-button" type="button">Copier le prompt</button>
-        <button id="paste-questions" class="small-button" type="button" title="Coller le code d’une ou plusieurs questions">Coller question(s)</button>
-        <span id="paste-status" class="paste-status" role="status" aria-live="polite"></span>
-      </div>
-      <div class="left-tabs" id="left-tabs" role="tablist" hidden>
-        <button class="left-tab left-tab-questions" id="questions-tab" type="button" role="tab" aria-selected="true">Liste</button>
+      <!-- Bascule entre la liste et l’éditeur de la question courante (SPECIFICATION.md, § 11.10) ;
+           absente sous Firefox et Safari, qui n’ont pas d’atelier. -->
+      <div class="panel-top">
+        <div class="view-toggle" id="view-toggle" hidden>
+          <button id="show-list" type="button" aria-pressed="true">Liste</button>
+          <button id="show-editor" type="button" aria-pressed="false">Éditeur</button>
+        </div>
+        <!-- Questions écrites par une IA : copier le prompt, puis coller sa réponse (§ 11.10). Sur la ligne
+             de la bascule, à droite : sur la ligne du dossier, ils écrasaient le nom du dossier. -->
+        <div class="paste-row">
+          <span id="paste-status" class="paste-status" role="status" aria-live="polite"></span>
+          <button id="copy-prompt" class="small-button" type="button">Copier le prompt</button>
+          <button id="paste-questions" class="small-button" type="button" title="Coller le code d’une ou plusieurs questions">Coller question(s)</button>
+        </div>
       </div>
       <div class="questions-view" id="questions-view">
       <div class="filter-row">
@@ -621,7 +599,7 @@
       <!-- Charte des feuilles : brand.css du dossier de questions s’il en a un, charte neutre sinon. -->
       <p id="brand-status" class="muted" hidden></p>
       </div>
-      <!-- Onglets des questions ouvertes : un panneau par onglet, créé par editor.js. -->
+      <!-- Éditeur de la question courante, rempli par editor.js. -->
       <div class="editor-view" id="editor-view" hidden></div>
     </section>
 
@@ -673,19 +651,6 @@
       </section>
     </div>
   </main>
-  <!-- Collage à la main, quand le navigateur refuse de lire le presse-papiers (SPECIFICATION.md, § 11.10). -->
-  <dialog class="paste-dialog" id="paste-dialog" aria-labelledby="paste-dialog-title">
-    <form method="dialog">
-      <h2 id="paste-dialog-title">Coller le code d’une ou plusieurs questions</h2>
-      <p class="muted">Collez ici le code d’une ou plusieurs questions (Ctrl+V). Plusieurs questions sont séparées par des lignes
-        « === nom.pwq === », ou commencent chacune par « % question_title ».</p>
-      <textarea id="paste-text" spellcheck="false"></textarea>
-      <div class="paste-dialog-actions">
-        <button class="small-button" value="cancel" type="submit">Annuler</button>
-        <button class="small-button is-primary" id="paste-confirm" value="paste" type="submit">Ajouter</button>
-      </div>
-    </form>
-  </dialog>
   <!-- Le contrôleur relie les interactions de cette page au compilateur. -->
   <script src="../runtime/template.js"></script>
   <!-- Correction par défaut : le contrôle de cohérence d’une question sans « question_check » l’utilise. -->

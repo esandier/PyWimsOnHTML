@@ -1,26 +1,27 @@
-// Atelier du compilateur (SPECIFICATION.md, § 11.10) : un onglet par question ouverte dans le panneau de
-// gauche, la question entière dans un seul éditeur (CodeMirror 5, une coloration par section),
-// validation et enregistrement automatique après chaque pause de la frappe.
+// Atelier du compilateur (SPECIFICATION.md, § 11.10) : l’éditeur de la question courante, la question
+// entière dans un seul bloc (CodeMirror 5, une coloration par section), validation et enregistrement
+// automatique après chaque pause de la frappe, et l’éditeur vide où l’on colle des questions.
 // Ce module ne connaît ni le dossier ni l’aperçu : compiler.js lui passe ses fonctions (callbacks) et
 // décide de ce que deviennent la liste, l’aperçu et le fichier.
 // Script classique (et non module ES), comme les autres scripts du compilateur ; il publie
 // window.PyWimsEditor.
 window.PyWimsEditor = (() => {
-  const { parseQuestionSource, splitQuestionSource } = PyWimsCompiler;
+  const { parseQuestionSource } = PyWimsCompiler;
 
   const pythonFields = new Set(["question_setup", "question_check"]);
   const htmlFields = new Set(["question_statement", "question_solution_explanation"]);
   // Pause de la frappe après laquelle la question est validée, prévisualisée et enregistrée.
   const pauseMs = 600;
 
-  // CodeMirror 5, chargé depuis cdnjs à l’ouverture du premier onglet (version fixée : une mise à jour
+  // CodeMirror 5, chargé depuis cdnjs à la première ouverture de l’éditeur (version fixée : une mise à jour
   // ne change rien sans qu’on le décide). CodeMirror 6 a été écarté : il demande un outil de
   // construction (bundler). Sans réseau, l’atelier reste utilisable : une simple zone de texte.
   const codeMirrorBase = "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/";
   const codeMirrorScripts = [
     "codemirror.min.js", "mode/python/python.min.js", "mode/xml/xml.min.js", "mode/javascript/javascript.min.js",
     "mode/css/css.min.js", "mode/htmlmixed/htmlmixed.min.js", "addon/mode/overlay.min.js",
-    "addon/edit/matchbrackets.min.js", "addon/fold/foldcode.min.js", "addon/fold/foldgutter.min.js"
+    "addon/edit/matchbrackets.min.js", "addon/fold/foldcode.min.js", "addon/fold/foldgutter.min.js",
+    "addon/display/placeholder.min.js"
   ];
   const codeMirrorStyles = ["codemirror.min.css", "addon/fold/foldgutter.min.css"];
   let codeMirrorLoading = null;
@@ -133,63 +134,6 @@ window.PyWimsEditor = (() => {
     });
   }
 
-  // Éditeur de la question : CodeMirror s’il est chargé, une zone de texte sinon. Renvoie
-  // { getValue, setValue, refresh, focus, goToLine }.
-  function createCodeArea(parent, value, onChange, CodeMirror) {
-    if (CodeMirror) {
-      const editor = CodeMirror(parent, {
-        value,
-        mode: "pwq",
-        lineNumbers: true,
-        lineWrapping: true,
-        matchBrackets: true,
-        indentUnit: 4,
-        tabSize: 4,
-        indentWithTabs: false,
-        foldGutter: true,
-        foldOptions: { rangeFinder: CodeMirror.fold.pwq, widget: " … " },
-        gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
-        // Tab indente de quatre espaces, ou indente les lignes choisies ; Maj+Tab désindente.
-        extraKeys: {
-          Tab: cm => (cm.somethingSelected() ? cm.indentSelection("add") : cm.replaceSelection("    ")),
-          "Shift-Tab": "indentLess"
-        }
-      });
-      editor.on("change", (_editor, change) => {
-        // setValue (fichier relu sur le disque) n’est pas une frappe de l’auteur.
-        if (change.origin !== "setValue") onChange();
-      });
-      return {
-        getValue: () => editor.getValue(),
-        setValue: text => editor.setValue(text),
-        refresh: () => editor.refresh(),
-        focus: () => editor.focus(),
-        goToLine: line => {
-          editor.focus();
-          editor.setCursor({ line: line - 1, ch: 0 });
-          editor.scrollIntoView({ line: line - 1, ch: 0 }, 80);
-        }
-      };
-    }
-    const area = document.createElement("textarea");
-    area.className = "editor-plain";
-    area.value = value;
-    area.spellcheck = false;
-    area.addEventListener("input", onChange);
-    parent.append(area);
-    return {
-      getValue: () => area.value,
-      setValue: text => { area.value = text; },
-      refresh: () => {},
-      focus: () => area.focus(),
-      goToLine: line => {
-        const offset = area.value.split("\n").slice(0, line - 1).join("\n").length + (line > 1 ? 1 : 0);
-        area.focus();
-        area.setSelectionRange(offset, offset);
-      }
-    };
-  }
-
   // Ligne du fichier où se trouve une erreur, ou null : « pgcd.pwq:12 : … » (erreur de format),
   // « « question_setup », ligne 5 » (erreur Python, ligne comptée dans le champ), ou la ligne qui
   // contient la balise {% … %} citée (erreur de balise, qui ne donne pas de ligne).
@@ -207,39 +151,112 @@ window.PyWimsEditor = (() => {
     return index < 0 ? null : index + 1;
   }
 
-  function create({ tabBar, listTab, listView, editorView, onActivate, onChange, onSave, onClose }) {
-    const tabs = [];
-    let active = null;
+  // L’éditeur de la question courante (§ 11.10). Un seul éditeur, et un document par question ouverte
+  // pendant la visite : chacune garde son historique d’annulation (Ctrl+Z) quand on passe à une autre.
+  // Sans CodeMirror (pas de réseau), une simple zone de texte, sans historique propre à chaque question.
+  // root : le panneau de l’éditeur. Fonctions de compiler.js :
+  //   onChange(question, { text, fields, error }) après une pause de la frappe ;
+  //   onSave(question, text) → { saved, message, reload } ;
+  //   onPaste(text) → message d’erreur, ou null si le texte collé a donné des questions.
+  async function create(root, { onChange, onSave, onPaste }) {
+    const CodeMirror = await loadCodeMirror();
+    const code = document.createElement("div");
+    code.className = "editor-code";
+    const notice = document.createElement("p");
+    notice.className = "editor-notice";
+    notice.hidden = true;
+    const footer = document.createElement("div");
+    footer.className = "editor-footer";
+    const problems = document.createElement("div");
+    problems.className = "editor-problems";
+    problems.setAttribute("aria-live", "polite");
+    const saveState = document.createElement("span");
+    saveState.className = "editor-save-state";
+    saveState.setAttribute("role", "status");
+    footer.append(problems, saveState);
+    if (!CodeMirror) {
+      const note = document.createElement("span");
+      note.className = "editor-note";
+      note.textContent = "Éditeur simple : la coloration n’a pas pu être chargée.";
+      footer.append(note);
+    }
+    root.append(notice, code, footer);
 
-    const label = question => question.fields?.question_title || question.path.split("/").pop();
+    // État de chaque question passée par l’éditeur : document, fins de ligne, pause et écriture en cours,
+    // erreurs affichées.
+    const states = new Map();
+    let current = null;
+    // « paste » : l’éditeur vide où l’on colle ; sinon l’état de la question montrée, ou null.
+    let mode = null;
+    let pasteDoc = null;
 
-    // Onglet « Liste » ou onglet d’une question ; null : « Liste ».
-    function activate(tab) {
-      active = tab;
-      listTab.setAttribute("aria-selected", String(!tab));
-      listView.hidden = Boolean(tab);
-      editorView.hidden = !tab;
-      for (const other of tabs) {
-        other.button.setAttribute("aria-selected", String(other === tab));
-        other.panel.hidden = other !== tab;
-      }
-      tab?.area.refresh();
-      onActivate(tab?.question ?? null);
+    let editor;
+    let plain;
+    if (CodeMirror) {
+      editor = CodeMirror(code, {
+        value: "",
+        mode: "pwq",
+        lineNumbers: true,
+        lineWrapping: true,
+        matchBrackets: true,
+        indentUnit: 4,
+        tabSize: 4,
+        indentWithTabs: false,
+        foldGutter: true,
+        foldOptions: { rangeFinder: CodeMirror.fold.pwq, widget: " … " },
+        gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
+        // Tab indente de quatre espaces, ou indente les lignes choisies ; Maj+Tab désindente.
+        extraKeys: {
+          Tab: cm => (cm.somethingSelected() ? cm.indentSelection("add") : cm.replaceSelection("    ")),
+          "Shift-Tab": "indentLess"
+        }
+      });
+      editor.on("changes", (_editor, changes) => {
+        // setValue (fichier relu sur le disque) et swapDoc ne sont pas une frappe de l’auteur.
+        if (changes.every(change => change.origin === "setValue")) return;
+        if (mode === "paste") {
+          pasted(changes.some(change => change.origin === "paste"));
+        } else if (current) {
+          changed(current);
+        }
+      });
+    } else {
+      plain = document.createElement("textarea");
+      plain.className = "editor-plain";
+      plain.spellcheck = false;
+      plain.addEventListener("input", event => {
+        if (mode === "paste") {
+          pasted(event.inputType === "insertFromPaste");
+        } else if (current) {
+          changed(current);
+        }
+      });
+      code.append(plain);
     }
 
-    function renderTabBar() {
-      tabBar.hidden = !tabs.length;
-      for (const tab of tabs) {
-        tab.title.textContent = label(tab.question);
-        tab.button.title = tab.question.path;
+    const value = () => (editor ? editor.getValue() : plain.value);
+    // Texte de la question, avec les fins de ligne de son fichier : CodeMirror ne connaît que LF, et un
+    // fichier CRLF (Windows), ouvert sans être modifié, paraissait changé et était réécrit aussitôt.
+    const textOf = state => (state.crlf ? value().replace(/\r?\n/g, "\r\n") : value());
+
+    function goToLine(line) {
+      if (editor) {
+        editor.focus();
+        editor.setCursor({ line: line - 1, ch: 0 });
+        editor.scrollIntoView({ line: line - 1, ch: 0 }, 80);
+      } else {
+        const offset = plain.value.split("\n").slice(0, line - 1).join("\n").length + (line > 1 ? 1 : 0);
+        plain.focus();
+        plain.setSelectionRange(offset, offset);
       }
     }
 
     // Ligne d’état : erreur de format et erreur de l’aperçu, chacune avec son lien « ligne n ».
-    function renderProblems(tab) {
-      tab.problems.replaceChildren();
-      const text = tab.area.getValue();
-      for (const message of [tab.formatError, tab.previewError].filter(Boolean)) {
+    function renderProblems(state) {
+      problems.replaceChildren();
+      if (!state || state !== current) return;
+      const text = value();
+      for (const message of [state.formatError, state.previewError].filter(Boolean)) {
         const item = document.createElement("p");
         item.className = "editor-problem";
         const line = errorLine(message, text);
@@ -249,169 +266,201 @@ window.PyWimsEditor = (() => {
           link.className = "editor-line-link";
           link.textContent = `ligne ${line}`;
           link.title = "Aller à la ligne";
-          link.addEventListener("click", () => tab.area.goToLine(line));
+          link.addEventListener("click", () => goToLine(line));
           item.append(link, " ");
         }
         item.append(message);
-        tab.problems.append(item);
+        problems.append(item);
       }
     }
 
-    function showSaveState(tab, text, className = "") {
-      tab.saveState.textContent = text;
-      tab.saveState.className = `editor-save-state ${className}`.trim();
+    function showSaveState(text, className = "") {
+      saveState.textContent = text;
+      saveState.className = `editor-save-state ${className}`.trim();
     }
 
-    // Après une pause : validation, aperçu (par onChange), puis enregistrement.
-    async function settle(tab) {
-      clearTimeout(tab.timer);
-      tab.timer = 0;
-      // CodeMirror ne connaît que les fins de ligne LF : celles du fichier (CRLF sous Windows) sont
-      // rétablies. Sans cela, ouvrir un fichier CRLF le faisait paraître modifié, et l’atelier le
-      // réécrivait aussitôt, fins de ligne changées.
-      const text = tab.crlf ? tab.area.getValue().replace(/\r?\n/g, "\r\n") : tab.area.getValue();
+    // Après une pause : validation, aperçu (par onChange), puis enregistrement. La question peut ne plus
+    // être celle de l’éditeur (on a changé de question entre-temps) : son texte vient alors de son
+    // document, gardé à part.
+    async function settle(state) {
+      clearTimeout(state.timer);
+      state.timer = 0;
+      const shown = state === current;
+      const raw = shown ? null : (state.doc ? state.doc.getValue() : state.text);
+      const text = shown ? textOf(state) : (state.crlf ? raw.replace(/\r?\n/g, "\r\n") : raw);
       let fields = null;
-      tab.formatError = null;
+      state.formatError = null;
       try {
-        fields = parseQuestionSource(text, tab.question.path);
+        fields = parseQuestionSource(text, state.question.path);
         const tagErrors = PyWimsTemplate.validateTemplate(fields.question_statement);
         if (tagErrors.length) {
-          tab.formatError = tagErrors.join(" ; ");
+          state.formatError = tagErrors.join(" ; ");
           fields = null;
         }
       } catch (error) {
-        tab.formatError = error.message;
+        state.formatError = error.message;
       }
-      renderProblems(tab);
-      onChange(tab.question, { text, fields, error: tab.formatError });
-      renderTabBar();
+      renderProblems(state);
+      onChange(state.question, { text, fields, error: state.formatError });
       // Une erreur n’empêche pas l’enregistrement : le fichier reste celui qu’on voit (§ 11.10).
-      if (text === tab.question.source) {
-        showSaveState(tab, "Enregistré");
+      if (text === state.question.source) {
+        if (state === current) showSaveState("Enregistré");
         return;
       }
-      showSaveState(tab, "Enregistrement…");
-      tab.saving = onSave(tab.question, text);
-      const { saved, message, reload } = await tab.saving;
-      tab.saving = null;
-      // L’auteur a préféré la version du disque : l’atelier la reprend.
+      if (state === current) showSaveState("Enregistrement…");
+      state.saving = onSave(state.question, text);
+      const { saved, message, reload } = await state.saving;
+      state.saving = null;
+      // L’auteur a préféré la version du disque : l’éditeur la reprend.
       if (reload !== undefined) {
-        tab.area.setValue(reload);
-        await settle(tab);
+        setText(state, reload);
+        await settle(state);
         return;
       }
-      if (saved) {
-        showSaveState(tab, "Enregistré");
+      if (state === current) {
+        showSaveState(saved ? "Enregistré" : (message ?? "Non enregistré"), saved ? "" : "error");
+      }
+    }
+
+    function changed(state) {
+      showSaveState("Modifié");
+      clearTimeout(state.timer);
+      state.timer = setTimeout(() => settle(state), pauseMs);
+    }
+
+    // Remplace le texte d’une question (fichier relu sur le disque), sans que ce soit une frappe.
+    function setText(state, text) {
+      state.crlf = /\r\n/.test(text);
+      if (state.doc) {
+        state.doc.setValue(text.replace(/\r\n/g, "\n"));
       } else {
-        showSaveState(tab, message ?? "Non enregistré", "error");
+        state.text = text;
+        if (state === current) plain.value = text;
       }
     }
 
-    function changed(tab) {
-      showSaveState(tab, "Modifié");
-      clearTimeout(tab.timer);
-      tab.timer = setTimeout(() => settle(tab), pauseMs);
+    // Termine ce qui attend pour la question montrée : pause de la frappe, écriture.
+    async function flush() {
+      if (current?.timer) await settle(current);
+      if (current?.saving) await current.saving;
     }
 
-    // Ferme un onglet, après avoir enregistré ce qui ne l’est pas encore.
-    async function closeTab(tab) {
-      if (tab.timer) await settle(tab);
-      if (tab.saving) await tab.saving;
-      const index = tabs.indexOf(tab);
-      if (index < 0) return;
-      tabs.splice(index, 1);
-      tab.button.remove();
-      tab.panel.remove();
-      onClose(tab.question);
-      renderTabBar();
-      // Comme dans un navigateur : l’onglet voisin prend la place, « Liste » s’il n’en reste pas.
-      if (active === tab) activate(tabs[Math.min(index, tabs.length - 1)] ?? null);
+    function showNotice(text) {
+      notice.textContent = text ?? "";
+      notice.hidden = !text;
+      code.hidden = Boolean(text);
+      footer.hidden = Boolean(text);
     }
 
-    // Ouvre l’onglet d’une question (question.text : son texte), ou revient à son onglet.
-    async function open(question) {
-      const existing = tabs.find(tab => tab.question === question);
-      if (existing) {
-        activate(existing);
+    // Montre une question dans l’éditeur ; null : aucune. readOnly : la raison pour laquelle elle ne
+    // s’édite pas (archive .pwqa), dite à la place de l’éditeur.
+    async function show(question, { readOnly = null } = {}) {
+      await flush();
+      mode = null;
+      if (plain && current) current.text = plain.value;
+      if (!question || readOnly) {
+        current = null;
+        showNotice(readOnly ?? "Choisissez une question dans la liste.");
+        renderProblems(null);
         return;
       }
-      const CodeMirror = await loadCodeMirror();
-      const tab = { question, timer: 0, saving: null, formatError: null, previewError: null, crlf: /\r\n/.test(question.text) };
-
-      tab.button = document.createElement("div");
-      tab.button.className = "left-tab";
-      tab.button.setAttribute("role", "tab");
-      tab.title = document.createElement("button");
-      tab.title.type = "button";
-      tab.title.className = "left-tab-title";
-      tab.title.addEventListener("click", () => activate(tab));
-      const close = document.createElement("button");
-      close.type = "button";
-      close.className = "left-tab-close";
-      close.textContent = "×";
-      close.setAttribute("aria-label", "Fermer l’onglet");
-      close.addEventListener("click", () => closeTab(tab));
-      tab.button.append(tab.title, close);
-      tabBar.append(tab.button);
-
-      tab.panel = document.createElement("div");
-      tab.panel.className = "editor-tab";
-      const code = document.createElement("div");
-      code.className = "editor-code";
-      const footer = document.createElement("div");
-      footer.className = "editor-footer";
-      tab.problems = document.createElement("div");
-      tab.problems.className = "editor-problems";
-      tab.problems.setAttribute("aria-live", "polite");
-      tab.saveState = document.createElement("span");
-      tab.saveState.className = "editor-save-state";
-      tab.saveState.setAttribute("role", "status");
-      footer.append(tab.problems, tab.saveState);
-      if (!CodeMirror) {
-        const note = document.createElement("span");
-        note.className = "editor-note";
-        note.textContent = "Éditeur simple : la coloration n’a pas pu être chargée.";
-        footer.append(note);
+      showNotice(null);
+      let state = states.get(question);
+      if (!state) {
+        state = { question, crlf: /\r\n/.test(question.text), timer: 0, saving: null, formatError: null, previewError: null };
+        if (CodeMirror) {
+          state.doc = CodeMirror.Doc(question.text.replace(/\r\n/g, "\n"), "pwq");
+        } else {
+          state.text = question.text;
+        }
+        states.set(question, state);
       }
-      tab.panel.append(code, footer);
-      editorView.append(tab.panel);
-      tab.area = createCodeArea(code, question.text, () => changed(tab), CodeMirror);
-      tabs.push(tab);
-      renderTabBar();
-      activate(tab);
-      showSaveState(tab, "Enregistré");
-      settle(tab);
+      current = state;
+      if (editor) {
+        editor.setOption("placeholder", "");
+        editor.swapDoc(state.doc);
+        editor.refresh();
+      } else {
+        plain.placeholder = "";
+        plain.value = state.text;
+      }
+      showSaveState(state.timer ? "Modifié" : "Enregistré");
+      renderProblems(state);
+      if (!state.validated) {
+        state.validated = true;
+        settle(state);
+      }
     }
 
-    listTab.addEventListener("click", () => activate(null));
+    // L’éditeur vide où l’on colle le code d’une ou plusieurs questions (§ 11.10).
+    async function showPaste() {
+      await flush();
+      if (plain && current) current.text = plain.value;
+      current = null;
+      mode = "paste";
+      showNotice(null);
+      renderProblems(null);
+      showSaveState("");
+      const prompt = "Collez ici le code d’une ou plusieurs questions (Ctrl+V)";
+      if (editor) {
+        pasteDoc = CodeMirror.Doc("", "pwq");
+        editor.swapDoc(pasteDoc);
+        editor.setOption("placeholder", prompt);
+        editor.refresh();
+        editor.focus();
+      } else {
+        plain.value = "";
+        plain.placeholder = prompt;
+        plain.focus();
+      }
+    }
 
-    const tabOf = question => tabs.find(tab => tab.question === question);
+    // Texte collé : traité aussitôt ; une frappe, après une pause.
+    let pasteTimer = 0;
+    function pasted(isPaste) {
+      clearTimeout(pasteTimer);
+      const handle = async () => {
+        const message = await onPaste(value());
+        if (message && mode === "paste") {
+          problems.replaceChildren(Object.assign(document.createElement("p"), { className: "editor-problem", textContent: message }));
+        }
+      };
+      if (isPaste) handle(); else pasteTimer = setTimeout(handle, pauseMs);
+    }
+
     return {
-      open,
-      activate: question => activate(tabOf(question) ?? null),
-      isOpen: question => Boolean(tabOf(question)),
-      openQuestions: () => tabs.map(tab => tab.question),
+      show,
+      showPaste,
+      flush,
+      refresh: () => editor?.refresh(),
       // Questions dont une modification attend la fin de la pause ou de l’écriture.
-      pending: () => tabs.filter(tab => tab.timer || tab.saving).map(tab => tab.question),
-      // Enregistre tout ce qui attend, puis ferme les onglets (autre dossier).
-      closeAll: async () => {
-        for (const tab of [...tabs]) await closeTab(tab);
+      pending: () => [...states.values()].filter(state => state.timer || state.saving).map(state => state.question),
+      // Autre dossier : tout ce qui attend est enregistré, puis l’éditeur oublie ses questions.
+      reset: async () => {
+        for (const state of states.values()) {
+          if (state.timer) await settle(state);
+          if (state.saving) await state.saving;
+        }
+        states.clear();
+        current = null;
+        mode = null;
+        showNotice("Choisissez une question dans la liste.");
       },
-      // Fichier relu sur le disque (« Relire ») : l’onglet montre la nouvelle version.
+      knows: question => states.has(question),
+      // Fichier relu sur le disque (« Relire ») : l’éditeur reprend la nouvelle version.
       reload: (question, text) => {
-        const tab = tabOf(question);
-        if (!tab || tab.timer || tab.saving) return;
-        tab.area.setValue(text);
-        settle(tab);
+        const state = states.get(question);
+        if (!state || state.timer || state.saving) return;
+        setText(state, text);
+        if (state === current) settle(state);
       },
       // Erreur du tirage de l’aperçu (Python), affichée sous l’éditeur ; null l’efface.
       showPreviewError: (question, message) => {
-        const tab = tabOf(question);
-        if (!tab || tab.previewError === message) return;
-        tab.previewError = message;
-        renderProblems(tab);
-      },
-      refreshLabels: renderTabBar
+        const state = states.get(question);
+        if (!state || state.previewError === message) return;
+        state.previewError = message;
+        renderProblems(state);
+      }
     };
   }
 
