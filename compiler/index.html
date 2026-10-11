@@ -209,7 +209,7 @@
 
     #question-list li {
       display: grid;
-      grid-template-columns: auto minmax(0, 1fr);
+      grid-template-columns: auto minmax(0, 1fr) auto;
       align-items: center;
       gap: 0.25rem;
     }
@@ -371,6 +371,130 @@
       background: #fff;
     }
 
+    /* Éditeur de questions (SPECIFICATION.md, § 11.10). Un onglet de question actif élargit le panneau
+       de gauche à la moitié de la largeur ; l’aperçu reste à droite. */
+    .workspace.is-editing { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .questions-view, .editor-view { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; }
+    .editor-view { overflow: hidden; }
+
+    /* Onglets du panneau de gauche : « Questions », puis une question ouverte par onglet. */
+    .left-tabs {
+      display: flex;
+      flex: 0 0 auto;
+      gap: 0.25rem;
+      margin: -0.25rem 0 0.75rem;
+      overflow-x: auto;
+      border-bottom: 1px solid #d7dbe0;
+    }
+    .left-tab {
+      display: inline-flex;
+      flex: 0 0 auto;
+      align-items: center;
+      max-width: 14rem;
+      margin-bottom: -1px;
+      border: 1px solid transparent;
+      border-radius: 0.35rem 0.35rem 0 0;
+      color: #555;
+      background: none;
+      font-size: 0.85rem;
+    }
+    .left-tab[aria-selected="true"] { border-color: #d7dbe0; border-bottom-color: #fff; color: #633900; background: #fff; font-weight: 600; }
+    .left-tab-questions { padding: 0.35rem 0.75rem; cursor: pointer; }
+    .left-tab-title {
+      min-width: 0;
+      overflow: hidden;
+      padding: 0.35rem 0.25rem 0.35rem 0.5rem;
+      border: 0;
+      color: inherit;
+      background: none;
+      font: inherit;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .left-tab-dot { padding-left: 0.4rem; color: #a95f00; font-size: 0.7rem; }
+    .left-tab-close { padding: 0 0.45rem; border: 0; color: #777; background: none; font-size: 1.05rem; cursor: pointer; }
+    .left-tab-close:hover { color: #8a1111; }
+
+    /* Onglet d’une question : sous-onglets des champs, zone du champ, ligne d’état, boutons. */
+    .editor-tab { display: flex; flex: 1 1 auto; flex-direction: column; gap: 0.5rem; min-height: 0; }
+    .editor-subtabs { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+    .editor-subtab {
+      padding: 0.25rem 0.55rem;
+      border: 1px solid #d7dbe0;
+      border-radius: 0.3rem;
+      color: #444;
+      background: #f5f6f8;
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 0.78rem;
+      cursor: pointer;
+    }
+    .editor-subtab[aria-selected="true"] { border-color: #a95f00; color: #633900; background: #fff0d8; }
+    .editor-subtab.has-error { border-color: #8a1111; box-shadow: inset 0 -2px 0 #8a1111; }
+    .editor-add { border-style: dashed; color: #8a4d00; background: #fff; }
+    .editor-subpanels { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; }
+    .editor-subpanel { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; }
+    .editor-subpanel .CodeMirror, .editor-plain {
+      flex: 1 1 auto;
+      height: auto;
+      min-height: 12rem;
+      border: 1px solid #d7dbe0;
+      border-radius: 0.35rem;
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 0.85rem;
+    }
+    .editor-plain { width: 100%; padding: 0.5rem; resize: none; }
+    /* Coloration propre au format : balises de champ, variables, formules (editor.js, mode pwq-html). */
+    .cm-pwq-tag { color: #a95f00; font-weight: 600; }
+    .cm-pwq-variable { color: #7a2fa0; font-weight: 600; }
+    .cm-pwq-math { color: #0b7a75; }
+    .editor-header { display: grid; gap: 0.75rem; max-width: 36rem; }
+    .editor-header label { display: grid; gap: 0.25rem; font-size: 0.85rem; }
+    .editor-header input { padding: 0.45rem 0.55rem; border: 1px solid #aeb5bd; border-radius: 0.3rem; }
+    .editor-status { min-height: 1.2em; margin: 0; font-size: 0.82rem; overflow-wrap: anywhere; }
+    .editor-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
+    .editor-note { color: #656b72; font-size: 0.8rem; }
+
+    /* Petits boutons du panneau : copier le prompt, coller, boutons de l’éditeur. */
+    .small-button, .editor-button {
+      padding: 0.3rem 0.65rem;
+      border: 1px solid #c9a06c;
+      border-radius: 0.3rem;
+      color: #8a4d00;
+      background: #fff;
+      font-size: 0.82rem;
+      cursor: pointer;
+    }
+    .small-button:hover, .editor-button:hover { background: #fff0d8; }
+    .small-button.is-primary, .editor-button.is-primary { border-color: #9b5700; color: #fff; background: #a95f00; font-weight: 600; }
+    .small-button.is-primary:hover, .editor-button.is-primary:hover { background: #874c00; }
+    .paste-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.65rem; }
+
+    /* Collage à la main. */
+    .paste-dialog { width: min(44rem, calc(100vw - 2rem)); border: 0; border-radius: 0.5rem; box-shadow: 0 12px 40px #0004; }
+    .paste-dialog::backdrop { background: #0005; }
+    .paste-dialog h2 { font-size: 1.05rem; }
+    .paste-dialog p { font-size: 0.85rem; }
+    #paste-text { width: 100%; height: 50vh; padding: 0.5rem; font-family: ui-monospace, Consolas, monospace; font-size: 0.82rem; }
+    .paste-dialog-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.6rem; }
+
+    /* Ligne de la liste : case, question, crayon ✎ ; état d’une question modifiée. */
+    .question-edit {
+      width: 2rem;
+      height: 2rem;
+      padding: 0;
+      border: 0;
+      border-radius: 0.3rem;
+      color: #8a4d00;
+      background: none;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    #question-list .question-edit { width: 2rem; padding: 0; text-align: center; }
+    .question-edit:hover:not(:disabled) { background: #fff0d8; }
+    .question-edit:disabled { color: #bbb; cursor: not-allowed; }
+    .question-state { margin-left: 0.35rem; color: #a95f00; font-size: 0.75rem; font-weight: 600; }
+
     .muted { color: #656b72; }
     .error { color: #8a1111; }
     .success { color: #176326; }
@@ -427,6 +551,9 @@
       .panel h2 { margin-bottom: 0.45rem; }
       /* Environ quatre lignes : la liste ne doit pas repousser l’aperçu trop loin. */
       #activity-order-list { max-height: 9.5rem; }
+      /* L’éditeur, empilé, a sa propre hauteur. */
+      .workspace.is-editing { grid-template-columns: minmax(0, 1fr); }
+      .editor-view { height: 75vh; height: 75dvh; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -473,8 +600,18 @@
       <button id="other-folder" class="link-button" type="button" hidden>Autre dossier</button>
     </div>
 
-    <!-- Filtre et liste des fichiers de question chargés depuis le dossier. -->
+    <!-- Panneau de gauche en onglets (SPECIFICATION.md, § 11.10) : « Questions », la liste, puis un onglet
+         par question ouverte dans l’éditeur. La barre d’onglets n’apparaît qu’avec un onglet de question. -->
     <section class="panel panel-questions" aria-label="Questions">
+      <div class="left-tabs" id="left-tabs" role="tablist" hidden>
+        <button class="left-tab left-tab-questions" id="questions-tab" type="button" role="tab" aria-selected="true">Questions</button>
+      </div>
+      <div class="questions-view" id="questions-view">
+      <!-- Questions écrites par une IA : copier le prompt, puis coller sa réponse. -->
+      <div class="paste-row">
+        <button id="copy-prompt" class="small-button" type="button">Copier le prompt</button>
+        <button id="paste-questions" class="small-button" type="button">Coller le code d’une ou plusieurs questions</button>
+      </div>
       <div class="filter-row">
         <label for="question-search">Filtrer les questions par nom ou mot-clé</label>
         <input id="question-search" type="search" placeholder="ex. arithmétique, PGCD" autocomplete="off">
@@ -488,6 +625,9 @@
       <p id="list-empty" class="muted">Ouvrez un dossier pour afficher ses questions.</p>
       <!-- Charte des feuilles : brand.css du dossier de questions s’il en a un, charte neutre sinon. -->
       <p id="brand-status" class="muted" hidden></p>
+      </div>
+      <!-- Onglets des questions ouvertes : un panneau par onglet, créé par editor.js. -->
+      <div class="editor-view" id="editor-view" hidden></div>
     </section>
 
     <!-- Compilation : le bouton, puis le mode (plusieurs questions cochées) et le titre (activité). -->
@@ -532,6 +672,19 @@
       </section>
     </div>
   </main>
+  <!-- Collage à la main, quand le navigateur refuse de lire le presse-papiers (SPECIFICATION.md, § 11.10). -->
+  <dialog class="paste-dialog" id="paste-dialog" aria-labelledby="paste-dialog-title">
+    <form method="dialog">
+      <h2 id="paste-dialog-title">Coller le code d’une ou plusieurs questions</h2>
+      <p class="muted">Collez ici la réponse de l’IA (Ctrl+V). Plusieurs questions sont séparées par des lignes
+        « === nom.pwq === », ou commencent chacune par « % question_title ».</p>
+      <textarea id="paste-text" spellcheck="false"></textarea>
+      <div class="paste-dialog-actions">
+        <button class="small-button" value="cancel" type="submit">Annuler</button>
+        <button class="small-button is-primary" id="paste-confirm" value="paste" type="submit">Ajouter</button>
+      </div>
+    </form>
+  </dialog>
   <!-- Le contrôleur relie les interactions de cette page au compilateur. -->
   <script src="../runtime/template.js"></script>
   <!-- Correction par défaut : le contrôle de cohérence d’une question sans « question_check » l’utilise. -->
@@ -543,6 +696,8 @@
   <script src="draws.js"></script>
   <script src="assemble.js"></script>
   <script src="zip.js"></script>
+  <!-- Éditeur de questions ; CodeMirror, sa coloration, n’est chargé qu’à l’ouverture d’un onglet. -->
+  <script src="editor.js"></script>
   <script src="compiler.js"></script>
 </body>
 </html>

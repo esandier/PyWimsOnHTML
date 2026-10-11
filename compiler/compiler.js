@@ -4,7 +4,7 @@
 // page (SPECIFICATION.md, § 11.1) ; le dossier choisi par l’utilisateur ne contient que ses questions.
 (() => {
   // Fonctions des modules du compilateur (format.js, draws.js, assemble.js, zip.js).
-  const { archiveQuestionSource, assembleActivity, assembleQuestion, computeDraws, createQuestionFilename, createZip, fieldKindsLabel, isQuestionFile, neededResources, parseQuestionSource, previewPlaceholderDraw, readZip, resourcePaths, templateWarnings } = PyWimsCompiler;
+  const { archiveQuestionSource, assembleActivity, assembleQuestion, computeDraws, createQuestionFilename, createZip, fieldKindsLabel, isArchive, isQuestionFile, neededResources, parseQuestionSource, previewPlaceholderDraw, readZip, resourcePaths, splitPastedQuestions, splitQuestionSource, templateWarnings } = PyWimsCompiler;
 
   const chooseFolderButton = document.getElementById("choose-folder");
   const filePicker = document.getElementById("question-folder");
@@ -33,6 +33,11 @@
   const moveUpButton = document.getElementById("move-up");
   const moveDownButton = document.getElementById("move-down");
   const orderHint = document.getElementById("order-hint");
+  const workspace = document.querySelector(".workspace");
+  const copyPromptButton = document.getElementById("copy-prompt");
+  const pasteButton = document.getElementById("paste-questions");
+  const pasteDialog = document.getElementById("paste-dialog");
+  const pasteText = document.getElementById("paste-text");
 
   let questions = [];
   let selectedQuestion;
@@ -152,6 +157,7 @@
         const path = `${prefix}${name}`;
         found.push({
           path,
+          handle: entry,
           read: async () => {
             let file;
             try {
@@ -334,7 +340,7 @@
         : "Aperçu provisoire : les variables apparaissent sous leur nom. Chargement de Python pour calculer un tirage (10 à 20 secondes la première fois)…");
       const draws = readProjectResources(pythonResources)
         .then(installPythonSources)
-        .then(() => computeDraws(fields, { count: 1 }));
+        .then(() => computeDraws(fields, { count: 1, firstSeed: question.previewSeed ?? 0 }));
       previewDrawCache.set(question, draws);
       draws.catch(() => previewDrawCache.delete(question));
     }
@@ -356,10 +362,18 @@
 
   // Lit les questions du dossier choisi, sous-dossiers compris, et réinitialise l’interface.
   // sources : [{ path, read }] ; keepSelection garde la sélection d’une relecture du même dossier.
+  // Trois textes par question (SPECIFICATION.md, § 11.10) : source, le fichier tel que lu ou écrit
+  // dans le dossier ; savedText, la dernière version enregistrée (écrite, ou téléchargée) ; text, la
+  // version en cours, celle de l’éditeur, qui sert à l’aperçu et à la compilation. Une question
+  // collée (isNew) n’a pas de source tant qu’elle n’est pas écrite dans le dossier.
   async function loadFolder(name, sources, { keepSelection = false, brand = null } = {}) {
     // Chemins dans l’ordre de l’activité : « Relire » garde cet ordre.
     const selectedPaths = selectedQuestions.map(question => question.path);
     const shownPath = selectedQuestion?.path;
+    // « Relire » garde les questions ouvertes dans l’éditeur, modifiées ou collées, avec leur texte.
+    const kept = keepSelection
+      ? questions.filter(question => editor.isOpen(question) || question.isNew || question.text !== question.source)
+      : [];
     clearMessage(messages);
     clearMessage(projectStatus);
     questions = [];
@@ -389,18 +403,27 @@
     brandStatus.hidden = false;
     showMessage(projectStatus, "Chargement des questions…");
 
-    for (const { path, read } of sources) {
-      const question = { path, read };
+    for (const { path, read, handle } of sources) {
+      const old = kept.find(question => question.path === path);
+      if (old) {
+        Object.assign(old, { read, handle });
+        questions.push(old);
+        continue;
+      }
+      const question = { path, read, handle };
       try {
         question.source = await read();
         // Un .zip sans .pwq n’est pas une question : il n’est pas listé (§ 2.7).
         if (question.source === null) continue;
+        question.text = question.savedText = question.source;
         question.fields = parseQuestionSource(question.source, path);
       } catch (error) {
         question.error = error;
       }
       questions.push(question);
     }
+    // Questions collées et pas encore écrites dans le dossier : elles restent dans la liste.
+    questions.push(...kept.filter(question => !questions.includes(question)));
     if (keepSelection) {
       selectedQuestions = selectedPaths
         .map(path => questions.find(question => question.path === path && !question.error))
@@ -488,12 +511,34 @@
       title.append(rank, questionLabel(question));
       const kinds = document.createElement("span");
       kinds.className = "question-fields";
-      kinds.textContent = question.error ? "fichier illisible" : fieldKindsLabel(question.fields.question_statement);
+      kinds.textContent = !question.error
+        ? fieldKindsLabel(question.fields.question_statement)
+        : editor.isOpen(question) ? "à corriger dans son onglet" : "fichier illisible";
+      const state = questionState(question);
+      if (state) {
+        const mark = document.createElement("span");
+        mark.className = "question-state";
+        mark.textContent = state;
+        kinds.append(mark);
+      }
       // Le chemin reste accessible au survol : deux questions peuvent porter le même titre.
       button.title = question.path;
       button.append(title, kinds);
       button.addEventListener("click", () => selectQuestion(question));
-      item.append(selection, button);
+      // Crayon : ouvre la question dans l’éditeur (§ 11.10). Une archive .pwqa, qui contient aussi ses
+      // images, ne se modifie pas encore ici ; un fichier illisible non plus.
+      const edit = document.createElement("button");
+      edit.className = "question-edit";
+      edit.type = "button";
+      edit.textContent = "✎";
+      const editable = !isArchive(question.path) && typeof question.text === "string";
+      edit.disabled = !editable;
+      edit.title = editable
+        ? `Modifier « ${questionLabel(question)} »`
+        : isArchive(question.path) ? "Une archive .pwqa ne se modifie pas encore dans le compilateur." : "Fichier illisible.";
+      edit.setAttribute("aria-label", edit.title);
+      edit.addEventListener("click", () => editor.open(question));
+      item.append(selection, button, edit);
       questionList.append(item);
     }
 
@@ -681,6 +726,176 @@
       : assembleActivity(activityTitle, questions, needed, options);
   }
 
+  // Éditeur de questions, créé plus bas une fois la page prête (il n’existe pas dans les pages de tests).
+  let editor = { isOpen: () => false, unsaved: () => [], refreshLabels: () => {} };
+
+  // État d’une question dans la liste (§ 11.10) : version de l’éditeur pas encore enregistrée, ou
+  // enregistrée par téléchargement, donc différente du fichier du dossier.
+  function questionState(question) {
+    if (question.isNew || question.text !== question.savedText) return "non enregistrée";
+    if (question.savedText !== question.source) return "modifiée";
+    return "";
+  }
+
+  // Reconstruit la liste et les contrôles après un changement d’une question.
+  function refreshList() {
+    renderQuestionList();
+    updateCompilationControls();
+    editor.refreshLabels();
+  }
+
+  // Enregistre le texte de l’éditeur (SPECIFICATION.md, § 11.10) ; renvoie true si c’est fait.
+  // Chrome et Edge, dossier ouvert par son accès : écriture dans le dossier. Sinon : téléchargement.
+  async function saveQuestion(question, text) {
+    const name = question.path.split("/").pop();
+    try {
+      if (folderHandle) {
+        if (!await writeToFolder(question, text, name)) return false;
+        question.source = text;
+        question.isNew = false;
+        showMessage(messages, `Enregistré dans le dossier : ${question.path}`, "success", 3000);
+      } else if (typeof window.showSaveFilePicker === "function") {
+        // Chrome ou Edge sans dossier ouvert : la fenêtre « Enregistrer sous », dans le dernier dossier.
+        let handle;
+        try {
+          handle = await window.showSaveFilePicker({
+            id: "pywims-questions",
+            suggestedName: name,
+            ...(rememberedHandle ? { startIn: rememberedHandle } : {}),
+            types: [{ description: "Question PWOH", accept: { "text/plain": [".pwq"] } }]
+          });
+        } catch {
+          return false; // Fenêtre fermée sans enregistrer.
+        }
+        await writeFile(handle, text);
+        question.isNew = false;
+        showMessage(messages, `Enregistré : ${handle.name}. Ouvrez son dossier pour le retrouver dans la liste.`, "success", 4000);
+      } else {
+        // Firefox, Safari : une page ne choisit pas le dossier d’un téléchargement.
+        downloadBlob(new Blob([text], { type: "text/plain;charset=utf-8" }), name);
+        question.isNew = false;
+        showMessage(messages, `${name} est téléchargé : placez-le dans votre dossier de questions. (Firefox : « Toujours demander où enregistrer les fichiers » ouvre la fenêtre d’enregistrement, dans le dernier dossier choisi.)`, "warning");
+      }
+    } catch (error) {
+      showMessage(messages, `Enregistrement impossible : ${error.message}`, "error");
+      return false;
+    }
+    question.savedText = question.text = text;
+    refreshList();
+    return true;
+  }
+
+  async function writeFile(handle, text) {
+    const writable = await handle.createWritable();
+    await writable.write(text);
+    await writable.close();
+  }
+
+  // Écrit dans le dossier ouvert ; false si l’auteur renonce. Au premier enregistrement, le navigateur
+  // demande l’autorisation de modifier le dossier, ouvert en lecture. Un fichier changé sur le disque
+  // depuis son ouverture (modifié dans un autre éditeur) n’est remplacé qu’après confirmation.
+  async function writeToFolder(question, text, name) {
+    const mode = { mode: "readwrite" };
+    if (await folderHandle.queryPermission(mode) !== "granted" &&
+        await folderHandle.requestPermission(mode) !== "granted") {
+      throw new Error("le navigateur n’a pas reçu l’autorisation de modifier le dossier.");
+    }
+    let handle = question.handle;
+    if (!handle) {
+      // Nouvelle question : à la racine du dossier.
+      let exists = true;
+      try {
+        await folderHandle.getFileHandle(name);
+      } catch {
+        exists = false;
+      }
+      if (exists && !confirm(`« ${name} » existe déjà dans le dossier. Le remplacer ?`)) return false;
+      handle = await folderHandle.getFileHandle(name, { create: true });
+    } else {
+      let current = null;
+      try {
+        current = await (await handle.getFile()).text();
+      } catch {
+        // Fichier disparu : il est recréé.
+      }
+      if (current !== null && current !== question.source &&
+          !confirm(`« ${question.path} » a été modifié sur le disque depuis son ouverture. Le remplacer par la version de l’éditeur ?`)) {
+        return false;
+      }
+    }
+    await writeFile(handle, text);
+    question.handle = handle;
+    question.read = async () => questionText(await handle.getFile(), question.path);
+    return true;
+  }
+
+  // « Copier le prompt » : PROMPT.md, lu à côté du compilateur, comme sur la page Créer.
+  async function copyPrompt() {
+    try {
+      const response = await fetch(new URL("../PROMPT.md", location.href), { cache: "no-cache" });
+      if (!response.ok) throw new Error(`PROMPT.md introuvable (${response.status})`);
+      await navigator.clipboard.writeText(await response.text());
+      showMessage(messages, "Prompt copié : collez-le dans votre assistant IA, puis décrivez la question voulue.", "success", 4000);
+    } catch (error) {
+      showMessage(messages, `Le prompt n’a pas pu être copié : ${error.message}`, "error");
+    }
+  }
+
+  // « Coller le code… » : lit le presse-papiers ; si le navigateur refuse, ou s’il est vide, la fenêtre
+  // de collage à la main s’ouvre.
+  async function pasteQuestions() {
+    let text = "";
+    try {
+      text = await navigator.clipboard.readText();
+    } catch {
+      // Lecture refusée : collage à la main.
+    }
+    if (text.trim()) {
+      addPastedQuestions(text);
+    } else {
+      pasteDialog.showModal();
+      pasteText.focus();
+    }
+  }
+
+  // Nom de fichier libre : « x.pwq », sinon « x-2.pwq »…
+  function uniquePath(name) {
+    const taken = new Set(questions.map(question => question.path.toLocaleLowerCase()));
+    const stem = name.replace(/\.pwq$/i, "");
+    let candidate = name;
+    for (let index = 2; taken.has(candidate.toLocaleLowerCase()); index += 1) {
+      candidate = `${stem}-${index}.pwq`;
+    }
+    return candidate;
+  }
+
+  // Ajoute les questions d’un texte collé à la liste, chacune dans son onglet (§ 11.10).
+  async function addPastedQuestions(text) {
+    const pieces = splitPastedQuestions(text);
+    if (!pieces.length) {
+      showMessage(messages, "Le texte collé ne contient pas de question : un fichier .pwq commence par une ligne « % ».", "error");
+      return;
+    }
+    let withError = 0;
+    for (const { name, source } of pieces) {
+      const title = splitQuestionSource(source)?.fields.find(field => field.name === "question_title")?.content.trim();
+      const path = uniquePath(name ?? createQuestionFilename(title || "question").replace(/\.html$/, ".pwq"));
+      const question = { path, text: source, savedText: null, source: null, isNew: true, read: null, handle: null };
+      try {
+        question.fields = parseQuestionSource(source, path);
+      } catch (error) {
+        question.error = error;
+        withError += 1;
+      }
+      questions.push(question);
+      refreshList();
+      await editor.open(question);
+    }
+    const count = pieces.length;
+    showMessage(messages, `${count} question${count > 1 ? "s" : ""} collée${count > 1 ? "s" : ""}${withError ? `, dont ${withError} avec une erreur` : ""}.`,
+      withError ? "warning" : "success", withError ? null : 3000);
+  }
+
   // Propose le fichier au téléchargement ; l’adresse temporaire est libérée juste après, le temps
   // que le navigateur ait commencé à lire le fichier.
   function downloadBlob(blob, filename) {
@@ -710,13 +925,15 @@
       // Les questions sont relues : un fichier modifié depuis l’ouverture est compilé dans sa
       // dernière version (Chrome, Edge), ou signalé (Firefox, Safari).
       for (const question of selected) {
+        // Une question modifiée ou collée est compilée telle qu’elle est dans l’éditeur (§ 11.10).
+        if (question.isNew || question.text !== question.source) continue;
         const source = await question.read();
         if (source === null) {
           throw new Error(`${question.path} : l’archive ne contient plus de fichier .pwq.`);
         }
         if (source !== question.source) {
           question.fields = parseQuestionSource(source, question.path);
-          question.source = source;
+          question.source = question.text = question.savedText = source;
           previewDrawCache.delete(question);
         }
       }
@@ -781,6 +998,79 @@
     return;
   }
 
+  // Éditeur de questions (SPECIFICATION.md, § 11.10) : ce module lui dit quoi faire de la liste, de
+  // l’aperçu et de l’enregistrement.
+  editor = PyWimsEditor.create({
+    tabBar: document.getElementById("left-tabs"),
+    questionsTab: document.getElementById("questions-tab"),
+    questionsView: document.getElementById("questions-view"),
+    editorView: document.getElementById("editor-view"),
+    // L’aperçu suit l’onglet actif ; un onglet de question élargit le panneau de gauche.
+    onActivate: question => {
+      workspace.classList.toggle("is-editing", Boolean(question));
+      if (question && question !== selectedQuestion) selectQuestion(question);
+    },
+    // Texte de l’éditeur validé (après une pause de la frappe) : il devient la version de la question.
+    onChange: (question, { text, fields, error }) => {
+      question.text = text;
+      if (fields) {
+        question.fields = fields;
+        delete question.error;
+      } else {
+        question.error = new Error(error);
+      }
+      previewDrawCache.delete(question);
+      refreshList();
+    },
+    // « Essayer » : un nouveau tirage de la version de l’éditeur.
+    onTry: question => {
+      question.previewSeed = (question.previewSeed ?? 0) + 1;
+      previewDrawCache.delete(question);
+      selectQuestion(question);
+    },
+    onSave: saveQuestion,
+    // Onglet fermé sans enregistrer : une question collée quitte la liste, une autre revient à sa
+    // dernière version enregistrée.
+    onClose: (question, { discarded }) => {
+      if (discarded) {
+        if (question.isNew) {
+          questions = questions.filter(other => other !== question);
+          selectedQuestions = selectedQuestions.filter(other => other !== question);
+          if (selectedQuestion === question) {
+            selectedQuestion = undefined;
+            previewFrame.hidden = true;
+            showPreviewNotice("Choisissez une question dans la liste pour afficher son aperçu.");
+          }
+        } else {
+          question.text = question.savedText;
+          try {
+            question.fields = parseQuestionSource(question.text, question.path);
+            delete question.error;
+          } catch (error) {
+            question.error = error;
+          }
+          previewDrawCache.delete(question);
+          if (selectedQuestion === question) selectQuestion(question);
+        }
+      }
+      refreshList();
+    }
+  });
+
+  // Ouvrir un autre dossier ferme les onglets ; avec des modifications non enregistrées, on demande.
+  function closeEditorTabs() {
+    const unsaved = editor.unsaved();
+    if (unsaved.length && !confirm(`${unsaved.length === 1 ? "Une question a" : `${unsaved.length} questions ont`} des modifications non enregistrées, qui seront perdues. Continuer ?`)) {
+      return false;
+    }
+    editor.closeAll();
+    workspace.classList.remove("is-editing");
+    return true;
+  }
+  addEventListener("beforeunload", event => {
+    if (editor.unsaved().length) event.preventDefault();
+  });
+
   filePicker.addEventListener("change", () => {
     if (!filePicker.files.length) return;
     const name = filePicker.files[0].webkitRelativePath?.split("/")[0] || filePicker.files[0].name;
@@ -792,6 +1082,7 @@
     loadFolder(name, questionFilesOfPicker(filePicker.files), { brand: brandOfPicker(filePicker.files) });
   });
   chooseFolderButton.addEventListener("click", () => {
+    if (!closeEditorTabs()) return;
     if (!canRememberFolder) {
       filePicker.click();
     } else if (rememberedHandle && !folderHandle) {
@@ -800,7 +1091,15 @@
       pickFolder();
     }
   });
-  otherFolderButton.addEventListener("click", pickFolder);
+  otherFolderButton.addEventListener("click", () => {
+    if (closeEditorTabs()) pickFolder();
+  });
+  copyPromptButton.addEventListener("click", copyPrompt);
+  pasteButton.addEventListener("click", pasteQuestions);
+  pasteDialog.addEventListener("close", () => {
+    if (pasteDialog.returnValue === "paste") addPastedQuestions(pasteText.value);
+    pasteText.value = "";
+  });
   reloadFolderButton.addEventListener("click", () => openHandle(folderHandle, { keepSelection: true }));
   // Préchargement de Python dès l’ouverture (SPECIFICATION.md, § 11.1) : Pyodide, SymPy et pywims
   // sont chargés et importés pendant que l’utilisateur choisit son dossier. La session sert

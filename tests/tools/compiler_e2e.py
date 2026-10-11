@@ -218,6 +218,98 @@ def archive_question(browser, url):
         shutil.rmtree(folder, ignore_errors=True)
 
 
+READ_OPFS = """async path => {
+  let folder = await navigator.storage.getDirectory();
+  const parts = path.split('/');
+  for (const part of parts.slice(0, -1)) folder = await folder.getDirectoryHandle(part);
+  return (await (await folder.getFileHandle(parts.at(-1))).getFile()).text();
+}"""
+
+
+# Éditeur du compilateur (SPECIFICATION.md, § 11.10) : onglet d’une question, validation à la frappe,
+# Essayer, enregistrement dans le dossier (Chrome, Edge), collage de deux questions, puis téléchargement
+# là où le navigateur n’écrit pas dans un dossier (Firefox, Safari, imités dans Edge).
+def editor_and_paste(browser, url, pgcd):
+    page = browser.new_page(accept_downloads=True)
+    errors = []
+    page.on("pageerror", lambda error: errors.append(str(error)))
+    page.on("dialog", lambda dialog: dialog.accept())
+    page.goto(url)
+    page.wait_for_function("!!window.PyWimsEditor")
+    page.evaluate(WRITE_OPFS, ["questions-edition/pgcd.pwq", pgcd])
+    page.evaluate(PICK_OPFS.replace("questions-essai", "questions-edition"))
+    page.click("#choose-folder")
+    page.wait_for_function("document.querySelectorAll('.question-edit').length === 1")
+    page.click(".question-edit")
+    page.wait_for_selector(".editor-tab .CodeMirror, .editor-tab .editor-plain", timeout=30_000)
+    page.click(".editor-subtab >> text=En-tête")
+    page.fill(".editor-header input >> nth=0", "PGCD modifié")
+    page.wait_for_function("document.querySelector('.question-state')?.textContent === 'non enregistrée'")
+    if not page.is_visible(".left-tab-dot") or "is-editing" not in page.get_attribute(".workspace", "class"):
+        raise AssertionError("L’onglet modifié n’a pas son « ● », ou le panneau ne s’est pas élargi.")
+    # Une balise fautive marque son sous-onglet ; l’annuler efface l’erreur.
+    page.click(".editor-subtab >> text=question_statement")
+    statement = ".editor-subpanel:not([hidden]) .CodeMirror"
+    page.evaluate(f"document.querySelector('{statement}').CodeMirror.replaceRange(' {{% input_value %}}', {{ line: 0, ch: 0 }})")
+    page.wait_for_function("document.querySelector('.editor-subtab.has-error')?.textContent === 'question_statement'")
+    page.evaluate(f"document.querySelector('{statement}').CodeMirror.undo()")
+    page.wait_for_function("!document.querySelector('.editor-subtab.has-error')")
+    # Essayer : l’aperçu montre la version de l’éditeur, avec un tirage réel.
+    page.click(".editor-button >> text=\"Essayer\"")
+    page.wait_for_function(
+        "document.getElementById('preview-frame').srcdoc.includes('PGCD modifié') && "
+        "!document.getElementById('preview-notice').textContent.startsWith('Aperçu provisoire')", timeout=180_000)
+    # Ctrl+S : le fichier du dossier est réécrit, identique hors du titre.
+    page.click(statement)
+    page.keyboard.press("Control+s")
+    page.wait_for_function("!document.querySelector('.left-tab-dot:not([hidden])')")
+    written = page.evaluate(READ_OPFS, "questions-edition/pgcd.pwq")
+    if written != pgcd.replace("\nPGCD\n", "\nPGCD modifié\n", 1):
+        raise AssertionError("Le fichier enregistré n’est pas l’original au titre près.")
+    print("éditeur : modification, erreur marquée, Essayer, Ctrl+S écrit le fichier à l’identique hors du titre")
+
+    # Collage à la main de deux questions, séparées par « === nom.pwq === », avec du texte autour.
+    page.click("#questions-tab")
+    page.evaluate("document.getElementById('paste-dialog').showModal()")
+    page.fill("#paste-text", f"Voici :\n=== premiere.pwq ===\n```\n{pgcd.replace('PGCD', 'Collée')}```\n=== seconde.pwq ===\n{pgcd}")
+    page.click("#paste-confirm")
+    page.wait_for_function("document.querySelectorAll('.left-tab-title').length === 3", timeout=30_000)
+    paths = page.eval_on_selector_all(".left-tab:not(.left-tab-questions)", "items => items.map(item => item.title)")
+    if paths != ["pgcd.pwq", "premiere.pwq", "seconde.pwq"]:
+        raise AssertionError(f"onglets inattendus après le collage : {paths}")
+    page.click(".editor-tab:not([hidden]) .editor-button >> text=Enregistrer et fermer")
+    page.wait_for_function("document.querySelectorAll('.left-tab-title').length === 2")
+    if page.evaluate(READ_OPFS, "questions-edition/seconde.pwq") != pgcd:
+        raise AssertionError("La question collée n’a pas été écrite dans le dossier.")
+    # Fermer sans enregistrer (confirmé) une question collée la retire de la liste.
+    page.click(".editor-tab:not([hidden]) .editor-button >> text=\"Fermer\"")
+    page.wait_for_function("document.querySelectorAll('.left-tab-title').length === 1")
+    titles = sorted(page.eval_on_selector_all("#question-list li:not(.question-group)", TITLES))
+    if titles != ["PGCD", "PGCD modifié"]:
+        raise AssertionError(f"liste inattendue après le collage : {titles}")
+    page.close()
+    print("collage : deux questions découpées, l’une écrite dans le dossier, l’autre retirée en fermant son onglet")
+
+    # Sans écriture dans un dossier (Firefox, Safari) : « Enregistrer » télécharge le .pwq.
+    page = browser.new_page(accept_downloads=True)
+    page.add_init_script("delete window.showDirectoryPicker; delete window.showSaveFilePicker;")
+    page.on("pageerror", lambda error: errors.append(str(error)))
+    page.goto(url)
+    page.wait_for_function("!!window.PyWimsEditor")
+    page.evaluate("document.getElementById('paste-dialog').showModal()")
+    page.fill("#paste-text", pgcd)
+    page.click("#paste-confirm")
+    page.wait_for_selector(".editor-tab .editor-button >> text=\"Enregistrer\"")
+    with page.expect_download(timeout=30_000) as waiting:
+        page.click(".editor-tab .editor-button >> text=\"Enregistrer\"")
+    if waiting.value.suggested_filename != "PGCD.pwq" or open(waiting.value.path(), encoding="utf-8").read() != pgcd:
+        raise AssertionError(f"téléchargement inattendu : {waiting.value.suggested_filename}")
+    page.close()
+    print("sans écriture dans un dossier : « Enregistrer » télécharge le .pwq")
+    if errors:
+        raise AssertionError(f"erreurs JavaScript de l’éditeur : {errors}")
+
+
 # Firefox et Safari, imités dans Edge sans showDirectoryPicker : sélecteur classique, nom du dernier
 # dossier rappelé, et fichier modifié après l’ouverture signalé à la compilation.
 def without_remembered_folder(browser, url, folder):
@@ -364,6 +456,7 @@ def main():
                                         for name in ("Decim3.pwq", "pgcd.pwq")})
                 # Erreurs JavaScript de la page principale seulement : la page sans mémoire a les siennes.
                 without_remembered_folder(browser, url, folder)
+                editor_and_paste(browser, url, open(os.path.join(folder, "pgcd.pwq"), encoding="utf-8").read())
 
             finally:
                 browser.close()

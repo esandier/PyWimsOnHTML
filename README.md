@@ -18,7 +18,7 @@ qui fait référence ; le format des questions est détaillé dans
 
 - `compiler/` — page du compilateur (`index.html`), son interface (`compiler.js`) et ses modules :
   format `.pwq` (`format.js`), tirages et contrôles (`draws.js`), assemblage (`assemble.js`),
-  archive ZIP (`zip.js`)
+  archive ZIP (`zip.js`), éditeur de questions (`editor.js`)
 - `questions/` — fichiers de questions `.pwq`
 - `layouts/` — mise en page HTML commune aux questions seules et aux activités
 - `widgets/` — champs de saisie : texte, MathLive, matrices fixes et redimensionnables, choix

@@ -816,10 +816,11 @@ réunies dans un `span` insécable.
 | `css/question.css` | styles des feuilles, à partir des variables de la charte |
 | `css/brand.css` | charte neutre, par défaut (§ 11.4) |
 | `css/brands/*.css` | exemples de chartes à copier en `brand.css` dans son dossier de questions (UPEC) |
-| `compiler/format.js` | analyse d’un fichier `.pwq`, types de ses champs de réponse |
+| `compiler/format.js` | analyse d’un fichier `.pwq`, types de ses champs de réponse ; découpage et réécriture pour l’éditeur, découpage d’un texte collé |
 | `compiler/draws.js` | tirages avec Pyodide, contrôles de l’auteur, cohérence, ordre des choix |
 | `compiler/assemble.js` | ressources du projet, assemblage des feuilles, empreinte d’une activité |
 | `compiler/zip.js` | archive ZIP des pages séparées |
+| `compiler/editor.js` | éditeur de questions : onglets, sous-onglets des champs, CodeMirror 5, validation à la frappe (§ 11.10) |
 | `compiler/compiler.js` | interface du compilateur : dossier de questions, liste, aperçu, compilation, téléchargement ; lit en ligne les fichiers du projet (§ 11.1) |
 | `compiler/run-local.ps1` | serveur local et compilateur, pour essayer une modification du moteur avant de la publier |
 | `index.html`, `guide/`, `css/site.css`, `favicon.svg` | site du projet : accueil, mode d’emploi et ses modèles (`guide/templates/`), styles et icône communs (§ 11.5, § 11.6) |
@@ -1217,8 +1218,8 @@ Une page `guide/` (« Créer »), en sections :
   `PROMPT.md` ; « Voir le prompt » le déplie dans un cadre sous les boutons,
   qu’on referme du même bouton ; « Télécharger le prompt » l’enregistre. On le
   colle dans son assistant, on décrit la question voulue (ou on donne une
-  question AMC à convertir), on enregistre la réponse dans un fichier `.pwq`
-  du dossier de questions, puis on l’ouvre dans le compilateur.
+  question AMC à convertir), puis on colle la réponse dans le compilateur
+  (« Coller le code d’une ou plusieurs questions », § 11.10).
 - **Sans IA** : deux modèles commentés, chacun avec « Télécharger » et
   « Voir » (le fichier déplié dans un cadre, comme le prompt) : un QCM sans
   Python (`guide/templates/qcm.pwq`) et une question à données aléatoires et
@@ -1329,7 +1330,9 @@ l’aperçu à côté.
 actuelle. Chaque question ouverte pour être modifiée a son onglet : son titre
 court, « ● » si elle a des modifications non enregistrées, et « × » pour le
 fermer. Une question déjà ouverte ne s’ouvre pas deux fois : on revient à son
-onglet. Quand un onglet d’édition est actif, le panneau de gauche s’élargit à la
+onglet. La barre d’onglets n’apparaît qu’avec un onglet de question. Fermer
+l’onglet actif active son voisin, comme dans un navigateur, ou « Questions »
+s’il n’en reste pas. Quand un onglet d’édition est actif, le panneau de gauche s’élargit à la
 moitié de la largeur ; l’aperçu reste à droite. Il reprend sa largeur sur
 l’onglet « Questions ».
 
@@ -1391,10 +1394,15 @@ champs, nouveaux champs à la fin, fins de ligne d’origine (CRLF ou LF).
   changé sur le disque depuis son ouverture (modifié dans un autre éditeur), il
   demande « Remplacer ? ». Une nouvelle question est créée à la racine du
   dossier ; un nom déjà pris demande confirmation.
-- **Firefox, Safari, ou aucun dossier ouvert** : le `.pwq` est téléchargé, avec
-  le message « Placez-le dans votre dossier de questions ». L’onglet n’a plus de
-  « ● », mais la question garde la version de l’éditeur pour la session, et la
-  liste la marque « modifiée ».
+- **Chrome, Edge, sans dossier ouvert** (questions collées) : la fenêtre
+  « Enregistrer sous » s’ouvre dans le dernier dossier de questions.
+- **Firefox, Safari** : le `.pwq` est téléchargé, avec le message « Placez-le
+  dans votre dossier de questions ». Une page ne peut pas choisir le dossier
+  d’un téléchargement ; le message rappelle le réglage de Firefox « Toujours
+  demander où enregistrer les fichiers », qui ouvre la fenêtre d’enregistrement
+  dans le dernier dossier choisi. L’onglet n’a plus de « ● », mais la question
+  garde la version de l’éditeur pour la session, et la liste la marque
+  « modifiée ».
 - Un serveur local qui écrirait dans le dossier a été écarté : le compilateur
   doit marcher en ligne.
 
