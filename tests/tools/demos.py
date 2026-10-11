@@ -52,11 +52,15 @@ def compile_selection(page, titles, destination, activity_title=None):
 
 
 def main():
-    # Dossier de questions : les seuls .pwq de la racine, sans brand.css (charte neutre).
+    # Dossier de questions : les seuls .pwq de la racine suivis par git, sans brand.css (charte
+    # neutre). Une question en cours d’écriture, pas encore ajoutée au dépôt, n’entre pas dans les
+    # démonstrations publiées.
     folder = tempfile.mkdtemp(prefix="pywims-demos-")
-    for name in os.listdir(os.path.join(PROJECT, "questions")):
-        if name.endswith(".pwq"):
-            shutil.copy(os.path.join(PROJECT, "questions", name), folder)
+    tracked = subprocess.run(["git", "ls-files", "-z", "--", "questions/*.pwq"], cwd=PROJECT,
+                             capture_output=True, check=True).stdout.decode("utf-8").split("\0")
+    for path in tracked:
+        if path.count("/") == 1:
+            shutil.copy(os.path.join(PROJECT, path), folder)
     port = free_port()
     server = subprocess.Popen([sys.executable, "-m", "http.server", str(port), "--bind", "127.0.0.1"],
                                cwd=PROJECT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

@@ -970,6 +970,14 @@ mjx-assistive-mml {
   height: 1px;
 }
 
+/* Formule d’un choix : 1 px de marge à droite, compté dans la largeur de la case mais pas dans ce qui
+   déborde. Sans lui, à certains zooms (110 % dans Edge, constaté en octobre 2026 sur « min(m, n) »), la
+   largeur fractionnaire de la formule, arrondie, dépassait la case d’un pixel : la case, qui défile en
+   dernier recours (overflow-x: auto), affichait une barre de défilement sous la formule. */
+.pw-choice-text mjx-container {
+  margin-right: 1px;
+}
+
 /* Choix coché, sans verdict. Le « :not(…) » est nécessaire : « :has(input:checked) » est plus
    spécifique que « .is-correct » et l’emporterait sur les couleurs de correction. */
 .pw-choice:not(.is-correct, .is-incorrect):has(input:checked) {
@@ -2479,6 +2487,14 @@ body:not([data-scored]) .pw-help-score {
    Solution écartée : désactiver cette copie (enableAssistiveMml: false), au prix de l’accessibilité. */
 mjx-assistive-mml {
   height: 1px;
+}
+
+/* Formule d’un choix : 1 px de marge à droite, compté dans la largeur de la case mais pas dans ce qui
+   déborde. Sans lui, à certains zooms (110 % dans Edge, constaté en octobre 2026 sur « min(m, n) »), la
+   largeur fractionnaire de la formule, arrondie, dépassait la case d’un pixel : la case, qui défile en
+   dernier recours (overflow-x: auto), affichait une barre de défilement sous la formule. */
+.pw-choice-text mjx-container {
+  margin-right: 1px;
 }
 
 /* Choix coché, sans verdict. Le « :not(…) » est nécessaire : « :has(input:checked) » est plus
@@ -5814,13 +5830,17 @@ window.PyWimsQuestion = (() => {
     }
 
     // Affiche un tirage au hasard ; Python attend le premier contact de l’élève (activatePython).
+    // L’aperçu du compilateur (data-preview) montre toujours le premier : ses nombres ne changent pas
+    // à chaque mise à jour pendant que l’auteur écrit (SPECIFICATION.md, § 3).
     // Renvoie la promesse de l’affichage, résolue même en cas d’erreur (déjà signalée).
     start() {
       try {
         if (!this.draws.length) {
           throw new Error("Cette question ne contient aucun tirage : recompilez-la.");
         }
-        const selected = this.draws[Math.floor(Math.random() * this.draws.length)];
+        const selected = document.body.dataset.preview === "true"
+          ? this.draws[0]
+          : this.draws[Math.floor(Math.random() * this.draws.length)];
         return this.renderDraw(selected).catch(error => this.reportError(error));
       } catch (error) {
         this.reportError(error);
@@ -6780,12 +6800,8 @@ window.PyWimsQuestion = (() => {
       });
     });
   });
-  // Aperçu du compilateur avec « Afficher la solution » (SPECIFICATION.md, § 3) : chaque question
-  // s’affiche dans l’état « Solution affichée », une fois son énoncé rendu.
-  const showSolutions = document.body.dataset.previewSolution === "true";
   for (const question of questions) {
-    const started = question.start();
-    if (showSolutions) started.then(() => question.draw && question.showSolution());
+    question.start();
   }
 })();
 </script>
