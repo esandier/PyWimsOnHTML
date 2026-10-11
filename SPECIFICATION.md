@@ -1235,10 +1235,13 @@ Une page `guide/` (« Créer »), en sections :
 
 ### 11.6 Page d’accueil, bandeau commun
 
-- **Bandeau commun** aux trois pages (accueil, Créer, compilateur) :
+- **Bandeau commun** aux trois pages (accueil, Créer, atelier) :
   « PWOH », « questions à données aléatoires dans une page HTML », et les
-  boutons Accueil, Créer, Compilateur, Code source, à droite. Sur le
-  compilateur, il remplace le titre (la page tient dans la fenêtre), et les
+  boutons Accueil, Créer, Atelier, Prompt, Code source, à droite. « Prompt »
+  copie `PROMPT.md` (`banner.js`) et le dit sur le bouton lui-même (« Prompt
+  copié ✓ »). La page du compilateur s’appelle « Atelier » pour l’utilisateur
+  (octobre 2026) ; son dossier reste `compiler/`, pour ne pas casser les
+  adresses déjà diffusées. Sur l’atelier, le bandeau remplace le titre (la page tient dans la fenêtre), et les
   messages se placent entre la devise et les boutons.
 - **Style** : celui du compilateur (accent orange, panneaux blancs sur fond
   gris), pour tout le site.
@@ -1275,8 +1278,8 @@ Une page `guide/` (« Créer »), en sections :
   discrètes (petits boutons) : le compilateur est un environnement de travail,
   dont l’éditeur et l’aperçu sont l’essentiel. Dessous, les cadres commencent à
   la même hauteur :
-  - à gauche, la bascule « Liste | Éditeur » et, sur sa ligne à droite, « Copier
-    le prompt » et « Coller question(s) » (§ 11.10) ; la **Liste** :
+  - à gauche, la bascule « Liste | Éditeur » et, sur sa ligne à droite,
+    « Coller question(s) » (§ 11.10) ; la **Liste** :
     « Filtrer les questions par nom ou mot-clé », compte de la sélection,
     « Tout sélectionner », liste, et la charte utilisée en petit, en bas ;
     l’**Éditeur** : la question courante ;
@@ -1357,9 +1360,9 @@ l’ouverture (ou à la réouverture du dossier mémorisé).
 Éditeur » ; l’éditeur montre toujours la question courante. Cliquer sur une
 question de la liste en fait la question courante et montre son aperçu ; les
 flèches ↑ ↓ du clavier, dans la liste, passent à la question précédente ou
-suivante, avec son aperçu. Le bouton « Modifier », au-dessus de l’aperçu, est
-toujours actif : il bascule sur l’éditeur. On regarde d’abord, et on décide de
-modifier en voyant la question. Changer de question ne perd rien :
+suivante, avec son aperçu. On regarde d’abord, et on décide de modifier en
+voyant la question : « Éditeur » la montre. (Un bouton « Modifier » au-dessus de
+l’aperçu faisait double emploi avec la bascule.) Changer de question ne perd rien :
 l’enregistrement est automatique. En mode Éditeur, le panneau de gauche s’élargit
 aux trois cinquièmes de la largeur ; l’aperçu reste à droite. La case à cocher
 garde son rôle (composer une feuille). Un fichier mal formé s’ouvre aussi dans
@@ -1399,11 +1402,10 @@ pas encore ; quitter la page pendant une pause de la frappe demande
 confirmation. Les fins de ligne du fichier (CRLF ou LF) sont gardées. « Relire »
 met à jour la question de l’éditeur si son fichier a changé sur le disque.
 
-**Prompt et collage.** Sur la ligne de la bascule, à droite, deux petits boutons,
-précédés de leur message bref (sur la ligne du dossier, essayée d’abord, ils
-écrasaient le nom du dossier) :
+**Prompt et collage.** « Prompt », dans le bandeau (§ 11.6), copie `PROMPT.md`.
+Sur la ligne de la bascule, à droite, précédé de son message bref (sur la ligne
+du dossier, essayée d’abord, il écrasait le nom du dossier) :
 
-- **Copier le prompt** : copie `PROMPT.md`, comme la page Créer ;
 - **Coller question(s)** (infobulle : « Coller le code d’une ou plusieurs
   questions ») : bascule sur l’éditeur, vide, avec « Collez ici le code d’une ou
   plusieurs questions (Ctrl+V) », le curseur dedans. Sans dossier ouvert, le

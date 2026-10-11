@@ -34,7 +34,6 @@
   const moveDownButton = document.getElementById("move-down");
   const orderHint = document.getElementById("order-hint");
   const workspace = document.querySelector(".workspace");
-  const copyPromptButton = document.getElementById("copy-prompt");
   const pasteButton = document.getElementById("paste-questions");
   const viewToggle = document.getElementById("view-toggle");
   const showListButton = document.getElementById("show-list");
@@ -43,7 +42,6 @@
   const editorView = document.getElementById("editor-view");
   const pasteStatus = document.getElementById("paste-status");
   const newDrawButton = document.getElementById("new-draw");
-  const editButton = document.getElementById("edit-question");
 
   let questions = [];
   let selectedQuestion;
@@ -666,7 +664,7 @@
   async function showInEditor(question) {
     const shown = await ensureEditor();
     if (question && isArchive(question.path)) {
-      await shown.show(question, { readOnly: "Une archive .pwqa, qui contient aussi ses images, ne se modifie pas dans le compilateur." });
+      await shown.show(question, { readOnly: "Une archive .pwqa, qui contient aussi ses images, ne se modifie pas dans l’atelier." });
     } else if (question && typeof question.text !== "string") {
       await shown.show(question, { readOnly: "Ce fichier n’a pas pu être lu." });
     } else {
@@ -845,7 +843,7 @@
         // Fichier disparu : il est recréé.
       }
       if (current !== null && current !== question.source &&
-          !confirm(`« ${question.path} » a été modifié sur le disque, hors du compilateur.\n\nOK : le remplacer par la version de l’atelier.\nAnnuler : reprendre la version du disque.`)) {
+          !confirm(`« ${question.path} » a été modifié sur le disque, hors de l’atelier.\n\nOK : le remplacer par la version de l’atelier.\nAnnuler : reprendre la version du disque.`)) {
         question.source = current;
         return { saved: false, reload: current };
       }
@@ -868,18 +866,6 @@
     const writable = await handle.createWritable();
     await writable.write(text);
     await writable.close();
-  }
-
-  // « Copier le prompt » : PROMPT.md, lu à côté du compilateur, comme sur la page Créer.
-  async function copyPrompt() {
-    try {
-      const response = await fetch(new URL("../PROMPT.md", location.href), { cache: "no-cache" });
-      if (!response.ok) throw new Error(`PROMPT.md introuvable (${response.status})`);
-      await navigator.clipboard.writeText(await response.text());
-      showPasteStatus("Prompt copié.", "success");
-    } catch (error) {
-      showPasteStatus(`Prompt non copié : ${error.message}`, "error");
-    }
   }
 
   // « Coller question(s) » : l’éditeur vide, où l’on colle (§ 11.10). Les questions sont écrites dans le
@@ -1043,7 +1029,7 @@
   // fetch en file://) : elle l’explique au lieu d’échouer à la première compilation.
   if (location.protocol === "file:") {
     chooseFolderButton.disabled = true;
-    showMessage(projectStatus, "Ouvert depuis le disque, le compilateur ne peut pas lire ses fichiers : utilisez la version en ligne, ou lancez compiler/run-local.ps1.", "error");
+    showMessage(projectStatus, "Ouvert depuis le disque, l’atelier ne peut pas lire ses fichiers : utilisez la version en ligne, ou lancez compiler/run-local.ps1.", "error");
     return;
   }
 
@@ -1051,13 +1037,11 @@
   // « Modifier ». Sous Firefox et Safari, une phrase les remplace.
   if (canEdit) {
     viewToggle.hidden = false;
-    editButton.hidden = false;
     showListButton.addEventListener("click", () => setViewMode("list"));
     showEditorButton.addEventListener("click", () => setViewMode("editor"));
-    editButton.addEventListener("click", () => setViewMode("editor"));
   } else {
     pasteButton.hidden = true;
-    showPasteStatus("Pour modifier les questions, ouvrez le compilateur dans Edge ou Chrome.", "muted");
+    showPasteStatus("Pour modifier les questions, ouvrez l’atelier dans Edge ou Chrome.", "muted");
   }
   questionList.addEventListener("keydown", event => {
     if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
@@ -1106,7 +1090,6 @@
     previewDrawCache.delete(question);
     showPreview(question, { live: true });
   });
-  copyPromptButton.addEventListener("click", copyPrompt);
   pasteButton.addEventListener("click", pasteQuestions);
   reloadFolderButton.addEventListener("click", () => openHandle(folderHandle, { keepSelection: true }));
   // Préchargement de Python dès l’ouverture (SPECIFICATION.md, § 11.1) : Pyodide, SymPy et pywims

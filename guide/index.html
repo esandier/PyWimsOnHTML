@@ -7,6 +7,7 @@
   <meta name="description" content="Créer une question PWOH (PyWimsOnHTML) avec ou sans IA : le format .pwq, les champs de réponse, compiler et publier sur Moodle.">
   <link rel="icon" href="../favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="../css/banner.css">
+  <script src="../banner.js" defer></script>
   <link rel="stylesheet" href="../css/site.css">
 </head>
 <body>
@@ -18,7 +19,8 @@
     <nav class="banner-nav" aria-label="Site">
       <a href="../">Accueil</a>
       <a href="./" aria-current="page">Créer</a>
-      <a href="../compiler/">Compilateur</a>
+      <a href="../compiler/">Atelier</a>
+      <button class="banner-prompt" type="button" data-prompt="../PROMPT.md" title="Copier le prompt (PROMPT.md) pour votre assistant IA">Prompt</button>
       <a href="https://github.com/esandier/PyWimsOnHTML">Code source</a>
     </nav>
   </header>
@@ -26,7 +28,7 @@
   <main>
     <h1>Créer une question</h1>
     <p class="lead">Une question est un petit fichier texte, d’extension <code>.pwq</code>. On l’écrit avec
-      l’aide d’une IA, ou à la main à partir d’un modèle, puis le compilateur en fait une page HTML à
+      l’aide d’une IA, ou à la main à partir d’un modèle, puis l’atelier en fait une page HTML à
       donner aux élèves.</p>
 
     <ol class="toc">
@@ -45,10 +47,10 @@
       <li>Copiez le prompt, et collez-le au début d’une conversation avec votre assistant.</li>
       <li>Décrivez la question voulue : « un QCM sur la dérivée de x ↦ ax² + bx, avec des valeurs tirées au
         hasard », ou collez une question d’AMC à convertir.</li>
-      <li>Copiez la réponse, puis, dans le <a href="../compiler/">compilateur</a> ouvert dans Edge ou Chrome,
+      <li>Copiez la réponse, puis, dans l’<a href="../compiler/">atelier</a> ouvert dans Edge ou Chrome,
         avec votre dossier de questions, cliquez sur <strong>Coller question(s)</strong>, puis Ctrl+V dans
         l’éditeur vide : chaque question est écrite dans le dossier, et vous la retouchez à côté de son
-        aperçu. Le compilateur a aussi un bouton <strong>Copier le prompt</strong>.</li>
+        aperçu. Le bouton <strong>Prompt</strong> du bandeau copie aussi le prompt.</li>
     </ol>
     <div class="actions">
       <button class="button" id="copy-prompt" type="button">Copier le prompt</button>
@@ -91,7 +93,7 @@
         <thead><tr><th>Champ</th><th>Statut</th><th>Contenu</th></tr></thead>
         <tbody>
           <tr><td><code>question_title</code></td><td>obligatoire</td><td>titre de la question, affiché aux élèves</td></tr>
-          <tr><td><code>question_keywords</code></td><td>obligatoire</td><td>mots-clés séparés par des virgules (recherche dans le compilateur)</td></tr>
+          <tr><td><code>question_keywords</code></td><td>obligatoire</td><td>mots-clés séparés par des virgules (recherche dans l’atelier)</td></tr>
           <tr><td><code>question_layout</code></td><td>obligatoire</td><td>toujours <code>STD</code></td></tr>
           <tr><td><code>question_setup</code></td><td>obligatoire</td><td>code Python : tirage des valeurs et calcul des solutions</td></tr>
           <tr><td><code>question_statement</code></td><td>obligatoire</td><td>énoncé en HTML, avec formules, valeurs <code>{{variable}}</code> et champs de réponse</td></tr>
@@ -311,7 +313,7 @@
 
     <h2 id="publish">5. Compiler et publier</h2>
     <ol>
-      <li>Ouvrez le <a href="../compiler/">compilateur</a> et choisissez votre dossier de questions (ses
+      <li>Ouvrez l’<a href="../compiler/">atelier</a> et choisissez votre dossier de questions (ses
         sous-dossiers sont lus aussi). Sur Chrome et Edge, il est mémorisé pour la visite suivante.</li>
       <li>Cliquez sur une question pour la voir (les flèches ↑ ↓ passent à la suivante). Dans Edge ou
         Chrome, <strong>Modifier</strong> l’ouvre dans l’éditeur : le fichier à gauche, l’aperçu à droite,
@@ -341,7 +343,7 @@
         10 Mo).</li>
       <li><strong>Images.</strong> Pour une figure, écrivez <code>&lt;img src="figure.png" alt="…"&gt;</code> dans
         l’énoncé, puis réunissez le <code>.pwq</code> et ses images dans une archive <code>.zip</code>, que vous
-        pouvez renommer en <code>.pwqa</code>. Le compilateur la liste comme une question et intègre les images
+        pouvez renommer en <code>.pwqa</code>. L’atelier la liste comme une question et intègre les images
         à la page, qui reste un fichier unique.</li>
       <li>La référence complète du format est le <a href="../PROMPT.md">prompt</a> : il s’adresse à une IA,
         mais se lit aussi très bien.</li>

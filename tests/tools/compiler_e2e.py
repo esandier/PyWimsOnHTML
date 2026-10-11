@@ -228,7 +228,7 @@ READ_OPFS = """async path => {
 
 
 # Atelier du compilateur (SPECIFICATION.md, § 11.10), sous Chrome et Edge : une seule question courante ;
-# « Modifier » bascule sur l’éditeur, une modification est enregistrée seule et l’aperçu la suit ; une
+# « Éditeur » montre la question courante, une modification est enregistrée seule et l’aperçu la suit ; une
 # erreur a son lien vers la ligne ; flèches ↑ ↓ dans la liste ; collage dans l’éditeur vide (plusieurs
 # questions : retour à la liste) ; un fichier CRLF n’est pas réécrit. Sous Firefox et Safari (imités dans
 # Edge), une phrase remplace l’atelier.
@@ -243,12 +243,12 @@ def editor_and_paste(browser, url, pgcd):
     page.evaluate(PICK_OPFS.replace("questions-essai", "questions-edition"))
     page.click("#choose-folder")
     page.wait_for_function("document.querySelectorAll('.question-preview-button').length === 1")
-    # Un clic montre l’aperçu ; « Modifier » bascule sur l’éditeur de cette question.
+    # Un clic montre l’aperçu ; la bascule « Éditeur » montre cette question dans l’éditeur.
     page.click(".question-preview-button")
-    page.click("#edit-question")
+    page.click("#show-editor")
     page.wait_for_selector("#editor-view .CodeMirror", timeout=30_000)
     if "is-editing" not in page.get_attribute(".workspace", "class") or page.get_attribute("#show-editor", "aria-pressed") != "true":
-        raise AssertionError("« Modifier » n’a pas basculé sur l’éditeur élargi.")
+        raise AssertionError("La bascule n’a pas montré l’éditeur élargi.")
     # Le titre est la quatrième ligne du fichier : il est modifié dans l’éditeur, puis enregistré seul.
     editor = "document.querySelector('#editor-view .CodeMirror').CodeMirror"
     page.evaluate(f"{editor}.replaceRange('PGCD modifié', {{ line: 3, ch: 0 }}, {{ line: 3, ch: 4 }})")
@@ -265,7 +265,7 @@ def editor_and_paste(browser, url, pgcd):
     page.wait_for_function(
         "document.getElementById('preview-frame').srcdoc.includes('PGCD modifié') && "
         "!document.getElementById('preview-notice').textContent.startsWith('Aperçu provisoire')", timeout=180_000)
-    print("atelier : « Modifier » ouvre l’éditeur, la modification est enregistrée seule, l’aperçu suit")
+    print("atelier : « Éditeur » montre la question courante, la modification est enregistrée seule, l’aperçu suit")
 
     # Une balise fautive : l’erreur s’affiche sous l’éditeur, avec un lien vers sa ligne ; l’annuler l’efface.
     statement_line = page.evaluate(f"{editor}.getValue().split('\\n').indexOf('% question_statement') + 2")
@@ -300,6 +300,13 @@ def editor_and_paste(browser, url, pgcd):
     page.keyboard.press("ArrowDown")
     page.wait_for_function(f"document.querySelector(\".question-preview-button[aria-current='true'] .question-title\").textContent !== {before!r}")
     print("collage : deux questions découpées, écrites dans le dossier, marquées « nouvelle » ; flèches ↑ ↓")
+    # « Prompt », dans le bandeau : PROMPT.md copié dans le presse-papiers.
+    page.context.grant_permissions(["clipboard-read", "clipboard-write"])
+    page.click(".banner-prompt")
+    page.wait_for_function("document.querySelector('.banner-prompt').textContent === 'Prompt copié ✓'")
+    if "PyWimsOnHTML" not in page.evaluate("navigator.clipboard.readText()"):
+        raise AssertionError("« Prompt » n’a pas copié PROMPT.md.")
+    print("bandeau : « Prompt » copie PROMPT.md")
 
     # Un fichier aux fins de ligne Windows (CRLF), seulement ouvert, n’est pas réécrit : CodeMirror ne
     # connaît que LF, et l’atelier croyait le fichier modifié.
@@ -308,7 +315,7 @@ def editor_and_paste(browser, url, pgcd):
     page.click("#reload-folder")
     page.wait_for_function("[...document.querySelectorAll('.question-title')].some(item => item.textContent === 'PGCD CRLF')")
     page.click(".question-preview-button >> text=PGCD CRLF")
-    page.click("#edit-question")
+    page.click("#show-editor")
     page.wait_for_function(f"{editor}.getValue().includes('PGCD CRLF')")
     page.wait_for_timeout(2000)
     if page.evaluate(READ_OPFS, "questions-edition/crlf.pwq") != crlf:
@@ -322,7 +329,7 @@ def editor_and_paste(browser, url, pgcd):
     page.on("pageerror", lambda error: errors.append(str(error)))
     page.goto(url)
     page.wait_for_function("!!window.PyWimsEditor")
-    if (not page.is_hidden("#paste-questions") or not page.is_hidden("#view-toggle") or not page.is_hidden("#edit-question")
+    if (not page.is_hidden("#paste-questions") or not page.is_hidden("#view-toggle")
             or "Edge ou Chrome" not in page.text_content("#paste-status")):
         raise AssertionError("Sans écriture dans un dossier, l’atelier devrait être remplacé par une phrase.")
     page.close()

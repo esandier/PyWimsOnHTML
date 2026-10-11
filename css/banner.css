@@ -63,8 +63,10 @@
 
 .banner-nav { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 
-/* Les liens du bandeau ont l’allure de boutons ; la page courante est pleine, comme « Compiler ». */
-.banner-nav a {
+/* Les liens du bandeau ont l’allure de boutons ; la page courante est pleine, comme « Compiler ». Le
+   bouton « Prompt » (banner.js) a la même allure. */
+.banner-nav a,
+.banner-nav button {
   padding: 0.3rem 0.75rem;
   border: 1px solid #c9a06c;
   border-radius: 0.35rem;
@@ -72,15 +74,19 @@
   background: #fff;
   font-size: 0.9rem;
   font-weight: 600;
+  font-family: inherit;
   text-decoration: none;
   white-space: nowrap;
+  cursor: pointer;
 }
 
-.banner-nav a:hover { background: #fff0d8; }
+.banner-nav a:hover,
+.banner-nav button:hover { background: #fff0d8; }
 .banner-nav a[aria-current="page"] { border-color: #9b5700; color: #fff; background: #a95f00; }
 
 @media (max-width: 640px) {
   .wordmark { font-size: 1.4rem; }
   .tagline { font-size: 0.85rem; }
-  .banner-nav a { padding: 0.25rem 0.55rem; font-size: 0.85rem; }
+  .banner-nav a,
+  .banner-nav button { padding: 0.25rem 0.55rem; font-size: 0.85rem; }
 }

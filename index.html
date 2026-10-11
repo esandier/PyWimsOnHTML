@@ -7,6 +7,7 @@
   <meta name="description" content="PWOH (PyWimsOnHTML) fait d’un fichier descriptif simple, en Python et HTML, une page HTML autonome de questions à données aléatoires, à déposer sur Moodle : pour l’entraînement, sur ordinateur et téléphone.">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="css/banner.css">
+  <script src="banner.js" defer></script>
   <link rel="stylesheet" href="css/site.css">
 </head>
 <body>
@@ -18,7 +19,8 @@
     <nav class="banner-nav" aria-label="Site">
       <a href="./" aria-current="page">Accueil</a>
       <a href="guide/">Créer</a>
-      <a href="compiler/">Compilateur</a>
+      <a href="compiler/">Atelier</a>
+      <button class="banner-prompt" type="button" data-prompt="PROMPT.md" title="Copier le prompt (PROMPT.md) pour votre assistant IA">Prompt</button>
       <a href="https://github.com/esandier/PyWimsOnHTML">Code source</a>
     </nav>
   </header>
@@ -65,7 +67,7 @@
       <li>Créez un dossier pour vos questions.</li>
       <li>Créez une question, <a href="guide/#with-ai">à l’aide d’une IA de votre choix</a> ou
         <a href="guide/#without-ai">à partir d’un modèle</a>.</li>
-      <li>Ouvrez votre dossier de questions dans la <a href="compiler/">page du compilateur</a>.</li>
+      <li>Ouvrez votre dossier de questions dans l’<a href="compiler/">atelier</a>.</li>
       <li>Choisissez la ou les questions à compiler, cliquez sur « Compiler la sélection » : la page HTML correspondante
         est téléchargée (ou des messages d’erreur sont affichés).</li>
       <li>Déposez votre page sur Moodle, ou partagez-la.</li>

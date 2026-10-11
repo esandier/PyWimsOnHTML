@@ -4,9 +4,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Compilateur — PWOH</title>
+  <title>Atelier — PWOH</title>
   <link rel="icon" href="../favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="../css/banner.css">
+  <script src="../banner.js" defer></script>
   <style>
     /* Palette neutre de l’interface du compilateur, distincte de la charte des questions. */
     :root {
@@ -488,7 +489,7 @@
       }
       .titlebar .message-stack { grid-column: 2; grid-row: 1; }
       .titlebar .banner-nav { grid-column: 1 / -1; grid-row: 2; gap: 0.25rem; }
-      .titlebar .banner-nav a { padding: 0.15rem 0.4rem; font-size: 0.78rem; }
+      .titlebar .banner-nav a, .titlebar .banner-nav button { padding: 0.15rem 0.4rem; font-size: 0.78rem; }
       .message-stack { height: 2.5rem; }
       .header-message { font-size: 0.72rem; }
       .folder-row { gap: 0.5rem; }
@@ -540,7 +541,8 @@
       <nav class="banner-nav" aria-label="Site">
         <a href="../">Accueil</a>
         <a href="../guide/">Créer</a>
-        <a href="./" aria-current="page">Compilateur</a>
+        <a href="./" aria-current="page">Atelier</a>
+        <button class="banner-prompt" type="button" data-prompt="../PROMPT.md" title="Copier le prompt (PROMPT.md) pour votre assistant IA">Prompt</button>
         <a href="https://github.com/esandier/PyWimsOnHTML">Code source</a>
       </nav>
     </div>
@@ -576,12 +578,11 @@
           <button id="show-list" type="button" aria-pressed="true">Liste</button>
           <button id="show-editor" type="button" aria-pressed="false">Éditeur</button>
         </div>
-        <!-- Questions écrites par une IA : copier le prompt, puis coller sa réponse (§ 11.10). Sur la ligne
-             de la bascule, à droite : sur la ligne du dossier, ils écrasaient le nom du dossier. -->
+        <!-- Question écrite par une IA : coller sa réponse (§ 11.10) ; le prompt se copie depuis le bandeau.
+             Sur la ligne de la bascule, à droite : sur la ligne du dossier, il écrasait le nom du dossier. -->
         <div class="paste-row">
           <span id="paste-status" class="paste-status" role="status" aria-live="polite"></span>
-          <button id="copy-prompt" class="small-button" type="button">Copier le prompt</button>
-          <button id="paste-questions" class="small-button" type="button" title="Coller le code d’une ou plusieurs questions">Coller question(s)</button>
+            <button id="paste-questions" class="small-button" type="button" title="Coller le code d’une ou plusieurs questions">Coller question(s)</button>
         </div>
       </div>
       <div class="questions-view" id="questions-view">
@@ -639,8 +640,6 @@
           <label class="preview-option"><input id="preview-solution" type="checkbox" checked> Afficher la solution</label>
           <!-- Même question, autre graine (SPECIFICATION.md, § 11.10) : l’aperçu vivant garde sinon son tirage. -->
           <button id="new-draw" class="small-button" type="button">Nouveau tirage</button>
-          <!-- Ouvre la question affichée dans l’atelier (Chrome, Edge ; SPECIFICATION.md, § 11.10). -->
-          <button id="edit-question" class="small-button is-primary" type="button" hidden>Modifier</button>
         </div>
         <!-- Ligne d’état : attente du tirage réel ou erreur ; vide une fois l’aperçu prêt. -->
         <p id="preview-notice" class="muted">Choisissez une question dans la liste pour afficher son aperçu.</p>
