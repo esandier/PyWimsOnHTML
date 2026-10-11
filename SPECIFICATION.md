@@ -1272,9 +1272,11 @@ Une page `guide/` (« Créer »), en sections :
   (« Dossier ouvert : nom », « Relire », « Autre dossier »), à droite la ligne
   de compilation ; toutes deux sans cadre, alignées et de même hauteur (celle
   des boutons du bandeau). Dessous, les cadres commencent à la même hauteur :
-  - à gauche, **Questions**, sans titre : « Filtrer les questions par nom ou
-    mot-clé », compte de la sélection, « Tout sélectionner », liste, et la
-    charte utilisée en petit, en bas ;
+  - à gauche, **Questions**, sans titre : « Copier le prompt » et « Coller le
+    code d’une ou plusieurs questions » (§ 11.10), « Filtrer les questions par
+    nom ou mot-clé », compte de la sélection, « Tout sélectionner », liste, et la
+    charte utilisée en petit, en bas ; à côté de « Questions », les onglets des
+    questions en cours de modification (§ 11.10) ;
   - à droite, sans titre, la liste d’ordre (§ 11.9) dans son cadre quand elle
     sert, puis l’**Aperçu** (ligne d’état et page de la question) sur la hauteur
     restante.
@@ -1317,6 +1319,107 @@ remplaçait par l’ordre de la liste.
   dans l’ordre de la liste. « Relire » garde l’ordre (une question disparue
   est retirée). L’ordre n’est pas retenu d’une visite à l’autre.
 - Pages séparées (ZIP) : l’ordre est sans effet, la liste d’ordre est masquée.
+
+### 11.10 Éditer et coller des questions dans le compilateur
+
+On crée et on corrige une question sans quitter le compilateur, en voyant
+l’aperçu à côté.
+
+**Panneau de gauche en onglets.** Le premier onglet, « Questions », est la liste
+actuelle. Chaque question ouverte pour être modifiée a son onglet : son titre
+court, « ● » si elle a des modifications non enregistrées, et « × » pour le
+fermer. Une question déjà ouverte ne s’ouvre pas deux fois : on revient à son
+onglet. Quand un onglet d’édition est actif, le panneau de gauche s’élargit à la
+moitié de la largeur ; l’aperçu reste à droite. Il reprend sa largeur sur
+l’onglet « Questions ».
+
+**Ouvrir.** Un crayon ✎ au bout de chaque ligne de la liste ouvre l’onglet de la
+question ; le clic sur la ligne garde son rôle (l’aperçu). Une archive `.pwqa`
+ne se modifie pas encore dans le compilateur : son crayon est inactif, avec une
+infobulle qui le dit.
+
+**Sous-onglets.** Un onglet de question a un sous-onglet par champ :
+
+- **En-tête** : titre, mots-clés et nombre de tirages (`question_draws`, vide
+  pour 20), en champs de formulaire ; `question_layout`, toujours `STD`, n’est
+  pas montré ;
+- **question_setup** et **question_check** : Python ;
+- **question_statement** et **question_solution_explanation** : HTML, avec en
+  couleur les balises `{% … %}`, les variables `{{ … }}` et les formules
+  `$…$`, `\( … \)`, `\[ … \]`.
+
+Un champ facultatif absent (`question_check`, `question_solution_explanation`)
+a un sous-onglet « + », qui l’ajoute vide. Les champs de code utilisent
+CodeMirror 5 (cdnjs, version fixée), chargé seulement à l’ouverture du premier
+onglet de question : numéros de ligne, coloration, indentation par la touche
+Tab (quatre espaces) et retour à la ligne indenté. CodeMirror 6 a été écarté :
+il demande un outil de construction (bundler).
+
+**Fichier mal formé.** Un `.pwq` que le compilateur ne sait pas lire (en-tête
+manquant, champ inconnu…) s’ouvre aussi : ses champs sont découpés sans être
+validés. Si même ce découpage échoue, l’onglet n’a qu’un sous-onglet « Fichier
+entier », qui montre le texte complet ; une fois corrigé, l’onglet retrouve ses
+sous-onglets.
+
+**Erreurs.** À la frappe (après une courte pause), le texte est validé comme à
+l’ouverture du dossier : format, balises de l’énoncé. Une erreur s’affiche dans
+la ligne d’état de l’onglet, et le sous-onglet concerné porte une marque rouge.
+Les erreurs Python n’apparaissent qu’avec « Essayer ».
+
+**Boutons de l’onglet.**
+
+- **Essayer** (Ctrl+Entrée) : l’aperçu montre la version de l’éditeur, avec un
+  nouveau tirage calculé par Python ; une erreur s’affiche dans la ligne d’état
+  de l’aperçu, comme aujourd’hui.
+- **Enregistrer** (Ctrl+S) : l’onglet reste ouvert.
+- **Enregistrer et fermer.**
+- **Fermer** : s’il y a des modifications non enregistrées, le compilateur
+  demande « Fermer sans enregistrer ? ». Le « × » de l’onglet fait de même.
+
+**Version utilisée.** Une question modifiée, enregistrée ou non, est
+prévisualisée et compilée telle qu’elle est dans l’éditeur : ce qu’on voit est ce
+qu’on obtient. La liste le signale (« modifiée », « non enregistrée »). Une
+question dont le texte de l’éditeur n’est pas valide ne se compile pas : la
+compilation le dit.
+
+**Enregistrer.** Le fichier est réécrit champ par champ : ordre d’origine des
+champs, nouveaux champs à la fin, fins de ligne d’origine (CRLF ou LF).
+
+- **Chrome, Edge, dossier ouvert par son accès** : le fichier est écrit dans le
+  dossier. Au premier enregistrement, le navigateur demande l’autorisation de
+  modifier le dossier. Avant d’écrire, le compilateur relit le fichier : s’il a
+  changé sur le disque depuis son ouverture (modifié dans un autre éditeur), il
+  demande « Remplacer ? ». Une nouvelle question est créée à la racine du
+  dossier ; un nom déjà pris demande confirmation.
+- **Firefox, Safari, ou aucun dossier ouvert** : le `.pwq` est téléchargé, avec
+  le message « Placez-le dans votre dossier de questions ». L’onglet n’a plus de
+  « ● », mais la question garde la version de l’éditeur pour la session, et la
+  liste la marque « modifiée ».
+- Un serveur local qui écrirait dans le dossier a été écarté : le compilateur
+  doit marcher en ligne.
+
+**Coller des questions.** En tête de l’onglet « Questions », deux boutons :
+
+- **Copier le prompt** : copie `PROMPT.md`, comme la page Créer ;
+- **Coller le code d’une ou plusieurs questions** : lit le presse-papiers. Si le
+  navigateur refuse, une zone de texte s’ouvre pour y coller avec Ctrl+V.
+
+Le texte collé est découpé en questions aux lignes `=== nom.pwq ===` que
+`PROMPT.md` demande pour plusieurs questions ; à défaut, avant chaque
+`% question_title`. Les lignes de bloc de code (```) et le texte qui précède le
+premier `%` sont retirés : les IA en ajoutent malgré la consigne. Chaque question
+collée est ajoutée à la liste (marquée « non enregistrée ») et ouvre son onglet.
+Son nom de fichier est celui de la ligne `===`, ou tiré du titre
+(`loi-binomiale.pwq`), rendu unique s’il est déjà pris. Un message résume le
+collage (« 3 questions collées, dont 1 avec une erreur »). On peut coller sans
+dossier ouvert : l’enregistrement passe alors par le téléchargement.
+
+**Garde-fous.**
+
+- « Relire » garde les onglets ouverts et leurs modifications.
+- Ouvrir un autre dossier, ou quitter la page, avec des modifications non
+  enregistrées demande confirmation ; ouvrir un autre dossier ferme les
+  onglets.
 
 ## 12. Points ouverts
 
