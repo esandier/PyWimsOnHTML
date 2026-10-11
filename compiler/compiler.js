@@ -38,6 +38,7 @@
   const pasteButton = document.getElementById("paste-questions");
   const pasteDialog = document.getElementById("paste-dialog");
   const pasteText = document.getElementById("paste-text");
+  const pasteStatus = document.getElementById("paste-status");
 
   let questions = [];
   let selectedQuestion;
@@ -744,16 +745,19 @@
     editor.refreshLabels();
   }
 
-  // Enregistre le texte de l’éditeur (SPECIFICATION.md, § 11.10) ; renvoie true si c’est fait.
+  // Enregistre le texte de l’éditeur (SPECIFICATION.md, § 11.10) ; renvoie { saved, message, kind },
+  // que l’éditeur affiche dans la ligne d’état de l’onglet.
   // Chrome et Edge, dossier ouvert par son accès : écriture dans le dossier. Sinon : téléchargement.
   async function saveQuestion(question, text) {
     const name = question.path.split("/").pop();
+    let message;
+    let kind = "success";
     try {
       if (folderHandle) {
-        if (!await writeToFolder(question, text, name)) return false;
+        if (!await writeToFolder(question, text, name)) return { saved: false };
         question.source = text;
         question.isNew = false;
-        showMessage(messages, `Enregistré dans le dossier : ${question.path}`, "success", 3000);
+        message = "Enregistré dans le dossier.";
       } else if (typeof window.showSaveFilePicker === "function") {
         // Chrome ou Edge sans dossier ouvert : la fenêtre « Enregistrer sous », dans le dernier dossier.
         let handle;
@@ -765,24 +769,31 @@
             types: [{ description: "Question PWOH", accept: { "text/plain": [".pwq"] } }]
           });
         } catch {
-          return false; // Fenêtre fermée sans enregistrer.
+          return { saved: false }; // Fenêtre fermée sans enregistrer.
         }
         await writeFile(handle, text);
         question.isNew = false;
-        showMessage(messages, `Enregistré : ${handle.name}. Ouvrez son dossier pour le retrouver dans la liste.`, "success", 4000);
+        message = `Enregistré : ${handle.name}.`;
       } else {
         // Firefox, Safari : une page ne choisit pas le dossier d’un téléchargement.
         downloadBlob(new Blob([text], { type: "text/plain;charset=utf-8" }), name);
         question.isNew = false;
-        showMessage(messages, `${name} est téléchargé : placez-le dans votre dossier de questions. (Firefox : « Toujours demander où enregistrer les fichiers » ouvre la fenêtre d’enregistrement, dans le dernier dossier choisi.)`, "warning");
+        message = `${name} est téléchargé : placez-le dans votre dossier de questions.`;
+        kind = "warning";
       }
     } catch (error) {
-      showMessage(messages, `Enregistrement impossible : ${error.message}`, "error");
-      return false;
+      return { saved: false, message: `Enregistrement impossible : ${error.message}`, kind: "error" };
     }
     question.savedText = question.text = text;
     refreshList();
-    return true;
+    return { saved: true, message, kind };
+  }
+
+  // Message bref à côté des boutons « Copier le prompt » et « Coller question(s) ».
+  function showPasteStatus(text, className) {
+    pasteStatus.textContent = text;
+    pasteStatus.title = text;
+    pasteStatus.className = `paste-status ${className}`;
   }
 
   async function writeFile(handle, text) {
@@ -835,9 +846,9 @@
       const response = await fetch(new URL("../PROMPT.md", location.href), { cache: "no-cache" });
       if (!response.ok) throw new Error(`PROMPT.md introuvable (${response.status})`);
       await navigator.clipboard.writeText(await response.text());
-      showMessage(messages, "Prompt copié : collez-le dans votre assistant IA, puis décrivez la question voulue.", "success", 4000);
+      showPasteStatus("Prompt copié.", "success");
     } catch (error) {
-      showMessage(messages, `Le prompt n’a pas pu être copié : ${error.message}`, "error");
+      showPasteStatus(`Prompt non copié : ${error.message}`, "error");
     }
   }
 
@@ -873,10 +884,10 @@
   async function addPastedQuestions(text) {
     const pieces = splitPastedQuestions(text);
     if (!pieces.length) {
-      showMessage(messages, "Le texte collé ne contient pas de question : un fichier .pwq commence par une ligne « % ».", "error");
+      showPasteStatus("Aucune question : un fichier .pwq commence par une ligne « % ».", "error");
       return;
     }
-    let withError = 0;
+    showPasteStatus("", "");
     for (const { name, source } of pieces) {
       const title = splitQuestionSource(source)?.fields.find(field => field.name === "question_title")?.content.trim();
       const path = uniquePath(name ?? createQuestionFilename(title || "question").replace(/\.html$/, ".pwq"));
@@ -884,16 +895,13 @@
       try {
         question.fields = parseQuestionSource(source, path);
       } catch (error) {
+        // L’erreur s’affiche dans l’onglet de la question, où on la corrige.
         question.error = error;
-        withError += 1;
       }
       questions.push(question);
       refreshList();
       await editor.open(question);
     }
-    const count = pieces.length;
-    showMessage(messages, `${count} question${count > 1 ? "s" : ""} collée${count > 1 ? "s" : ""}${withError ? `, dont ${withError} avec une erreur` : ""}.`,
-      withError ? "warning" : "success", withError ? null : 3000);
   }
 
   // Propose le fichier au téléchargement ; l’adresse temporaire est libérée juste après, le temps

@@ -1219,7 +1219,7 @@ Une page `guide/` (« Créer »), en sections :
   qu’on referme du même bouton ; « Télécharger le prompt » l’enregistre. On le
   colle dans son assistant, on décrit la question voulue (ou on donne une
   question AMC à convertir), puis on colle la réponse dans le compilateur
-  (« Coller le code d’une ou plusieurs questions », § 11.10).
+  (« Coller question(s) », § 11.10).
 - **Sans IA** : deux modèles commentés, chacun avec « Télécharger » et
   « Voir » (le fichier déplié dans un cadre, comme le prompt) : un QCM sans
   Python (`guide/templates/qcm.pwq`) et une question à données aléatoires et
@@ -1271,13 +1271,15 @@ Une page `guide/` (« Créer »), en sections :
   la largeur de la fenêtre (sur les trois pages).
 - **Deux colonnes, deux rangées.** En haut, à gauche la ligne du dossier
   (« Dossier ouvert : nom », « Relire », « Autre dossier »), à droite la ligne
-  de compilation ; toutes deux sans cadre, alignées et de même hauteur (celle
-  des boutons du bandeau). Dessous, les cadres commencent à la même hauteur :
-  - à gauche, **Questions**, sans titre : « Copier le prompt » et « Coller le
-    code d’une ou plusieurs questions » (§ 11.10), « Filtrer les questions par
-    nom ou mot-clé », compte de la sélection, « Tout sélectionner », liste, et la
-    charte utilisée en petit, en bas ; à côté de « Questions », les onglets des
-    questions en cours de modification (§ 11.10) ;
+  de compilation ; toutes deux sans cadre, alignées, de même hauteur et
+  discrètes (petits boutons) : le compilateur est un environnement de travail,
+  dont l’éditeur et l’aperçu sont l’essentiel. Dessous, les cadres commencent à
+  la même hauteur :
+  - à gauche, la **Liste**, sans titre : « Copier le prompt » et « Coller
+    question(s) » (§ 11.10), petits et sur une ligne, « Filtrer les questions
+    par nom ou mot-clé », compte de la sélection, « Tout sélectionner », liste,
+    et la charte utilisée en petit, en bas ; à côté de l’onglet « Liste », les
+    onglets des questions en cours de modification (§ 11.10) ;
   - à droite, sans titre, la liste d’ordre (§ 11.9) dans son cadre quand elle
     sert, puis l’**Aperçu** (ligne d’état et page de la question) sur la hauteur
     restante.
@@ -1286,7 +1288,7 @@ Une page `guide/` (« Créer »), en sections :
   plusieurs questions sont cochées, puis « Titre » et son champ, et la case
   « Style compact » (§ 5.7), présents seulement pour une activité unique. La
   case est décochée à l’ouverture d’un dossier, comme le titre est vidé.
-- Sur téléphone, tout s’empile : dossier, Questions, ligne de compilation,
+- Sur téléphone, tout s’empile : dossier, Liste, ligne de compilation,
   liste d’ordre, Aperçu.
 
 ### 11.9 Ordre des questions d’une activité
@@ -1326,24 +1328,25 @@ remplaçait par l’ordre de la liste.
 On crée et on corrige une question sans quitter le compilateur, en voyant
 l’aperçu à côté.
 
-**Panneau de gauche en onglets.** Le premier onglet, « Questions », est la liste
+**Panneau de gauche en onglets.** Le premier onglet, « Liste », est la liste
 actuelle. Chaque question ouverte pour être modifiée a son onglet : son titre
 court, « ● » si elle a des modifications non enregistrées, et « × » pour le
 fermer. Une question déjà ouverte ne s’ouvre pas deux fois : on revient à son
 onglet. La barre d’onglets n’apparaît qu’avec un onglet de question. Fermer
-l’onglet actif active son voisin, comme dans un navigateur, ou « Questions »
+l’onglet actif active son voisin, comme dans un navigateur, ou « Liste »
 s’il n’en reste pas. Quand un onglet d’édition est actif, le panneau de gauche s’élargit à la
-moitié de la largeur ; l’aperçu reste à droite. Il reprend sa largeur sur
-l’onglet « Questions ».
+trois cinquièmes de la largeur ; l’aperçu reste à droite. Il reprend sa largeur
+sur l’onglet « Liste ».
 
 **Ouvrir.** Un crayon ✎ au bout de chaque ligne de la liste ouvre l’onglet de la
 question ; le clic sur la ligne garde son rôle (l’aperçu). Une archive `.pwqa`
 ne se modifie pas encore dans le compilateur : son crayon est inactif, avec une
 infobulle qui le dit.
 
-**Sous-onglets.** Un onglet de question a un sous-onglet par champ :
+**Sous-onglets.** Un onglet de question a un sous-onglet par champ, nommé sans
+le préfixe commun `question_` (« setup », « statement »…) :
 
-- **En-tête** : titre, mots-clés et nombre de tirages (`question_draws`, vide
+- **Paramètres** : titre, mots-clés et nombre de tirages (`question_draws`, vide
   pour 20), en champs de formulaire ; `question_layout`, toujours `STD`, n’est
   pas montré ;
 - **question_setup** et **question_check** : Python ;
@@ -1352,7 +1355,8 @@ infobulle qui le dit.
   `$…$`, `\( … \)`, `\[ … \]`.
 
 Un champ facultatif absent (`question_check`, `question_solution_explanation`)
-a un sous-onglet « + », qui l’ajoute vide. Les champs de code utilisent
+a un sous-onglet « + », qui l’ajoute vide ; présent, son sous-onglet a un « × »
+qui le retire (après confirmation s’il n’est pas vide), et le « + » revient. Les champs de code utilisent
 CodeMirror 5 (cdnjs, version fixée), chargé seulement à l’ouverture du premier
 onglet de question : numéros de ligne, coloration, indentation par la touche
 Tab (quatre espaces) et retour à la ligne indenté. CodeMirror 6 a été écarté :
@@ -1397,20 +1401,22 @@ champs, nouveaux champs à la fin, fins de ligne d’origine (CRLF ou LF).
 - **Chrome, Edge, sans dossier ouvert** (questions collées) : la fenêtre
   « Enregistrer sous » s’ouvre dans le dernier dossier de questions.
 - **Firefox, Safari** : le `.pwq` est téléchargé, avec le message « Placez-le
-  dans votre dossier de questions ». Une page ne peut pas choisir le dossier
-  d’un téléchargement ; le message rappelle le réglage de Firefox « Toujours
-  demander où enregistrer les fichiers », qui ouvre la fenêtre d’enregistrement
-  dans le dernier dossier choisi. L’onglet n’a plus de « ● », mais la question
-  garde la version de l’éditeur pour la session, et la liste la marque
-  « modifiée ».
+  dans votre dossier de questions » (une page ne peut pas choisir le dossier
+  d’un téléchargement). L’onglet n’a plus de « ● », mais la question garde la
+  version de l’éditeur pour la session, et la liste la marque « modifiée ».
+- Le message de l’enregistrement s’affiche dans la ligne d’état de l’onglet, à
+  côté des boutons, et non dans l’en-tête de la page, qui passe inaperçu
+  pendant l’édition.
 - Un serveur local qui écrirait dans le dossier a été écarté : le compilateur
   doit marcher en ligne.
 
-**Coller des questions.** En tête de l’onglet « Questions », deux boutons :
+**Coller des questions.** En tête de l’onglet « Liste », deux petits boutons sur
+une ligne, suivis de leur message bref (« Prompt copié. ») :
 
 - **Copier le prompt** : copie `PROMPT.md`, comme la page Créer ;
-- **Coller le code d’une ou plusieurs questions** : lit le presse-papiers. Si le
-  navigateur refuse, une zone de texte s’ouvre pour y coller avec Ctrl+V.
+- **Coller question(s)** (infobulle : « Coller le code d’une ou plusieurs
+  questions ») : lit le presse-papiers. Si le navigateur refuse, une fenêtre
+  s’ouvre : « Collez ici le code d’une ou plusieurs questions (Ctrl+V) ».
 
 Le texte collé est découpé en questions aux lignes `=== nom.pwq ===` que
 `PROMPT.md` demande pour plusieurs questions ; à défaut, avant chaque
@@ -1418,8 +1424,9 @@ Le texte collé est découpé en questions aux lignes `=== nom.pwq ===` que
 premier `%` sont retirés : les IA en ajoutent malgré la consigne. Chaque question
 collée est ajoutée à la liste (marquée « non enregistrée ») et ouvre son onglet.
 Son nom de fichier est celui de la ligne `===`, ou tiré du titre
-(`loi-binomiale.pwq`), rendu unique s’il est déjà pris. Un message résume le
-collage (« 3 questions collées, dont 1 avec une erreur »). On peut coller sans
+(`loi-binomiale.pwq`), rendu unique s’il est déjà pris. Une erreur s’affiche dans
+l’onglet de sa question ; un texte sans question le dit à côté des boutons. On
+peut coller sans
 dossier ouvert : l’enregistrement passe alors par le téléchargement.
 
 **Garde-fous.**

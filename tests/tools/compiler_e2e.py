@@ -242,16 +242,16 @@ def editor_and_paste(browser, url, pgcd):
     page.wait_for_function("document.querySelectorAll('.question-edit').length === 1")
     page.click(".question-edit")
     page.wait_for_selector(".editor-tab .CodeMirror, .editor-tab .editor-plain", timeout=30_000)
-    page.click(".editor-subtab >> text=En-tête")
+    page.click(".editor-subtab >> text=Paramètres")
     page.fill(".editor-header input >> nth=0", "PGCD modifié")
     page.wait_for_function("document.querySelector('.question-state')?.textContent === 'non enregistrée'")
     if not page.is_visible(".left-tab-dot") or "is-editing" not in page.get_attribute(".workspace", "class"):
         raise AssertionError("L’onglet modifié n’a pas son « ● », ou le panneau ne s’est pas élargi.")
     # Une balise fautive marque son sous-onglet ; l’annuler efface l’erreur.
-    page.click(".editor-subtab >> text=question_statement")
+    page.click(".editor-subtab >> text=\"statement\"")
     statement = ".editor-subpanel:not([hidden]) .CodeMirror"
     page.evaluate(f"document.querySelector('{statement}').CodeMirror.replaceRange(' {{% input_value %}}', {{ line: 0, ch: 0 }})")
-    page.wait_for_function("document.querySelector('.editor-subtab.has-error')?.textContent === 'question_statement'")
+    page.wait_for_function("document.querySelector('.editor-subtab.has-error')?.textContent === 'statement'")
     page.evaluate(f"document.querySelector('{statement}').CodeMirror.undo()")
     page.wait_for_function("!document.querySelector('.editor-subtab.has-error')")
     # Essayer : l’aperçu montre la version de l’éditeur, avec un tirage réel.
@@ -281,6 +281,9 @@ def editor_and_paste(browser, url, pgcd):
     page.wait_for_function("document.querySelectorAll('.left-tab-title').length === 2")
     if page.evaluate(READ_OPFS, "questions-edition/seconde.pwq") != pgcd:
         raise AssertionError("La question collée n’a pas été écrite dans le dossier.")
+    # « × » d’un champ facultatif : il est retiré (confirmé), et son « + » revient.
+    page.click(".editor-tab:not([hidden]) .editor-subtab-remove >> nth=0")
+    page.wait_for_function("document.querySelectorAll('.editor-tab:not([hidden]) .editor-add').length === 1")
     # Fermer sans enregistrer (confirmé) une question collée la retire de la liste.
     page.click(".editor-tab:not([hidden]) .editor-button >> text=\"Fermer\"")
     page.wait_for_function("document.querySelectorAll('.left-tab-title').length === 1")

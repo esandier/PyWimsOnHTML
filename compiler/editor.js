@@ -12,6 +12,8 @@ window.PyWimsEditor = (() => {
   // Champs facultatifs qu’un « + » ajoute quand ils manquent.
   const optionalFields = ["question_check", "question_solution_explanation"];
   const pythonFields = new Set(["question_setup", "question_check"]);
+  // Nom d’un sous-onglet : le champ sans « question_ », commun à tous (« statement », « check »).
+  const shortName = name => name.replace(/^question_/, "");
   const validationDelayMs = 400;
 
   // CodeMirror 5, chargé depuis cdnjs à l’ouverture du premier onglet (version fixée : une mise à jour
@@ -133,7 +135,7 @@ window.PyWimsEditor = (() => {
     const tabText = tab => tab.raw ?? serializeQuestionSource(tab.split.fields, tab.split);
     const fieldEntry = (tab, name) => tab.split.fields.find(field => field.name === name);
 
-    // Onglet « Questions » ou onglet d’une question ; null : « Questions ».
+    // Onglet « Liste » ou onglet d’une question ; null : « Liste ».
     function activate(tab) {
       active = tab;
       questionsTab.setAttribute("aria-selected", String(!tab));
@@ -240,7 +242,7 @@ window.PyWimsEditor = (() => {
       return { element: form, area: { refresh: () => {}, focus: () => form.querySelector("input").focus() } };
     }
 
-    // Sous-onglets : En-tête, un par champ du fichier (même inconnu), « + » pour un champ facultatif
+    // Sous-onglets : Paramètres, un par champ du fichier (même inconnu), « + » pour un champ facultatif
     // absent ; « Fichier entier » seul si le fichier ne se découpe pas.
     function renderSubTabs(tab, show = null) {
       tab.subBar.replaceChildren();
@@ -251,14 +253,14 @@ window.PyWimsEditor = (() => {
       if (tab.raw !== null) {
         subTabs.push({ key: "raw", text: "Fichier entier", build: parent => tab.code(parent, tab.raw, null, value => { tab.raw = value; }) });
       } else {
-        subTabs.push({ key: "header", text: "En-tête", build: parent => {
+        subTabs.push({ key: "header", text: "Paramètres", build: parent => {
           const { element, area } = headerForm(tab);
           parent.append(element);
           return area;
         } });
         for (const field of tab.split.fields.filter(entry => !headerFields.includes(entry.name))) {
           const mode = pythonFields.has(field.name) ? "python" : "pwq-html";
-          subTabs.push({ key: field.name, text: field.name, build: parent => tab.code(parent, field.content, mode, value => { field.content = value; }) });
+          subTabs.push({ key: field.name, text: shortName(field.name), build: parent => tab.code(parent, field.content, mode, value => { field.content = value; }) });
         }
       }
       for (const subTab of subTabs) {
@@ -289,7 +291,29 @@ window.PyWimsEditor = (() => {
           area.focus();
         });
         tab.subButtons.set(subTab.key, button);
-        tab.subBar.append(button);
+        // Un champ facultatif se retire comme il s’ajoute : « × » à côté de son nom, et son « + »
+        // revient. Un champ qui a du contenu n’est retiré qu’après confirmation.
+        if (optionalFields.includes(subTab.key)) {
+          const group = document.createElement("span");
+          group.className = "editor-subtab-group";
+          const remove = document.createElement("button");
+          remove.type = "button";
+          remove.className = "editor-subtab-remove";
+          remove.textContent = "×";
+          remove.title = `Retirer le champ ${subTab.key}`;
+          remove.setAttribute("aria-label", remove.title);
+          remove.addEventListener("click", () => {
+            const field = fieldEntry(tab, subTab.key);
+            if (field?.content.trim() && !confirm(`Retirer le champ ${subTab.key} et son contenu ?`)) return;
+            tab.split.fields = tab.split.fields.filter(entry => entry !== field);
+            changed(tab);
+            renderSubTabs(tab, tab.shown === subTab.key ? "question_statement" : tab.shown);
+          });
+          group.append(button, remove);
+          tab.subBar.append(group);
+        } else {
+          tab.subBar.append(button);
+        }
         tab.subPanels.append(panel);
         subTab.open = open;
       }
@@ -298,7 +322,7 @@ window.PyWimsEditor = (() => {
           const add = document.createElement("button");
           add.type = "button";
           add.className = "editor-subtab editor-add";
-          add.textContent = `+ ${name}`;
+          add.textContent = `+ ${shortName(name)}`;
           add.title = `Ajouter le champ ${name}`;
           add.addEventListener("click", () => {
             tab.split.fields.push({ name, content: "" });
@@ -317,8 +341,15 @@ window.PyWimsEditor = (() => {
       clearTimeout(tab.timer);
       validate(tab);
       const text = tabText(tab);
-      // onSave enregistre et tient la liste à jour ; il renvoie false si rien n’a été enregistré.
-      if (await onSave(tab.question, text)) {
+      // onSave enregistre et tient la liste à jour ; il renvoie { saved, message, kind }. Le message
+      // s’affiche dans la ligne d’état de l’onglet, à côté des boutons : les messages de l’en-tête de
+      // la page passaient inaperçus pendant l’édition. La frappe suivante l’efface.
+      const { saved, message, kind } = await onSave(tab.question, text);
+      if (message) {
+        tab.status.textContent = message;
+        tab.status.className = `editor-status ${kind}`;
+      }
+      if (saved) {
         tab.dirty = false;
         renderTabBar();
         if (close) closeTab(tab, { force: true });
@@ -339,7 +370,7 @@ window.PyWimsEditor = (() => {
       tab.panel.remove();
       onClose(tab.question, { discarded: !force && (tab.dirty || tab.question.isNew) });
       renderTabBar();
-      // Comme dans un navigateur : l’onglet voisin prend la place, « Questions » s’il n’en reste pas.
+      // Comme dans un navigateur : l’onglet voisin prend la place, « Liste » s’il n’en reste pas.
       if (active === tab) activate(tabs[Math.min(index, tabs.length - 1)] ?? null);
       return true;
     }
