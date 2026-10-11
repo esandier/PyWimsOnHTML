@@ -186,6 +186,97 @@
     return fields;
   }
 
+  // Découpage d’un .pwq en champs, sans rien valider, pour l’éditeur du compilateur (SPECIFICATION.md,
+  // § 11.10) : un fichier que parseQuestionSource refuse (champ inconnu, champ obligatoire absent…)
+  // s’ouvre quand même, champ par champ. Renvoie { fields: [{ name, content }], crlf }, dans l’ordre du
+  // fichier, ou null si même la suite des délimiteurs est rompue. crlf et closed (dernier champ suivi
+  // d’une ligne « % ») gardent les fins de ligne et la fin du fichier d’origine pour la réécriture.
+  function splitQuestionSource(source) {
+    const crlf = /\r\n/.test(source);
+    const lines = source.replace(/^﻿/, "").replace(/\r\n?/g, "\n").split("\n");
+    const isDelimiter = line => line?.trim() === "%";
+    let index = 0;
+    while (index < lines.length && lines[index].trim() === "") index += 1;
+    if (!isDelimiter(lines[index])) return null;
+    index += 1;
+    const fields = [];
+    let closed = false;
+    while (index < lines.length && !lines.slice(index).every(line => line.trim() === "")) {
+      const header = lines[index].trim().match(/^%\s+([A-Za-z_][A-Za-z0-9_]*)$/);
+      if (!header || !isDelimiter(lines[index + 1])) return null;
+      index += 2;
+      const content = [];
+      while (index < lines.length && !isDelimiter(lines[index])) {
+        content.push(lines[index]);
+        index += 1;
+      }
+      fields.push({ name: header[1], content: content.join("\n").trimEnd() });
+      closed = index < lines.length;
+      index += 1;
+    }
+    return { fields, crlf, closed };
+  }
+
+  // Texte d’un .pwq à partir de ses champs, dans l’ordre donné : l’inverse de splitQuestionSource.
+  function serializeQuestionSource(fields, { crlf = false, closed = false } = {}) {
+    const lines = ["%"];
+    fields.forEach(({ name, content }, index) => {
+      if (index) lines.push("%");
+      lines.push(`% ${name}`, "%", content);
+    });
+    if (closed) lines.push("%");
+    const text = `${lines.join("\n")}\n`;
+    return crlf ? text.replace(/\n/g, "\r\n") : text;
+  }
+
+  // Champ qui contient une ligne du texte écrit par serializeQuestionSource (numérotée à partir de 1),
+  // pour rattacher une erreur « fichier:ligne » à son sous-onglet ; null pour une ligne de délimiteur.
+  function fieldAtLine(fields, line) {
+    let header = 2;
+    for (const field of fields) {
+      const first = header + 2;
+      const last = first + field.content.split("\n").length - 1;
+      if (line >= header && line <= last) return field.name;
+      header = last + 2;
+    }
+    return null;
+  }
+
+  // Découpe un texte collé (réponse d’une IA) en questions (SPECIFICATION.md, § 11.10) : aux lignes
+  // « === nom.pwq === » que PROMPT.md demande pour plusieurs questions, sinon avant chaque
+  // « % question_title ». Les lignes de bloc de code (```) et le texte qui précède le premier « % »
+  // d’une question sont retirés : les IA en ajoutent malgré la consigne.
+  // Renvoie [{ name, source }] ; name est le nom de la ligne « === », ou null.
+  function splitPastedQuestions(text) {
+    const lines = text.replace(/\r\n?/g, "\n").split("\n").filter(line => !/^\s*```/.test(line));
+    const nameLine = /^\s*===\s*(.+?)\s*===\s*$/;
+    const pieces = [];
+    if (lines.some(line => nameLine.test(line))) {
+      for (const line of lines) {
+        const match = line.match(nameLine);
+        if (match) {
+          pieces.push({ name: match[1], lines: [] });
+        } else {
+          pieces.at(-1)?.lines.push(line);
+        }
+      }
+    } else {
+      lines.forEach((line, index) => {
+        if (line.trim() === "%" && /^%\s+question_title\s*$/.test(lines[index + 1]?.trim() ?? "")) {
+          pieces.push({ name: null, lines: [] });
+        }
+        pieces.at(-1)?.lines.push(line);
+      });
+    }
+    return pieces.map(({ name, lines: pieceLines }) => {
+      const start = pieceLines.findIndex(line => line.trim() === "%");
+      const source = start < 0 ? "" : `${pieceLines.slice(start).join("\n").trimEnd()}\n`;
+      // Un nom de fichier, sans chemin : « sous-dossier/x.pwq » ou « x » deviennent « x.pwq ».
+      const fileName = name && `${name.split(/[\\/]/).pop().replace(/\.pwq$/i, "")}.pwq`;
+      return { name: fileName, source };
+    }).filter(({ source }) => source);
+  }
+
   // Noms des types de champs de réponse, tels que la liste les affiche.
   const fieldKindNames = {
     input_text: "texte",
@@ -229,7 +320,13 @@
   window.PyWimsCompiler = Object.freeze({
     ...window.PyWimsCompiler,
     parseQuestionSource,
+    splitQuestionSource,
+    serializeQuestionSource,
+    fieldAtLine,
+    splitPastedQuestions,
+    knownFields,
     isQuestionFile,
+    isArchive,
     archiveQuestionSource,
     fieldKindsLabel,
     templateWarnings

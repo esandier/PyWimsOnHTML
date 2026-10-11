@@ -36,6 +36,55 @@
     }
     // Petite question source partagée par les tests du format et des champs facultatifs.
     const source = `%\n% question_title\n%\nEssai\n%\n% question_keywords\n%\nmathématiques, PGCD\n%\n% question_layout\n%\nSTD\n%\n% question_setup\n%\nx = 3\n%\n% question_statement\n%\nBonjour {{x}} {% input_text 'reponse' solution=x style='width:5em' %}\n%\n% question_check\n%\nok_answer['reponse'] = reponse == '3'\nfeedback = 'Fini'\n%`;
+    test("l’éditeur découpe un .pwq en champs, même invalide, et le réécrit à l’identique", () => {
+      const file = "%\n% question_title\n%\nPGCD\n%\n% enonce\n%\nAncien nom\n\n%\n% question_setup\n%\nx = 1\n    y = 2\n";
+      const split = PyWimsCompiler.splitQuestionSource(file);
+      if (!split || split.crlf || split.fields.map(field => field.name).join() !== "question_title,enonce,question_setup" ||
+          split.fields[1].content !== "Ancien nom" || split.fields[2].content !== "x = 1\n    y = 2") {
+        throw new Error(`Découpage inattendu : ${JSON.stringify(split)}`);
+      }
+      const rewritten = PyWimsCompiler.serializeQuestionSource(split.fields);
+      if (rewritten !== file.replace("Ancien nom\n\n", "Ancien nom\n")) {
+        throw new Error(`Réécriture inattendue : ${JSON.stringify(rewritten)}`);
+      }
+      // Fins de ligne d’origine gardées ; ligne d’une erreur rattachée à son champ.
+      const windows = PyWimsCompiler.splitQuestionSource(file.replace(/\n/g, "\r\n"));
+      if (!windows.crlf || !PyWimsCompiler.serializeQuestionSource(windows.fields, windows).includes("% enonce\r\n%\r\n")) {
+        throw new Error("Les fins de ligne CRLF ne sont pas gardées.");
+      }
+      // Une ligne « % » après le dernier champ est gardée.
+      const closedFile = `${file}%\n`;
+      const closedSplit = PyWimsCompiler.splitQuestionSource(closedFile);
+      if (!closedSplit.closed || PyWimsCompiler.serializeQuestionSource(closedSplit.fields, closedSplit) !== closedFile.replace("Ancien nom\n\n", "Ancien nom\n")) {
+        throw new Error("La ligne « % » finale n’est pas gardée.");
+      }
+      const lines = rewritten.split("\n");
+      const at = text => PyWimsCompiler.fieldAtLine(split.fields, lines.indexOf(text) + 1);
+      if (at("PGCD") !== "question_title" || at("% enonce") !== "enonce" || at("    y = 2") !== "question_setup" ||
+          PyWimsCompiler.fieldAtLine(split.fields, 1) !== null) {
+        throw new Error("Une ligne n’est pas rattachée au bon champ.");
+      }
+      if (PyWimsCompiler.splitQuestionSource("% question_title\nPGCD") !== null ||
+          PyWimsCompiler.splitQuestionSource("%\n% question_title\nPGCD") !== null) {
+        throw new Error("Un fichier sans délimiteurs devait être refusé.");
+      }
+    });
+    test("un texte collé est découpé en questions, sans blocs de code ni texte autour", () => {
+      const question = title => `%\n% question_title\n%\n${title}\n%\n% question_layout\n%\nSTD`;
+      const named = PyWimsCompiler.splitPastedQuestions(
+        `Voici les fichiers :\n=== premiers.pwq ===\n\`\`\`\n${question("A")}\n\`\`\`\n=== dossier/second ===\nTexte avant\n${question("B")}\n`);
+      if (named.length !== 2 || named[0].name !== "premiers.pwq" || named[1].name !== "second.pwq" ||
+          named[0].source !== `${question("A")}\n` || named[1].source !== `${question("B")}\n`) {
+        throw new Error(`Découpage par noms inattendu : ${JSON.stringify(named)}`);
+      }
+      const unnamed = PyWimsCompiler.splitPastedQuestions(`Bien sûr !\n\`\`\`text\n${question("A")}\n${question("B")}\n\`\`\``);
+      if (unnamed.length !== 2 || unnamed.some(piece => piece.name !== null) || !unnamed[1].source.includes("\nB\n")) {
+        throw new Error(`Découpage par titres inattendu : ${JSON.stringify(unnamed)}`);
+      }
+      if (PyWimsCompiler.splitPastedQuestions("Rien à coller").length) {
+        throw new Error("Un texte sans question devait donner une liste vide.");
+      }
+    });
     test("analyse le format des champs", () => {
       const fields = PyWimsCompiler.parseQuestionSource(source);
       if (fields.question_title !== "Essai" || fields.question_keywords !== "mathématiques, PGCD") throw new Error("Les valeurs des champs sont différentes.");
