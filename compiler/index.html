@@ -384,8 +384,12 @@
       display: flex;
       flex: 0 0 auto;
       gap: 0.25rem;
-      margin: -0.25rem 0 0.75rem;
+      margin: 0 0 0.75rem;
+      /* Beaucoup d’onglets : la barre défile de côté. Jamais en hauteur : les onglets descendent d’un
+         pixel sur le filet du dessous, et les barres de défilement classiques de Windows en faisaient
+         une barre verticale. */
       overflow-x: auto;
+      overflow-y: hidden;
       border-bottom: 1px solid #d7dbe0;
     }
     .left-tab {
@@ -466,11 +470,12 @@
       font-size: 0.82rem;
       cursor: pointer;
     }
-    .small-button:hover { background: #fff0d8; }
+    .small-button:hover:not(:disabled) { background: #fff0d8; }
+    .small-button:disabled { cursor: not-allowed; opacity: 0.45; }
     .small-button.is-primary { border-color: #9b5700; color: #fff; background: #a95f00; font-weight: 600; }
     .small-button.is-primary:hover { background: #874c00; }
     /* Copier le prompt, coller : deux petits boutons sur une ligne, et leur message bref à côté. */
-    .paste-row { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.65rem; }
+    .paste-row { display: flex; flex: 0 0 auto; align-items: center; gap: 0.4rem; margin-bottom: 0.65rem; }
     .paste-row .small-button { flex: 0 0 auto; padding: 0.15rem 0.5rem; font-size: 0.75rem; }
     .paste-status { min-width: 0; overflow: hidden; font-size: 0.75rem; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -591,16 +596,17 @@
     <!-- Panneau de gauche en onglets (SPECIFICATION.md, § 11.10) : « Liste », la liste des questions, puis un onglet
          par question ouverte dans l’éditeur. La barre d’onglets n’apparaît qu’avec un onglet de question. -->
     <section class="panel panel-questions" aria-label="Questions">
-      <div class="left-tabs" id="left-tabs" role="tablist" hidden>
-        <button class="left-tab left-tab-questions" id="questions-tab" type="button" role="tab" aria-selected="true">Liste</button>
-      </div>
-      <div class="questions-view" id="questions-view">
-      <!-- Questions écrites par une IA : copier le prompt, puis coller sa réponse. -->
+      <!-- Questions écrites par une IA : copier le prompt, puis coller sa réponse. Au-dessus des onglets,
+           pour rester visibles quand une question est ouverte. -->
       <div class="paste-row">
         <button id="copy-prompt" class="small-button" type="button">Copier le prompt</button>
         <button id="paste-questions" class="small-button" type="button" title="Coller le code d’une ou plusieurs questions">Coller question(s)</button>
         <span id="paste-status" class="paste-status" role="status" aria-live="polite"></span>
       </div>
+      <div class="left-tabs" id="left-tabs" role="tablist" hidden>
+        <button class="left-tab left-tab-questions" id="questions-tab" type="button" role="tab" aria-selected="true">Liste</button>
+      </div>
+      <div class="questions-view" id="questions-view">
       <div class="filter-row">
         <label for="question-search">Filtrer les questions par nom ou mot-clé</label>
         <input id="question-search" type="search" placeholder="ex. arithmétique, PGCD" autocomplete="off">
@@ -655,6 +661,8 @@
           <label class="preview-option"><input id="preview-solution" type="checkbox" checked> Afficher la solution</label>
           <!-- Même question, autre graine (SPECIFICATION.md, § 11.10) : l’aperçu vivant garde sinon son tirage. -->
           <button id="new-draw" class="small-button" type="button">Nouveau tirage</button>
+          <!-- Ouvre la question affichée dans l’atelier (Chrome, Edge ; SPECIFICATION.md, § 11.10). -->
+          <button id="edit-question" class="small-button is-primary" type="button" hidden>Modifier</button>
         </div>
         <!-- Ligne d’état : attente du tirage réel ou erreur ; vide une fois l’aperçu prêt. -->
         <p id="preview-notice" class="muted">Choisissez une question dans la liste pour afficher son aperçu.</p>

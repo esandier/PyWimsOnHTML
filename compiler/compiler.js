@@ -40,6 +40,7 @@
   const pasteText = document.getElementById("paste-text");
   const pasteStatus = document.getElementById("paste-status");
   const newDrawButton = document.getElementById("new-draw");
+  const editButton = document.getElementById("edit-question");
 
   let questions = [];
   let selectedQuestion;
@@ -408,6 +409,7 @@
     previewFrame.hidden = true;
     previewFrame.removeAttribute("srcdoc");
     showPreviewNotice("Choisissez une question dans la liste pour afficher son aperçu.");
+    updateEditButton(null);
 
     updateFolderControls(name);
     folderBrand = brand;
@@ -540,11 +542,8 @@
       // Le chemin reste accessible au survol : deux questions peuvent porter le même titre.
       button.title = question.path;
       button.append(title, kinds);
-      // Un clic ouvre la question dans l’atelier (Chrome, Edge), ou montre seulement son aperçu :
-      // Firefox, Safari, archive .pwqa (qui contient aussi ses images), fichier illisible (§ 11.10).
-      const editable = canEdit && folderHandle && question.handle && !isArchive(question.path) &&
-        typeof question.text === "string";
-      button.addEventListener("click", () => (editable ? editor.open(question) : selectQuestion(question)));
+      // Un clic montre l’aperçu ; « Modifier », dans l’aperçu, ouvre la question dans l’atelier (§ 11.10).
+      button.addEventListener("click", () => selectQuestion(question));
       item.append(selection, button);
       questionList.append(item);
     }
@@ -586,6 +585,7 @@
   function selectQuestion(question) {
     selectedQuestion = question;
     renderQuestionList();
+    updateEditButton(question);
     if (question.error) {
       previewGeneration += 1;
       previewFrame.hidden = true;
@@ -599,6 +599,18 @@
     clearMessage(messages);
     showPreview(question);
     updateCompilationControls();
+  }
+
+  // « Modifier », dans l’aperçu (§ 11.10) : sous Chrome et Edge, dossier ouvert en écriture. Une archive
+  // .pwqa, qui contient aussi ses images, ne s’ouvre pas dans l’atelier ; un fichier mal formé, si :
+  // c’est là qu’on le corrige.
+  function updateEditButton(question) {
+    editButton.hidden = !canEdit || !folderHandle || !question?.handle;
+    const archive = Boolean(question) && isArchive(question.path);
+    editButton.disabled = archive || typeof question?.text !== "string" || editor.isOpen(question);
+    editButton.title = archive
+      ? "Une archive .pwqa ne se modifie pas dans le compilateur."
+      : editor.isOpen(question) ? "Cette question est déjà ouverte dans l’atelier." : "Ouvrir cette question dans l’atelier";
   }
 
   // Adapte les options de compilation au nombre et au mode des questions choisies.
@@ -977,6 +989,7 @@
       onActivate: question => {
         workspace.classList.toggle("is-editing", Boolean(question));
         if (question && question !== selectedQuestion) selectQuestion(question);
+        updateEditButton(selectedQuestion);
       },
       // Après une pause de la frappe : le texte devient la version de la question, et l’aperçu suit,
       // avec le même tirage.
@@ -999,7 +1012,10 @@
         }
       },
       onSave: saveQuestion,
-      onClose: refreshList
+      onClose: () => {
+        refreshList();
+        updateEditButton(selectedQuestion);
+      }
     });
   } else {
     pasteButton.hidden = true;
@@ -1039,6 +1055,9 @@
   otherFolderButton.addEventListener("click", async () => {
     await closeEditorTabs();
     pickFolder();
+  });
+  editButton.addEventListener("click", () => {
+    if (selectedQuestion) editor.open(selectedQuestion);
   });
   // « Nouveau tirage » : l’aperçu de la question affichée, avec une autre graine.
   newDrawButton.addEventListener("click", () => {

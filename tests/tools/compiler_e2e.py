@@ -241,7 +241,9 @@ def editor_and_paste(browser, url, pgcd):
     page.evaluate(PICK_OPFS.replace("questions-essai", "questions-edition"))
     page.click("#choose-folder")
     page.wait_for_function("document.querySelectorAll('.question-preview-button').length === 1")
+    # Un clic montre l’aperçu ; « Modifier », dans l’aperçu, ouvre la question dans l’atelier.
     page.click(".question-preview-button")
+    page.click("#edit-question")
     page.wait_for_selector(".editor-tab .CodeMirror", timeout=30_000)
     if "is-editing" not in page.get_attribute(".workspace", "class"):
         raise AssertionError("Le panneau de l’atelier ne s’est pas élargi.")
@@ -257,7 +259,7 @@ def editor_and_paste(browser, url, pgcd):
     page.wait_for_function(
         "document.getElementById('preview-frame').srcdoc.includes('PGCD modifié') && "
         "!document.getElementById('preview-notice').textContent.startsWith('Aperçu provisoire')", timeout=180_000)
-    print("atelier : un clic ouvre la question, la modification est enregistrée seule, l’aperçu suit")
+    print("atelier : « Modifier » ouvre la question, la modification est enregistrée seule, l’aperçu suit")
 
     # Une balise fautive : l’erreur s’affiche sous l’éditeur, avec un lien vers sa ligne ; l’annuler l’efface.
     statement_line = page.evaluate(f"{editor}.getValue().split('\\n').indexOf('% question_statement') + 2")

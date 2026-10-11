@@ -1275,11 +1275,11 @@ Une page `guide/` (« Créer »), en sections :
   discrètes (petits boutons) : le compilateur est un environnement de travail,
   dont l’éditeur et l’aperçu sont l’essentiel. Dessous, les cadres commencent à
   la même hauteur :
-  - à gauche, la **Liste**, sans titre : « Copier le prompt » et « Coller
-    question(s) » (§ 11.10), petits et sur une ligne, « Filtrer les questions
-    par nom ou mot-clé », compte de la sélection, « Tout sélectionner », liste,
-    et la charte utilisée en petit, en bas ; à côté de l’onglet « Liste », les
-    onglets des questions en cours de modification (§ 11.10) ;
+  - à gauche, en tête et toujours visibles, « Copier le prompt » et « Coller
+    question(s) » (§ 11.10), petits et sur une ligne ; puis les onglets
+    (« Liste » et les questions ouvertes, § 11.10) ; la **Liste** : « Filtrer
+    les questions par nom ou mot-clé », compte de la sélection, « Tout
+    sélectionner », liste, et la charte utilisée en petit, en bas ;
   - à droite, sans titre, la liste d’ordre (§ 11.9) dans son cadre quand elle
     sert, puis l’**Aperçu** (ligne d’état et page de la question) sur la hauteur
     restante.
@@ -1344,15 +1344,19 @@ bureau (installateurs et signature à maintenir).
 lecture et écriture : le navigateur demande l’autorisation une fois, à
 l’ouverture (ou à la réouverture du dossier mémorisé).
 
-**Ouvrir.** Cliquer sur une question de la liste l’ouvre dans l’atelier ; la case
-à cocher garde son rôle (composer une feuille). Le panneau de gauche est en
+**Ouvrir.** Cliquer sur une question de la liste montre son aperçu, comme sous
+Firefox ; le bouton « Modifier », au-dessus de l’aperçu, ouvre la question dans
+l’atelier. On regarde d’abord, et on décide de modifier en voyant la question.
+(Ouvrir l’atelier d’un simple clic a été essayé d’abord.) La case à cocher garde
+son rôle (composer une feuille). Un fichier mal formé s’ouvre aussi : c’est là
+qu’on le corrige. Le panneau de gauche est en
 onglets : « Liste », puis un onglet par question ouverte (son titre, « × » pour
 le fermer). Une question déjà ouverte ne s’ouvre pas deux fois. Fermer l’onglet
 actif active son voisin, ou « Liste ». Un onglet de question élargit le panneau
 de gauche aux trois cinquièmes de la largeur ; l’aperçu reste à droite. La barre
 d’onglets n’apparaît qu’avec un onglet de question. Une archive `.pwqa`, qui
-contient aussi ses images, ne s’ouvre pas dans l’atelier : un clic montre son
-aperçu, comme sous Firefox.
+contient aussi ses images, ne s’ouvre pas dans l’atelier : son « Modifier » est
+inactif, avec une infobulle qui le dit.
 
 **Un seul bloc.** La question s’édite en entier, comme dans un éditeur de code :
 une question se lit d’un bloc, les variables de `question_setup` servent dans
@@ -1383,8 +1387,9 @@ lecture (modifié dans un autre éditeur), le compilateur demande avant de
 l’écraser. Fermer un onglet ou la page enregistre ce qui ne l’est pas encore.
 « Relire » met à jour les onglets ouverts dont le fichier a changé sur le disque.
 
-**Coller des questions.** En tête de l’onglet « Liste », deux petits boutons sur
-une ligne, suivis de leur message bref :
+**Coller des questions.** En tête du panneau de gauche, au-dessus des onglets
+(visibles quand une question est ouverte), deux petits boutons sur une ligne,
+suivis de leur message bref :
 
 - **Copier le prompt** : copie `PROMPT.md`, comme la page Créer ;
 - **Coller question(s)** (infobulle : « Coller le code d’une ou plusieurs
