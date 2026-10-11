@@ -84,11 +84,12 @@ ${renderDrawData(draws)}
   }
 
   // Assemble une activité : une feuille de plusieurs questions dans un seul document.
-  function assembleActivity(title, questions, resources) {
+  // compact : style « feuille de TD » choisi par l’auteur (SPECIFICATION.md, § 5.7).
+  function assembleActivity(title, questions, resources, { compact = false } = {}) {
     if (!title.trim() || questions.length < 2) {
       throw new Error("Une activité exige un titre et au moins deux questions.");
     }
-    return assembleSheet({ title, kind: "activity", questions }, resources);
+    return assembleSheet({ title, kind: "activity", questions, compact }, resources);
   }
 
   // Emplacements de la mise en page qui reçoivent du code tel quel, avec la balise qui l’entoure.
@@ -159,7 +160,7 @@ ${renderDrawData(draws)}
 
   // Assemble le HTML autonome à partir des textes des fichiers du projet, sans accès au disque.
   // Pyodide, MathJax et MathLive sont chargés une seule fois, quel que soit le nombre de questions.
-  function assembleSheet({ title, kind, questions }, resources) {
+  function assembleSheet({ title, kind, questions, compact = false }, resources) {
     const sections = questions.map(({ fields, draws }, index) => renderQuestionSection(fields, draws, index));
     const usesMathWidget = neededResources(questions.map(({ fields }) => fields)).includes("mathWidget");
     const replacements = {
@@ -168,6 +169,8 @@ ${renderDrawData(draws)}
       SHEET_KIND: kind,
       // Seule une activité garde sa progression : une question seule n’a pas d’empreinte.
       SHEET_ID: kind === "activity" ? ` data-sheet-id="${sheetFingerprint(title, questions)}"` : "",
+      // Le style compact ne concerne que les activités ; une question seule garde le style habituel.
+      SHEET_STYLE: compact && kind === "activity" ? ' data-style="compact"' : "",
       CSS: `${resources.brandCss}\n${resources.questionCss}`,
       TEMPLATE: resources.template,
       CORRECTION: resources.correction,

@@ -795,6 +795,9 @@ navigateur de couper la ligne à cet endroit : un « : » se retrouve seul en
 début de ligne. Après la composition des formules, la page remplace cette espace
 par une espace insécable dans le texte de l’énoncé, des choix et du retour,
 jamais dans une formule ni dans un champ. Les fichiers `.pwq` ne changent pas.
+Après une formule, Edge et Chrome coupent quand même entre la formule et
+l’espace insécable : la formule et la ponctuation qui la suit sont alors
+réunies dans un `span` insécable.
 
 ## 6. Organisation du code
 

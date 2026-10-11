@@ -26,6 +26,7 @@
   const outputMode = document.getElementById("output-mode");
   const activityTitleInput = document.getElementById("activity-title");
   const activityTitleLabel = document.getElementById("activity-title-label");
+  const compactStyleInput = document.getElementById("compact-style");
   const messages = document.getElementById("messages");
   const activityOrder = document.getElementById("activity-order");
   const activityOrderList = document.getElementById("activity-order-list");
@@ -367,6 +368,7 @@
     if (!keepSelection) {
       outputMode.value = "separate";
       activityTitleInput.value = "";
+      compactStyleInput.checked = false;
       search.value = "";
     }
     questionList.replaceChildren();
@@ -671,12 +673,12 @@
   // Seuls les fichiers dont ces questions ont besoin sont intégrés : la compilation lit aussi le
   // module pywims et le script du Worker pour calculer les tirages, mais une feuille sans « question_check »
   // ne charge jamais Python et n’a pas à les contenir.
-  function compileSheet(questions, resources, activityTitle = null) {
+  function compileSheet(questions, resources, activityTitle = null, options = {}) {
     const needed = Object.fromEntries(
       neededResources(questions.map(({ fields }) => fields)).map(key => [key, resources[key]]));
     return activityTitle === null
       ? assembleQuestion(questions[0].fields, questions[0].draws, needed)
-      : assembleActivity(activityTitle, questions, needed);
+      : assembleActivity(activityTitle, questions, needed, options);
   }
 
   // Propose le fichier au téléchargement ; l’adresse temporaire est libérée juste après, le temps
@@ -741,7 +743,7 @@
         if (!title) {
           throw new Error("Indiquez un titre pour l’activité.");
         }
-        downloadBlob(html(compileSheet(compiled, resources, title)), createQuestionFilename(title));
+        downloadBlob(html(compileSheet(compiled, resources, title, { compact: compactStyleInput.checked })), createQuestionFilename(title));
       } else {
         // Pages séparées : une feuille d’une question par fichier.
         const archiveEntries = [];

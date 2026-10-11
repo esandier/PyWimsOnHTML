@@ -376,6 +376,16 @@
           throw new Error("Une question seule n’est pas une feuille d’une question.");
         }
       });
+      test("le style compact n’est posé que sur une activité qui le demande", () => {
+        const questions = [sheetQuestion("A", "x"), sheetQuestion("B", "y")];
+        const style = html => new DOMParser().parseFromString(html, "text/html").body.dataset.style;
+        const compact = style(PyWimsCompiler.assembleActivity("C", questions, sheetResources(layout), { compact: true }));
+        const usual = style(PyWimsCompiler.assembleActivity("C", questions, sheetResources(layout)));
+        const single = style(PyWimsCompiler.assembleQuestion(questions[0].fields, questions[0].draws, sheetResources(layout)));
+        if (compact !== "compact" || usual !== undefined || single !== undefined) {
+          throw new Error(`Styles inattendus : ${compact}, ${usual}, ${single}`);
+        }
+      });
       test("seule une question qui a un « question_check » est marquée comme ayant besoin de Python", () => {
         const withoutCheck = sheetQuestion("Sans", "Un {% input_text 'r' solution=a %}");
         delete withoutCheck.fields.question_check;

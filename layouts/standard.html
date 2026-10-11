@@ -17,7 +17,8 @@
 </head>
 <!-- data-sheet : « single » pour une question seule, « activity » pour une feuille de plusieurs questions. -->
 <!-- data-sheet-id : empreinte d’une activité, clé de la mémoire de sa progression (absente pour une question seule). -->
-<body data-sheet="@@SHEET_KIND@@"@@SHEET_ID@@>
+<!-- data-style : « compact » pour une activité au style « feuille de TD » (SPECIFICATION.md, § 5.7), absent sinon. -->
+<body data-sheet="@@SHEET_KIND@@"@@SHEET_ID@@@@SHEET_STYLE@@>
   <!-- En-tête : titre, progression (activité seulement), aide et logo. Il reste visible au défilement d’une activité. -->
   <div class="pw-top">
     <!-- Le logo de marque est décoratif ; son image et son style sont définis dans brand.css. -->

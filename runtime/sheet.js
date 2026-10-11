@@ -162,13 +162,95 @@
     location.reload();
   });
 
-  const questions = [...document.querySelectorAll(".pw-question")].map(
+  // Zone de retour commune du style compact (SPECIFICATION.md, § 5.7) : sur grand écran, le dernier
+  // retour affiché est déplacé de sa question dans la marge droite, puis ramené au retour suivant.
+  // Un seul nœud, jamais copié : une copie doublerait les formules composées (identifiants SVG
+  // compris) et les annonces aux lecteurs d’écran. Le retour est composé dans sa question, puis
+  // déplacé ; la zone, et non le retour, annonce donc le contenu (aria-live), car un retour
+  // composé dans l’emplacement invisible de la question n’est pas annoncé.
+  // Sur écran étroit, rien n’est déplacé : le retour reste sous sa question.
+  const compactStyle = !singleQuestion && document.body.dataset.style === "compact";
+  const wideScreen = matchMedia("(min-width: 1001px)");
+  const sections = [...document.querySelectorAll(".pw-question")];
+  let zone = null;
+  let zoneEmpty = null;
+  let zoneQuestion = null;
+  let lastFeedbackQuestion = null;
+  const zoneWatch = compactStyle && new IntersectionObserver(entries => {
+    for (const entry of entries) {
+      if (entry.target === zoneQuestion?.section) zone.classList.toggle("is-stale", !entry.isIntersecting);
+    }
+  });
+
+  if (compactStyle) {
+    zone = document.createElement("aside");
+    zone.className = "pw-feedback-zone";
+    zone.setAttribute("aria-label", "Commentaires et solutions");
+    zone.setAttribute("aria-live", "polite");
+    // La zone occupe la marge sur toute la hauteur des questions, et y reste collée au défilement.
+    zone.style.gridRow = `1 / span ${sections.length}`;
+    zoneEmpty = document.createElement("p");
+    zoneEmpty.className = "pw-feedback-zone-empty";
+    zoneEmpty.textContent = "Les commentaires et les solutions s’affichent ici.";
+    zone.append(zoneEmpty);
+    document.querySelector(".pw-sheet").prepend(zone);
+  }
+
+  // Ramène dans sa question le retour affiché par la zone, qui redevient vide.
+  function releaseZone() {
+    if (!zoneQuestion) return;
+    zoneWatch.unobserve(zoneQuestion.section);
+    zoneQuestion.slotElement.append(zoneQuestion.feedbackElement);
+    zoneQuestion.layoutFeedback();
+    zoneQuestion = null;
+    zone.classList.remove("is-stale");
+    zone.replaceChildren(zoneEmpty);
+  }
+
+  // Affiche dans la zone le retour d’une question, sous « Question n », qui ramène à la question.
+  function showInZone(question) {
+    releaseZone();
+    zoneQuestion = question;
+    const link = document.createElement("button");
+    link.type = "button";
+    link.className = "pw-feedback-zone-link";
+    link.textContent = `Question ${question.index + 1}`;
+    link.addEventListener("click", () =>
+      question.section.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" }));
+    zone.replaceChildren(link, question.feedbackElement);
+    zoneWatch.observe(question.section);
+  }
+
+  function onFeedback(question, shown) {
+    if (shown) {
+      lastFeedbackQuestion = question;
+      if (wideScreen.matches) showInZone(question);
+    } else {
+      if (lastFeedbackQuestion === question) lastFeedbackQuestion = null;
+      if (zoneQuestion === question) releaseZone();
+    }
+  }
+
+  // Passage d’un écran étroit à un grand écran (fenêtre élargie, rotation) : le dernier retour encore
+  // affiché passe dans la zone, ou en revient.
+  if (compactStyle) {
+    wideScreen.addEventListener("change", () => {
+      if (!wideScreen.matches) {
+        releaseZone();
+      } else if (lastFeedbackQuestion) {
+        showInZone(lastFeedbackQuestion);
+      }
+    });
+  }
+
+  const questions = sections.map(
     (section, index) => new Question(section, index, {
       onSuccess: singleQuestion ? null : () => {
         updateProgress(questions);
         saveProgress(questions);
       },
-      onScoreChange: singleQuestion ? null : () => updateScoreTotal(questions)
+      onScoreChange: singleQuestion ? null : () => updateScoreTotal(questions),
+      onFeedback: compactStyle ? onFeedback : null
     })
   );
   if (questions.some(question => question.scoring)) {

@@ -112,10 +112,11 @@ window.PyWimsPython = (() => {
       }
       resources.python = fakePython(options);
       const frame = document.createElement("iframe");
-      frame.style.cssText = "width:900px;height:700px";
+      // options.width : largeur du cadre, qui décide des règles « grand écran » de la feuille.
+      frame.style.cssText = `width:${options?.width ?? 900}px;height:700px`;
       frame.srcdoc = (questions.length === 1
         ? PyWimsCompiler.assembleQuestion(questions[0].fields, questions[0].draws, resources)
-        : PyWimsCompiler.assembleActivity(title, questions, resources))
+        : PyWimsCompiler.assembleActivity(title, questions, resources, { compact: Boolean(options?.compact) }))
         // Aperçu du compilateur avec « Afficher la solution » (compiler.js, renderPreviewFrame).
         .replace("<body", options?.previewSolution ? '<body data-preview-solution="true"' : "<body");
       document.body.append(frame);
@@ -602,6 +603,62 @@ window.PyWimsPython = (() => {
         frame.remove();
       });
 
+      await test("style compact : le retour passe dans la zone commune sur grand écran, et en revient", async () => {
+        const otherQuestion = { ...textQuestion, question_title: "Double", question_statement: "Le double de {{ a }} ? {% input_text 'r' solution=s %}" };
+        const otherDraws = [{ seed: 5, context: { a: "7" }, dimensions: {}, solutions: { r: "14" } }];
+        const options = {
+          compact: true,
+          width: 1200,
+          questions: { q1: textOptions, q2: { contexts: { 5: { a: "7" } }, answers: { 5: { r: "14" } } } }
+        };
+        const { page, $, frame } = await openSheet(
+          [{ fields: textQuestion, draws: textDraws }, { fields: otherQuestion, draws: otherDraws }], options, "Compacte");
+        await waitFor(() => $("#q1-form_txt_r") && $("#q2-form_txt_r"), "affichage des deux questions");
+        const zone = $(".pw-feedback-zone");
+        const feedback1 = $("#q1 [data-role='feedback']");
+        const feedback2 = $("#q2 [data-role='feedback']");
+        if (page.body.dataset.style !== "compact" || !zone || zone.getAttribute("aria-live") !== "polite" ||
+            !zone.textContent.includes("s’affichent ici") || $("#q2 [data-role='badge']").dataset.number !== "2" ||
+            $("#q1 [data-role='check']").title !== "Vérifier ma réponse") {
+          throw new Error("La feuille compacte n’a pas sa zone de retour, ses numéros ou ses infobulles.");
+        }
+        type($("#q1-form_txt_r"), "5");
+        $("#q1 [data-role='check']").click();
+        await waitFor(() => feedback1.classList.contains("is-visible"), "retour de la question 1");
+        if (feedback1.parentElement !== zone || !zone.textContent.startsWith("Question 1")) {
+          throw new Error("Le retour de la question 1 n’est pas dans la zone commune.");
+        }
+        // Le retour suivant remplace le premier, qui retourne dans sa question.
+        type($("#q2-form_txt_r"), "14");
+        $("#q2 [data-role='check']").click();
+        await waitFor(() => feedback2.classList.contains("is-visible"), "retour de la question 2");
+        if (feedback2.parentElement !== zone || !$("#q1").contains(feedback1) || !zone.textContent.startsWith("Question 2")) {
+          throw new Error("Le retour de la question 2 n’a pas remplacé celui de la question 1 dans la zone.");
+        }
+        // Écran étroit : le retour revient sous sa question, et la zone est vide.
+        frame.style.width = "700px";
+        await waitFor(() => $("#q2").contains(feedback2), "retour ramené dans sa question");
+        if (!zone.textContent.includes("s’affichent ici") || getComputedStyle(zone).display !== "none") {
+          throw new Error("Sur écran étroit, la zone commune doit être vide et masquée.");
+        }
+        frame.style.width = "1200px";
+        await waitFor(() => feedback2.parentElement === zone, "retour de nouveau dans la zone");
+        // « Nouvel énoncé » efface le retour : la zone se vide.
+        $("#q2 [data-role='new-draw']").click();
+        await waitFor(() => $("#q2").contains(feedback2) && zone.textContent.includes("s’affichent ici"), "zone vidée");
+        frame.remove();
+      });
+
+      await test("une espace avant la ponctuation devient insécable, même après une formule", async () => {
+        const question = { ...textQuestion, question_statement: "Réponse : « oui » ? {% input_text 'r' solution=s %}" };
+        const { $, role, frame } = await openQuestion(question, textDraws, textOptions);
+        await waitFor(() => $("#q1-form_txt_r"), "affichage");
+        if (!role("prompt").textContent.includes("Réponse\u00a0: «\u00a0oui\u00a0»\u00a0?")) {
+          throw new Error(`Espaces inattendues : ${JSON.stringify(role("prompt").textContent)}`);
+        }
+        frame.remove();
+      });
+
       await test("une feuille de deux questions les garde indépendantes, même avec des champs de même nom", async () => {
         const otherQuestion = { ...textQuestion, question_title: "Double", question_statement: "Le double de {{ a }} ? {% input_text 'r' solution=s %}" };
         const otherDraws = [{ seed: 5, context: { a: "7" }, dimensions: {}, solutions: { r: "14" } }];
@@ -678,7 +735,8 @@ window.PyWimsPython = (() => {
         click(choiceBox($, 2));
         role("check").click();
         await waitFor(() => role("feedback").classList.contains("is-correct"), "retour juste");
-        if (role("feedback").textContent !== "Bravo, c’est exact !" || $("#q1").dataset.result !== "ok") {
+        // Espace insécable avant « ! » (SPECIFICATION.md, § 5.8).
+        if (role("feedback").textContent !== "Bravo, c’est exact\u00a0!" || $("#q1").dataset.result !== "ok") {
           throw new Error(`Retour juste inattendu : ${role("feedback").textContent}`);
         }
         role("new-draw").click();
@@ -765,7 +823,7 @@ window.PyWimsPython = (() => {
         type($("#q1-form_txt_r"), "1,5");
         role("check").click();
         await waitFor(() => role("feedback").classList.contains("is-correct"), "verdict par défaut juste");
-        if (role("feedback").textContent !== "Bravo, c’est exact !") {
+        if (role("feedback").textContent !== "Bravo, c’est exact\u00a0!") {
           throw new Error(`Retour inattendu : ${role("feedback").textContent}`);
         }
         frame.remove();
@@ -776,7 +834,7 @@ window.PyWimsPython = (() => {
         type($("#q1-form_txt_r"), "6/4");
         role("check").click();
         await waitFor(() => role("feedback").classList.contains("is-correct"), "verdict de l’auteur");
-        if (role("feedback").textContent !== "Bravo, c’est exact !") {
+        if (role("feedback").textContent !== "Bravo, c’est exact\u00a0!") {
           throw new Error(`Retour inattendu : ${role("feedback").textContent}`);
         }
         frame.remove();

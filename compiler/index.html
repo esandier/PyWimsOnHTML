@@ -278,6 +278,7 @@
     #output-mode, #activity-title { padding: 0 0.4rem; border: 1px solid #aeb5bd; border-radius: 0.3rem; background: #fff; }
     .activity-title-field { display: flex; flex: 1 1 14rem; align-items: center; gap: 0.4rem; min-width: 0; }
     #activity-title { flex: 1 1 auto; min-width: 0; }
+    .compact-style-field { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 0.3rem; white-space: nowrap; }
 
     /* Liste d’ordre : environ six lignes visibles, puis elle défile seule et l’aperçu garde sa place. */
     .order-heading { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.5rem; margin-bottom: 0.5rem; }
@@ -501,6 +502,8 @@
       <span class="activity-title-field" id="activity-title-label" hidden>
         <label for="activity-title">Titre</label>
         <input id="activity-title" type="text" autocomplete="off" placeholder="Titre de l’activité">
+        <!-- Style « feuille de TD » de l’activité (SPECIFICATION.md, § 5.7). -->
+        <label class="compact-style-field"><input id="compact-style" type="checkbox"> Style compact</label>
       </span>
     </div>
 

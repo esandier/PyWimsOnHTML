@@ -24,21 +24,63 @@ window.PyWimsQuestion = (() => {
   };
   const questionTemplate = document.getElementById("pw-question-template");
   const singleQuestion = document.body.dataset.sheet === "single";
+  // Style compact d’une activité (SPECIFICATION.md, § 5.7) : les boutons n’y ont pas de libellé.
+  const compactStyle = document.body.dataset.style === "compact";
 
   // Compose les formules d’un élément dont le contenu vient d’être remplacé.
   // Une feuille qui ne peut afficher aucune formule n’intègre pas MathJax (SPECIFICATION.md, § 5.1) :
   // window.MathJax n’existe pas, il n’y a rien à composer. S’il existe sans être prêt, c’est que son
   // chargement a échoué, ce que l’élève doit savoir.
+  // Les espaces avant la ponctuation deviennent ensuite insécables (frenchSpacing).
   async function typeset(element) {
-    if (window.MathJax === undefined) {
-      return;
+    if (window.MathJax !== undefined) {
+      if (!window.MathJax.startup?.promise || !window.MathJax.typesetPromise) {
+        throw new Error("Échec du chargement de MathJax.");
+      }
+      await window.MathJax.startup.promise;
+      window.MathJax.typesetClear([element]);
+      await window.MathJax.typesetPromise([element]);
     }
-    if (!window.MathJax.startup?.promise || !window.MathJax.typesetPromise) {
-      throw new Error("Échec du chargement de MathJax.");
+    frenchSpacing(element);
+  }
+
+  // Espace insécable avant « : ; ! ? » et « », et après « « (SPECIFICATION.md, § 5.8) : une espace
+  // ordinaire laisse le navigateur couper la ligne juste avant, et un « : » se retrouve seul en début
+  // de ligne. Seul le texte change, une fois les formules composées : une formule (mjx-container) ou
+  // du code n’est jamais touché, et une espace dans le TeX n’a pas de sens typographique.
+  // Solution écartée : remplacer à la compilation, dans le texte des .pwq, où il faudrait reconnaître
+  // les formules et les balises ; les retours calculés par « question_check » y échapperaient.
+  const unbreakableSpacing = /(?<=«) | (?=[:;!?»])/g;
+  function frenchSpacing(element) {
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, {
+      acceptNode: node => node.parentElement?.closest("mjx-container, math-field, script, style, pre, code, textarea")
+        ? NodeFilter.FILTER_REJECT
+        : NodeFilter.FILTER_ACCEPT
+    });
+    const nodes = [];
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      nodes.push(node);
     }
-    await window.MathJax.startup.promise;
-    window.MathJax.typesetClear([element]);
-    await window.MathJax.typesetPromise([element]);
+    for (const node of nodes) {
+      const text = node.data.replace(unbreakableSpacing, "\u00a0");
+      if (text !== node.data) {
+        node.data = text;
+      }
+      // Après une formule, l’espace insécable ne suffit pas : Edge et Chrome coupent quand même entre
+      // la formule (un bloc, pour la mise en ligne) et l’espace. La formule et sa ponctuation sont
+      // donc réunies dans un span insécable (constaté dans un retour : « 3 × 12 + 8 / ; 12 = … »).
+      const formula = node.previousSibling;
+      if (formula?.localName === "mjx-container" && formula.getAttribute("display") !== "true" &&
+          /^\u00a0[:;!?»]/.test(node.data)) {
+        if (node.data.length > 2) {
+          node.splitText(2);
+        }
+        const glue = document.createElement("span");
+        glue.className = "pw-nowrap";
+        formula.before(glue);
+        glue.append(formula, node);
+      }
+    }
   }
 
   // Note écrite à la française (« 2,5 ») et arrondie au centième ; « + 0 » évite d’afficher « -0 ».
@@ -56,8 +98,9 @@ window.PyWimsQuestion = (() => {
   //   solution : champs remplis par la solution.
   class Question {
     // onSuccess est appelé à la première vérification entièrement juste de l’élève, onScoreChange
-    // à chaque changement de la note d’une question notée.
-    constructor(section, index, { onSuccess, onScoreChange } = {}) {
+    // à chaque changement de la note d’une question notée, onFeedback quand un retour s’affiche ou
+    // s’efface (la zone de retour commune du style compact, gérée par la feuille).
+    constructor(section, index, { onSuccess, onScoreChange, onFeedback } = {}) {
       const dataElement = section.querySelector(".pw-question-data");
       this.definition = Object.fromEntries(
         [...dataElement.querySelectorAll("[data-field]")].map(field => [field.dataset.field, field.textContent])
@@ -104,6 +147,8 @@ window.PyWimsQuestion = (() => {
       // Le numéro est affiché par la pastille, décorative : le titre le donne aux lecteurs d’écran.
       this.titleElement.innerHTML = `<span class="pw-sr-only">Question ${index + 1} : </span>${PyWimsTemplate.escapeHtml(this.definition.question_title)}`;
       this.badgeElement.textContent = String(index + 1);
+      // Le style compact affiche le numéro même après la réussite, quand la pastille montre ✓.
+      this.badgeElement.dataset.number = String(index + 1);
       // Une question seule porte déjà son titre dans l’en-tête de la page.
       section.setAttribute("aria-labelledby", singleQuestion ? "question-title" : this.titleElement.id);
 
@@ -118,6 +163,7 @@ window.PyWimsQuestion = (() => {
       this.score = 0;
       this.scoreMax = 0;
       this.onScoreChange = onScoreChange;
+      this.onFeedback = onFeedback;
       if (this.scoring) {
         section.dataset.scored = "true";
         this.scoreElement.hidden = false;
@@ -304,6 +350,12 @@ window.PyWimsQuestion = (() => {
       });
       setButton(this.solutionButton, { absent: !(this.state === "open" || failed), disabled: this.busy });
       setButton(this.newDrawButton, { disabled: this.busy });
+      // Sans libellé, une infobulle donne le nom de chaque icône, qui peut changer avec l’état.
+      if (compactStyle) {
+        for (const button of [this.checkButton, this.solutionButton, this.newDrawButton]) {
+          button.title = button.getAttribute("aria-label");
+        }
+      }
     }
 
     // Change l’état de la question ; le CSS s’appuie sur data-state et data-result de la section.
@@ -324,6 +376,7 @@ window.PyWimsQuestion = (() => {
       this.feedbackElement.classList.remove("is-visible", "is-correct", "is-incorrect", "is-explanation");
       this.feedbackElement.innerHTML = "";
       this.layoutFeedback();
+      this.onFeedback?.(this, false);
     }
 
     // Affiche un retour (juste, faux) ou l’explication de la solution, avec l’animation habituelle.
@@ -337,6 +390,7 @@ window.PyWimsQuestion = (() => {
       await typeset(this.feedbackElement);
       this.feedbackElement.classList.add("is-visible");
       this.layoutFeedback();
+      this.onFeedback?.(this, true);
     }
 
     // Sur écran étroit, l’emplacement du retour prend sa hauteur (--fb-h) : la carte s’agrandit en douceur.
