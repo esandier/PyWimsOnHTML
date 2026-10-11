@@ -820,7 +820,7 @@ réunies dans un `span` insécable.
 | `compiler/draws.js` | tirages avec Pyodide, contrôles de l’auteur, cohérence, ordre des choix |
 | `compiler/assemble.js` | ressources du projet, assemblage des feuilles, empreinte d’une activité |
 | `compiler/zip.js` | archive ZIP des pages séparées |
-| `compiler/editor.js` | éditeur de questions : onglets, sous-onglets des champs, CodeMirror 5, validation à la frappe (§ 11.10) |
+| `compiler/editor.js` | atelier : onglets des questions ouvertes, éditeur d’un seul bloc (CodeMirror 5, une coloration par section), validation, enregistrement automatique (§ 11.10) |
 | `compiler/compiler.js` | interface du compilateur : dossier de questions, liste, aperçu, compilation, téléchargement ; lit en ligne les fichiers du projet (§ 11.1) |
 | `compiler/run-local.ps1` | serveur local et compilateur, pour essayer une modification du moteur avant de la publier |
 | `index.html`, `guide/`, `css/site.css`, `favicon.svg` | site du projet : accueil, mode d’emploi et ses modèles (`guide/templates/`), styles et icône communs (§ 11.5, § 11.6) |
@@ -1323,118 +1323,81 @@ remplaçait par l’ordre de la liste.
   est retirée). L’ordre n’est pas retenu d’une visite à l’autre.
 - Pages séparées (ZIP) : l’ordre est sans effet, la liste d’ordre est masquée.
 
-### 11.10 Éditer et coller des questions dans le compilateur
+### 11.10 Atelier : retoucher et coller des questions dans le compilateur
 
-On crée et on corrige une question sans quitter le compilateur, en voyant
-l’aperçu à côté.
+L’usage visé : retoucher une question écrite par une IA, ou parcourir les
+questions d’un dossier et y corriger de petites choses, en voyant le résultat à
+côté, sans jamais passer par un téléchargement.
 
-**Panneau de gauche en onglets.** Le premier onglet, « Liste », est la liste
-actuelle. Chaque question ouverte pour être modifiée a son onglet : son titre
-court, « ● » si elle a des modifications non enregistrées, et « × » pour le
-fermer. Une question déjà ouverte ne s’ouvre pas deux fois : on revient à son
-onglet. La barre d’onglets n’apparaît qu’avec un onglet de question. Fermer
-l’onglet actif active son voisin, comme dans un navigateur, ou « Liste »
-s’il n’en reste pas. Quand un onglet d’édition est actif, le panneau de gauche s’élargit à la
-trois cinquièmes de la largeur ; l’aperçu reste à droite. Il reprend sa largeur
-sur l’onglet « Liste ».
+**Edge et Chrome seulement.** Firefox et Safari interdisent à une page d’écrire
+dans un dossier : il fallait télécharger le fichier, le remettre dans le
+dossier, rouvrir le dossier. Un premier éditeur fondé sur ce détour (octobre
+2026) a été jugé inutilisable. Sous Firefox et Safari, le compilateur garde
+l’aperçu, la composition des feuilles et la compilation ; l’atelier y est
+remplacé par la phrase « Pour modifier les questions, ouvrez le compilateur dans
+Edge ou Chrome. » Ont été écartés : un serveur local qui écrirait les fichiers
+(il faut Python, absent des Mac récents), une bibliothèque de questions gardée
+dans le navigateur (le dossier cesse d’être la référence), une application de
+bureau (installateurs et signature à maintenir).
 
-**Ouvrir.** Un crayon ✎ au bout de chaque ligne de la liste ouvre l’onglet de la
-question ; le clic sur la ligne garde son rôle (l’aperçu). Une archive `.pwqa`
-ne se modifie pas encore dans le compilateur : son crayon est inactif, avec une
-infobulle qui le dit.
+**Dossier ouvert en écriture.** Sous Edge et Chrome, le dossier est ouvert en
+lecture et écriture : le navigateur demande l’autorisation une fois, à
+l’ouverture (ou à la réouverture du dossier mémorisé).
 
-**Sous-onglets.** Un onglet de question a un sous-onglet par champ, nommé sans
-le préfixe commun `question_` (« setup », « statement »…) :
+**Ouvrir.** Cliquer sur une question de la liste l’ouvre dans l’atelier ; la case
+à cocher garde son rôle (composer une feuille). Le panneau de gauche est en
+onglets : « Liste », puis un onglet par question ouverte (son titre, « × » pour
+le fermer). Une question déjà ouverte ne s’ouvre pas deux fois. Fermer l’onglet
+actif active son voisin, ou « Liste ». Un onglet de question élargit le panneau
+de gauche aux trois cinquièmes de la largeur ; l’aperçu reste à droite. La barre
+d’onglets n’apparaît qu’avec un onglet de question. Une archive `.pwqa`, qui
+contient aussi ses images, ne s’ouvre pas dans l’atelier : un clic montre son
+aperçu, comme sous Firefox.
 
-- **Paramètres** : titre, mots-clés et nombre de tirages (`question_draws`, vide
-  pour 20), en champs de formulaire ; `question_layout`, toujours `STD`, n’est
-  pas montré ;
-- **question_setup** et **question_check** : Python ;
-- **question_statement** et **question_solution_explanation** : HTML, avec en
-  couleur les balises `{% … %}`, les variables `{{ … }}` et les formules
-  `$…$`, `\( … \)`, `\[ … \]`.
+**Un seul bloc.** La question s’édite en entier, comme dans un éditeur de code :
+une question se lit d’un bloc, les variables de `question_setup` servent dans
+l’énoncé. Des sous-onglets par champ, essayés d’abord, obligeaient à basculer
+sans cesse. CodeMirror 5 (cdnjs, version fixée, chargé à la première ouverture)
+colore chaque section selon son contenu : les lignes `%` et `% question_…` en
+intertitres, Python pour `question_setup` et `question_check`, HTML pour
+l’énoncé et l’explication, avec en couleur les balises `{% … %}`, les variables
+`{{ … }}` et les formules. Chaque section se replie par son intertitre.
+Numéros de ligne, Tab (quatre espaces), retour à la ligne indenté, Ctrl+Z.
+CodeMirror 6 a été écarté : il demande un outil de construction (bundler).
 
-Un champ facultatif absent (`question_check`, `question_solution_explanation`)
-a un sous-onglet « + », qui l’ajoute vide ; présent, son sous-onglet a un « × »
-qui le retire (après confirmation s’il n’est pas vide), et le « + » revient. Les champs de code utilisent
-CodeMirror 5 (cdnjs, version fixée), chargé seulement à l’ouverture du premier
-onglet de question : numéros de ligne, coloration, indentation par la touche
-Tab (quatre espaces) et retour à la ligne indenté. CodeMirror 6 a été écarté :
-il demande un outil de construction (bundler).
+**Aperçu vivant.** Après une courte pause de la frappe, l’aperçu montre la
+version de l’atelier, avec un tirage réel calculé par Python. Il garde la même
+graine d’une mise à jour à l’autre, pour ne pas changer de nombres à chaque
+lettre ; le bouton « Nouveau tirage », à côté de « Afficher la solution », en
+change. L’aperçu précédent reste affiché pendant le calcul.
 
-**Fichier mal formé.** Un `.pwq` que le compilateur ne sait pas lire (en-tête
-manquant, champ inconnu…) s’ouvre aussi : ses champs sont découpés sans être
-validés. Si même ce découpage échoue, l’onglet n’a qu’un sous-onglet « Fichier
-entier », qui montre le texte complet ; une fois corrigé, l’onglet retrouve ses
-sous-onglets.
+**Erreurs.** Sous l’éditeur, une ligne d’état donne l’erreur de format ou de
+balise (à la frappe) et l’erreur Python du tirage de l’aperçu, avec un lien
+« ligne n » qui place le curseur sur la ligne fautive du fichier.
 
-**Erreurs.** À la frappe (après une courte pause), le texte est validé comme à
-l’ouverture du dossier : format, balises de l’énoncé. Une erreur s’affiche dans
-la ligne d’état de l’onglet, et le sous-onglet concerné porte une marque rouge.
-Les erreurs Python n’apparaissent qu’avec « Essayer ».
-
-**Boutons de l’onglet.**
-
-- **Essayer** (Ctrl+Entrée) : l’aperçu montre la version de l’éditeur, avec un
-  nouveau tirage calculé par Python ; une erreur s’affiche dans la ligne d’état
-  de l’aperçu, comme aujourd’hui.
-- **Enregistrer** (Ctrl+S) : l’onglet reste ouvert.
-- **Enregistrer et fermer.**
-- **Fermer** : s’il y a des modifications non enregistrées, le compilateur
-  demande « Fermer sans enregistrer ? ». Le « × » de l’onglet fait de même.
-
-**Version utilisée.** Une question modifiée, enregistrée ou non, est
-prévisualisée et compilée telle qu’elle est dans l’éditeur : ce qu’on voit est ce
-qu’on obtient. La liste le signale (« modifiée », « non enregistrée »). Une
-question dont le texte de l’éditeur n’est pas valide ne se compile pas : la
-compilation le dit.
-
-**Enregistrer.** Le fichier est réécrit champ par champ : ordre d’origine des
-champs, nouveaux champs à la fin, fins de ligne d’origine (CRLF ou LF).
-
-- **Chrome, Edge, dossier ouvert par son accès** : le fichier est écrit dans le
-  dossier. Au premier enregistrement, le navigateur demande l’autorisation de
-  modifier le dossier. Avant d’écrire, le compilateur relit le fichier : s’il a
-  changé sur le disque depuis son ouverture (modifié dans un autre éditeur), il
-  demande « Remplacer ? ». Une nouvelle question est créée à la racine du
-  dossier ; un nom déjà pris demande confirmation.
-- **Chrome, Edge, sans dossier ouvert** (questions collées) : la fenêtre
-  « Enregistrer sous » s’ouvre dans le dernier dossier de questions.
-- **Firefox, Safari** : le `.pwq` est téléchargé, avec le message « Placez-le
-  dans votre dossier de questions » (une page ne peut pas choisir le dossier
-  d’un téléchargement). L’onglet n’a plus de « ● », mais la question garde la
-  version de l’éditeur pour la session, et la liste la marque « modifiée ».
-- Le message de l’enregistrement s’affiche dans la ligne d’état de l’onglet, à
-  côté des boutons, et non dans l’en-tête de la page, qui passe inaperçu
-  pendant l’édition.
-- Un serveur local qui écrirait dans le dossier a été écarté : le compilateur
-  doit marcher en ligne.
+**Enregistrement automatique.** Après chaque pause de la frappe, le fichier est
+écrit dans le dossier, même s’il contient une erreur : la compilation la
+signale, et la ligne d’état la montre. Un témoin discret dit « Enregistrement… »
+puis « Enregistré ». Si le fichier a changé sur le disque depuis sa dernière
+lecture (modifié dans un autre éditeur), le compilateur demande avant de
+l’écraser. Fermer un onglet ou la page enregistre ce qui ne l’est pas encore.
+« Relire » met à jour les onglets ouverts dont le fichier a changé sur le disque.
 
 **Coller des questions.** En tête de l’onglet « Liste », deux petits boutons sur
-une ligne, suivis de leur message bref (« Prompt copié. ») :
+une ligne, suivis de leur message bref :
 
 - **Copier le prompt** : copie `PROMPT.md`, comme la page Créer ;
 - **Coller question(s)** (infobulle : « Coller le code d’une ou plusieurs
-  questions ») : lit le presse-papiers. Si le navigateur refuse, une fenêtre
+  questions ») : lit le presse-papiers ; si le navigateur refuse, une fenêtre
   s’ouvre : « Collez ici le code d’une ou plusieurs questions (Ctrl+V) ».
 
 Le texte collé est découpé en questions aux lignes `=== nom.pwq ===` que
 `PROMPT.md` demande pour plusieurs questions ; à défaut, avant chaque
 `% question_title`. Les lignes de bloc de code (```) et le texte qui précède le
 premier `%` sont retirés : les IA en ajoutent malgré la consigne. Chaque question
-collée est ajoutée à la liste (marquée « non enregistrée ») et ouvre son onglet.
-Son nom de fichier est celui de la ligne `===`, ou tiré du titre
-(`loi-binomiale.pwq`), rendu unique s’il est déjà pris. Une erreur s’affiche dans
-l’onglet de sa question ; un texte sans question le dit à côté des boutons. On
-peut coller sans
-dossier ouvert : l’enregistrement passe alors par le téléchargement.
-
-**Garde-fous.**
-
-- « Relire » garde les onglets ouverts et leurs modifications.
-- Ouvrir un autre dossier, ou quitter la page, avec des modifications non
-  enregistrées demande confirmation ; ouvrir un autre dossier ferme les
-  onglets.
+est aussitôt écrite à la racine du dossier, sous le nom de la ligne `===` ou un
+nom tiré du titre (`loi-binomiale.pwq`), rendu unique s’il est déjà pris, puis
+s’ouvre dans son onglet. Sans dossier ouvert, le bouton demande d’en ouvrir un.
 
 ## 12. Points ouverts
 
