@@ -88,6 +88,11 @@ body {
   display: none !important;
 }
 
+/* Formule et ponctuation qui la suit, jamais séparées par un retour à la ligne (SPECIFICATION.md, § 5.8). */
+.pw-nowrap {
+  white-space: nowrap;
+}
+
 /* Texte lu par les lecteurs d’écran, sans affichage. */
 .pw-sr-only {
   position: absolute;
@@ -1151,6 +1156,362 @@ mjx-assistive-mml {
   @keyframes feedbackFadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
+  }
+}
+
+/* Style compact d’une activité, « feuille de TD » (SPECIFICATION.md, § 5.7) : mêmes éléments, présentés
+   comme une page de texte. Placé en fin de fichier pour l’emporter, à spécificité égale, sur le style
+   habituel. La charte reste celle de la feuille : seules les proportions changent. */
+[data-style="compact"] {
+  background: #fff;
+}
+
+/* En-tête en bande fine : la hauteur que les chartes donnent déjà sur téléphone. Le logo suit. */
+[data-style="compact"] .pw-header {
+  height: 2.75rem;
+}
+
+[data-style="compact"] .pw-header h1 {
+  font-size: clamp(12pt, 2vw, 15pt);
+}
+
+[data-style="compact"] .pw-completion-value {
+  font-size: 1.15rem;
+}
+
+[data-style="compact"] .pw-completion-label {
+  font-size: 0.62rem;
+}
+
+[data-style="compact"] .pw-help-button {
+  width: 1.7rem;
+  height: 1.7rem;
+  border-width: 1.5px;
+  font-size: 0.95rem;
+}
+
+[data-style="compact"] .pw-progress {
+  height: 3px;
+}
+
+/* Page : une colonne de texte de la largeur d’une page A4 ; sur grand écran, la zone de retour commune
+   occupe la marge droite. */
+[data-style="compact"] .pw-sheet {
+  grid-template-columns: minmax(0, 46rem) 18rem;
+  justify-content: center;
+  gap: 0 2.5rem;
+  max-width: none;
+  padding: 0.75rem 1.25rem 4rem;
+}
+
+/* Question : numéro, énoncé et icônes, sans carte ; un filet fin la sépare de la suivante. */
+[data-style="compact"] .pw-question {
+  grid-column: 1;
+  grid-template-columns: 2.6rem minmax(0, 1fr) auto;
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "badge question_statement actions"
+    "badge question_statement score"
+    ". status status"
+    ". feedback feedback";
+  gap: 0 0.75rem;
+  padding: 1rem 0 1.1rem;
+  border: 0;
+  border-bottom: 1px solid var(--pw-action-border);
+  border-radius: 0;
+  background: none;
+  scroll-margin-top: 4.5rem;
+}
+
+[data-style="compact"] .pw-sheet .pw-question[data-scored] {
+  padding-bottom: 1.1rem;
+}
+
+[data-style="compact"] .pw-question:last-of-type {
+  border-bottom: 0;
+}
+
+/* Le titre n’est plus affiché ; il reste le nom de la question pour les lecteurs d’écran. */
+[data-style="compact"] .pw-q-head {
+  display: contents;
+}
+
+[data-style="compact"] .pw-q-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Numéro « 3. » au début de l’énoncé. La pastille garde son rôle (question.js y écrit le numéro, puis
+   ✓) : son texte est masqué et le numéro vient de data-number, pour rester affiché après la réussite,
+   précédé d’un ✓ vert. Le ✓ est dans la ligne, et non hors de la colonne : sur téléphone, la marge
+   gauche de la page est trop étroite pour lui. */
+[data-style="compact"] .pw-q-badge,
+[data-style="compact"] .pw-q-badge.is-done {
+  display: block;
+  width: auto;
+  height: auto;
+  border: 0;
+  border-radius: 0;
+  color: var(--pw-brand-navy);
+  background: none;
+  font-size: 0;
+  text-align: right;
+  white-space: nowrap;
+}
+
+[data-style="compact"] .pw-q-badge::after {
+  content: attr(data-number) ".";
+  font: 700 12pt/1.6 var(--pw-heading-font);
+}
+
+[data-style="compact"] .pw-q-badge.is-done::before {
+  margin-right: 0.2em;
+  color: var(--pw-correct-text);
+  content: "✓";
+  font: 700 12pt/1.6 var(--pw-heading-font);
+}
+
+/* Boutons : trois petites icônes grises, sans libellé ni bandeau ; « Vérifier » prend la couleur de
+   la charte quand il est actif. */
+[data-style="compact"] .validation-statement {
+  flex-wrap: nowrap;
+  grid-area: actions;
+  align-self: start;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+[data-style="compact"] .pw-act-label {
+  display: none;
+}
+
+[data-style="compact"] .pw-act {
+  padding: 0.3em;
+  color: color-mix(in srgb, var(--pw-brand-tertiary) 70%, #fff);
+}
+
+[data-style="compact"] .pw-act.is-primary {
+  background: none;
+}
+
+[data-style="compact"] .pw-act.is-primary:not(:disabled) {
+  color: var(--pw-brand-navy);
+  background: color-mix(in srgb, var(--pw-brand-navy) 9%, #fff);
+}
+
+[data-style="compact"] .pw-act:disabled {
+  opacity: 0.35;
+}
+
+/* Note de la question, sous les icônes. */
+[data-style="compact"] .pw-q-score {
+  position: static;
+  grid-area: score;
+  align-self: start;
+  justify-self: end;
+  margin-top: 0.3rem;
+  font-size: 0.8rem;
+}
+
+[data-style="compact"] .form-statement {
+  min-height: 0;
+}
+
+/* Champs : traits fins. */
+[data-style="compact"] .input {
+  border-width: 1px;
+  border-radius: 4px;
+}
+
+[data-style="compact"] .pw-matrix-delimiter {
+  border-width: 1.5px;
+}
+
+[data-style="compact"] .pw-math-input {
+  min-height: 2.1rem;
+}
+
+/* Choix : à la suite dans le texte, sans cadre, chacun à sa largeur ; ils passent à la ligne quand la
+   place manque. Le nombre de colonnes calculé par le widget de choix ne sert plus : il ne règle que
+   la grille. */
+[data-style="compact"] .pw-choices,
+[data-style="compact"] .pw-choices.is-compact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 1.2rem;
+  width: auto;
+  margin: 0.4em 0;
+}
+
+[data-style="compact"] .pw-choice {
+  max-width: 100%;
+  min-height: 0;
+  gap: 0.4em;
+  padding: 0.15em 0.35em;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+}
+
+[data-style="compact"] .pw-choice:not(.is-correct, .is-incorrect):has(input:checked) {
+  background: none;
+}
+
+[data-style="compact"] .pw-choice.is-correct {
+  color: var(--pw-correct-text);
+  background: var(--pw-correct-background);
+}
+
+[data-style="compact"] .pw-choice.is-incorrect {
+  color: var(--pw-incorrect-text);
+  background: var(--pw-incorrect-background);
+}
+
+@media (pointer: coarse) {
+  [data-style="compact"] .pw-choice {
+    min-height: 44px;
+  }
+}
+
+/* Retour : texte dans la police de la charte, sans animation d’apparition. */
+[data-style="compact"] .pw-feedback.feedback {
+  min-height: 0;
+  text-align: left;
+  font: 0.95rem/1.5 var(--pw-body-font);
+}
+
+[data-style="compact"] .pw-feedback.is-visible {
+  opacity: 1;
+  animation: none;
+}
+
+/* Zone de retour commune, créée par sheet.js dans la marge droite : elle reste visible au défilement,
+   sous l’en-tête. Le retour de la question y est déplacé ; sa couleur donne celle de la zone. */
+.pw-feedback-zone {
+  position: sticky;
+  top: calc(2.75rem + 3px + 1rem);
+  grid-column: 2;
+  align-self: start;
+  max-height: calc(100vh - 2.75rem - 3px - 2rem);
+  margin-top: 1rem;
+  overflow: auto;
+  padding: 0.7rem 0.9rem;
+  border-left: 3px solid var(--pw-action-border);
+  background: var(--pw-action-background);
+  transition: opacity 0.3s;
+}
+
+.pw-feedback-zone:has(.is-correct) {
+  border-left-color: var(--pw-correct-text);
+  background: var(--pw-correct-background);
+}
+
+.pw-feedback-zone:has(.is-incorrect) {
+  border-left-color: var(--pw-incorrect-text);
+  background: var(--pw-incorrect-background);
+}
+
+.pw-feedback-zone:has(.is-explanation) {
+  border-left-color: var(--pw-brand-navy);
+  background: color-mix(in srgb, var(--pw-brand-navy) 6%, #fff);
+}
+
+/* Retour d’une question sortie de l’écran : grisé, sans être effacé. */
+.pw-feedback-zone.is-stale {
+  opacity: 0.5;
+}
+
+.pw-feedback-zone .pw-feedback.feedback {
+  padding: 0;
+  background: none;
+}
+
+.pw-feedback-zone-link {
+  display: block;
+  margin: 0 0 0.3rem;
+  padding: 0;
+  border: 0;
+  color: var(--pw-brand-navy);
+  background: none;
+  font: 700 0.8rem var(--pw-heading-font);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.pw-feedback-zone-link:hover {
+  text-decoration: underline;
+}
+
+.pw-feedback-zone-empty {
+  margin: 0;
+  color: var(--pw-brand-tertiary);
+  font-size: 0.85rem;
+}
+
+/* Grand écran : l’emplacement du retour sous la question ne sert plus. Il reste dans la page, invisible
+   (et non « display: none ») : le retour y est composé par MathJax, qui mesure son conteneur, avant
+   d’être déplacé dans la zone. */
+@media (min-width: 1001px) {
+  [data-style="compact"] .pw-q-slot {
+    position: absolute;
+    width: 18rem;
+    visibility: hidden;
+  }
+}
+
+/* Écran étroit : une seule colonne, plus de zone commune ; le retour s’affiche sous la question, avec
+   un filet de la couleur du verdict. Les icônes et la note passent sur une ligne au-dessus de l’énoncé,
+   qui garde toute la largeur. */
+@media (max-width: 1000px) {
+  [data-style="compact"] .pw-sheet {
+    grid-template-columns: minmax(0, 46rem);
+    padding: 0.5rem 0.9rem 4rem;
+  }
+
+  [data-style="compact"] .pw-feedback-zone {
+    display: none;
+  }
+
+  [data-style="compact"] .pw-question {
+    grid-template-columns: 2.4rem minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    grid-template-areas:
+      ". score actions"
+      "badge question_statement question_statement"
+      ". status status"
+      ". feedback feedback";
+    gap: 0 0.5rem;
+    padding: 0.8rem 0 0.9rem;
+  }
+
+  [data-style="compact"] .pw-q-score {
+    align-self: center;
+    margin: 0;
+  }
+
+  /* Même agrandissement en douceur que le style habituel sur téléphone (≤ 820 px), dès 1000 px : sans
+     colonne de droite, la place du retour n’est pas réservée. */
+  [data-style="compact"] .pw-q-slot {
+    height: var(--fb-h, 0px);
+    min-height: 0;
+    overflow: hidden;
+    transition: height 0.35s ease;
+  }
+
+  [data-style="compact"] .pw-q-slot > .feedback {
+    position: static;
+    max-height: none;
+    padding: 0.4em 0.7em;
+    border-left: 3px solid currentColor;
+    border-radius: 0;
   }
 }
  reçoit les styles génériques et la charte de marque choisie. -->
@@ -1238,6 +1599,11 @@ body {
   display: none !important;
 }
 
+/* Formule et ponctuation qui la suit, jamais séparées par un retour à la ligne (SPECIFICATION.md, § 5.8). */
+.pw-nowrap {
+  white-space: nowrap;
+}
+
 /* Texte lu par les lecteurs d’écran, sans affichage. */
 .pw-sr-only {
   position: absolute;
@@ -2304,6 +2670,362 @@ mjx-assistive-mml {
   }
 }
 
+/* Style compact d’une activité, « feuille de TD » (SPECIFICATION.md, § 5.7) : mêmes éléments, présentés
+   comme une page de texte. Placé en fin de fichier pour l’emporter, à spécificité égale, sur le style
+   habituel. La charte reste celle de la feuille : seules les proportions changent. */
+[data-style="compact"] {
+  background: #fff;
+}
+
+/* En-tête en bande fine : la hauteur que les chartes donnent déjà sur téléphone. Le logo suit. */
+[data-style="compact"] .pw-header {
+  height: 2.75rem;
+}
+
+[data-style="compact"] .pw-header h1 {
+  font-size: clamp(12pt, 2vw, 15pt);
+}
+
+[data-style="compact"] .pw-completion-value {
+  font-size: 1.15rem;
+}
+
+[data-style="compact"] .pw-completion-label {
+  font-size: 0.62rem;
+}
+
+[data-style="compact"] .pw-help-button {
+  width: 1.7rem;
+  height: 1.7rem;
+  border-width: 1.5px;
+  font-size: 0.95rem;
+}
+
+[data-style="compact"] .pw-progress {
+  height: 3px;
+}
+
+/* Page : une colonne de texte de la largeur d’une page A4 ; sur grand écran, la zone de retour commune
+   occupe la marge droite. */
+[data-style="compact"] .pw-sheet {
+  grid-template-columns: minmax(0, 46rem) 18rem;
+  justify-content: center;
+  gap: 0 2.5rem;
+  max-width: none;
+  padding: 0.75rem 1.25rem 4rem;
+}
+
+/* Question : numéro, énoncé et icônes, sans carte ; un filet fin la sépare de la suivante. */
+[data-style="compact"] .pw-question {
+  grid-column: 1;
+  grid-template-columns: 2.6rem minmax(0, 1fr) auto;
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "badge question_statement actions"
+    "badge question_statement score"
+    ". status status"
+    ". feedback feedback";
+  gap: 0 0.75rem;
+  padding: 1rem 0 1.1rem;
+  border: 0;
+  border-bottom: 1px solid var(--pw-action-border);
+  border-radius: 0;
+  background: none;
+  scroll-margin-top: 4.5rem;
+}
+
+[data-style="compact"] .pw-sheet .pw-question[data-scored] {
+  padding-bottom: 1.1rem;
+}
+
+[data-style="compact"] .pw-question:last-of-type {
+  border-bottom: 0;
+}
+
+/* Le titre n’est plus affiché ; il reste le nom de la question pour les lecteurs d’écran. */
+[data-style="compact"] .pw-q-head {
+  display: contents;
+}
+
+[data-style="compact"] .pw-q-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Numéro « 3. » au début de l’énoncé. La pastille garde son rôle (question.js y écrit le numéro, puis
+   ✓) : son texte est masqué et le numéro vient de data-number, pour rester affiché après la réussite,
+   précédé d’un ✓ vert. Le ✓ est dans la ligne, et non hors de la colonne : sur téléphone, la marge
+   gauche de la page est trop étroite pour lui. */
+[data-style="compact"] .pw-q-badge,
+[data-style="compact"] .pw-q-badge.is-done {
+  display: block;
+  width: auto;
+  height: auto;
+  border: 0;
+  border-radius: 0;
+  color: var(--pw-brand-navy);
+  background: none;
+  font-size: 0;
+  text-align: right;
+  white-space: nowrap;
+}
+
+[data-style="compact"] .pw-q-badge::after {
+  content: attr(data-number) ".";
+  font: 700 12pt/1.6 var(--pw-heading-font);
+}
+
+[data-style="compact"] .pw-q-badge.is-done::before {
+  margin-right: 0.2em;
+  color: var(--pw-correct-text);
+  content: "✓";
+  font: 700 12pt/1.6 var(--pw-heading-font);
+}
+
+/* Boutons : trois petites icônes grises, sans libellé ni bandeau ; « Vérifier » prend la couleur de
+   la charte quand il est actif. */
+[data-style="compact"] .validation-statement {
+  flex-wrap: nowrap;
+  grid-area: actions;
+  align-self: start;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+[data-style="compact"] .pw-act-label {
+  display: none;
+}
+
+[data-style="compact"] .pw-act {
+  padding: 0.3em;
+  color: color-mix(in srgb, var(--pw-brand-tertiary) 70%, #fff);
+}
+
+[data-style="compact"] .pw-act.is-primary {
+  background: none;
+}
+
+[data-style="compact"] .pw-act.is-primary:not(:disabled) {
+  color: var(--pw-brand-navy);
+  background: color-mix(in srgb, var(--pw-brand-navy) 9%, #fff);
+}
+
+[data-style="compact"] .pw-act:disabled {
+  opacity: 0.35;
+}
+
+/* Note de la question, sous les icônes. */
+[data-style="compact"] .pw-q-score {
+  position: static;
+  grid-area: score;
+  align-self: start;
+  justify-self: end;
+  margin-top: 0.3rem;
+  font-size: 0.8rem;
+}
+
+[data-style="compact"] .form-statement {
+  min-height: 0;
+}
+
+/* Champs : traits fins. */
+[data-style="compact"] .input {
+  border-width: 1px;
+  border-radius: 4px;
+}
+
+[data-style="compact"] .pw-matrix-delimiter {
+  border-width: 1.5px;
+}
+
+[data-style="compact"] .pw-math-input {
+  min-height: 2.1rem;
+}
+
+/* Choix : à la suite dans le texte, sans cadre, chacun à sa largeur ; ils passent à la ligne quand la
+   place manque. Le nombre de colonnes calculé par le widget de choix ne sert plus : il ne règle que
+   la grille. */
+[data-style="compact"] .pw-choices,
+[data-style="compact"] .pw-choices.is-compact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 1.2rem;
+  width: auto;
+  margin: 0.4em 0;
+}
+
+[data-style="compact"] .pw-choice {
+  max-width: 100%;
+  min-height: 0;
+  gap: 0.4em;
+  padding: 0.15em 0.35em;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+}
+
+[data-style="compact"] .pw-choice:not(.is-correct, .is-incorrect):has(input:checked) {
+  background: none;
+}
+
+[data-style="compact"] .pw-choice.is-correct {
+  color: var(--pw-correct-text);
+  background: var(--pw-correct-background);
+}
+
+[data-style="compact"] .pw-choice.is-incorrect {
+  color: var(--pw-incorrect-text);
+  background: var(--pw-incorrect-background);
+}
+
+@media (pointer: coarse) {
+  [data-style="compact"] .pw-choice {
+    min-height: 44px;
+  }
+}
+
+/* Retour : texte dans la police de la charte, sans animation d’apparition. */
+[data-style="compact"] .pw-feedback.feedback {
+  min-height: 0;
+  text-align: left;
+  font: 0.95rem/1.5 var(--pw-body-font);
+}
+
+[data-style="compact"] .pw-feedback.is-visible {
+  opacity: 1;
+  animation: none;
+}
+
+/* Zone de retour commune, créée par sheet.js dans la marge droite : elle reste visible au défilement,
+   sous l’en-tête. Le retour de la question y est déplacé ; sa couleur donne celle de la zone. */
+.pw-feedback-zone {
+  position: sticky;
+  top: calc(2.75rem + 3px + 1rem);
+  grid-column: 2;
+  align-self: start;
+  max-height: calc(100vh - 2.75rem - 3px - 2rem);
+  margin-top: 1rem;
+  overflow: auto;
+  padding: 0.7rem 0.9rem;
+  border-left: 3px solid var(--pw-action-border);
+  background: var(--pw-action-background);
+  transition: opacity 0.3s;
+}
+
+.pw-feedback-zone:has(.is-correct) {
+  border-left-color: var(--pw-correct-text);
+  background: var(--pw-correct-background);
+}
+
+.pw-feedback-zone:has(.is-incorrect) {
+  border-left-color: var(--pw-incorrect-text);
+  background: var(--pw-incorrect-background);
+}
+
+.pw-feedback-zone:has(.is-explanation) {
+  border-left-color: var(--pw-brand-navy);
+  background: color-mix(in srgb, var(--pw-brand-navy) 6%, #fff);
+}
+
+/* Retour d’une question sortie de l’écran : grisé, sans être effacé. */
+.pw-feedback-zone.is-stale {
+  opacity: 0.5;
+}
+
+.pw-feedback-zone .pw-feedback.feedback {
+  padding: 0;
+  background: none;
+}
+
+.pw-feedback-zone-link {
+  display: block;
+  margin: 0 0 0.3rem;
+  padding: 0;
+  border: 0;
+  color: var(--pw-brand-navy);
+  background: none;
+  font: 700 0.8rem var(--pw-heading-font);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.pw-feedback-zone-link:hover {
+  text-decoration: underline;
+}
+
+.pw-feedback-zone-empty {
+  margin: 0;
+  color: var(--pw-brand-tertiary);
+  font-size: 0.85rem;
+}
+
+/* Grand écran : l’emplacement du retour sous la question ne sert plus. Il reste dans la page, invisible
+   (et non « display: none ») : le retour y est composé par MathJax, qui mesure son conteneur, avant
+   d’être déplacé dans la zone. */
+@media (min-width: 1001px) {
+  [data-style="compact"] .pw-q-slot {
+    position: absolute;
+    width: 18rem;
+    visibility: hidden;
+  }
+}
+
+/* Écran étroit : une seule colonne, plus de zone commune ; le retour s’affiche sous la question, avec
+   un filet de la couleur du verdict. Les icônes et la note passent sur une ligne au-dessus de l’énoncé,
+   qui garde toute la largeur. */
+@media (max-width: 1000px) {
+  [data-style="compact"] .pw-sheet {
+    grid-template-columns: minmax(0, 46rem);
+    padding: 0.5rem 0.9rem 4rem;
+  }
+
+  [data-style="compact"] .pw-feedback-zone {
+    display: none;
+  }
+
+  [data-style="compact"] .pw-question {
+    grid-template-columns: 2.4rem minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    grid-template-areas:
+      ". score actions"
+      "badge question_statement question_statement"
+      ". status status"
+      ". feedback feedback";
+    gap: 0 0.5rem;
+    padding: 0.8rem 0 0.9rem;
+  }
+
+  [data-style="compact"] .pw-q-score {
+    align-self: center;
+    margin: 0;
+  }
+
+  /* Même agrandissement en douceur que le style habituel sur téléphone (≤ 820 px), dès 1000 px : sans
+     colonne de droite, la place du retour n’est pas réservée. */
+  [data-style="compact"] .pw-q-slot {
+    height: var(--fb-h, 0px);
+    min-height: 0;
+    overflow: hidden;
+    transition: height 0.35s ease;
+  }
+
+  [data-style="compact"] .pw-q-slot > .feedback {
+    position: static;
+    max-height: none;
+    padding: 0.4em 0.7em;
+    border-left: 3px solid currentColor;
+    border-radius: 0;
+  }
+}
+
   </style>
   <!-- MathJax (configuration et chargement), seulement si la feuille peut afficher une formule
        (voir mathJaxMarkup dans compiler/assemble.js) ; vide sinon. -->
@@ -2323,6 +3045,7 @@ mjx-assistive-mml {
 </head>
 <!-- data-sheet : « single » pour une question seule, « activity » pour une feuille de plusieurs questions. -->
 <!-- data-sheet-id : empreinte d’une activité, clé de la mémoire de sa progression (absente pour une question seule). -->
+<!-- data-style : « compact » pour une activité au style « feuille de TD » (SPECIFICATION.md, § 5.7), absent sinon. -->
 <body data-sheet="activity" data-sheet-id="7q1iaey0yy">
   <!-- En-tête : titre, progression (activité seulement), aide et logo. Il reste visible au défilement d’une activité. -->
   <div class="pw-top">
@@ -4495,21 +5218,63 @@ window.PyWimsQuestion = (() => {
   };
   const questionTemplate = document.getElementById("pw-question-template");
   const singleQuestion = document.body.dataset.sheet === "single";
+  // Style compact d’une activité (SPECIFICATION.md, § 5.7) : les boutons n’y ont pas de libellé.
+  const compactStyle = document.body.dataset.style === "compact";
 
   // Compose les formules d’un élément dont le contenu vient d’être remplacé.
   // Une feuille qui ne peut afficher aucune formule n’intègre pas MathJax (SPECIFICATION.md, § 5.1) :
   // window.MathJax n’existe pas, il n’y a rien à composer. S’il existe sans être prêt, c’est que son
   // chargement a échoué, ce que l’élève doit savoir.
+  // Les espaces avant la ponctuation deviennent ensuite insécables (frenchSpacing).
   async function typeset(element) {
-    if (window.MathJax === undefined) {
-      return;
+    if (window.MathJax !== undefined) {
+      if (!window.MathJax.startup?.promise || !window.MathJax.typesetPromise) {
+        throw new Error("Échec du chargement de MathJax.");
+      }
+      await window.MathJax.startup.promise;
+      window.MathJax.typesetClear([element]);
+      await window.MathJax.typesetPromise([element]);
     }
-    if (!window.MathJax.startup?.promise || !window.MathJax.typesetPromise) {
-      throw new Error("Échec du chargement de MathJax.");
+    frenchSpacing(element);
+  }
+
+  // Espace insécable avant « : ; ! ? » et « », et après « « (SPECIFICATION.md, § 5.8) : une espace
+  // ordinaire laisse le navigateur couper la ligne juste avant, et un « : » se retrouve seul en début
+  // de ligne. Seul le texte change, une fois les formules composées : une formule (mjx-container) ou
+  // du code n’est jamais touché, et une espace dans le TeX n’a pas de sens typographique.
+  // Solution écartée : remplacer à la compilation, dans le texte des .pwq, où il faudrait reconnaître
+  // les formules et les balises ; les retours calculés par « question_check » y échapperaient.
+  const unbreakableSpacing = /(?<=«) | (?=[:;!?»])/g;
+  function frenchSpacing(element) {
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, {
+      acceptNode: node => node.parentElement?.closest("mjx-container, math-field, script, style, pre, code, textarea")
+        ? NodeFilter.FILTER_REJECT
+        : NodeFilter.FILTER_ACCEPT
+    });
+    const nodes = [];
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      nodes.push(node);
     }
-    await window.MathJax.startup.promise;
-    window.MathJax.typesetClear([element]);
-    await window.MathJax.typesetPromise([element]);
+    for (const node of nodes) {
+      const text = node.data.replace(unbreakableSpacing, "\u00a0");
+      if (text !== node.data) {
+        node.data = text;
+      }
+      // Après une formule, l’espace insécable ne suffit pas : Edge et Chrome coupent quand même entre
+      // la formule (un bloc, pour la mise en ligne) et l’espace. La formule et sa ponctuation sont
+      // donc réunies dans un span insécable (constaté dans un retour : « 3 × 12 + 8 / ; 12 = … »).
+      const formula = node.previousSibling;
+      if (formula?.localName === "mjx-container" && formula.getAttribute("display") !== "true" &&
+          /^\u00a0[:;!?»]/.test(node.data)) {
+        if (node.data.length > 2) {
+          node.splitText(2);
+        }
+        const glue = document.createElement("span");
+        glue.className = "pw-nowrap";
+        formula.before(glue);
+        glue.append(formula, node);
+      }
+    }
   }
 
   // Note écrite à la française (« 2,5 ») et arrondie au centième ; « + 0 » évite d’afficher « -0 ».
@@ -4527,8 +5292,9 @@ window.PyWimsQuestion = (() => {
   //   solution : champs remplis par la solution.
   class Question {
     // onSuccess est appelé à la première vérification entièrement juste de l’élève, onScoreChange
-    // à chaque changement de la note d’une question notée.
-    constructor(section, index, { onSuccess, onScoreChange } = {}) {
+    // à chaque changement de la note d’une question notée, onFeedback quand un retour s’affiche ou
+    // s’efface (la zone de retour commune du style compact, gérée par la feuille).
+    constructor(section, index, { onSuccess, onScoreChange, onFeedback } = {}) {
       const dataElement = section.querySelector(".pw-question-data");
       this.definition = Object.fromEntries(
         [...dataElement.querySelectorAll("[data-field]")].map(field => [field.dataset.field, field.textContent])
@@ -4575,6 +5341,8 @@ window.PyWimsQuestion = (() => {
       // Le numéro est affiché par la pastille, décorative : le titre le donne aux lecteurs d’écran.
       this.titleElement.innerHTML = `<span class="pw-sr-only">Question ${index + 1} : </span>${PyWimsTemplate.escapeHtml(this.definition.question_title)}`;
       this.badgeElement.textContent = String(index + 1);
+      // Le style compact affiche le numéro même après la réussite, quand la pastille montre ✓.
+      this.badgeElement.dataset.number = String(index + 1);
       // Une question seule porte déjà son titre dans l’en-tête de la page.
       section.setAttribute("aria-labelledby", singleQuestion ? "question-title" : this.titleElement.id);
 
@@ -4589,6 +5357,7 @@ window.PyWimsQuestion = (() => {
       this.score = 0;
       this.scoreMax = 0;
       this.onScoreChange = onScoreChange;
+      this.onFeedback = onFeedback;
       if (this.scoring) {
         section.dataset.scored = "true";
         this.scoreElement.hidden = false;
@@ -4775,6 +5544,12 @@ window.PyWimsQuestion = (() => {
       });
       setButton(this.solutionButton, { absent: !(this.state === "open" || failed), disabled: this.busy });
       setButton(this.newDrawButton, { disabled: this.busy });
+      // Sans libellé, une infobulle donne le nom de chaque icône, qui peut changer avec l’état.
+      if (compactStyle) {
+        for (const button of [this.checkButton, this.solutionButton, this.newDrawButton]) {
+          button.title = button.getAttribute("aria-label");
+        }
+      }
     }
 
     // Change l’état de la question ; le CSS s’appuie sur data-state et data-result de la section.
@@ -4795,6 +5570,7 @@ window.PyWimsQuestion = (() => {
       this.feedbackElement.classList.remove("is-visible", "is-correct", "is-incorrect", "is-explanation");
       this.feedbackElement.innerHTML = "";
       this.layoutFeedback();
+      this.onFeedback?.(this, false);
     }
 
     // Affiche un retour (juste, faux) ou l’explication de la solution, avec l’animation habituelle.
@@ -4808,6 +5584,7 @@ window.PyWimsQuestion = (() => {
       await typeset(this.feedbackElement);
       this.feedbackElement.classList.add("is-visible");
       this.layoutFeedback();
+      this.onFeedback?.(this, true);
     }
 
     // Sur écran étroit, l’emplacement du retour prend sa hauteur (--fb-h) : la carte s’agrandit en douceur.
@@ -5465,13 +6242,95 @@ window.PyWimsQuestion = (() => {
     location.reload();
   });
 
-  const questions = [...document.querySelectorAll(".pw-question")].map(
+  // Zone de retour commune du style compact (SPECIFICATION.md, § 5.7) : sur grand écran, le dernier
+  // retour affiché est déplacé de sa question dans la marge droite, puis ramené au retour suivant.
+  // Un seul nœud, jamais copié : une copie doublerait les formules composées (identifiants SVG
+  // compris) et les annonces aux lecteurs d’écran. Le retour est composé dans sa question, puis
+  // déplacé ; la zone, et non le retour, annonce donc le contenu (aria-live), car un retour
+  // composé dans l’emplacement invisible de la question n’est pas annoncé.
+  // Sur écran étroit, rien n’est déplacé : le retour reste sous sa question.
+  const compactStyle = !singleQuestion && document.body.dataset.style === "compact";
+  const wideScreen = matchMedia("(min-width: 1001px)");
+  const sections = [...document.querySelectorAll(".pw-question")];
+  let zone = null;
+  let zoneEmpty = null;
+  let zoneQuestion = null;
+  let lastFeedbackQuestion = null;
+  const zoneWatch = compactStyle && new IntersectionObserver(entries => {
+    for (const entry of entries) {
+      if (entry.target === zoneQuestion?.section) zone.classList.toggle("is-stale", !entry.isIntersecting);
+    }
+  });
+
+  if (compactStyle) {
+    zone = document.createElement("aside");
+    zone.className = "pw-feedback-zone";
+    zone.setAttribute("aria-label", "Commentaires et solutions");
+    zone.setAttribute("aria-live", "polite");
+    // La zone occupe la marge sur toute la hauteur des questions, et y reste collée au défilement.
+    zone.style.gridRow = `1 / span ${sections.length}`;
+    zoneEmpty = document.createElement("p");
+    zoneEmpty.className = "pw-feedback-zone-empty";
+    zoneEmpty.textContent = "Les commentaires et les solutions s’affichent ici.";
+    zone.append(zoneEmpty);
+    document.querySelector(".pw-sheet").prepend(zone);
+  }
+
+  // Ramène dans sa question le retour affiché par la zone, qui redevient vide.
+  function releaseZone() {
+    if (!zoneQuestion) return;
+    zoneWatch.unobserve(zoneQuestion.section);
+    zoneQuestion.slotElement.append(zoneQuestion.feedbackElement);
+    zoneQuestion.layoutFeedback();
+    zoneQuestion = null;
+    zone.classList.remove("is-stale");
+    zone.replaceChildren(zoneEmpty);
+  }
+
+  // Affiche dans la zone le retour d’une question, sous « Question n », qui ramène à la question.
+  function showInZone(question) {
+    releaseZone();
+    zoneQuestion = question;
+    const link = document.createElement("button");
+    link.type = "button";
+    link.className = "pw-feedback-zone-link";
+    link.textContent = `Question ${question.index + 1}`;
+    link.addEventListener("click", () =>
+      question.section.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" }));
+    zone.replaceChildren(link, question.feedbackElement);
+    zoneWatch.observe(question.section);
+  }
+
+  function onFeedback(question, shown) {
+    if (shown) {
+      lastFeedbackQuestion = question;
+      if (wideScreen.matches) showInZone(question);
+    } else {
+      if (lastFeedbackQuestion === question) lastFeedbackQuestion = null;
+      if (zoneQuestion === question) releaseZone();
+    }
+  }
+
+  // Passage d’un écran étroit à un grand écran (fenêtre élargie, rotation) : le dernier retour encore
+  // affiché passe dans la zone, ou en revient.
+  if (compactStyle) {
+    wideScreen.addEventListener("change", () => {
+      if (!wideScreen.matches) {
+        releaseZone();
+      } else if (lastFeedbackQuestion) {
+        showInZone(lastFeedbackQuestion);
+      }
+    });
+  }
+
+  const questions = sections.map(
     (section, index) => new Question(section, index, {
       onSuccess: singleQuestion ? null : () => {
         updateProgress(questions);
         saveProgress(questions);
       },
-      onScoreChange: singleQuestion ? null : () => updateScoreTotal(questions)
+      onScoreChange: singleQuestion ? null : () => updateScoreTotal(questions),
+      onFeedback: compactStyle ? onFeedback : null
     })
   );
   if (questions.some(question => question.scoring)) {
