@@ -20,7 +20,6 @@
   const selectVisibleButton = document.getElementById("select-visible");
   const previewFrame = document.getElementById("preview-frame");
   const previewNotice = document.getElementById("preview-notice");
-  const previewSolution = document.getElementById("preview-solution");
   const compileButton = document.getElementById("compile-question");
   const multiOutputControls = document.getElementById("multi-output-controls");
   const outputMode = document.getElementById("output-mode");
@@ -41,7 +40,6 @@
   const questionsView = document.getElementById("questions-view");
   const editorView = document.getElementById("editor-view");
   const pasteStatus = document.getElementById("paste-status");
-  const newDrawButton = document.getElementById("new-draw");
 
   let questions = [];
   let selectedQuestion;
@@ -283,18 +281,79 @@
   }
 
   // Aperçu : la vraie page de la question, assemblée comme à la compilation, dans un cadre isolé
-  // (sandbox sans « allow-same-origin ») car l’énoncé est du HTML écrit par l’auteur. Le cadre
-  // n’exécute jamais Python : il affiche d’abord un tirage provisoire où chaque variable porte son
-  // nom, puis un tirage réel calculé par le Python de cette page, chargé une seule fois.
+  // (sandbox sans « allow-same-origin ») car l’énoncé est du HTML écrit par l’auteur. Il affiche
+  // d’abord un tirage provisoire où chaque variable porte son nom, boutons inactifs, puis les tirages
+  // réels calculés par le Python de cette page, chargé une seule fois ; la question fonctionne alors
+  // comme pour l’élève (SPECIFICATION.md, § 3).
   const previewDrawCache = new Map();
   let previewGeneration = 0;
+  // Tirages réels de l’aperçu : de quoi essayer « Nouvel énoncé » ; environ 100 ms, Python chargé.
+  const previewDrawCount = 5;
 
-  // Remplace le Python du cadre : chaque appel reste en attente, donc rien ne se charge ni ne
-  // s’affiche en erreur ; les boutons de l’aperçu sont de toute façon inactifs.
+  // Python du tirage provisoire : chaque appel reste en attente, donc rien ne se charge ni ne
+  // s’affiche en erreur ; ses boutons sont de toute façon inactifs (previewHead).
   const previewPythonStub = `window.PyWimsPython = { createSession: () => new Proxy({}, { get: () => () => new Promise(() => {}) }) };`;
-
-  // Ajout au <head> de l’aperçu : les boutons y sont inactifs.
   const previewHead = `<style>.pw-actions { pointer-events: none; opacity: 0.45; }</style>`;
+
+  // Python des tirages réels : un pont vers celui de cette page, déjà chargé, à la place de
+  // runtime/python.js. Chaque appel d’une session du cadre part par postMessage ; la réponse revient
+  // avec le nombre de relances du Worker (epoch), que question.js compare. frame : numéro du cadre,
+  // pour ignorer les messages d’un cadre remplacé. Solution écartée : laisser au cadre son propre
+  // Pyodide, rechargé à chaque mise à jour de l’aperçu (6 à 8 s avant chaque première vérification).
+  const previewSessionMethods = ["initialize", "run", "runSeeded", "collectDraw", "dispose", "set", "setMatrix",
+    "setChoice", "getChoiceTexts", "prepareCheck", "getTemplateValue", "getBoolean"];
+  const previewPythonBridge = frame => `window.PyWimsPython = (() => {
+  const pending = new Map();
+  let nextId = 0;
+  let epoch = 0;
+  addEventListener("message", ({ source, data }) => {
+    const call = source === parent && pending.get(data?.pwPreviewReply);
+    if (!call) return;
+    pending.delete(data.pwPreviewReply);
+    epoch = data.epoch;
+    if (data.ok) {
+      call.resolve(data.value);
+    } else {
+      const error = new Error(data.error);
+      error.name = data.name;
+      call.reject(error);
+    }
+  });
+  const send = (session, method, args) => new Promise((resolve, reject) => {
+    const id = nextId++;
+    pending.set(id, { resolve, reject });
+    parent.postMessage({ pwPreviewCall: id, frame: ${frame}, session, method, args }, "*");
+  });
+  return Object.freeze({
+    epoch: () => epoch,
+    createSession: session => Object.freeze(Object.fromEntries(
+      ${JSON.stringify(previewSessionMethods)}.map(method => [method, (...args) => send(session, method, args)])))
+  });
+})();`;
+
+  // Numéro du cadre affiché et sessions Python ouvertes pour lui, libérées quand il est remplacé.
+  let previewFrameNumber = 0;
+  const previewSessions = new Set();
+
+  // Appels Python du cadre de l’aperçu (previewPythonBridge) : chacun s’exécute dans une session de
+  // cette page, au nom préfixé par le numéro du cadre, et la réponse repart vers le cadre.
+  addEventListener("message", event => {
+    const { data } = event;
+    if (event.source !== previewFrame.contentWindow || typeof data?.pwPreviewCall !== "number" ||
+        data.frame !== previewFrameNumber) {
+      return;
+    }
+    const reply = message => event.source.postMessage(
+      { pwPreviewReply: data.pwPreviewCall, epoch: PyWimsPython.epoch(), ...message }, "*");
+    new Promise(resolve => {
+      if (!previewSessionMethods.includes(data.method) || !/^[A-Za-z0-9_-]+$/.test(data.session) || !Array.isArray(data.args)) {
+        throw new Error("Appel Python de l’aperçu invalide.");
+      }
+      const sessionId = `apercu${previewFrameNumber}-${data.session}`;
+      previewSessions.add(sessionId);
+      resolve(PyWimsPython.createSession(sessionId)[data.method](...data.args));
+    }).then(value => reply({ ok: true, value }), error => reply({ ok: false, error: error.message, name: error.name }));
+  });
 
   // Ligne d’état au-dessus de l’aperçu (calcul en cours, erreur) ; vide quand l’aperçu est prêt.
   function showPreviewNotice(text, className = "muted") {
@@ -302,32 +361,34 @@
     previewNotice.className = className;
   }
 
-  // Dernier aperçu affiché, que la case « Afficher la solution » réaffiche.
+  // Dernier aperçu affiché : sa question, que l’aperçu vivant garde pendant le calcul.
   let shownPreview = null;
   // L’atelier (Chrome, Edge) : écrire dans le dossier n’est possible que là (§ 11.10).
   const canEdit = canRememberFolder;
 
-  // Assemble la page de la question pour un tirage donné et l’affiche dans le cadre. Avec « Afficher
-  // la solution », la page s’ouvre dans l’état « Solution affichée » (data-preview-solution, lu par
-  // sheet.js) : l’auteur voit ce qu’attend la correction par défaut et l’explication de la solution.
-  async function renderPreviewFrame(fields, draw, question = null) {
+  // Assemble la page de la question et l’affiche dans le cadre : avec le tirage provisoire
+  // (draws absent), boutons inactifs, ou avec les tirages réels, Python passant par le pont.
+  // data-preview : la page montre toujours le premier tirage (question.js).
+  async function renderPreviewFrame(fields, question, draws = null) {
     const resources = await readProjectResources(neededResources([fields]));
-    resources.python = previewPythonStub;
-    let page = assembleQuestion(fields, [draw], resources).replace("</head>", `${previewHead}</head>`);
-    if (previewSolution.checked) {
-      page = page.replace("<body", '<body data-preview-solution="true"');
+    // Le cadre n’a pas de Python à lui : ni module pywims ni script du Worker à intégrer.
+    delete resources.pywims;
+    delete resources.pythonWorker;
+    for (const sessionId of previewSessions) {
+      PyWimsPython.dispose(sessionId).catch(() => {});
+    }
+    previewSessions.clear();
+    previewFrameNumber += 1;
+    resources.python = draws ? previewPythonBridge(previewFrameNumber) : previewPythonStub;
+    let page = assembleQuestion(fields, draws ?? [previewPlaceholderDraw(fields)], resources)
+      .replace("<body", '<body data-preview="true"');
+    if (!draws) {
+      page = page.replace("</head>", `${previewHead}</head>`);
     }
     previewFrame.srcdoc = page;
     previewFrame.hidden = false;
-    shownPreview = { fields, draw, question };
+    shownPreview = { question };
   }
-
-  previewSolution.addEventListener("change", () => {
-    if (shownPreview && !previewFrame.hidden) {
-      renderPreviewFrame(shownPreview.fields, shownPreview.draw, shownPreview.question)
-        .catch(error => showPreviewNotice(`Aperçu impossible : ${error.message}`, "error"));
-    }
-  });
 
   // Affiche l’aperçu provisoire tout de suite, puis le remplace par un tirage réel. Une question
   // choisi entre-temps annule la suite (previewGeneration).
@@ -340,7 +401,7 @@
     const keepShown = live && shownPreview?.question === question && !previewFrame.hidden;
     if (!keepShown) {
       try {
-        await renderPreviewFrame(fields, previewPlaceholderDraw(fields), question);
+        await renderPreviewFrame(fields, question);
       } catch (error) {
         previewFrame.hidden = true;
         showPreviewNotice(`Aperçu impossible : ${error.message}`, "error");
@@ -356,16 +417,16 @@
       }
       const draws = readProjectResources(pythonResources)
         .then(installPythonSources)
-        .then(() => computeDraws(fields, { count: 1, firstSeed: question.previewSeed ?? 0 }));
+        .then(() => computeDraws(fields, { count: previewDrawCount }));
       previewDrawCache.set(question, draws);
       draws.catch(() => previewDrawCache.delete(question));
     }
     try {
-      const [draw] = await previewDrawCache.get(question);
+      const draws = await previewDrawCache.get(question);
       if (generation !== previewGeneration) {
         return;
       }
-      await renderPreviewFrame(fields, draw, question);
+      await renderPreviewFrame(fields, question, draws);
       // Aperçu prêt : la ligne d’état ne garde que les avertissements sur l’écriture de l’énoncé.
       const warnings = templateWarnings(fields);
       showPreviewNotice(warnings.join(" "), warnings.length ? "warning" : "muted");
@@ -1081,14 +1142,6 @@
   otherFolderButton.addEventListener("click", async () => {
     await closeEditorTabs();
     pickFolder();
-  });
-  // « Nouveau tirage » : l’aperçu de la question affichée, avec une autre graine.
-  newDrawButton.addEventListener("click", () => {
-    const question = shownPreview?.question;
-    if (!question || question.error) return;
-    question.previewSeed = (question.previewSeed ?? 0) + 1;
-    previewDrawCache.delete(question);
-    showPreview(question, { live: true });
   });
   pasteButton.addEventListener("click", pasteQuestions);
   reloadFolderButton.addEventListener("click", () => openHandle(folderHandle, { keepSelection: true }));

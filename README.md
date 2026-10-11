@@ -54,14 +54,15 @@ fichiers, et il le dit.
 
 À gauche, la liste des questions se filtre par nom ou par mot-clé. Un clic sur
 une question en affiche l’aperçu à droite, dans une fenêtre qui défile : la vraie
-page de la question, aux boutons inactifs. Il apparaît tout de suite, avec chaque
-variable de l’énoncé sous son nom, puis il est remplacé par un tirage réel dès
-que Python l’a calculé, environ une seconde par question. Python se charge dès
-l’ouverture du compilateur, en arrière-plan (10 à 20 secondes) : le premier
-aperçu ne l’attend que s’il est demandé tout de suite. Une erreur dans `question_setup` est
-signalée au-dessus de l’aperçu, qui reste provisoire. La case **Afficher la
-solution**, cochée par défaut, montre la question remplie par sa solution, avec
-l’explication : c’est ce qu’attend la correction ; décochée, la question vierge.
+page de la question, qui fonctionne comme pour l’élève : saisie, **Vérifier**,
+retour, **Solution** (ce qu’attend la correction, avec l’explication), **Nouvel
+énoncé**. Il apparaît tout de suite, avec chaque variable de l’énoncé sous son
+nom et les boutons inactifs, puis il est remplacé par des tirages réels dès que
+Python les a calculés. Python se charge dès l’ouverture du compilateur, en
+arrière-plan (10 à 20 secondes) : le premier aperçu ne l’attend que s’il est
+demandé tout de suite, et l’aperçu s’en sert aussi pour vérifier les réponses.
+Une erreur dans `question_setup` est signalée au-dessus de l’aperçu, qui reste
+provisoire.
 
 Coche une ou plusieurs questions, puis **Compiler la sélection** :
 

@@ -5,18 +5,13 @@
 (() => {
   // Tirage provisoire, sans Python : chaque variable de l’énoncé est affichée sous son nom,
   // chaque dimension de matrice nommée vaut 2, et un champ à choix montre deux choix nommés
-  // d’après leur liste (« choices[0] », « choices[1] »). Pour « Afficher la solution »
-  // (SPECIFICATION.md, § 3), un champ texte ou formule montre le nom de sa variable de solution ;
-  // une matrice, sans solution, montre des « ∗ », et aucun choix n’est coché.
+  // d’après leur liste (« choices[0] », « choices[1] »). Ses boutons sont inactifs : il n’a pas
+  // de solutions.
   function previewPlaceholderDraw(fields) {
     const dimensions = {};
     const choices = {};
     const orders = {};
-    const solutions = {};
     for (const tag of PyWimsTemplate.parseTags(fields.question_statement)) {
-      if (["input_text", "input_value", "input_math"].includes(tag.type)) {
-        solutions[tag.name] = tag.attributes.solution;
-      }
       for (const key of ["size", "rows", "cols"]) {
         if (typeof tag.attributes[key] === "string") {
           dimensions[tag.attributes[key]] = 2;
@@ -28,7 +23,7 @@
       }
     }
     const context = Object.fromEntries(displayedVariables(fields).map(name => [name, name]));
-    return { seed: 0, context, dimensions, solutions, choices, orders };
+    return { seed: 0, context, dimensions, solutions: {}, choices, orders };
   }
 
   // Variables affichées par la question : celles de l’énoncé et de l’explication de la solution,
@@ -278,9 +273,7 @@
   // La première erreur de l’auteur interrompt le calcul, avec la graine en cause.
   // timeoutMs : durée maximale de chaque exécution de « question_setup » et de « question_check » ; les tests la réduisent.
   // count : nombre de tirages imposé (aperçu, tests) ; sinon le champ « question_draws », ou 20.
-  // firstSeed : première graine ; « Essayer » de l’éditeur la change à chaque clic, pour un nouveau
-  // tirage (SPECIFICATION.md, § 11.10). La compilation part toujours de 0.
-  async function computeDraws(fields, { count: requested, onProgress, timeoutMs = drawTimeoutMs, firstSeed = 0 } = {}) {
+  async function computeDraws(fields, { count: requested, onProgress, timeoutMs = drawTimeoutMs } = {}) {
     const count = requested ?? (fields.question_draws === undefined ? drawCount : Number(fields.question_draws));
     const tags = PyWimsTemplate.parseTags(fields.question_statement);
     const choiceTags = tags.filter(tag => PyWimsTemplate.choiceTypes.has(tag.type));
@@ -343,7 +336,7 @@
 
     const draws = [];
     const seen = new Set();
-    for (let seed = firstSeed; seed < firstSeed + count; seed += 1) {
+    for (let seed = 0; seed < count; seed += 1) {
       const { session, draw } = await runDraw(seed);
       try {
         const errors = [...draw.errors, ...matrixShapeErrors(tags, draw), ...choiceErrors(tags, draw)];

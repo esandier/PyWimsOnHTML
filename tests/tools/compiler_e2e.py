@@ -13,6 +13,7 @@ import os
 import shutil
 import sys
 import tempfile
+import time
 import zipfile
 
 from playwright.sync_api import Error as PlaywrightError
@@ -276,11 +277,29 @@ def editor_and_paste(browser, url, pgcd):
         raise AssertionError(f"lien inattendu : {link}, ligne attendue {statement_line + 1}")
     page.evaluate(f"{editor}.undo()")
     page.wait_for_function("!document.querySelector('.editor-problem')", timeout=30_000)
-    # « Nouveau tirage » : une autre graine, donc un autre aperçu.
-    page.evaluate("window.previewBefore = document.getElementById('preview-frame').srcdoc")
-    page.click("#new-draw")
-    page.wait_for_function("document.getElementById('preview-frame').srcdoc !== window.previewBefore", timeout=180_000)
-    print("atelier : erreur avec lien vers la ligne, effacée par Ctrl+Z ; « Nouveau tirage » change l’aperçu")
+    print("atelier : erreur avec lien vers la ligne, effacée par Ctrl+Z")
+
+    # L’aperçu se corrige avec le Python de l’atelier, déjà chargé (pont, SPECIFICATION.md § 3) : le
+    # retour de « question_check » arrive sans charger un second Pyodide (6 à 8 s mesurées).
+    # Ctrl+Z a relancé l’aperçu vivant : on attend qu’il ne change plus (le pont porte le numéro du
+    # cadre, donc chaque cadre a son srcdoc).
+    shown = None
+    for _ in range(60):
+        page.wait_for_timeout(1500)
+        current = page.evaluate("document.getElementById('preview-frame').srcdoc")
+        if current == shown and "Aperçu provisoire" not in page.text_content("#preview-notice"):
+            break
+        shown = current
+    preview = page.frame_locator("#preview-frame")
+    preview.locator("#q1 input[data-name='answer']").fill("0")
+    started = time.time()
+    preview.locator("#q1 [data-role=check]").click()
+    preview.locator("#q1 [data-role=feedback].is-visible").wait_for(timeout=30_000)
+    elapsed = time.time() - started
+    feedback = preview.locator("#q1 [data-role=feedback]").text_content()
+    if feedback != "Saisissez un nombre entier positif." or elapsed > 3:
+        raise AssertionError(f"retour de l’aperçu inattendu en {elapsed:.1f} s : {feedback}")
+    print(f"atelier : l’aperçu vérifie une réponse avec le Python de l’atelier, retour en {elapsed:.1f} s")
 
     # Collage de deux questions dans l’éditeur vide, séparées par « === nom.pwq === », avec du texte
     # autour : écrites aussitôt dans le dossier, marquées « nouvelle », et retour à la liste.
@@ -404,15 +423,14 @@ def main():
                     timeout=180_000)
                 print("aperçu : tirage réel affiché")
 
-                # « Afficher la solution », cochée par défaut : l’aperçu s’ouvre sur la solution ;
-                # décochée, il montre la question vierge.
+                # L’aperçu fonctionne comme pour l’élève : « Solution », puis « Nouvel énoncé ».
                 preview = page.frame_locator("#preview-frame")
-                preview.locator("#q1[data-state='solution']").wait_for(timeout=30_000)
-                page.uncheck("#preview-solution")
                 preview.locator("#q1[data-state='open']").wait_for(timeout=30_000)
-                page.check("#preview-solution")
+                preview.locator("#q1 [data-role=solution]").click()
                 preview.locator("#q1[data-state='solution']").wait_for(timeout=30_000)
-                print("aperçu : « Afficher la solution » montre la solution, décochée la question vierge")
+                preview.locator("#q1 [data-role=new-draw]").click()
+                preview.locator("#q1[data-state='open']").wait_for(timeout=30_000)
+                print("aperçu : « Solution » et « Nouvel énoncé » fonctionnent")
 
                 # Compilation de cette question : un fichier HTML autonome est téléchargé.
                 page.click(".question-selection >> nth=0")

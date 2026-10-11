@@ -310,11 +310,6 @@
       if (draw.choices.r.join() !== "choix[0],choix[1]" || draw.orders.r.join() !== "0,1") {
         throw new Error(`Tirage provisoire inattendu : ${JSON.stringify(draw)}`);
       }
-      // « Afficher la solution » : un champ texte montre le nom de sa variable de solution.
-      const text = PyWimsCompiler.previewPlaceholderDraw({ question_statement: "{% input_text 't' solution=total %}" });
-      if (text.solutions.t !== "total") {
-        throw new Error(`Solution provisoire inattendue : ${JSON.stringify(text.solutions)}`);
-      }
     });
     test("un champ à choix affiche ses choix dans l’ordre du tirage, échappés et à l’abri du modèle", () => {
       const html = PyWimsTemplate.renderTemplate(
@@ -1045,7 +1040,7 @@
             // Sans « allow-same-origin », le HTML de l’énoncé ne peut pas agir sur le compilateur.
             if (frame?.getAttribute("sandbox") !== "allow-scripts" ||
                 JSON.stringify(draw.context) !== JSON.stringify({ f: "f", n: "n" }) ||
-                draw.dimensions.n !== 2 || JSON.stringify(draw.solutions) !== JSON.stringify({ r: "s" })) {
+                draw.dimensions.n !== 2 || JSON.stringify(draw.solutions) !== "{}") {
               throw new Error(`Cadre ou tirage provisoire inattendu : ${JSON.stringify(draw)}`);
             }
           });

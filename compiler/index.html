@@ -350,16 +350,6 @@
     .question-rank:empty { display: none; }
 
     #preview-notice { margin: 0 0 0.6rem; font-size: 0.85rem; }
-    /* Au-dessus de l’aperçu : « Afficher la solution » et « Nouveau tirage », sur une ligne. */
-    .preview-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 1rem; margin: 0 0 0.6rem; }
-    .preview-option {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      font-size: 0.9rem;
-      cursor: pointer;
-    }
-    .preview-controls .small-button { padding: 0.15rem 0.5rem; font-size: 0.75rem; }
     .panel-questions .filter-row label { font-size: 0.9rem; }
     #preview-notice:empty { display: none; }
 
@@ -635,16 +625,10 @@
       </section>
 
       <section class="panel panel-preview" aria-label="Aperçu">
-        <!-- Cochée, l’aperçu montre la question dans l’état « Solution affichée » (SPECIFICATION.md, § 3). -->
-        <div class="preview-controls">
-          <label class="preview-option"><input id="preview-solution" type="checkbox" checked> Afficher la solution</label>
-          <!-- Même question, autre graine (SPECIFICATION.md, § 11.10) : l’aperçu vivant garde sinon son tirage. -->
-          <button id="new-draw" class="small-button" type="button">Nouveau tirage</button>
-        </div>
         <!-- Ligne d’état : attente du tirage réel ou erreur ; vide une fois l’aperçu prêt. -->
         <p id="preview-notice" class="muted">Choisissez une question dans la liste pour afficher son aperçu.</p>
         <!-- La page réelle de la question, isolée : sans « allow-same-origin », son HTML ne peut pas
-             agir sur le compilateur. compiler.js y remplace Python par une version inerte. Le cadre
+             agir sur le compilateur. compiler.js y remplace Python par un pont vers le sien. Le cadre
              occupe la hauteur restante du panneau et défile lui-même. -->
         <iframe id="preview-frame" title="Aperçu de la question" sandbox="allow-scripts" hidden></iframe>
       </section>

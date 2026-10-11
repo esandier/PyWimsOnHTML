@@ -582,19 +582,28 @@ $[0 ; +\infty[$. »
   (`__all__`) doit aussi être un nom réservé de `runtime/template.js`, ce que
   vérifient les tests.
 - **Aperçu.** La page réelle de la question s’affiche dans un cadre isolé
-  (`sandbox="allow-scripts"`), sans Python et avec des boutons inactifs :
-  d’abord un tirage provisoire où chaque variable porte son nom, puis un tirage
-  réel calculé par le Python de la page du compilateur, chargé une seule fois et
-  gardé en mémoire pour chaque question.
-- **Afficher la solution.** Une case au-dessus de l’aperçu, cochée par défaut,
-  montre la question dans l’état « Solution affichée » (§ 5.2) : champs remplis
-  par leur solution et explication de la solution. L’auteur vérifie ainsi d’un
-  coup d’œil ce que la correction par défaut attendra (§ 2.6) et le rendu de
-  l’explication, que les boutons inactifs ne permettraient pas d’afficher.
-  Décochée, l’aperçu montre la question vierge, telle que l’élève la découvre.
-  Le choix vaut pour toutes les questions, jusqu’à la fermeture de la page.
-  Dans le tirage provisoire, chaque champ texte ou formule montre le nom de sa
-  variable de solution, et une matrice des « ∗ ».
+  (`sandbox="allow-scripts"`), et elle fonctionne comme pour l’élève : saisir,
+  « Vérifier », retour de l’auteur, « Solution » (champs remplis et explication),
+  « Nouvel énoncé ». D’abord un tirage provisoire où chaque variable porte son
+  nom, boutons inactifs ; puis 5 tirages réels calculés par le Python de la page
+  du compilateur, chargé une seule fois et gardé en mémoire pour chaque
+  question. L’aperçu montre toujours le premier (le cadre porte
+  `data-preview="true"`, que lit `question.js`), pour que ses nombres ne
+  changent pas à chaque mise à jour ; « Nouvel énoncé » passe aux autres.
+  5 tirages coûtent environ 100 ms, Python chargé.
+- **Python de l’aperçu.** Le cadre n’a pas de Python à lui : il emprunte celui
+  du compilateur, déjà chargé. À la place de `runtime/python.js`, le cadre reçoit
+  un pont qui transmet chaque appel de session au compilateur par `postMessage` ;
+  le compilateur l’exécute dans une session à lui, préfixée par le numéro du
+  cadre, et renvoie la réponse. Les sessions d’un cadre remplacé sont libérées,
+  et les messages d’un ancien cadre ignorés. Mesuré : un cadre qui chargeait son
+  propre Pyodide attendait 6 à 8 s avant la première vérification, à chaque
+  mise à jour de l’aperçu ; par le pont, la réponse est immédiate. La sécurité ne
+  change pas : le code de la question tourne déjà dans le Worker du compilateur
+  pour les tirages, et seules les opérations de session passent par le pont.
+  (Une case « Afficher la solution » et un bouton « Nouveau tirage », au-dessus
+  d’un aperçu aux boutons inactifs, ont précédé ; les boutons de la question
+  font la même chose.)
 
 ## 4. Structure du fichier généré
 
@@ -1382,10 +1391,12 @@ question garde son historique pendant la visite). CodeMirror 6 a été écarté 
 demande un outil de construction (bundler).
 
 **Aperçu vivant.** Après une courte pause de la frappe, l’aperçu montre la
-version de l’éditeur, avec un tirage réel calculé par Python. Il garde la même
-graine d’une mise à jour à l’autre, pour ne pas changer de nombres à chaque
-lettre ; le bouton « Nouveau tirage », à côté de « Afficher la solution », en
-change. L’aperçu précédent reste affiché pendant le calcul. (Un bouton
+version de l’éditeur, avec ses tirages réels calculés par Python, et il
+fonctionne comme pour l’élève (§ 3, Aperçu) : on retouche puis on vérifie
+aussitôt une réponse, juste ou fausse, et le retour qu’elle donne. Il montre
+toujours le premier tirage, pour ne pas changer de nombres à chaque lettre ;
+« Nouvel énoncé », dans la question, passe aux autres. Une mise à jour remet la
+question à zéro. L’aperçu précédent reste affiché pendant le calcul. (Un bouton
 « Essayer », d’abord, obligeait à le demander.)
 
 **Erreurs.** Sous l’éditeur, une ligne d’état donne l’erreur de format ou de

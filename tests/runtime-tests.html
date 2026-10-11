@@ -117,8 +117,8 @@ window.PyWimsPython = (() => {
       frame.srcdoc = (questions.length === 1
         ? PyWimsCompiler.assembleQuestion(questions[0].fields, questions[0].draws, resources)
         : PyWimsCompiler.assembleActivity(title, questions, resources, { compact: Boolean(options?.compact) }))
-        // Aperçu du compilateur avec « Afficher la solution » (compiler.js, renderPreviewFrame).
-        .replace("<body", options?.previewSolution ? '<body data-preview-solution="true"' : "<body");
+        // Aperçu du compilateur (compiler.js, renderPreviewFrame).
+        .replace("<body", options?.preview ? '<body data-preview="true"' : "<body");
       document.body.append(frame);
       await new Promise(resolve => frame.addEventListener("load", resolve, { once: true }));
       const page = frame.contentDocument;
@@ -866,17 +866,18 @@ window.PyWimsPython = (() => {
         frame.remove();
       });
 
-      await test("l’aperçu avec « Afficher la solution » s’ouvre sur la solution et son explication", async () => {
-        const radio = { ...choiceWithoutApres, question_statement: "Le plus petit ? {% input_radio 'r' choices=choix solution=bonne %}",
-          question_solution_explanation: "Le plus petit est {{ a }}." };
-        const draws = [{ ...choiceDraws[0], context: { a: "2" }, solutions: { r: 0 } }];
-        const { $, role, frame } = await openQuestion(radio, draws, { previewSolution: true });
-        await waitFor(() => $("#q1").dataset.state === "solution" && role("feedback").classList.contains("is-visible"),
-          "état « Solution affichée »");
-        if (!choiceBox($, 0).checked || role("feedback").textContent !== "Le plus petit est 2.") {
-          throw new Error(`Aperçu de la solution inattendu : ${role("feedback").textContent}`);
+      await test("l’aperçu du compilateur montre toujours le premier tirage", async () => {
+        const fields = { ...choiceWithoutApres, question_statement: "Valeur {{ a }} : {% input_radio 'r' choices=choix solution=bonne %}" };
+        const draws = ["1", "2", "3", "4", "5"].map((a, seed) => ({ ...choiceDraws[0], seed, context: { a } }));
+        for (let round = 0; round < 4; round += 1) {
+          const { $, frame } = await openQuestion(fields, draws, { preview: true });
+          await waitFor(() => $("#q1 [data-role=prompt]")?.textContent.includes("Valeur"), "affichage de l’énoncé");
+          const shown = $("#q1 [data-role=prompt]").textContent;
+          frame.remove();
+          if (!shown.includes("Valeur 1")) {
+            throw new Error(`L’aperçu montre un autre tirage que le premier : ${shown}`);
+          }
         }
-        frame.remove();
       });
 
       await test("sans « question_check », un champ texte et une matrice se comparent à l’écriture de la solution", async () => {

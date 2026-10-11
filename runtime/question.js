@@ -207,13 +207,17 @@ window.PyWimsQuestion = (() => {
     }
 
     // Affiche un tirage au hasard ; Python attend le premier contact de l’élève (activatePython).
+    // L’aperçu du compilateur (data-preview) montre toujours le premier : ses nombres ne changent pas
+    // à chaque mise à jour pendant que l’auteur écrit (SPECIFICATION.md, § 3).
     // Renvoie la promesse de l’affichage, résolue même en cas d’erreur (déjà signalée).
     start() {
       try {
         if (!this.draws.length) {
           throw new Error("Cette question ne contient aucun tirage : recompilez-la.");
         }
-        const selected = this.draws[Math.floor(Math.random() * this.draws.length)];
+        const selected = document.body.dataset.preview === "true"
+          ? this.draws[0]
+          : this.draws[Math.floor(Math.random() * this.draws.length)];
         return this.renderDraw(selected).catch(error => this.reportError(error));
       } catch (error) {
         this.reportError(error);
