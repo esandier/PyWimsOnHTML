@@ -734,11 +734,15 @@ body:not([data-scored]) .pw-help-score {
   font-style: normal;
 }
 
+/* Largeur aussi : MathLive donne à chaque bouton 34 px et 4 px de marge, pour des icônes de 21 et
+   16 px, ce qui les écartait l’une de l’autre (mesuré dans Edge, octobre 2026). */
 .pw-math-input::part(virtual-keyboard-toggle),
 .pw-math-input::part(menu-toggle) {
+  width: auto;
   height: auto;
   min-height: 0;
-  padding: 0 4px;
+  margin: 0;
+  padding: 0 3px;
 }
 
 .pw-math-input::part(container) {
