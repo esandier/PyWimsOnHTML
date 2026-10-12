@@ -244,12 +244,12 @@ def editor_and_paste(browser, url, pgcd):
     page.evaluate(PICK_OPFS.replace("questions-essai", "questions-edition"))
     page.click("#choose-folder")
     page.wait_for_function("document.querySelectorAll('.question-preview-button').length === 1")
-    # Un clic montre l’aperçu ; la bascule « Éditeur » montre cette question dans l’éditeur.
+    # Un clic montre l’aperçu ; « Éditeur », au bout de la ligne, montre cette question dans l’éditeur.
     page.click(".question-preview-button")
-    page.click("#show-editor")
+    page.click(".question-edit")
     page.wait_for_selector("#editor-view .CodeMirror", timeout=30_000)
-    if "is-editing" not in page.get_attribute(".workspace", "class") or page.get_attribute("#show-editor", "aria-pressed") != "true":
-        raise AssertionError("La bascule n’a pas montré l’éditeur élargi.")
+    if "is-editing" not in page.get_attribute(".workspace", "class") or page.is_hidden("#back-to-list"):
+        raise AssertionError("« Éditeur » n’a pas montré l’éditeur élargi, avec « ← » vers la liste.")
     # Le titre est la quatrième ligne du fichier : il est modifié dans l’éditeur, puis enregistré seul.
     editor = "document.querySelector('#editor-view .CodeMirror').CodeMirror"
     page.evaluate(f"{editor}.replaceRange('PGCD modifié', {{ line: 3, ch: 0 }}, {{ line: 3, ch: 4 }})")
@@ -307,18 +307,35 @@ def editor_and_paste(browser, url, pgcd):
     page.wait_for_function(f"{editor}.getValue() === '' && document.querySelector('#editor-view .CodeMirror-placeholder')")
     pasted = f"Voici :\n=== premiere.pwq ===\n```\n{pgcd.replace('PGCD', 'Collée')}```\n=== seconde.pwq ===\n{pgcd}"
     page.evaluate(f"text => {editor}.replaceRange(text, {{ line: 0, ch: 0 }}, undefined, 'paste')", pasted)
-    page.wait_for_function("document.getElementById('show-list').getAttribute('aria-pressed') === 'true'", timeout=30_000)
+    page.wait_for_function("document.getElementById('back-to-list').hidden", timeout=30_000)
     if page.evaluate(READ_OPFS, "questions-edition/seconde.pwq") != pgcd:
         raise AssertionError("La question collée n’a pas été écrite dans le dossier.")
     marked = page.eval_on_selector_all("#question-list li", "items => items.filter(li => li.querySelector('.question-state')).map(li => li.querySelector('.question-title').textContent)")
     if sorted(marked) != ["Collée", "PGCD"]:
         raise AssertionError(f"questions marquées « nouvelle » inattendues : {marked}")
-    # Flèches ↑ ↓ : la question suivante devient la question courante.
-    page.focus(".question-preview-button[aria-current='true']")
-    before = page.text_content(".question-preview-button[aria-current='true'] .question-title")
+    # Flèches ↑ ↓ après un clic : la question suivante devient la question courante. La liste, reconstruite
+    # au clic, faisait perdre le focus : ↓ ne faisait plus rien.
+    current = ".question-preview-button[aria-current='true'] .question-title"
+    page.click(".question-preview-button >> nth=0")
+    before = page.text_content(current)
     page.keyboard.press("ArrowDown")
-    page.wait_for_function(f"document.querySelector(\".question-preview-button[aria-current='true'] .question-title\").textContent !== {before!r}")
-    print("collage : deux questions découpées, écrites dans le dossier, marquées « nouvelle » ; flèches ↑ ↓")
+    page.wait_for_function(f"document.querySelector(\"{current}\").textContent !== {before!r}")
+    # Espace coche la question courante ; Entrée l’ouvre dans l’éditeur, « ← » ramène à la liste.
+    page.keyboard.press(" ")
+    if not page.evaluate("document.querySelector(\".question-preview-button[aria-current='true']\").closest('li').querySelector('.question-selection').checked"):
+        raise AssertionError("Espace n’a pas coché la question courante.")
+    page.keyboard.press("Enter")
+    page.wait_for_function("!document.getElementById('editor-view').hidden && !document.getElementById('back-to-list').hidden")
+    page.click("#back-to-list")
+    page.wait_for_function("document.getElementById('editor-view').hidden && document.getElementById('back-to-list').hidden")
+    print("collage : deux questions découpées, écrites dans le dossier, marquées « nouvelle » ; clavier ↑ ↓, Espace, Entrée, « ← »")
+
+    # « Supprimer » (confirmé : les fenêtres sont acceptées) : le fichier disparaît du dossier et de la liste.
+    page.click("#question-list li:has(.question-title:text-is('Collée')) .question-delete")
+    page.wait_for_function("![...document.querySelectorAll('.question-title')].some(item => item.textContent === 'Collée')")
+    if page.evaluate("async () => { const root = await navigator.storage.getDirectory(); const folder = await root.getDirectoryHandle('questions-edition'); try { await folder.getFileHandle('premiere.pwq'); return true; } catch { return false; } }"):
+        raise AssertionError("« Supprimer » n’a pas effacé le fichier du dossier.")
+    print("liste : « Supprimer » efface le fichier du dossier")
     # « Prompt », dans le bandeau : PROMPT.md copié dans le presse-papiers.
     page.context.grant_permissions(["clipboard-read", "clipboard-write"])
     page.click(".banner-prompt")
@@ -333,8 +350,7 @@ def editor_and_paste(browser, url, pgcd):
     page.evaluate(WRITE_OPFS, ["questions-edition/crlf.pwq", crlf])
     page.click("#reload-folder")
     page.wait_for_function("[...document.querySelectorAll('.question-title')].some(item => item.textContent === 'PGCD CRLF')")
-    page.click(".question-preview-button >> text=PGCD CRLF")
-    page.click("#show-editor")
+    page.click("#question-list li:has(.question-title:text-is('PGCD CRLF')) .question-edit")
     page.wait_for_function(f"{editor}.getValue().includes('PGCD CRLF')")
     page.wait_for_timeout(2000)
     if page.evaluate(READ_OPFS, "questions-edition/crlf.pwq") != crlf:
@@ -348,7 +364,7 @@ def editor_and_paste(browser, url, pgcd):
     page.on("pageerror", lambda error: errors.append(str(error)))
     page.goto(url)
     page.wait_for_function("!!window.PyWimsEditor")
-    if (not page.is_hidden("#paste-questions") or not page.is_hidden("#view-toggle")
+    if (not page.is_hidden("#paste-questions") or not page.is_hidden("#back-to-list")
             or "Edge ou Chrome" not in page.text_content("#paste-status")):
         raise AssertionError("Sans écriture dans un dossier, l’atelier devrait être remplacé par une phrase.")
     page.close()

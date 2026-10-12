@@ -1029,7 +1029,10 @@ En plus du § 2.4, le compilateur refuse la question si, pour l’un des tirages
   avant toute vérification et revient à 0 après « Nouvel énoncé », mais pas
   après « Solution ». L’aide (§ 5.6) l’explique.
 - Chaque choix est une ligne entière cliquable d’au moins 44 px de haut, dans
-  un `fieldset`.
+  un `fieldset`. Seule sa case (bouton radio ou case à cocher) est encadrée :
+  comme pour les autres champs, ce qui est entouré, c’est la zone de saisie. Le
+  verdict colore le texte et le fond léger du choix, avec son icône. (Jusqu’en
+  octobre 2026, un cadre arrondi entourait chaque choix.)
 - **Sans `columns`**, les choix restent alignés en grille : tous ont la
   largeur et la hauteur du plus grand, et le nombre de colonnes est le plus
   grand qui tienne dans la largeur de l’énoncé, sans autre limite que le
@@ -1290,7 +1293,7 @@ Une page `guide/` (« Créer »), en sections :
   discrètes (petits boutons) : le compilateur est un environnement de travail,
   dont l’éditeur et l’aperçu sont l’essentiel. Dessous, les cadres commencent à
   la même hauteur :
-  - à gauche, la bascule « Liste | Éditeur » et, sur sa ligne à droite,
+  - à gauche, en tête, « ← » (dans l’éditeur seulement) et, à droite,
     « Coller question(s) » (§ 11.10) ; la **Liste** :
     le champ « Filtrer par nom ou mot-clé » (libellé dans le champ), compte de la sélection,
     « Tout sélectionner », liste, et la charte utilisée en petit, en bas ;
@@ -1368,13 +1371,17 @@ bureau (installateurs et signature à maintenir).
 lecture et écriture : le navigateur demande l’autorisation une fois, à
 l’ouverture (ou à la réouverture du dossier mémorisé).
 
-**Liste ou éditeur.** En tête du panneau de gauche, une bascule « Liste |
-Éditeur » ; l’éditeur montre toujours la question courante. Cliquer sur une
-question de la liste en fait la question courante et montre son aperçu ; les
-flèches ↑ ↓ du clavier, dans la liste, passent à la question précédente ou
-suivante, avec son aperçu. On regarde d’abord, et on décide de modifier en
-voyant la question : « Éditeur » la montre. (Un bouton « Modifier » au-dessus de
-l’aperçu faisait double emploi avec la bascule.) Changer de question ne perd rien :
+**Liste ou éditeur.** Chaque ligne de la liste donne la case à cocher, le titre
+avec les types de champs dessous, puis deux boutons : **Éditeur** et
+**Supprimer**. Cliquer sur une question en fait la question courante et montre
+son aperçu ; au clavier, dans la liste, ↑ ↓ passent à la question précédente ou
+suivante, avec son aperçu, Entrée l’ouvre dans l’éditeur et Espace la coche. On
+regarde d’abord, et on décide de modifier en voyant la question : « Éditeur »
+la montre. Dans l’éditeur, « ← » (infobulle « Retour à la liste ») ramène à la
+liste. (On a écarté une bascule « Liste | Éditeur » en tête du panneau, moins
+visible qu’un bouton sur la ligne, et un bouton « Modifier » au-dessus de
+l’aperçu.) **Supprimer** efface le fichier du dossier après confirmation : une
+question écrite par une IA n’est souvent suivie par aucun git. Changer de question ne perd rien :
 l’enregistrement est automatique. En mode Éditeur, le panneau de gauche s’élargit
 aux trois cinquièmes de la largeur ; l’aperçu reste à droite. La case à cocher
 garde son rôle (composer une feuille). Un fichier mal formé s’ouvre aussi dans
@@ -1417,11 +1424,11 @@ confirmation. Les fins de ligne du fichier (CRLF ou LF) sont gardées. « Relire
 met à jour la question de l’éditeur si son fichier a changé sur le disque.
 
 **Prompt et collage.** « Prompt », dans le bandeau (§ 11.6), copie `PROMPT.md`.
-Sur la ligne de la bascule, à droite, précédé de son message bref (sur la ligne
+En tête du panneau de gauche, à droite, précédé de son message bref (sur la ligne
 du dossier, essayée d’abord, il écrasait le nom du dossier) :
 
 - **Coller question(s)** (infobulle : « Coller le code d’une ou plusieurs
-  questions ») : bascule sur l’éditeur, vide, avec « Collez ici le code d’une ou
+  questions ») : passe à l’éditeur, vide, avec « Collez ici le code d’une ou
   plusieurs questions (Ctrl+V) », le curseur dedans. Sans dossier ouvert, le
   bouton demande d’en ouvrir un.
 
@@ -1433,7 +1440,7 @@ est aussitôt écrite à la racine du dossier, sous le nom de la ligne `===` ou 
 nom tiré du titre (`loi-binomiale.pwq`), rendu unique s’il est déjà pris, et
 marquée « nouvelle » dans la liste pendant la visite. Une seule question : elle
 devient la question courante, et l’éditeur la montre. Plusieurs : la page
-bascule sur la liste, où on les voit toutes, et la première devient la question
+revient à la liste, où on les voit toutes, et la première devient la question
 courante ; sinon, on pourrait croire perdues les suivantes.
 
 ## 12. Points ouverts

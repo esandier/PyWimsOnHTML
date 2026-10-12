@@ -219,12 +219,27 @@
     }
     #question-list .question-group:first-child { margin-top: 0; }
 
+    /* Ligne d’une question : case de sélection, titre et types de champs, puis « Éditeur » et
+       « Supprimer » (atelier, Chrome et Edge). */
     #question-list li {
       display: grid;
-      grid-template-columns: auto minmax(0, 1fr);
+      grid-template-columns: auto minmax(0, 1fr) auto;
       align-items: center;
       gap: 0.25rem;
     }
+    .question-actions { display: flex; gap: 0.3rem; padding-right: 0.2rem; }
+    #question-list .question-actions button {
+      width: auto;
+      padding: 0.1rem 0.45rem;
+      border: 1px solid #c9a06c;
+      color: #8a4d00;
+      background: #fff;
+      font-size: 0.75rem;
+      font-weight: 400;
+    }
+    #question-list .question-actions button:hover { background: #fff0d8; }
+    #question-list .question-actions .question-delete { border-color: #e0b4b4; color: #8a1111; }
+    #question-list .question-actions .question-delete:hover { background: #fbe8ea; }
 
     .question-selection { padding: 0 0.2rem; }
     .selection-row {
@@ -248,12 +263,13 @@
       cursor: pointer;
     }
 
-    /* Une ligne par question : titre, puis types de champs alignés à droite. Le titre trop long est
-       coupé par « … » (le survol donne le texte entier) ; les types, rarement, au-delà de 45 %. */
-    #question-list button {
+    /* Titre, puis types de champs dessous, en petit et en gris. Un titre trop long est coupé par « … »
+       (le survol donne le texte entier). Solution écartée : une seule ligne, types à droite du titre
+       (ca1560a) ; l’auteur les préfère dessous, et la droite de la ligne va aux boutons. */
+    #question-list .question-preview-button {
       display: flex;
-      align-items: baseline;
-      gap: 0.6rem;
+      flex-direction: column;
+      align-items: stretch;
       width: 100%;
       padding: 0.2rem 0.45rem;
       font-size: 0.9rem;
@@ -264,8 +280,8 @@
       cursor: pointer;
     }
 
-    #question-list button:hover { background: #f1f3f5; }
-    #question-list button[aria-current="true"] {
+    #question-list .question-preview-button:hover { background: #f1f3f5; }
+    #question-list .question-preview-button[aria-current="true"] {
       color: #633900;
       background: #fff0d8;
       font-weight: 600;
@@ -276,13 +292,8 @@
       white-space: nowrap;
       text-overflow: ellipsis;
     }
-    .question-title { flex: 0 1 auto; min-width: 0; }
 
-    /* Types de champs de réponse, en petit et en gris, à droite du titre. */
     .question-fields {
-      flex: 0 0 auto;
-      max-width: 45%;
-      margin-left: auto;
       color: #656b72;
       font-size: 0.75rem;
       font-weight: 400;
@@ -387,20 +398,20 @@
     .questions-view, .editor-view { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; }
     .editor-view { overflow: hidden; }
 
-    /* Bascule « Liste | Éditeur », en tête du panneau de gauche (§ 11.10). */
+    /* En tête du panneau de gauche : « ← » vers la liste, dans l’éditeur seulement (§ 11.10). */
     .panel-top { display: flex; flex: 0 0 auto; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
-    .view-toggle { display: inline-flex; flex: 0 0 auto; }
-    .view-toggle button {
-      padding: 0.25rem 0.9rem;
+    .back-button {
+      flex: 0 0 auto;
+      padding: 0.05rem 0.6rem;
       border: 1px solid #c9a06c;
+      border-radius: 0.35rem;
       color: #8a4d00;
       background: #fff;
-      font-size: 0.85rem;
+      font-size: 1.05rem;
+      line-height: 1.4;
       cursor: pointer;
     }
-    .view-toggle button:first-child { border-radius: 0.35rem 0 0 0.35rem; }
-    .view-toggle button:last-child { border-left: 0; border-radius: 0 0.35rem 0.35rem 0; }
-    .view-toggle button[aria-pressed="true"] { color: #fff; background: #a95f00; font-weight: 600; }
+    .back-button:hover { background: #fff0d8; }
 
     /* Éditeur de la question courante : sur toute la hauteur, puis la ligne d’état (erreurs, témoin
        d’enregistrement). */
@@ -459,7 +470,7 @@
     .small-button.is-primary { border-color: #9b5700; color: #fff; background: #a95f00; font-weight: 600; }
     .small-button.is-primary:hover { background: #874c00; }
     /* Copier le prompt, coller : deux petits boutons sur une ligne, et leur message bref à côté. */
-    /* Sur la ligne de la bascule, à droite : copier le prompt, coller (§ 11.10). */
+    /* En tête du panneau, à droite : copier le prompt, coller (§ 11.10). */
     .paste-row { display: flex; flex: 0 0 auto; align-items: center; gap: 0.4rem; margin-left: auto; }
     .paste-row .small-button { flex: 0 0 auto; padding: 0.15rem 0.5rem; font-size: 0.75rem; }
     .paste-status { max-width: 16rem; min-width: 0; overflow: hidden; font-size: 0.75rem; text-overflow: ellipsis; white-space: nowrap; }
@@ -575,18 +586,16 @@
       <button id="other-folder" class="link-button" type="button" hidden>Autre dossier</button>
     </div>
 
-    <!-- Panneau de gauche en onglets (SPECIFICATION.md, § 11.10) : « Liste », la liste des questions, puis un onglet
-         par question ouverte dans l’éditeur. La barre d’onglets n’apparaît qu’avec un onglet de question. -->
+    <!-- Panneau de gauche (SPECIFICATION.md, § 11.10) : la liste des questions, ou l’éditeur de la question courante. -->
     <section class="panel panel-questions" aria-label="Questions">
-      <!-- Bascule entre la liste et l’éditeur de la question courante (SPECIFICATION.md, § 11.10) ;
-           absente sous Firefox et Safari, qui n’ont pas d’atelier. -->
+      <!-- « ← », retour à la liste, n’apparaît que dans l’éditeur (SPECIFICATION.md, § 11.10). On entre dans
+           l’éditeur par le bouton « Éditeur » d’une ligne de la liste, ou Entrée ; Firefox et Safari n’ont
+           pas d’atelier. Solution écartée : la bascule « Liste | Éditeur », moins visible que le bouton
+           de chaque ligne. -->
       <div class="panel-top">
-        <div class="view-toggle" id="view-toggle" hidden>
-          <button id="show-list" type="button" aria-pressed="true">Liste</button>
-          <button id="show-editor" type="button" aria-pressed="false">Éditeur</button>
-        </div>
+        <button id="back-to-list" class="back-button" type="button" title="Retour à la liste" aria-label="Retour à la liste" hidden>←</button>
         <!-- Question écrite par une IA : coller sa réponse (§ 11.10) ; le prompt se copie depuis le bandeau.
-             Sur la ligne de la bascule, à droite : sur la ligne du dossier, il écrasait le nom du dossier. -->
+             En tête du panneau, à droite : sur la ligne du dossier, il écrasait le nom du dossier. -->
         <div class="paste-row">
           <span id="paste-status" class="paste-status" role="status" aria-live="polite"></span>
             <button id="paste-questions" class="small-button" type="button" title="Coller le code d’une ou plusieurs questions">Coller question(s)</button>

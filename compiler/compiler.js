@@ -34,9 +34,7 @@
   const orderHint = document.getElementById("order-hint");
   const workspace = document.querySelector(".workspace");
   const pasteButton = document.getElementById("paste-questions");
-  const viewToggle = document.getElementById("view-toggle");
-  const showListButton = document.getElementById("show-list");
-  const showEditorButton = document.getElementById("show-editor");
+  const backButton = document.getElementById("back-to-list");
   const questionsView = document.getElementById("questions-view");
   const editorView = document.getElementById("editor-view");
   const pasteStatus = document.getElementById("paste-status");
@@ -540,6 +538,12 @@
   // Filtre et trie les questions, puis reconstruit leur liste accessible.
   function renderQuestionList() {
     const query = search.value.trim().toLocaleLowerCase();
+    // La liste est reconstruite à chaque changement de la question courante : le bouton qui avait le
+    // focus disparaît, et le focus retombait sur la page, où ↑ ↓ ne faisaient plus rien après un
+    // clic. On rend le focus au même bouton de la même question.
+    const focused = document.activeElement;
+    const focusedQuestion = questionList.contains(focused) ? focused.closest("li")?.question : null;
+    const focusedRole = focusedQuestion && focused.className;
     questionList.replaceChildren();
     rankBadges.clear();
 
@@ -568,6 +572,7 @@
         questionList.append(heading);
       }
       const item = document.createElement("li");
+      item.question = question;
       const selection = document.createElement("input");
       selection.className = "question-selection";
       selection.type = "checkbox";
@@ -611,10 +616,35 @@
       // peuvent porter le même titre.
       button.title = `${questionLabel(question)} (${kinds.textContent})\n${question.path}`;
       button.append(title, kinds);
-      // Un clic montre l’aperçu ; « Modifier », dans l’aperçu, ouvre la question dans l’atelier (§ 11.10).
+      // Un clic montre l’aperçu ; « Éditeur », au bout de la ligne, ouvre la question dans l’atelier (§ 11.10).
       button.addEventListener("click", () => selectQuestion(question));
       item.append(selection, button);
+      // Atelier (§ 11.10) : ouvrir la question dans l’éditeur, ou effacer son fichier du dossier.
+      if (canEdit) {
+        const actions = document.createElement("span");
+        actions.className = "question-actions";
+        const edit = document.createElement("button");
+        edit.className = "question-edit";
+        edit.type = "button";
+        edit.textContent = "Éditeur";
+        edit.title = "Modifier cette question dans l’éditeur (Entrée)";
+        edit.addEventListener("click", () => openInEditor(question));
+        actions.append(edit);
+        if (folderHandle) {
+          const remove = document.createElement("button");
+          remove.className = "question-delete";
+          remove.type = "button";
+          remove.textContent = "Supprimer";
+          remove.title = "Effacer ce fichier du dossier";
+          remove.addEventListener("click", () => deleteQuestion(question));
+          actions.append(remove);
+        }
+        item.append(actions);
+      }
       questionList.append(item);
+      if (question === focusedQuestion) {
+        [...item.querySelectorAll("input, button")].find(element => element.className === focusedRole)?.focus();
+      }
     }
 
     visibleQuestions = matches.filter(question => !question.error);
@@ -670,8 +700,8 @@
     updateCompilationControls();
   }
 
-  // Bascule « Liste | Éditeur » (§ 11.10). L’éditeur montre toujours la question courante ; il est
-  // créé, et CodeMirror chargé, à sa première ouverture.
+  // Liste ou éditeur (§ 11.10) : « Éditeur » sur une ligne de la liste, « ← » pour revenir. L’éditeur
+  // montre toujours la question courante ; il est créé, et CodeMirror chargé, à sa première ouverture.
   let viewMode = "list";
   let editorReady = null;
   function ensureEditor() {
@@ -707,8 +737,7 @@
 
   async function setViewMode(mode) {
     viewMode = mode;
-    showListButton.setAttribute("aria-pressed", String(mode === "list"));
-    showEditorButton.setAttribute("aria-pressed", String(mode === "editor"));
+    backButton.hidden = mode !== "editor";
     questionsView.hidden = mode !== "list";
     editorView.hidden = mode !== "editor";
     // En mode Éditeur, le panneau de gauche s’élargit aux trois cinquièmes.
@@ -733,6 +762,54 @@
       await shown.show(question ?? null);
     }
     editor.refresh?.();
+  }
+
+  // « Éditeur » d’une ligne, ou Entrée : la question devient la question courante, dans l’éditeur.
+  async function openInEditor(question) {
+    if (question !== selectedQuestion) selectQuestion(question);
+    await setViewMode("editor");
+  }
+
+  // « Supprimer » d’une ligne : le fichier est effacé du dossier, après confirmation, car une question
+  // écrite par une IA n’est souvent suivie par aucun git. La question suivante de la liste (sinon la
+  // précédente) devient la question courante.
+  async function deleteQuestion(question) {
+    if (!confirm(`Supprimer « ${questionLabel(question)} » du dossier ?\n\n${question.path}\n\nLe fichier sera effacé du disque.`)) return;
+    try {
+      const mode = { mode: "readwrite" };
+      if (await folderHandle.queryPermission(mode) !== "granted" &&
+          await folderHandle.requestPermission(mode) !== "granted") {
+        throw new Error("le navigateur n’a pas l’autorisation de modifier le dossier");
+      }
+      // Ce que l’éditeur attend d’enregistrer recréerait le fichier : il oublie la question d’abord.
+      await editor.forget?.(question);
+      const parts = question.path.split("/");
+      let directory = folderHandle;
+      for (const part of parts.slice(0, -1)) directory = await directory.getDirectoryHandle(part);
+      await directory.removeEntry(parts.at(-1));
+    } catch (error) {
+      showMessage(projectStatus, `« ${question.path} » n’a pas pu être supprimé : ${error.message}`, "error");
+      return;
+    }
+    const rows = [...questionList.querySelectorAll("li")].filter(row => row.question);
+    const index = rows.findIndex(row => row.question === question);
+    const neighbour = (rows[index + 1] ?? rows[index - 1])?.question ?? null;
+    questions = questions.filter(other => other !== question);
+    selectedQuestions = selectedQuestions.filter(other => other !== question);
+    previewDrawCache.delete(question);
+    if (selectedQuestion === question) {
+      if (neighbour) {
+        selectQuestion(neighbour);
+      } else {
+        selectedQuestion = undefined;
+        previewGeneration += 1;
+        previewFrame.hidden = true;
+        showPreviewNotice("Choisissez une question dans la liste pour afficher son aperçu.");
+      }
+    }
+    refreshList();
+    questionList.querySelector('[aria-current="true"]')?.focus();
+    showMessage(projectStatus, `« ${question.path} » supprimé.`, "success", 2500);
   }
 
   // Flèches ↑ ↓ dans la liste : la question précédente ou suivante devient la question courante.
@@ -1095,20 +1172,31 @@
     return;
   }
 
-  // Atelier (SPECIFICATION.md, § 11.10) sous Chrome et Edge : la bascule « Liste | Éditeur » et
-  // « Modifier ». Sous Firefox et Safari, une phrase les remplace.
+  // Atelier (SPECIFICATION.md, § 11.10) sous Chrome et Edge : « Éditeur » sur chaque ligne de la liste,
+  // « ← » pour revenir. Sous Firefox et Safari, une phrase les remplace.
   if (canEdit) {
-    viewToggle.hidden = false;
-    showListButton.addEventListener("click", () => setViewMode("list"));
-    showEditorButton.addEventListener("click", () => setViewMode("editor"));
+    backButton.addEventListener("click", () => setViewMode("list"));
   } else {
     pasteButton.hidden = true;
     showPasteStatus("Pour modifier les questions, ouvrez l’atelier dans Edge ou Chrome.", "muted");
   }
+  // Clavier dans la liste : ↑ ↓ changent de question courante ; sur une question, Entrée l’ouvre dans
+  // l’éditeur et Espace la coche pour la compilation (le clic, lui, ne fait que montrer l’aperçu).
   questionList.addEventListener("keydown", event => {
-    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
-    event.preventDefault();
-    moveInList(event.key === "ArrowDown" ? 1 : -1);
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      moveInList(event.key === "ArrowDown" ? 1 : -1);
+      return;
+    }
+    const question = event.target.classList.contains("question-preview-button") && event.target.closest("li").question;
+    if (!question) return;
+    if (event.key === "Enter" && canEdit) {
+      event.preventDefault();
+      openInEditor(question);
+    } else if (event.key === " ") {
+      event.preventDefault();
+      event.target.closest("li").querySelector(".question-selection").click();
+    }
   });
 
   // Ouvrir un autre dossier enregistre d’abord ce qui attend.

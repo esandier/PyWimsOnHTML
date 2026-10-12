@@ -796,13 +796,29 @@ body:not([data-scored]) .pw-help-score {
   display: inline-block;
 }
 
+/* Champ MathLive aussi bas qu’il le peut vide (33 px), et qui ne grandit que pour une formule haute
+   (fraction, exposant). Sa hauteur venait de ses deux boutons, clavier et menu : 34 px chacun avec leurs
+   marges, plus celles du champ, soit 54 px dans les deux styles, contre 24 px pour un champ texte
+   (mesuré dans Edge et Firefox, octobre 2026). On resserre les boutons (parties exposées par MathLive)
+   et les marges verticales. Solution écartée : resserrer les boutons seuls (43 px). */
 .pw-math-input {
   display: inline-block;
   min-width: 14rem;
-  min-height: 2.5rem;
-  padding: 0.25em 0.5em;
+  padding: 0.1em 0.4em;
   vertical-align: middle;
   font-style: normal;
+}
+
+.pw-math-input::part(virtual-keyboard-toggle),
+.pw-math-input::part(menu-toggle) {
+  height: auto;
+  min-height: 0;
+  padding: 0 4px;
+}
+
+.pw-math-input::part(container) {
+  padding-top: 0;
+  padding-bottom: 0;
 }
 
 /* Délimiteurs et disposition tabulaire des matrices. */
@@ -925,17 +941,18 @@ body:not([data-scored]) .pw-help-score {
   grid-auto-rows: 1fr;
 }
 
+/* Seule la case (bouton radio ou case à cocher) est encadrée, pas le choix entier : comme pour les
+   autres champs, ce qui est entouré, c’est la zone de saisie. La ligne reste cliquable en entier.
+   Solution écartée : un cadre arrondi autour de chaque choix, qui le faisait passer pour un champ. */
 .pw-choice {
   display: flex;
   min-height: 44px;
   align-items: center;
   gap: 0.6em;
   padding: 0.35em 0.7em;
-  border: 2px solid var(--pw-input-border);
   border-radius: 8px;
-  background: #fff;
   cursor: pointer;
-  transition: background 0.2s, border-color 0.2s;
+  transition: background 0.2s, color 0.2s;
 }
 
 .pw-choice input {
@@ -978,13 +995,6 @@ mjx-assistive-mml {
   margin-right: 1px;
 }
 
-/* Choix coché, sans verdict. Le « :not(…) » est nécessaire : « :has(input:checked) » est plus
-   spécifique que « .is-correct » et l’emporterait sur les couleurs de correction. */
-.pw-choice:not(.is-correct, .is-incorrect):has(input:checked) {
-  border-color: var(--pw-brand-navy);
-  background: color-mix(in srgb, var(--pw-brand-navy) 6%, #fff);
-}
-
 .pw-choice:has(input:focus-visible) {
   outline: 3px solid color-mix(in srgb, var(--pw-brand-navy) 40%, transparent);
   outline-offset: 2px;
@@ -1008,8 +1018,9 @@ mjx-assistive-mml {
   text-align: center;
 }
 
+/* Verdict d’un choix : fond et texte colorés, comme dans le style compact. */
 .pw-choice.is-correct {
-  border-color: var(--pw-correct-text);
+  color: var(--pw-correct-text);
   background: var(--pw-correct-background);
 }
 
@@ -1019,7 +1030,7 @@ mjx-assistive-mml {
 }
 
 .pw-choice.is-incorrect {
-  border-color: var(--pw-incorrect-text);
+  color: var(--pw-incorrect-text);
   background: var(--pw-incorrect-background);
 }
 
@@ -1342,10 +1353,6 @@ mjx-assistive-mml {
   border-width: 1.5px;
 }
 
-[data-style="compact"] .pw-math-input {
-  min-height: 2.1rem;
-}
-
 /* Choix : à la suite dans le texte, sans cadre, chacun à sa largeur ; ils passent à la ligne quand la
    place manque. Le nombre de colonnes calculé par le widget de choix ne sert plus : il ne règle que
    la grille. */
@@ -1363,23 +1370,7 @@ mjx-assistive-mml {
   min-height: 0;
   gap: 0.4em;
   padding: 0.15em 0.35em;
-  border: 0;
   border-radius: 4px;
-  background: none;
-}
-
-[data-style="compact"] .pw-choice:not(.is-correct, .is-incorrect):has(input:checked) {
-  background: none;
-}
-
-[data-style="compact"] .pw-choice.is-correct {
-  color: var(--pw-correct-text);
-  background: var(--pw-correct-background);
-}
-
-[data-style="compact"] .pw-choice.is-incorrect {
-  color: var(--pw-incorrect-text);
-  background: var(--pw-incorrect-background);
 }
 
 @media (pointer: coarse) {
@@ -2315,13 +2306,29 @@ body:not([data-scored]) .pw-help-score {
   display: inline-block;
 }
 
+/* Champ MathLive aussi bas qu’il le peut vide (33 px), et qui ne grandit que pour une formule haute
+   (fraction, exposant). Sa hauteur venait de ses deux boutons, clavier et menu : 34 px chacun avec leurs
+   marges, plus celles du champ, soit 54 px dans les deux styles, contre 24 px pour un champ texte
+   (mesuré dans Edge et Firefox, octobre 2026). On resserre les boutons (parties exposées par MathLive)
+   et les marges verticales. Solution écartée : resserrer les boutons seuls (43 px). */
 .pw-math-input {
   display: inline-block;
   min-width: 14rem;
-  min-height: 2.5rem;
-  padding: 0.25em 0.5em;
+  padding: 0.1em 0.4em;
   vertical-align: middle;
   font-style: normal;
+}
+
+.pw-math-input::part(virtual-keyboard-toggle),
+.pw-math-input::part(menu-toggle) {
+  height: auto;
+  min-height: 0;
+  padding: 0 4px;
+}
+
+.pw-math-input::part(container) {
+  padding-top: 0;
+  padding-bottom: 0;
 }
 
 /* Délimiteurs et disposition tabulaire des matrices. */
@@ -2444,17 +2451,18 @@ body:not([data-scored]) .pw-help-score {
   grid-auto-rows: 1fr;
 }
 
+/* Seule la case (bouton radio ou case à cocher) est encadrée, pas le choix entier : comme pour les
+   autres champs, ce qui est entouré, c’est la zone de saisie. La ligne reste cliquable en entier.
+   Solution écartée : un cadre arrondi autour de chaque choix, qui le faisait passer pour un champ. */
 .pw-choice {
   display: flex;
   min-height: 44px;
   align-items: center;
   gap: 0.6em;
   padding: 0.35em 0.7em;
-  border: 2px solid var(--pw-input-border);
   border-radius: 8px;
-  background: #fff;
   cursor: pointer;
-  transition: background 0.2s, border-color 0.2s;
+  transition: background 0.2s, color 0.2s;
 }
 
 .pw-choice input {
@@ -2497,13 +2505,6 @@ mjx-assistive-mml {
   margin-right: 1px;
 }
 
-/* Choix coché, sans verdict. Le « :not(…) » est nécessaire : « :has(input:checked) » est plus
-   spécifique que « .is-correct » et l’emporterait sur les couleurs de correction. */
-.pw-choice:not(.is-correct, .is-incorrect):has(input:checked) {
-  border-color: var(--pw-brand-navy);
-  background: color-mix(in srgb, var(--pw-brand-navy) 6%, #fff);
-}
-
 .pw-choice:has(input:focus-visible) {
   outline: 3px solid color-mix(in srgb, var(--pw-brand-navy) 40%, transparent);
   outline-offset: 2px;
@@ -2527,8 +2528,9 @@ mjx-assistive-mml {
   text-align: center;
 }
 
+/* Verdict d’un choix : fond et texte colorés, comme dans le style compact. */
 .pw-choice.is-correct {
-  border-color: var(--pw-correct-text);
+  color: var(--pw-correct-text);
   background: var(--pw-correct-background);
 }
 
@@ -2538,7 +2540,7 @@ mjx-assistive-mml {
 }
 
 .pw-choice.is-incorrect {
-  border-color: var(--pw-incorrect-text);
+  color: var(--pw-incorrect-text);
   background: var(--pw-incorrect-background);
 }
 
@@ -2861,10 +2863,6 @@ mjx-assistive-mml {
   border-width: 1.5px;
 }
 
-[data-style="compact"] .pw-math-input {
-  min-height: 2.1rem;
-}
-
 /* Choix : à la suite dans le texte, sans cadre, chacun à sa largeur ; ils passent à la ligne quand la
    place manque. Le nombre de colonnes calculé par le widget de choix ne sert plus : il ne règle que
    la grille. */
@@ -2882,23 +2880,7 @@ mjx-assistive-mml {
   min-height: 0;
   gap: 0.4em;
   padding: 0.15em 0.35em;
-  border: 0;
   border-radius: 4px;
-  background: none;
-}
-
-[data-style="compact"] .pw-choice:not(.is-correct, .is-incorrect):has(input:checked) {
-  background: none;
-}
-
-[data-style="compact"] .pw-choice.is-correct {
-  color: var(--pw-correct-text);
-  background: var(--pw-correct-background);
-}
-
-[data-style="compact"] .pw-choice.is-incorrect {
-  color: var(--pw-incorrect-text);
-  background: var(--pw-incorrect-background);
 }
 
 @media (pointer: coarse) {

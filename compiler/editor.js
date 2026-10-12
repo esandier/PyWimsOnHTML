@@ -447,6 +447,21 @@ window.PyWimsEditor = (() => {
         showNotice("Choisissez une question dans la liste.");
       },
       knows: question => states.has(question),
+      // Question supprimée du dossier : sa pause en cours est abandonnée (l’enregistrement recréerait le
+      // fichier), l’écriture déjà lancée attendue, puis l’éditeur l’oublie.
+      forget: async question => {
+        const state = states.get(question);
+        if (!state) return;
+        clearTimeout(state.timer);
+        state.timer = 0;
+        if (state.saving) await state.saving;
+        states.delete(question);
+        if (state === current) {
+          current = null;
+          showNotice("Choisissez une question dans la liste.");
+          renderProblems(null);
+        }
+      },
       // Fichier relu sur le disque (« Relire ») : l’éditeur reprend la nouvelle version.
       reload: (question, text) => {
         const state = states.get(question);
