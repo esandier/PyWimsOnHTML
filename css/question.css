@@ -912,12 +912,19 @@ mjx-assistive-mml {
   height: 1px;
 }
 
-/* Formule d’un choix : 1 px de marge à droite, compté dans la largeur de la case mais pas dans ce qui
-   déborde. Sans lui, à certains zooms (110 % dans Edge, constaté en octobre 2026 sur « min(m, n) »), la
-   largeur fractionnaire de la formule, arrondie, dépassait la case d’un pixel : la case, qui défile en
-   dernier recours (overflow-x: auto), affichait une barre de défilement sous la formule. */
+/* Formule d’un choix en bloc en ligne (inline-block) : sa boîte est alors celle de l’image SVG, et la
+   ligne s’ajuste à sa hauteur. En ligne (inline), la boîte du conteneur suivait les métriques de la
+   police et dépassait la case de 3 à 6 px en hauteur (sortie SVG de MathJax, police Source Sans de la
+   charte) ; la case, qui défile en dernier recours (overflow-x: auto, donc aussi en hauteur),
+   affichait des flèches de défilement sous chaque formule. Mesuré en octobre 2026 : barres sur
+   toutes les pages essayées avant, sur aucune après, de 90 % à 175 % de zoom, de 375 à 1280 px.
+   Solutions écartées :
+   - « overflow-y: hidden » sur la case : il aurait pu rogner le bas d’une fraction ;
+   - garder la marge de 1 px à droite qui compensait l’arrondi de la largeur à 110 % (« min(m, n) ») :
+     en bloc en ligne, cette marge compte dans le débordement, et faisait elle-même apparaître une
+     barre ; sans elle, l’arrondi ne déborde plus, mesuré au même zoom. */
 .pw-choice-text mjx-container {
-  margin-right: 1px;
+  display: inline-block;
 }
 
 .pw-choice:has(input:focus-visible) {
