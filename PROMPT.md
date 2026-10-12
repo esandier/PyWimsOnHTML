@@ -65,7 +65,14 @@ Ce qui doit varier dépend de la compétence visée :
     (`2x`, `x^2`, `sqrt(2)`, `sin x`, `ln(x)`), en n’admettant que les
     fonctions mathématiques usuelles, et renvoie une expression SymPy ou
     `None` si la saisie est invalide. Utilise-la pour toute
-    saisie qui peut contenir une expression.
+    saisie qui peut contenir une expression. Elle ne calcule rien : `6/8`,
+    `x+x`, `sqrt(4)`, `sin(pi)`, `1.5` restent tels quels, ce qui permet
+    de vérifier la forme (`fraction(...)` donne `(6, 8)`). Pour comparer la
+    valeur, écris `simplify(math_expression(saisie) - solution) == 0` ; `==`
+    compare l’écriture, à l’ordre des termes près (`2x+3x^2 == 3*x**2 + 2*x`).
+    Pour exiger une forme, décris-la aussi avec `math_expression`, car SymPy
+    calcule la solution écrite en Python (`2*(x+1)` devient `2*x + 2`) :
+    `math_expression(saisie) == math_expression('2(x+1)')`.
   - `py_wims(saisie)` convertit une saisie simple (nombre, fraction) en objet
     SymPy, ou renvoie `None`.
   - `is_number(valeur)` indique si une valeur est un nombre.

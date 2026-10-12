@@ -99,12 +99,31 @@ refusé.
   matrice), utiliser `math_expression` plutôt que `py_wims` : elle accepte
   l’écriture des élèves (`2x`, `x^2`, `sin x`, `ln(x)`) et renvoie `None` pour
   une saisie invalide. Elle s’appuie sur l’analyseur de SymPy (`parse_expr`,
-  avec produit implicite, `^` pour la puissance et décimaux convertis en
-  fractions), précédé d’un filtre : seuls les chiffres, les lettres, les
-  espaces et `+ - * / ^ ( ) .` sont admis, et `//` est refusé. Sans `_`,
-  guillemets, crochets ni virgule, une saisie ne peut appeler que les fonctions
-  admises (`sin`, `cos`, `tan`, `exp`, `log`, `ln`, `sqrt`) ; les autres noms
-  sont des symboles, et `e` et `pi` les constantes.
+  avec produit implicite et `^` pour la puissance), précédé d’un filtre : seuls
+  les chiffres, les lettres, les espaces et `+ - * / ^ ( ) .` sont admis, et
+  `//` est refusé. Sans `_`, guillemets, crochets ni virgule, une saisie ne
+  peut appeler que les fonctions admises (`sin`, `cos`, `tan`, `exp`, `log`,
+  `ln`, `sqrt`) ; les autres noms sont des symboles, et `e` et `pi` les
+  constantes.
+- **`math_expression` ne calcule rien** : l’expression renvoyée est celle que
+  l’élève a écrite, ce qui permet d’en vérifier la forme (fraction
+  irréductible, forme factorisée…). Deux comparaisons, à ne pas confondre :
+  - `math_expression(saisie) == solution` : même écriture, **à l’ordre des
+    termes et des facteurs près** (`3x^2+2x`, `2x+3x^2` et `x*2+3x^2` sont
+    égales à `3*x**2 + 2*x`) ; seule la notation est ignorée : produit
+    implicite, `^`, `e^x` pour `exp(x)`, parenthèses d’une somme ou d’un
+    produit, `x - 1` et `x/2` comme SymPy les représente, fraction d’entiers
+    déjà irréductible (`3/4` est `Rational(3, 4)`). Tout ce qui demande un
+    calcul donne une expression différente : `6/8` n’est pas `3/4`, ni `3/(-4)`
+    `-3/4`, ni `sqrt(4)` `2`, ni `sin(pi)` `0`, ni `x+x` `2x`, ni `2(x+1)`
+    `2x + 2`, ni `1.5` `3/2`.
+  - `simplify(math_expression(saisie) - solution) == 0` : **même valeur**,
+    quelle que soit l’écriture.
+
+  La solution de l’auteur, écrite en Python, est calculée par SymPy :
+  `2*(x+1)` y devient `2*x + 2`. Pour exiger une forme, l’auteur la décrit avec
+  `math_expression` des deux côtés : `math_expression(saisie) ==
+  math_expression('2(x+1)')`.
 
 ### 2.3 Balises de saisie
 
@@ -1461,7 +1480,8 @@ courante ; sinon, on pourrait croire perdues les suivantes.
 - **Figures interactives** avec GeoGebra et/ou JSXGraph. Chantier ultérieur.
 - **Outils SymPy pour `question_check`** (comparer une expression saisie en une ligne),
   et une seule façon de lire les saisies : `py_wims` passe par `sympify`, sans
-  le filtre de `math_expression`, et n’évalue pas la saisie.
+  le filtre de `math_expression` ; aucune des deux n’évalue la saisie, mais
+  `py_wims` garde l’ordre des termes (`==` en dépend).
 - **Tests hors du navigateur** (Node.js) et intégration continue sur GitHub,
   avant la diffusion large.
 - **Clavier choisi par l’auteur** pour une case ou un champ (pavé numérique
@@ -1472,4 +1492,5 @@ courante ; sinon, on pourrait croire perdues les suivantes.
   compose les 21 questions d’une activité en 2,5 s sur un processeur ralenti
   4 fois.
 - **`py_wims` sur l’analyseur de `math_expression`** (filtre et `parse_expr`) :
-  son comportement changerait, car il n’évalue pas la saisie aujourd’hui.
+  son comportement changerait peu, car aucune des deux n’évalue la saisie ;
+  seuls `==` (ordre des termes) et les écritures admises différeraient.

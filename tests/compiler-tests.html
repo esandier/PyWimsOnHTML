@@ -832,7 +832,7 @@
               !fields.question_statement.includes("{% input_text 'result' solution=total") ||
               !fields.question_solution_explanation.includes("{{common}}") ||
               !fields.question_check.includes("irréductible") ||
-              !fields.question_check.includes("py_wims(result)")) {
+              !fields.question_check.includes("math_expression(result)")) {
             throw new Error("Les champs de la question d’addition de fractions sont inattendus.");
           }
         });

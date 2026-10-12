@@ -15,7 +15,7 @@ STD
 %
 from random import choice
 from sympy import *
-from pywims import py_wims
+from pywims import math_expression
 
 # Choisit deux fractions irréductibles, numérateurs et dénominateurs entre 2 et 5.
 irreducible_fractions = [(a, b) for a in range(2, 6) for b in range(2, 6) if gcd(a, b) == 1]
@@ -48,7 +48,7 @@ $\displaystyle \frac{ {{n}} }{ {{m}} } + \frac{ {{p}} }{ {{q}} }
 % question_check
 %
 # Interprète la réponse, puis vérifie la valeur avant la forme irréductible.
-answer = py_wims(result)
+answer = math_expression(result)
 ok_answer['result'] = False
 
 if answer is None:

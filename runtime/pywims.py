@@ -457,12 +457,73 @@ _ATTRIBUTE_DOT = _re.compile(r"[A-Za-z)]\s*\.|\.\s*[A-Za-z(]")
 _NAME = _re.compile(r"[A-Za-z][A-Za-z0-9]*")
 
 
+def _flat(func, args):
+    """Arguments de args, ceux de type func remplacés par leurs propres arguments (a + (b + c))."""
+    flat = []
+    for arg in args:
+        flat.extend(arg.args if arg.func is func else [arg])
+    return flat
+
+
+def _as_written(expr):
+    """Expression non évaluée remise sous la forme que SymPy donne à la même écriture d’un auteur.
+
+    Seule la notation est effacée, pour que == compare une saisie à une solution écrite en Python :
+    ordre des termes et des facteurs (SymPy ne garde pas celui de l’auteur), parenthèses d’une somme
+    ou d’un produit, « e^x » pour exp(x), soustraction et division (SymPy n’a ni l’une ni l’autre :
+    x - 3 est x + (-3), x/2 est x·(1/2)), fraction d’entiers déjà irréductible (3/4 est le rationnel
+    3/4). Aucun calcul : 6/8, 3/(-4), x + x, sqrt(4), sin(pi), 1.5 restent tels quels.
+    """
+    import sympy
+    from sympy.core.basic import _args_sortkey
+    if not expr.args:
+        return expr
+    args = [_as_written(arg) for arg in expr.args]
+    if expr.func is sympy.Pow:
+        base, power = args
+        if base == sympy.E:
+            return sympy.exp(power, evaluate=False)
+        # Une division (puissance -1) : 1/q pour un entier q > 0, (ab)^-1 = a^-1·b^-1 comme pour SymPy.
+        if power == -1 and base.is_Integer and base > 0:
+            return sympy.Rational(1, base)
+        if power == -1 and base.func is sympy.Mul:
+            return _as_written(sympy.Mul._from_args([sympy.Pow(factor, -1, evaluate=False) for factor in base.args]))
+        return sympy.Pow(base, power, evaluate=False)
+    if expr.func is sympy.Mul:
+        factors = _flat(sympy.Mul, args)
+        numbers = [factor for factor in factors if factor.is_Number]
+        others = [factor for factor in factors if not factor.is_Number]
+        # Le signe d’une soustraction (-1) porte sur le nombre qui suit : x - 3x est x + (-3)·x.
+        if len(numbers) >= 2 and numbers[0] == -1:
+            numbers = [-numbers[1]] + numbers[2:]
+        # p·(1/q) écrit p/q : un rationnel, s’il est déjà irréductible (6/8 reste une division).
+        if (len(numbers) == 2 and numbers[0].is_Integer and numbers[1].is_Rational and numbers[1].p == 1
+                and numbers[1].q != 1 and sympy.igcd(numbers[0], numbers[1].q) == 1):
+            numbers = [sympy.Rational(numbers[0], numbers[1].q)]
+        # 1/x : le 1 n’est que la notation de la division, SymPy écrit x^-1.
+        if numbers == [1] and any(isinstance(factor, sympy.Pow) and factor.exp == -1 for factor in others):
+            numbers = []
+        # Nombres en tête, puis l’ordre de SymPy ; _from_args construit sans évaluer.
+        factors = numbers + sorted(others, key=_args_sortkey)
+        return factors[0] if len(factors) == 1 else sympy.Mul._from_args(factors)
+    if expr.func is sympy.Add:
+        terms = sorted(_flat(sympy.Add, args), key=lambda term: (not term.is_Number, _args_sortkey(term)))
+        return sympy.Add._from_args(terms)
+    # Une fonction (sin, log…) : reconstruite sans être évaluée, sin(pi) reste sin(pi).
+    return expr.func(*args, evaluate=False)
+
+
 def math_expression(value):
-    """Expression SymPy écrite par un élève (« 2x », « x^2 », « sin x », « ln(x) »), ou None."""
+    """Expression SymPy écrite par un élève (« 2x », « x^2 », « sin x », « ln(x) »), ou None.
+
+    La saisie n’est pas calculée (SPECIFICATION.md, § 2.2) : == la compare à une expression à
+    l’ordre des termes près, simplify(a - b) == 0 compare les valeurs.
+    """
     import keyword
     import sympy
+    from sympy.core.parameters import evaluate
     from sympy.parsing.sympy_parser import (convert_xor, implicit_multiplication_application, parse_expr,
-                                            rationalize, standard_transformations)
+                                            standard_transformations)
     if (not isinstance(value, str) or len(value) > 10000 or not value.strip()
             or not _EXPRESSION_CHARACTERS.fullmatch(value) or "//" in value or _ATTRIBUTE_DOT.search(value)):
         return None
@@ -472,15 +533,22 @@ def math_expression(value):
     known = {"e": sympy.E, "pi": sympy.pi, "ln": sympy.log}
     known.update((name, getattr(sympy, name)) for name in _FUNCTIONS)
     known.update((name, sympy.Symbol(name)) for name in names - set(known))
-    # Seuls les constructeurs que les transformations insèrent ; « __builtins__ » vide, sinon eval
-    # ajouterait les fonctions natives de Python.
+    # Seuls les constructeurs que les transformations insèrent (Add, Mul, Pow pour evaluate=False) ;
+    # « __builtins__ » vide, sinon eval ajouterait les fonctions natives de Python.
     constructors = {"__builtins__": {}, "Integer": sympy.Integer, "Float": sympy.Float,
-                    "Rational": sympy.Rational, "Symbol": sympy.Symbol}
-    # Produit implicite (« 2x », « sin x »), « ^ » pour la puissance, décimaux en fractions (« 1.5 »
-    # donne 3/2, comme une saisie exacte).
-    transformations = standard_transformations + (implicit_multiplication_application, convert_xor, rationalize)
+                    "Rational": sympy.Rational, "Symbol": sympy.Symbol,
+                    "Add": sympy.Add, "Mul": sympy.Mul, "Pow": sympy.Pow}
+    # Produit implicite (« 2x », « sin x ») et « ^ » pour la puissance. Les décimaux restent des
+    # décimaux : 1.5 n’est pas 3/2, sauf à comparer les valeurs.
+    transformations = standard_transformations + (implicit_multiplication_application, convert_xor)
     try:
-        result = parse_expr(value, local_dict=known, global_dict=constructors, transformations=transformations)
+        # evaluate=False seul laisse calculer le moins d’en tête : -(x+1) devenait -x - 1. Le contexte
+        # evaluate(False) l’empêche.
+        with evaluate(False):
+            result = parse_expr(value, local_dict=known, global_dict=constructors,
+                                transformations=transformations, evaluate=False)
+        if not isinstance(result, sympy.Expr):
+            return None
+        return _as_written(result)
     except Exception:  # Toute erreur d’analyse ou de calcul : la saisie est invalide.
         return None
-    return result if isinstance(result, sympy.Expr) else None
