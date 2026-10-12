@@ -2,6 +2,8 @@
 window.PyWimsTemplate = (() => {
   const tagPattern = /{%\s*(.*?)\s*%}/gs;
   const variablePattern = /{{\s*([A-Za-z_]\w*)\s*}}/g;
+  // Formule d’un modèle, avec les délimiteurs de MathJax (compiler/assemble.js).
+  const mathPattern = /\$\$[\s\S]*?\$\$|(?<!\\)\$(?:\\[\s\S]|[^$\\])+\$|\\\([\s\S]*?\\\)|\\\[[\s\S]*?\\\]/;
 
   // Types d’attributs : entier, nombre décimal positif (gardé en texte, pour une valeur exacte), nom
   // de variable Python, dimension (entier ou variable), texte entre guillemets, ou liste de mots
@@ -302,8 +304,17 @@ window.PyWimsTemplate = (() => {
   // valeur admet les balises de mise en forme du retour (<b>, <br>…), comme une explication calculée
   // dans « question_setup » et affichée par {{variable}} (SPECIFICATION.md, § 2.1) ; le reste est
   // échappé, et un « x < 3 » s’affiche tel quel.
+  // Dans une formule du modèle, le « < » est échappé : le modèle est du HTML de l’auteur, et dans
+  // « $x_1<x_2$ » le navigateur lisait « <x_2$ … » comme une balise, qui avalait la fin de l’énoncé
+  // (SPECIFICATION.md, § 2.1). Les balises et les formules sont cherchées d’un seul passage, pour
+  // qu’un « $ » d’une balise ne soit jamais pris pour le début d’une formule. « \$ » est un dollar
+  // littéral (processEscapes de MathJax), jamais un délimiteur.
+  // Solution écartée : demander aux auteurs d’écrire « \lt » ; les questions converties d’AMC et
+  // celles des enseignants contiennent « < » tel quel.
   function renderTemplate(template, context, renderTag) {
-    const withTags = template.replace(tagPattern, (_match, source) => renderTag(parseTag(source)));
+    const tagOrMath = new RegExp(`${tagPattern.source}|${mathPattern.source}`, "gs");
+    const withTags = template.replace(tagOrMath, (match, source) =>
+      source === undefined ? match.replaceAll("<", "&lt;") : renderTag(parseTag(source)));
     return withTags.replace(variablePattern, (_match, name) => {
       if (!Object.hasOwn(context, name)) {
         throw new Error(`Variable de question inconnue : ${name}`);

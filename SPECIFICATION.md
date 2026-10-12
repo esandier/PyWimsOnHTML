@@ -60,6 +60,12 @@ l’explication, admet les balises de mise en forme du retour (§ 2.2) : `<b>`,
 `<i>`, `<strong>`, `<em>`, `<sup>`, `<sub>`, `<br>`, sans attribut ; le reste
 est échappé (un `x < 3` s’affiche tel quel).
 
+**Signe « < » dans une formule.** L’énoncé et l’explication sont du HTML de
+l’auteur : un `<` suivi d’une lettre y ouvre une balise. Dans une formule
+(`$…$`, `$$…$$`, `\(…\)`, `\[…\]`), le `<` est donc échappé au rendu :
+`$x_1<x_2$` s’affiche comme on l’attend, au lieu d’avaler la suite de
+l’énoncé. Hors formule, le HTML de l’auteur reste intact.
+
 Le retour destiné à l’élève est la variable `feedback` de `question_check` (§ 2.2).
 Les paquets Pyodide sont déduits des `import` du code. Un champ inconnu est
 refusé.

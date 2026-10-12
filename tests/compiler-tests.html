@@ -368,6 +368,16 @@
       }
       if (!rejected) throw new Error("Une variable absente du contexte a été acceptée.");
     });
+    // Un « < » de formule n’ouvre pas de balise ; le HTML de l’auteur hors formule reste intact.
+    test("le rendu du modèle échappe le signe « < » des formules seulement", () => {
+      const html = PyWimsTemplate.renderTemplate(
+        "<b>Soit</b> $x_1<x_2$, $${{ a }}<y$$, \\(u<v\\), 3 \\$ < {% input_text 'r' solution=s %} $p<q$",
+        { a: "z" },
+        tag => `[${tag.type}]`
+      );
+      const expected = "<b>Soit</b> $x_1&lt;x_2$, $$z&lt;y$$, \\(u&lt;v\\), 3 \\$ < [input_text] $p&lt;q$";
+      if (html !== expected) throw new Error(`Rendu inattendu : ${html}`);
+    });
     test("les widgets partagés restent disponibles quel que soit leur ordre de chargement", () => {
       if (typeof PyWimsWidgets.inputText !== "function" ||
           typeof PyWimsWidgets.inputMath !== "function" ||
