@@ -454,8 +454,8 @@ def main():
                     page.click("#compile-question")
                 download = waiting.value
                 message = page.text_content("#messages")
-                if "téléchargée" not in message:
-                    raise AssertionError(f"compilation en échec : {message}")
+                if "téléchargé" not in message:
+                    raise AssertionError(f"export en échec : {message}")
                 if not download.suggested_filename.endswith(".html"):
                     raise AssertionError(f"fichier téléchargé inattendu : {download.suggested_filename}")
                 html = open(download.path(), encoding="utf-8").read()
