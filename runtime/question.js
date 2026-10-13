@@ -213,7 +213,7 @@ window.PyWimsQuestion = (() => {
     start() {
       try {
         if (!this.draws.length) {
-          throw new Error("Cette question ne contient aucun tirage : recompilez-la.");
+          throw new Error("Cette question ne contient aucun tirage : exportez-la de nouveau.");
         }
         const selected = document.body.dataset.preview === "true"
           ? this.draws[0]

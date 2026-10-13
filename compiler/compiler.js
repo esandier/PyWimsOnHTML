@@ -1088,7 +1088,7 @@
       return;
     }
 
-    showMessage(messages, "Compilation de la sélection…");
+    showMessage(messages, "Export de la sélection…");
     compileButton.disabled = true;
     try {
       // Tous les fichiers du projet sont lus une fois, au début : ceux des tirages et ceux de
@@ -1149,9 +1149,9 @@
       // Les avertissements ne bloquent pas la compilation ; ils restent affichés pour être lus.
       const warnings = compiled.flatMap(({ fields, path }) => templateWarnings(fields).map(text => `${path} : ${text}`));
       if (warnings.length) {
-        showMessage(messages, `La compilation a été téléchargée. Avertissement : ${warnings.join(" ")}`, "warning");
+        showMessage(messages, `L’export a été téléchargé. Avertissement : ${warnings.join(" ")}`, "warning");
       } else {
-        showMessage(messages, "La compilation a été téléchargée.", "success", 3000);
+        showMessage(messages, "L’export a été téléchargé.", "success", 3000);
       }
     } catch (error) {
       showMessage(messages, error.message, "error");
