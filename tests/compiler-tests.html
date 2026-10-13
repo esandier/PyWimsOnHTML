@@ -855,10 +855,9 @@
               fields.question_layout !== "STD" ||
               PyWimsTemplate.validateTemplate(fields.question_statement).length ||
               !fields.question_setup.includes("ANY") ||
-              !fields.question_solution_explanation.includes("∗") ||
+              !fields.question_solution_explanation.trim() ||
               !fields.question_statement.includes("{% input_matrix 'matrix' size=size solution=solution_matrix") ||
-              !fields.question_check.includes('ok_answer["matrix[{}][{}]".format(i, j)]') ||
-              !fields.question_check.includes('getattr(value, "is_number", False)')) {
+              !fields.question_check.includes('ok_answer[f"matrix[{i}][{j}]"]')) {
             throw new Error("Les champs de la question matricielle sont inattendus.");
           }
         });

@@ -344,12 +344,15 @@ json.dumps({
           await session.prepareCheck({ verdicts, texts, values: exactValues });
           await session.run(fields.question_check);
           const verdict = JSON.parse(await session.run(
-            `__import__("json").dumps({"ok": {k: bool(v) for k, v in ok_answer.items()}, "feedback": str(feedback)})`
+            `__import__("json").dumps({"ok": {k: bool(v) for k, v in ok_answer.items()}, ` +
+            `"feedback": str(globals()["feedback"]) if "feedback" in globals() else None})`
           ));
           if (!Object.keys(verdict.ok).length || !Object.values(verdict.ok).every(Boolean)) {
             throw new Error(`La solution n’est pas jugée juste : ${JSON.stringify(verdict)}`);
           }
-          if (!verdict.feedback.startsWith("Bravo")) {
+          // « feedback » est facultatif (SPECIFICATION.md, § 2.2) : sans lui, le retour générique
+          // « Bravo, c’est exact ! » s’affiche. Défini, il doit féliciter une solution juste.
+          if (verdict.feedback !== null && !verdict.feedback.startsWith("Bravo")) {
             throw new Error(`Retour inattendu pour la solution : ${verdict.feedback}`);
           }
         });
@@ -383,7 +386,8 @@ json.dumps({
         }
         const triangular = await PyWimsCompiler.computeDraws(questionFields["matrice-triangulaire.pwq"], { count: 3 });
         const cells = triangular[0].solutions.matrix;
-        if (cells[0][0] !== null || cells.at(-1)[0] !== "0") {
+        // Au-dessus de la diagonale, case libre (ANY, null) ; sous la diagonale, zéro imposé.
+        if (cells[0].at(-1) !== null || cells.at(-1)[0] !== "0") {
           throw new Error(`Solution libre inattendue : ${JSON.stringify(triangular[0])}`);
         }
       });
