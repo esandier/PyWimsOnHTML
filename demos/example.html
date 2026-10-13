@@ -395,8 +395,9 @@ body:not([data-scored]) .pw-help-score {
   visibility: hidden;
 }
 
+/* Coins arrondis à droite seulement : à gauche, le filet du verdict reste droit. */
 .pw-feedback {
-  border-radius: 8px;
+  border-radius: 0 8px 8px 0;
 }
 
 /* Question seule : énoncé, barre d’outils, puis retour, dans l’ordre du document. Le titre et
@@ -796,6 +797,13 @@ body:not([data-scored]) .pw-help-score {
   display: inline-block;
 }
 
+/* Champ texte (input_text, input_value) : 8em suffisent à une réponse courte. Sans largeur, le
+   navigateur prenait celle de 20 caractères (size par défaut), qui faisait souvent passer le champ
+   à la ligne. Un attribut style de l’auteur l’emporte toujours. Les cases de matrice ont leur règle. */
+.pw-input-wrapper .pw-input {
+  width: 8em;
+}
+
 /* Champ MathLive aussi bas qu’il le peut vide (33 px), et qui ne grandit que pour une formule haute
    (fraction, exposant). Sa hauteur venait de ses deux boutons, clavier et menu : 34 px chacun avec leurs
    marges, plus celles du champ, soit 54 px dans les deux styles, contre 24 px pour un champ texte
@@ -803,17 +811,19 @@ body:not([data-scored]) .pw-help-score {
    et les marges verticales. Solution écartée : resserrer les boutons seuls (43 px). */
 .pw-math-input {
   display: inline-block;
-  min-width: 14rem;
   padding: 0.1em 0.4em;
   vertical-align: middle;
   font-style: normal;
 }
 
 /* Largeur aussi : MathLive donne à chaque bouton 34 px et 4 px de marge, pour des icônes de 21 et
-   16 px, ce qui les écartait l’une de l’autre (mesuré dans Edge, octobre 2026). */
+   16 px, ce qui les écartait l’une de l’autre (mesuré dans Edge, octobre 2026). Sur un écran
+   tactile (pointer: coarse), il impose en plus 60 px au moins dans les deux sens : sans min-width,
+   l’écart revenait sur un ordinateur portable tactile. */
 .pw-math-input::part(virtual-keyboard-toggle),
 .pw-math-input::part(menu-toggle) {
   width: auto;
+  min-width: 0;
   height: auto;
   min-height: 0;
   margin: 0;
@@ -823,6 +833,12 @@ body:not([data-scored]) .pw-help-score {
 .pw-math-input::part(container) {
   padding-top: 0;
   padding-bottom: 0;
+}
+
+/* Zone de saisie de 12em au moins, sans compter les boutons : la largeur minimale portait sur tout
+   le champ (14rem), boutons compris. Le champ s’élargit ensuite avec la formule. */
+.pw-math-input::part(content) {
+  min-width: 12em;
 }
 
 /* Délimiteurs et disposition tabulaire des matrices. */
@@ -1125,13 +1141,17 @@ mjx-assistive-mml {
   text-align: center;
 }
 
-/* Présentation et animation du retour affiché après la vérification. */
+/* Présentation et animation du retour affiché après la vérification. Texte courant dans la police
+   de la charte, aligné à gauche, comme le reste de la question ; un filet à gauche, de la couleur du
+   verdict, le signale, comme dans la zone de retour du style compact. L’ancien Georgia gras italique
+   centré tranchait avec l’énoncé et se lisait mal sur plusieurs lignes. */
 .feedback {
   min-height: 2.5rem;
   margin: 0;
-  padding: 0.5em;
-  text-align: center;
-  font: italic bold 1em Georgia, serif;
+  padding: 0.5em 0.9em;
+  border-left: 4px solid currentColor;
+  text-align: left;
+  font: 1em/1.5 var(--pw-body-font);
 }
 
 .pw-feedback {
@@ -1438,8 +1458,10 @@ mjx-assistive-mml {
   opacity: 0.5;
 }
 
+/* La zone porte déjà le filet de couleur : le retour qu’elle contient n’en a pas. */
 .pw-feedback-zone .pw-feedback.feedback {
   padding: 0;
+  border-left: 0;
   background: none;
 }
 
@@ -1916,8 +1938,9 @@ body:not([data-scored]) .pw-help-score {
   visibility: hidden;
 }
 
+/* Coins arrondis à droite seulement : à gauche, le filet du verdict reste droit. */
 .pw-feedback {
-  border-radius: 8px;
+  border-radius: 0 8px 8px 0;
 }
 
 /* Question seule : énoncé, barre d’outils, puis retour, dans l’ordre du document. Le titre et
@@ -2317,6 +2340,13 @@ body:not([data-scored]) .pw-help-score {
   display: inline-block;
 }
 
+/* Champ texte (input_text, input_value) : 8em suffisent à une réponse courte. Sans largeur, le
+   navigateur prenait celle de 20 caractères (size par défaut), qui faisait souvent passer le champ
+   à la ligne. Un attribut style de l’auteur l’emporte toujours. Les cases de matrice ont leur règle. */
+.pw-input-wrapper .pw-input {
+  width: 8em;
+}
+
 /* Champ MathLive aussi bas qu’il le peut vide (33 px), et qui ne grandit que pour une formule haute
    (fraction, exposant). Sa hauteur venait de ses deux boutons, clavier et menu : 34 px chacun avec leurs
    marges, plus celles du champ, soit 54 px dans les deux styles, contre 24 px pour un champ texte
@@ -2324,17 +2354,19 @@ body:not([data-scored]) .pw-help-score {
    et les marges verticales. Solution écartée : resserrer les boutons seuls (43 px). */
 .pw-math-input {
   display: inline-block;
-  min-width: 14rem;
   padding: 0.1em 0.4em;
   vertical-align: middle;
   font-style: normal;
 }
 
 /* Largeur aussi : MathLive donne à chaque bouton 34 px et 4 px de marge, pour des icônes de 21 et
-   16 px, ce qui les écartait l’une de l’autre (mesuré dans Edge, octobre 2026). */
+   16 px, ce qui les écartait l’une de l’autre (mesuré dans Edge, octobre 2026). Sur un écran
+   tactile (pointer: coarse), il impose en plus 60 px au moins dans les deux sens : sans min-width,
+   l’écart revenait sur un ordinateur portable tactile. */
 .pw-math-input::part(virtual-keyboard-toggle),
 .pw-math-input::part(menu-toggle) {
   width: auto;
+  min-width: 0;
   height: auto;
   min-height: 0;
   margin: 0;
@@ -2344,6 +2376,12 @@ body:not([data-scored]) .pw-help-score {
 .pw-math-input::part(container) {
   padding-top: 0;
   padding-bottom: 0;
+}
+
+/* Zone de saisie de 12em au moins, sans compter les boutons : la largeur minimale portait sur tout
+   le champ (14rem), boutons compris. Le champ s’élargit ensuite avec la formule. */
+.pw-math-input::part(content) {
+  min-width: 12em;
 }
 
 /* Délimiteurs et disposition tabulaire des matrices. */
@@ -2646,13 +2684,17 @@ mjx-assistive-mml {
   text-align: center;
 }
 
-/* Présentation et animation du retour affiché après la vérification. */
+/* Présentation et animation du retour affiché après la vérification. Texte courant dans la police
+   de la charte, aligné à gauche, comme le reste de la question ; un filet à gauche, de la couleur du
+   verdict, le signale, comme dans la zone de retour du style compact. L’ancien Georgia gras italique
+   centré tranchait avec l’énoncé et se lisait mal sur plusieurs lignes. */
 .feedback {
   min-height: 2.5rem;
   margin: 0;
-  padding: 0.5em;
-  text-align: center;
-  font: italic bold 1em Georgia, serif;
+  padding: 0.5em 0.9em;
+  border-left: 4px solid currentColor;
+  text-align: left;
+  font: 1em/1.5 var(--pw-body-font);
 }
 
 .pw-feedback {
@@ -2959,8 +3001,10 @@ mjx-assistive-mml {
   opacity: 0.5;
 }
 
+/* La zone porte déjà le filet de couleur : le retour qu’elle contient n’en a pas. */
 .pw-feedback-zone .pw-feedback.feedback {
   padding: 0;
+  border-left: 0;
   background: none;
 }
 
@@ -3066,7 +3110,7 @@ mjx-assistive-mml {
 <!-- data-sheet : « single » pour une question seule, « activity » pour une feuille de plusieurs questions. -->
 <!-- data-sheet-id : empreinte d’une activité, clé de la mémoire de sa progression (absente pour une question seule). -->
 <!-- data-style : « compact » pour une activité au style « feuille de TD » (SPECIFICATION.md, § 5.7), absent sinon. -->
-<body data-sheet="activity" data-sheet-id="1dpgcr11fcm">
+<body data-sheet="activity" data-sheet-id="p8ypa14dy3">
   <!-- En-tête : titre, progression (activité seulement), aide et logo. Il reste visible au défilement d’une activité. -->
   <div class="pw-top">
     <!-- Le logo de marque est décoratif ; son image et son style sont définis dans brand.css. -->
@@ -3140,9 +3184,9 @@ from sympy import *
 from pywims import math_expression
 
 # Choisit deux fractions irréductibles, numérateurs et dénominateurs entre 2 et 5.
-irreducible_fractions = [(a, b) for a in range(2, 6) for b in range(2, 6) if gcd(a, b) == 1]
+irreducible_fractions = [(a, b) for a in range(1, 6) for b in range(2, 6) if gcd(a, b) == 1]
 n, m = choice(irreducible_fractions)
-p, q = choice(irreducible_fractions)
+p, q = choice([(a, b) for (a, b) in irreducible_fractions if b != m])
 total = Rational(n, m) + Rational(p, q)
 
 # Réduction au même dénominateur, pour l’explication de la solution.
@@ -3153,9 +3197,9 @@ numerator_sum = n_common + p_common
 # Dernière égalité, seulement si la fraction obtenue se simplifie.
 simplified = &quot;&quot; if total.q == common else &quot; = &quot; + latex(total)</pre>
 <pre data-field="question_statement">Additionnez ces fractions et donnez le résultat sous forme d’une fraction
-irréductible, avec un dénominateur positif :
+irréductible :
 &lt;br&gt;
-$\displaystyle \frac{ {{n}} }{ {{m}} } + \frac{ {{p}} }{ {{q}} } =$ {% input_text &#39;result&#39; solution=total style=&#39;width:7em&#39; %}</pre>
+$\displaystyle \frac{ {{n}} }{ {{m}} } + \frac{ {{p}} }{ {{q}} } =$ {% input_text &#39;result&#39; solution=total style=&#39;width:5em&#39; %}</pre>
 <pre data-field="question_solution_explanation">On réduit au même dénominateur ${{common}}$ :
 $\displaystyle \frac{ {{n}} }{ {{m}} } + \frac{ {{p}} }{ {{q}} }
 = \frac{ {{n_common}} }{ {{common}} } + \frac{ {{p_common}} }{ {{common}} }
@@ -3173,11 +3217,11 @@ else:
     elif simplify(answer - total) != 0:
         feedback = &quot;Ce n’est pas la bonne somme : réduisez d’abord les deux fractions au même dénominateur.&quot;
     elif denominator &lt; 0 or gcd(numerator, denominator) != 1:
-        feedback = &quot;La valeur est juste, mais la fraction n’est pas irréductible avec un dénominateur positif : simplifiez-la.&quot;
+        feedback = &quot;La valeur est juste, mais la fraction n’est pas irréductible : simplifiez-la.&quot;
     else:
         ok_answer[&#39;result&#39;] = True
         feedback = &quot;Bravo, c’est exact !&quot;</pre>
-<pre data-draws>[{&quot;seed&quot;:0,&quot;context&quot;:{&quot;n&quot;:&quot;4&quot;,&quot;m&quot;:&quot;5&quot;,&quot;p&quot;:&quot;4&quot;,&quot;q&quot;:&quot;5&quot;,&quot;common&quot;:&quot;5&quot;,&quot;n_common&quot;:&quot;4&quot;,&quot;p_common&quot;:&quot;4&quot;,&quot;numerator_sum&quot;:&quot;8&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;8/5&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:1,&quot;context&quot;:{&quot;n&quot;:&quot;3&quot;,&quot;m&quot;:&quot;2&quot;,&quot;p&quot;:&quot;5&quot;,&quot;q&quot;:&quot;4&quot;,&quot;common&quot;:&quot;4&quot;,&quot;n_common&quot;:&quot;6&quot;,&quot;p_common&quot;:&quot;5&quot;,&quot;numerator_sum&quot;:&quot;11&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;11/4&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:2,&quot;context&quot;:{&quot;n&quot;:&quot;2&quot;,&quot;m&quot;:&quot;3&quot;,&quot;p&quot;:&quot;2&quot;,&quot;q&quot;:&quot;5&quot;,&quot;common&quot;:&quot;15&quot;,&quot;n_common&quot;:&quot;10&quot;,&quot;p_common&quot;:&quot;6&quot;,&quot;numerator_sum&quot;:&quot;16&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;16/15&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:3,&quot;context&quot;:{&quot;n&quot;:&quot;3&quot;,&quot;m&quot;:&quot;4&quot;,&quot;p&quot;:&quot;5&quot;,&quot;q&quot;:&quot;4&quot;,&quot;common&quot;:&quot;4&quot;,&quot;n_common&quot;:&quot;3&quot;,&quot;p_common&quot;:&quot;5&quot;,&quot;numerator_sum&quot;:&quot;8&quot;,&quot;simplified&quot;:&quot; = 2&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;2&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:4,&quot;context&quot;:{&quot;n&quot;:&quot;3&quot;,&quot;m&quot;:&quot;4&quot;,&quot;p&quot;:&quot;3&quot;,&quot;q&quot;:&quot;5&quot;,&quot;common&quot;:&quot;20&quot;,&quot;n_common&quot;:&quot;15&quot;,&quot;p_common&quot;:&quot;12&quot;,&quot;numerator_sum&quot;:&quot;27&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;27/20&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:5,&quot;context&quot;:{&quot;n&quot;:&quot;5&quot;,&quot;m&quot;:&quot;4&quot;,&quot;p&quot;:&quot;3&quot;,&quot;q&quot;:&quot;5&quot;,&quot;common&quot;:&quot;20&quot;,&quot;n_common&quot;:&quot;25&quot;,&quot;p_common&quot;:&quot;12&quot;,&quot;numerator_sum&quot;:&quot;37&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;37/20&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:6,&quot;context&quot;:{&quot;n&quot;:&quot;5&quot;,&quot;m&quot;:&quot;4&quot;,&quot;p&quot;:&quot;2&quot;,&quot;q&quot;:&quot;5&quot;,&quot;common&quot;:&quot;20&quot;,&quot;n_common&quot;:&quot;25&quot;,&quot;p_common&quot;:&quot;8&quot;,&quot;numerator_sum&quot;:&quot;33&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;33/20&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:7,&quot;context&quot;:{&quot;n&quot;:&quot;4&quot;,&quot;m&quot;:&quot;3&quot;,&quot;p&quot;:&quot;3&quot;,&quot;q&quot;:&quot;2&quot;,&quot;common&quot;:&quot;6&quot;,&quot;n_common&quot;:&quot;8&quot;,&quot;p_common&quot;:&quot;9&quot;,&quot;numerator_sum&quot;:&quot;17&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;17/6&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:8,&quot;context&quot;:{&quot;n&quot;:&quot;3&quot;,&quot;m&quot;:&quot;4&quot;,&quot;p&quot;:&quot;4&quot;,&quot;q&quot;:&quot;3&quot;,&quot;common&quot;:&quot;12&quot;,&quot;n_common&quot;:&quot;9&quot;,&quot;p_common&quot;:&quot;16&quot;,&quot;numerator_sum&quot;:&quot;25&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;25/12&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:9,&quot;context&quot;:{&quot;n&quot;:&quot;5&quot;,&quot;m&quot;:&quot;2&quot;,&quot;p&quot;:&quot;5&quot;,&quot;q&quot;:&quot;4&quot;,&quot;common&quot;:&quot;4&quot;,&quot;n_common&quot;:&quot;10&quot;,&quot;p_common&quot;:&quot;5&quot;,&quot;numerator_sum&quot;:&quot;15&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;15/4&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:10,&quot;context&quot;:{&quot;n&quot;:&quot;5&quot;,&quot;m&quot;:&quot;4&quot;,&quot;p&quot;:&quot;2&quot;,&quot;q&quot;:&quot;3&quot;,&quot;common&quot;:&quot;12&quot;,&quot;n_common&quot;:&quot;15&quot;,&quot;p_common&quot;:&quot;8&quot;,&quot;numerator_sum&quot;:&quot;23&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;23/12&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:11,&quot;context&quot;:{&quot;n&quot;:&quot;5&quot;,&quot;m&quot;:&quot;2&quot;,&quot;p&quot;:&quot;5&quot;,&quot;q&quot;:&quot;3&quot;,&quot;common&quot;:&quot;6&quot;,&quot;n_common&quot;:&quot;15&quot;,&quot;p_common&quot;:&quot;10&quot;,&quot;numerator_sum&quot;:&quot;25&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;25/6&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:12,&quot;context&quot;:{&quot;n&quot;:&quot;5&quot;,&quot;m&quot;:&quot;2&quot;,&quot;p&quot;:&quot;3&quot;,&quot;q&quot;:&quot;5&quot;,&quot;common&quot;:&quot;10&quot;,&quot;n_common&quot;:&quot;25&quot;,&quot;p_common&quot;:&quot;6&quot;,&quot;numerator_sum&quot;:&quot;31&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;31/10&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:13,&quot;context&quot;:{&quot;n&quot;:&quot;3&quot;,&quot;m&quot;:&quot;5&quot;,&quot;p&quot;:&quot;3&quot;,&quot;q&quot;:&quot;5&quot;,&quot;common&quot;:&quot;5&quot;,&quot;n_common&quot;:&quot;3&quot;,&quot;p_common&quot;:&quot;3&quot;,&quot;numerator_sum&quot;:&quot;6&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;6/5&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:14,&quot;context&quot;:{&quot;n&quot;:&quot;2&quot;,&quot;m&quot;:&quot;5&quot;,&quot;p&quot;:&quot;5&quot;,&quot;q&quot;:&quot;4&quot;,&quot;common&quot;:&quot;20&quot;,&quot;n_common&quot;:&quot;8&quot;,&quot;p_common&quot;:&quot;25&quot;,&quot;numerator_sum&quot;:&quot;33&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;33/20&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:15,&quot;context&quot;:{&quot;n&quot;:&quot;3&quot;,&quot;m&quot;:&quot;4&quot;,&quot;p&quot;:&quot;2&quot;,&quot;q&quot;:&quot;3&quot;,&quot;common&quot;:&quot;12&quot;,&quot;n_common&quot;:&quot;9&quot;,&quot;p_common&quot;:&quot;8&quot;,&quot;numerator_sum&quot;:&quot;17&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;17/12&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:16,&quot;context&quot;:{&quot;n&quot;:&quot;4&quot;,&quot;m&quot;:&quot;3&quot;,&quot;p&quot;:&quot;5&quot;,&quot;q&quot;:&quot;2&quot;,&quot;common&quot;:&quot;6&quot;,&quot;n_common&quot;:&quot;8&quot;,&quot;p_common&quot;:&quot;15&quot;,&quot;numerator_sum&quot;:&quot;23&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;23/6&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:17,&quot;context&quot;:{&quot;n&quot;:&quot;5&quot;,&quot;m&quot;:&quot;3&quot;,&quot;p&quot;:&quot;4&quot;,&quot;q&quot;:&quot;5&quot;,&quot;common&quot;:&quot;15&quot;,&quot;n_common&quot;:&quot;25&quot;,&quot;p_common&quot;:&quot;12&quot;,&quot;numerator_sum&quot;:&quot;37&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;37/15&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:18,&quot;context&quot;:{&quot;n&quot;:&quot;3&quot;,&quot;m&quot;:&quot;2&quot;,&quot;p&quot;:&quot;2&quot;,&quot;q&quot;:&quot;5&quot;,&quot;common&quot;:&quot;10&quot;,&quot;n_common&quot;:&quot;15&quot;,&quot;p_common&quot;:&quot;4&quot;,&quot;numerator_sum&quot;:&quot;19&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;19/10&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:19,&quot;context&quot;:{&quot;n&quot;:&quot;2&quot;,&quot;m&quot;:&quot;3&quot;,&quot;p&quot;:&quot;5&quot;,&quot;q&quot;:&quot;3&quot;,&quot;common&quot;:&quot;3&quot;,&quot;n_common&quot;:&quot;2&quot;,&quot;p_common&quot;:&quot;5&quot;,&quot;numerator_sum&quot;:&quot;7&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;7/3&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}}]</pre>
+<pre data-draws>[{&quot;seed&quot;:0,&quot;context&quot;:{&quot;n&quot;:&quot;5&quot;,&quot;m&quot;:&quot;4&quot;,&quot;p&quot;:&quot;3&quot;,&quot;q&quot;:&quot;5&quot;,&quot;common&quot;:&quot;20&quot;,&quot;n_common&quot;:&quot;25&quot;,&quot;p_common&quot;:&quot;12&quot;,&quot;numerator_sum&quot;:&quot;37&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;37/20&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:1,&quot;context&quot;:{&quot;n&quot;:&quot;1&quot;,&quot;m&quot;:&quot;4&quot;,&quot;p&quot;:&quot;5&quot;,&quot;q&quot;:&quot;2&quot;,&quot;common&quot;:&quot;4&quot;,&quot;n_common&quot;:&quot;1&quot;,&quot;p_common&quot;:&quot;10&quot;,&quot;numerator_sum&quot;:&quot;11&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;11/4&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:2,&quot;context&quot;:{&quot;n&quot;:&quot;5&quot;,&quot;m&quot;:&quot;4&quot;,&quot;p&quot;:&quot;1&quot;,&quot;q&quot;:&quot;2&quot;,&quot;common&quot;:&quot;4&quot;,&quot;n_common&quot;:&quot;5&quot;,&quot;p_common&quot;:&quot;2&quot;,&quot;numerator_sum&quot;:&quot;7&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;7/4&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:3,&quot;context&quot;:{&quot;n&quot;:&quot;1&quot;,&quot;m&quot;:&quot;5&quot;,&quot;p&quot;:&quot;5&quot;,&quot;q&quot;:&quot;4&quot;,&quot;common&quot;:&quot;20&quot;,&quot;n_common&quot;:&quot;4&quot;,&quot;p_common&quot;:&quot;25&quot;,&quot;numerator_sum&quot;:&quot;29&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;29/20&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:4,&quot;context&quot;:{&quot;n&quot;:&quot;1&quot;,&quot;m&quot;:&quot;5&quot;,&quot;p&quot;:&quot;3&quot;,&quot;q&quot;:&quot;2&quot;,&quot;common&quot;:&quot;10&quot;,&quot;n_common&quot;:&quot;2&quot;,&quot;p_common&quot;:&quot;15&quot;,&quot;numerator_sum&quot;:&quot;17&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;17/10&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:5,&quot;context&quot;:{&quot;n&quot;:&quot;4&quot;,&quot;m&quot;:&quot;3&quot;,&quot;p&quot;:&quot;3&quot;,&quot;q&quot;:&quot;2&quot;,&quot;common&quot;:&quot;6&quot;,&quot;n_common&quot;:&quot;8&quot;,&quot;p_common&quot;:&quot;9&quot;,&quot;numerator_sum&quot;:&quot;17&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;17/6&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:6,&quot;context&quot;:{&quot;n&quot;:&quot;5&quot;,&quot;m&quot;:&quot;3&quot;,&quot;p&quot;:&quot;5&quot;,&quot;q&quot;:&quot;4&quot;,&quot;common&quot;:&quot;12&quot;,&quot;n_common&quot;:&quot;20&quot;,&quot;p_common&quot;:&quot;15&quot;,&quot;numerator_sum&quot;:&quot;35&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;35/12&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:7,&quot;context&quot;:{&quot;n&quot;:&quot;2&quot;,&quot;m&quot;:&quot;5&quot;,&quot;p&quot;:&quot;1&quot;,&quot;q&quot;:&quot;4&quot;,&quot;common&quot;:&quot;20&quot;,&quot;n_common&quot;:&quot;8&quot;,&quot;p_common&quot;:&quot;5&quot;,&quot;numerator_sum&quot;:&quot;13&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;13/20&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:8,&quot;context&quot;:{&quot;n&quot;:&quot;1&quot;,&quot;m&quot;:&quot;5&quot;,&quot;p&quot;:&quot;3&quot;,&quot;q&quot;:&quot;4&quot;,&quot;common&quot;:&quot;20&quot;,&quot;n_common&quot;:&quot;4&quot;,&quot;p_common&quot;:&quot;15&quot;,&quot;numerator_sum&quot;:&quot;19&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;19/20&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:9,&quot;context&quot;:{&quot;n&quot;:&quot;3&quot;,&quot;m&quot;:&quot;4&quot;,&quot;p&quot;:&quot;5&quot;,&quot;q&quot;:&quot;2&quot;,&quot;common&quot;:&quot;4&quot;,&quot;n_common&quot;:&quot;3&quot;,&quot;p_common&quot;:&quot;10&quot;,&quot;numerator_sum&quot;:&quot;13&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;13/4&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:10,&quot;context&quot;:{&quot;n&quot;:&quot;4&quot;,&quot;m&quot;:&quot;3&quot;,&quot;p&quot;:&quot;1&quot;,&quot;q&quot;:&quot;2&quot;,&quot;common&quot;:&quot;6&quot;,&quot;n_common&quot;:&quot;8&quot;,&quot;p_common&quot;:&quot;3&quot;,&quot;numerator_sum&quot;:&quot;11&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;11/6&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:11,&quot;context&quot;:{&quot;n&quot;:&quot;3&quot;,&quot;m&quot;:&quot;4&quot;,&quot;p&quot;:&quot;4&quot;,&quot;q&quot;:&quot;5&quot;,&quot;common&quot;:&quot;20&quot;,&quot;n_common&quot;:&quot;15&quot;,&quot;p_common&quot;:&quot;16&quot;,&quot;numerator_sum&quot;:&quot;31&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;31/20&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:12,&quot;context&quot;:{&quot;n&quot;:&quot;3&quot;,&quot;m&quot;:&quot;4&quot;,&quot;p&quot;:&quot;2&quot;,&quot;q&quot;:&quot;5&quot;,&quot;common&quot;:&quot;20&quot;,&quot;n_common&quot;:&quot;15&quot;,&quot;p_common&quot;:&quot;8&quot;,&quot;numerator_sum&quot;:&quot;23&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;23/20&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:13,&quot;context&quot;:{&quot;n&quot;:&quot;2&quot;,&quot;m&quot;:&quot;3&quot;,&quot;p&quot;:&quot;3&quot;,&quot;q&quot;:&quot;2&quot;,&quot;common&quot;:&quot;6&quot;,&quot;n_common&quot;:&quot;4&quot;,&quot;p_common&quot;:&quot;9&quot;,&quot;numerator_sum&quot;:&quot;13&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;13/6&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:14,&quot;context&quot;:{&quot;n&quot;:&quot;1&quot;,&quot;m&quot;:&quot;3&quot;,&quot;p&quot;:&quot;5&quot;,&quot;q&quot;:&quot;4&quot;,&quot;common&quot;:&quot;12&quot;,&quot;n_common&quot;:&quot;4&quot;,&quot;p_common&quot;:&quot;15&quot;,&quot;numerator_sum&quot;:&quot;19&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;19/12&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:15,&quot;context&quot;:{&quot;n&quot;:&quot;1&quot;,&quot;m&quot;:&quot;5&quot;,&quot;p&quot;:&quot;1&quot;,&quot;q&quot;:&quot;2&quot;,&quot;common&quot;:&quot;10&quot;,&quot;n_common&quot;:&quot;2&quot;,&quot;p_common&quot;:&quot;5&quot;,&quot;numerator_sum&quot;:&quot;7&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;7/10&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:16,&quot;context&quot;:{&quot;n&quot;:&quot;2&quot;,&quot;m&quot;:&quot;5&quot;,&quot;p&quot;:&quot;5&quot;,&quot;q&quot;:&quot;2&quot;,&quot;common&quot;:&quot;10&quot;,&quot;n_common&quot;:&quot;4&quot;,&quot;p_common&quot;:&quot;25&quot;,&quot;numerator_sum&quot;:&quot;29&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;29/10&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:17,&quot;context&quot;:{&quot;n&quot;:&quot;3&quot;,&quot;m&quot;:&quot;5&quot;,&quot;p&quot;:&quot;4&quot;,&quot;q&quot;:&quot;3&quot;,&quot;common&quot;:&quot;15&quot;,&quot;n_common&quot;:&quot;9&quot;,&quot;p_common&quot;:&quot;20&quot;,&quot;numerator_sum&quot;:&quot;29&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;29/15&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:18,&quot;context&quot;:{&quot;n&quot;:&quot;1&quot;,&quot;m&quot;:&quot;4&quot;,&quot;p&quot;:&quot;1&quot;,&quot;q&quot;:&quot;3&quot;,&quot;common&quot;:&quot;12&quot;,&quot;n_common&quot;:&quot;3&quot;,&quot;p_common&quot;:&quot;4&quot;,&quot;numerator_sum&quot;:&quot;7&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;7/12&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:19,&quot;context&quot;:{&quot;n&quot;:&quot;4&quot;,&quot;m&quot;:&quot;5&quot;,&quot;p&quot;:&quot;1&quot;,&quot;q&quot;:&quot;2&quot;,&quot;common&quot;:&quot;10&quot;,&quot;n_common&quot;:&quot;8&quot;,&quot;p_common&quot;:&quot;5&quot;,&quot;numerator_sum&quot;:&quot;13&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;13/10&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}}]</pre>
 </div>
 </section>
   </main>
@@ -5506,7 +5550,7 @@ window.PyWimsQuestion = (() => {
     start() {
       try {
         if (!this.draws.length) {
-          throw new Error("Cette question ne contient aucun tirage : recompilez-la.");
+          throw new Error("Cette question ne contient aucun tirage : exportez-la de nouveau.");
         }
         const selected = document.body.dataset.preview === "true"
           ? this.draws[0]
