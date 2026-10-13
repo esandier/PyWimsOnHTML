@@ -1,0 +1,70 @@
+%
+% question_title
+%
+Calcul du rang d'une matrice
+%
+% question_keywords
+%
+algèbre linéaire, matrices, rang, déterminant
+%
+% question_layout
+%
+STD
+%
+% question_setup
+%
+from random import choice, randint, shuffle
+from sympy import Matrix, randMatrix
+
+modeles = []
+modeles.append([[0,0,0],[1,2,3],[3,2,1]])
+modeles.append([[1,2,3],[1,2,3],[3,2,1]])
+modeles.append([[1,2,3],[-1,-2,-3],[3,2,1]])
+modeles.append([[1,2,3],[3,2,1],[1,1,1]])
+modeles.append([[1,2,3],[3,2,1],[1,2,1]])
+
+index = randint(0,4)
+sens = choice(["ligne", "colonne"])
+
+shuffle(modeles[index])
+
+matrix = Matrix(modeles[index])
+
+if sens=="colonne":
+    matrix = matrix.T
+
+result = matrix.rank()
+%
+% question_statement
+%
+Soit $A$ la matrice $3 \times 3$ définie par :
+$$A = {{ matrix }} $$
+Quel est le rang de la matrice $A$ ?
+{% input_value 'answer' solution=result form=integer style="width:2em"%}
+%
+% question_solution_explanation
+%
+Le rang de la matrice $A$ est égal à ${{result}}$. En effectuant des opérations élémentaires sur les lignes ou en étudiant les déterminants des sous-matrices, on détermine le nombre maximal de lignes (ou de colonnes) linéairement indépendantes.
+%
+% question_check
+%
+if index == 0 and answer == 3:
+    feedback = f"Attention, il y a une {sens} de zéros!"
+if index == 0 and answer < 2:
+    feedback = f"Attention, deux des {sens}s sont linéairement indépendantes!"
+if index == 1 and answer == 3:
+    feedback = f"Attention, deux {sens}s sont égales!"
+if index == 1 and answer < 2:
+    feedback = f"Attention, deux des {sens}s sont linéairement indépendantes!"
+if index == 2 and answer == 3:
+    feedback = f"Attention, deux {sens}s sont proportionelles!"
+if index == 2 and answer < 2:
+    feedback = f"Attention, deux des {sens}s sont linéairement indépendantes!"
+if index == 3 and answer == 3:
+    feedback = f"Attention, une des {sens}s est combinaison linéaire des deux autres!"
+if index == 3 and answer < 2:
+    feedback = f"Attention, deux des {sens}s sont linéairement indépendantes!"
+if index == 4 and answer < 3:
+    feedback = f"Attention, les trois lignes sont linéairement indépendantes! (ça marche aussi avec les trois colonnes)"
+    
+    

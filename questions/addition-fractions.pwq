@@ -18,9 +18,9 @@ from sympy import *
 from pywims import math_expression
 
 # Choisit deux fractions irréductibles, numérateurs et dénominateurs entre 2 et 5.
-irreducible_fractions = [(a, b) for a in range(2, 6) for b in range(2, 6) if gcd(a, b) == 1]
+irreducible_fractions = [(a, b) for a in range(1, 6) for b in range(2, 6) if gcd(a, b) == 1]
 n, m = choice(irreducible_fractions)
-p, q = choice(irreducible_fractions)
+p, q = choice([(a, b) for (a, b) in irreducible_fractions if b != m])
 total = Rational(n, m) + Rational(p, q)
 
 # Réduction au même dénominateur, pour l’explication de la solution.
@@ -34,9 +34,9 @@ simplified = "" if total.q == common else " = " + latex(total)
 % question_statement
 %
 Additionnez ces fractions et donnez le résultat sous forme d’une fraction
-irréductible, avec un dénominateur positif :
+irréductible :
 <br>
-$\displaystyle \frac{ {{n}} }{ {{m}} } + \frac{ {{p}} }{ {{q}} } =$ {% input_text 'result' solution=total style='width:7em' %}
+$\displaystyle \frac{ {{n}} }{ {{m}} } + \frac{ {{p}} }{ {{q}} } =$ {% input_text 'result' solution=total style='width:5em' %}
 %
 % question_solution_explanation
 %
@@ -60,7 +60,7 @@ else:
     elif simplify(answer - total) != 0:
         feedback = "Ce n’est pas la bonne somme : réduisez d’abord les deux fractions au même dénominateur."
     elif denominator < 0 or gcd(numerator, denominator) != 1:
-        feedback = "La valeur est juste, mais la fraction n’est pas irréductible avec un dénominateur positif : simplifiez-la."
+        feedback = "La valeur est juste, mais la fraction n’est pas irréductible : simplifiez-la."
     else:
         ok_answer['result'] = True
         feedback = "Bravo, c’est exact !"

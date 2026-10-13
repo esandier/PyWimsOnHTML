@@ -13,7 +13,7 @@ STD
 %
 % question_setup
 %
-from random import randint
+from random import randint, choice
 from sympy import Matrix
 from pywims import py_wims, ANY
 
@@ -21,14 +21,12 @@ from pywims import py_wims, ANY
 size = randint(2,4)
 
 # Plusieurs matrices conviennent : seuls les zéros sous la diagonale sont imposés.
-solution_matrix = Matrix(size, size, lambda i, j: 0 if i > j else ANY)
+solution_matrix = Matrix(size, size, lambda i, j: 0 if i > j else choice([-2,-1,1,2]) if i == j else ANY)
 %
 % question_statement
 %
 Complétez cette matrice carrée de taille ${{ size }} \times {{ size }}$ pour
-qu’elle soit triangulaire supérieure. Toutes les cases situées sous la
-diagonale principale doivent contenir zéro ; les autres cases peuvent
-contenir n’importe quel nombre.
+qu’elle soit triangulaire supérieure, et de rang égal à ${{ size }}$.
 
 <div style="text-align:center">
   {% input_matrix 'matrix' size=size solution=solution_matrix input_style='width:2em' %}
@@ -36,22 +34,41 @@ contenir n’importe quel nombre.
 %
 % question_solution_explanation
 %
-Les cases notées ∗ peuvent contenir n’importe quel nombre : seules les cases situées sous la
-diagonale principale doivent être nulles.
+Les coefficients notés '*' peuvent être n’importe quel nombre. Les coefficients  situés sous la diagonale doivent être nuls.<br>
+Les coefficients situées sur la diagonale sont arbitraires, mais doivent être non nuls car, pour une matrice triangulaire $n\times n$, on a 
+$$\text{rang} = n\iff \text{coefficients diagonaux non nuls}.$$
+(dans ce cas, le déterminant est le produit des coefficients diagonaux)
 %
 % question_check
 %
 # Vérifie chaque case : toute valeur est numérique, et celles sous la diagonale sont nulles.
-feedback = "Bravo, cette matrice est triangulaire supérieure !"
-for i in range(size):
-    for j in range(size):
+feedback = ""
+
+for i in range(1,size):
+    for j in range(i-1):
+        ok_answer[f"matrix[{i}][{j}]"] = True
         value = py_wims(matrix[i][j])
-        correct = (
-            value is not None
-            and getattr(value, "is_number", False)
-            and (i <= j or value == 0)
-        )
-        ok_answer["matrix[{}][{}]".format(i, j)] = correct
-        if not correct:
-            feedback = "Chaque case doit contenir un nombre et celles sous la diagonale doivent être égales à zéro."
+        if not(value == 0):
+            ok_answer[f"matrix[{i}][{j}]"] = False
+            feedback += "Les coefficients sous la diagonale doivent être nuls.<br>"
+            break
+for i in range(size):
+    ok_answer[f"matrix[{i}][{i}]"] = True
+    value = py_wims(matrix[i][i])
+    if (value == 0) or (value == None) or (not value.is_number):
+        ok_answer[f"matrix[{i}][{i}]"] = False
+        feedback += "Les coefficients diagonaux doivent être des nombres différents de zéro.<br>"
+        break
+for i in range(size-1):
+    for j in range(i+1,size):
+        ok_answer[f"matrix[{i}][{j}]"] = True
+        value = py_wims(matrix[i][j])
+        if (value == None) or not value.is_number:
+            ok_answer[f"matrix[{i}][{j}]"] = False
+            feedback += "Tous les coefficients doivent être des nombres."
+        break
+if feedback == "":
+    feedback = f"Bravo, cette matrice est triangulaire supérieure et son rang est {size}!"
+        
+    
 %

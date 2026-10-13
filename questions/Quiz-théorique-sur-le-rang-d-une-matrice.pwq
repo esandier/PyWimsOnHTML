@@ -1,0 +1,109 @@
+%
+% question_title
+%
+Quiz théorique sur le rang d'une matrice
+%
+% question_keywords
+%
+algèbre linéaire, matrices, rang, théorie, QCM
+%
+% question_layout
+%
+STD
+%
+% question_setup
+%
+from random import choice
+from pywims import mcq
+
+questions_pool = [
+    {
+        "statement": "Soit $A$ une matrice carrée d'ordre $n$ inversible. Quel est son rang ?",
+        "correct": "$n$",
+        "wrong": ["$0$", "$n-1$", "Dépend de $n$"]
+    },
+    {
+        "statement": "Soit $A$ une matrice de format $m \\times n$. Quelle est la valeur maximale possible de son rang ?",
+        "correct": "$\\min(m, n)$",
+        "wrong": ["$\\max(m, n)$", "$m \\times n$", "$n$"]
+    },
+    {
+        "statement": "Soit $A$ une matrice carrée de taille $n \\times n$. Si le déterminant de $A$ est non nul, quel est son rang ?",
+        "correct": "$n$",
+        "wrong": ["$0$", "$n-1$", "$n/2$"]
+    },
+    {
+        "statement": "Soit $A$ une matrice de format $m \\times n$. Le rang de $A$ est égal à la dimension de quel espace vectoriel ?",
+        "correct": "L'espace image",
+        "wrong": ["L'espace nul (noyau)", "L'espace total de départ", "L'espace total d'arrivée"]
+    },
+    {
+        "statement": "Si une matrice $A$ est de taille $4 \\times 4$ et de rang 2, quelle est la dimension de son noyau (théorème du rang) ?",
+        "correct": "2",
+        "wrong": ["4", "0", "1"]
+    },
+    {
+        "statement": "Quel est le rang d'une matrice nulle de format $m \\times n$ ?",
+        "correct": "$0$",
+        "wrong": ["$1$", "$m \\times n$", "Il n'est pas défini"]
+    },
+    {
+        "statement": "Soit $A$ une matrice. Que peut-on dire du rang de $A$ et de celui de sa transposée $A^T$ ?",
+        "correct": "Le rang de $A^T$ est égal à celui de $A$",
+        "wrong": ["Le rang de $A^T$ est le double de celui de $A$", "Le rang de $A^T$ est inférieur à celui de $A$", "Ils n'ont aucun lien général"]
+    },
+    {
+        "statement": "Soit $A$ et $B$ deux matrices carrées de même taille. Quelle inégalité concernant le rang du produit $AB$ est toujours vraie ?",
+        "correct": "$\\text{rang}(AB) \\le \\min(\\text{rang}(A), \\text{rang}(B))$",
+        "wrong": ["$\\text{rang}(AB) = \\text{rang}(A) \\times \\text{rang}(B)$", "$\\text{rang}(AB) \\ge \\text{rang}(A) + \\text{rang}(B)$", "$\\text{rang}(AB) = \\text{rang}(A) + \\text{rang}(B)$"]
+    },
+    {
+        "statement": "Si on ajoute à une ligne d'une matrice une combinaison linéaire des autres lignes, comment change son rang ?",
+        "correct": "Il reste inchangé",
+        "wrong": ["Il est multiplié par deux", "Il est réduit de 1", "Il devient nul"]
+    },
+    {
+        "statement": "Soit $A$ une matrice non nulle de taille $3 \\times 3$. Quelle est la valeur minimale possible de son rang ?",
+        "correct": "$1$",
+        "wrong": ["$0$", "$2$", "$3$"]
+    },
+    {
+        "statement": "Soit $f$ un endomorphisme d'un espace vectoriel de dimension $n$. Si $f$ est injectif, quel est le rang de sa matrice associée ?",
+        "correct": "$n$",
+        "wrong": ["$0$", "$n/2$", "$n-1$"]
+    },
+    {
+        "statement": "Si on multiplie une matrice $A$ par une matrice inversible $P$, que devient le rang du produit $PA$ ?",
+        "correct": "Il est égal au rang de $A$",
+        "wrong": ["Il est égal à 0", "Il est modifié selon le déterminant de $P$", "Il est maximal"]
+    },
+    {
+        "statement": "Quel est le rang de la matrice identité d'ordre $n$ ?",
+        "correct": "$n$",
+        "wrong": ["$0$", "$1$", "$n-1$"]
+    },
+    {
+        "statement": "Soit $A$ une matrice de format $m \\times n$. Si le rang de $A$ est égal à $n$ (avec $m \\ge n$), que peut-on dire des colonnes de $A$ ?",
+        "correct": "Elles forment une famille libre",
+        "wrong": ["Elles forment une famille liée", "Elles forment une base de l'espace d'arrivée", "Elles sont toutes nulles"]
+    },
+    {
+        "statement": "Dans un espace vectoriel de dimension finie, le théorème du rang relie le rang d'une application linéaire à la dimension de quel autre sous-espace ?",
+        "correct": "Du noyau",
+        "wrong": ["De l'espace d'arrivée tout entier", "De l'espace orthogonal", "De l'espace des coefficients"]
+    }
+]
+
+q = choice(questions_pool)
+statement = q["statement"]
+choices, solution = mcq(correct=q["correct"], wrong=q["wrong"], count=len(q["wrong"]) + 1)
+%
+% question_statement
+%
+{{statement}}
+{% input_radio 'answer' choices=choices solution=solution %}
+%
+% question_solution_explanation
+%
+Ce quiz teste les propriétés fondamentales et théoriques du rang d'une matrice en algèbre linéaire.
+%
