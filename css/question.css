@@ -320,8 +320,9 @@ body:not([data-scored]) .pw-help-score {
   visibility: hidden;
 }
 
+/* Coins arrondis à droite seulement : à gauche, le filet du verdict reste droit. */
 .pw-feedback {
-  border-radius: 8px;
+  border-radius: 0 8px 8px 0;
 }
 
 /* Question seule : énoncé, barre d’outils, puis retour, dans l’ordre du document. Le titre et
@@ -1065,13 +1066,17 @@ mjx-assistive-mml {
   text-align: center;
 }
 
-/* Présentation et animation du retour affiché après la vérification. */
+/* Présentation et animation du retour affiché après la vérification. Texte courant dans la police
+   de la charte, aligné à gauche, comme le reste de la question ; un filet à gauche, de la couleur du
+   verdict, le signale, comme dans la zone de retour du style compact. L’ancien Georgia gras italique
+   centré tranchait avec l’énoncé et se lisait mal sur plusieurs lignes. */
 .feedback {
   min-height: 2.5rem;
   margin: 0;
-  padding: 0.5em;
-  text-align: center;
-  font: italic bold 1em Georgia, serif;
+  padding: 0.5em 0.9em;
+  border-left: 4px solid currentColor;
+  text-align: left;
+  font: 1em/1.5 var(--pw-body-font);
 }
 
 .pw-feedback {
@@ -1378,8 +1383,10 @@ mjx-assistive-mml {
   opacity: 0.5;
 }
 
+/* La zone porte déjà le filet de couleur : le retour qu’elle contient n’en a pas. */
 .pw-feedback-zone .pw-feedback.feedback {
   padding: 0;
+  border-left: 0;
   background: none;
 }
 
