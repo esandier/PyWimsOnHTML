@@ -3117,7 +3117,7 @@ window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
 <!-- data-sheet : « single » pour une question seule, « activity » pour une feuille de plusieurs questions. -->
 <!-- data-sheet-id : empreinte d’une activité, clé de la mémoire de sa progression (absente pour une question seule). -->
 <!-- data-style : « compact » pour une activité au style « feuille de TD » (SPECIFICATION.md, § 5.7), absent sinon. -->
-<body data-sheet="activity" data-sheet-id="8fzgon01r8">
+<body data-sheet="activity" data-sheet-id="1qka9qlpcsd">
   <!-- En-tête : titre, progression (activité seulement), aide et logo. Il reste visible au défilement d’une activité. -->
   <div class="pw-top">
     <!-- Le logo de marque est décoratif ; son image et son style sont définis dans brand.css. -->
@@ -3322,33 +3322,35 @@ Les coefficients situées sur la diagonale sont arbitraires, mais doivent être 
 $$\text{rang} = n\iff \text{coefficients diagonaux non nuls}.$$
 (dans ce cas, le déterminant est le produit des coefficients diagonaux)</pre>
 <pre data-field="question_check"># Vérifie chaque case : toute valeur est numérique, et celles sous la diagonale sont nulles.
-feedback = &quot;&quot;
+# Chaque case est vérifiée (pas de break) pour que toutes les cases fausses soient colorées ;
+# chaque message n&#39;est ajouté qu&#39;une fois, même si plusieurs cases sont fausses.
+messages = []
 
-for i in range(1,size):
-    for j in range(i-1):
-        ok_answer[f&quot;matrix[{i}][{j}]&quot;] = True
-        value = py_wims(matrix[i][j])
-        if not(value == 0):
-            ok_answer[f&quot;matrix[{i}][{j}]&quot;] = False
-            feedback += &quot;Les coefficients sous la diagonale doivent être nuls.&lt;br&gt;&quot;
-            break
+def add_message(text):
+    if text not in messages:
+        messages.append(text)
+
 for i in range(size):
-    ok_answer[f&quot;matrix[{i}][{i}]&quot;] = True
-    value = py_wims(matrix[i][i])
-    if (value == 0) or (value == None) or (not value.is_number):
-        ok_answer[f&quot;matrix[{i}][{i}]&quot;] = False
-        feedback += &quot;Les coefficients diagonaux doivent être des nombres différents de zéro.&lt;br&gt;&quot;
-        break
-for i in range(size-1):
-    for j in range(i+1,size):
-        ok_answer[f&quot;matrix[{i}][{j}]&quot;] = True
+    for j in range(size):
         value = py_wims(matrix[i][j])
-        if (value == None) or not value.is_number:
-            ok_answer[f&quot;matrix[{i}][{j}]&quot;] = False
-            feedback += &quot;Tous les coefficients doivent être des nombres.&quot;
-        break
-if feedback == &quot;&quot;:
-    feedback = f&quot;Bravo, cette matrice est triangulaire supérieure et son rang est {size}!&quot;</pre>
+        is_number = value is not None and value.is_number
+        if i &gt; j:
+            correct = is_number and value == 0
+            message = &quot;Les coefficients sous la diagonale doivent être nuls.&quot;
+        elif i == j:
+            correct = is_number and value != 0
+            message = &quot;Les coefficients diagonaux doivent être des nombres différents de zéro.&quot;
+        else:
+            correct = is_number
+            message = &quot;Tous les coefficients doivent être des nombres.&quot;
+        ok_answer[f&quot;matrix[{i}][{j}]&quot;] = correct
+        if not correct:
+            add_message(message)
+
+if messages:
+    feedback = &quot;&lt;br&gt;&quot;.join(messages)
+else:
+    feedback = f&quot;Bravo, cette matrice est triangulaire supérieure et son rang est {size} !&quot;</pre>
 <pre data-draws>[{&quot;seed&quot;:0,&quot;context&quot;:{&quot;size&quot;:&quot;3&quot;},&quot;dimensions&quot;:{&quot;size&quot;:3},&quot;solutions&quot;:{&quot;matrix&quot;:[[&quot;2&quot;,null,null],[&quot;0&quot;,&quot;-2&quot;,null],[&quot;0&quot;,&quot;0&quot;,&quot;1&quot;]]},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:1,&quot;context&quot;:{&quot;size&quot;:&quot;2&quot;},&quot;dimensions&quot;:{&quot;size&quot;:2},&quot;solutions&quot;:{&quot;matrix&quot;:[[&quot;-2&quot;,null],[&quot;0&quot;,&quot;1&quot;]]},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:2,&quot;context&quot;:{&quot;size&quot;:&quot;2&quot;},&quot;dimensions&quot;:{&quot;size&quot;:2},&quot;solutions&quot;:{&quot;matrix&quot;:[[&quot;-2&quot;,null],[&quot;0&quot;,&quot;-2&quot;]]},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:3,&quot;context&quot;:{&quot;size&quot;:&quot;2&quot;},&quot;dimensions&quot;:{&quot;size&quot;:2},&quot;solutions&quot;:{&quot;matrix&quot;:[[&quot;-1&quot;,null],[&quot;0&quot;,&quot;1&quot;]]},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:4,&quot;context&quot;:{&quot;size&quot;:&quot;2&quot;},&quot;dimensions&quot;:{&quot;size&quot;:2},&quot;solutions&quot;:{&quot;matrix&quot;:[[&quot;1&quot;,null],[&quot;0&quot;,&quot;-2&quot;]]},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:5,&quot;context&quot;:{&quot;size&quot;:&quot;4&quot;},&quot;dimensions&quot;:{&quot;size&quot;:4},&quot;solutions&quot;:{&quot;matrix&quot;:[[&quot;1&quot;,null,null,null],[&quot;0&quot;,&quot;1&quot;,null,null],[&quot;0&quot;,&quot;0&quot;,&quot;-2&quot;,null],[&quot;0&quot;,&quot;0&quot;,&quot;0&quot;,&quot;2&quot;]]},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:6,&quot;context&quot;:{&quot;size&quot;:&quot;4&quot;},&quot;dimensions&quot;:{&quot;size&quot;:4},&quot;solutions&quot;:{&quot;matrix&quot;:[[&quot;-2&quot;,null,null,null],[&quot;0&quot;,&quot;2&quot;,null,null],[&quot;0&quot;,&quot;0&quot;,&quot;1&quot;,null],[&quot;0&quot;,&quot;0&quot;,&quot;0&quot;,&quot;-2&quot;]]},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:7,&quot;context&quot;:{&quot;size&quot;:&quot;3&quot;},&quot;dimensions&quot;:{&quot;size&quot;:3},&quot;solutions&quot;:{&quot;matrix&quot;:[[&quot;-1&quot;,null,null],[&quot;0&quot;,&quot;2&quot;,null],[&quot;0&quot;,&quot;0&quot;,&quot;-2&quot;]]},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:8,&quot;context&quot;:{&quot;size&quot;:&quot;2&quot;},&quot;dimensions&quot;:{&quot;size&quot;:2},&quot;solutions&quot;:{&quot;matrix&quot;:[[&quot;1&quot;,null],[&quot;0&quot;,&quot;2&quot;]]},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:9,&quot;context&quot;:{&quot;size&quot;:&quot;3&quot;},&quot;dimensions&quot;:{&quot;size&quot;:3},&quot;solutions&quot;:{&quot;matrix&quot;:[[&quot;1&quot;,null,null],[&quot;0&quot;,&quot;1&quot;,null],[&quot;0&quot;,&quot;0&quot;,&quot;-1&quot;]]},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:10,&quot;context&quot;:{&quot;size&quot;:&quot;4&quot;},&quot;dimensions&quot;:{&quot;size&quot;:4},&quot;solutions&quot;:{&quot;matrix&quot;:[[&quot;-2&quot;,null,null,null],[&quot;0&quot;,&quot;2&quot;,null,null],[&quot;0&quot;,&quot;0&quot;,&quot;2&quot;,null],[&quot;0&quot;,&quot;0&quot;,&quot;0&quot;,&quot;-2&quot;]]},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:11,&quot;context&quot;:{&quot;size&quot;:&quot;3&quot;},&quot;dimensions&quot;:{&quot;size&quot;:3},&quot;solutions&quot;:{&quot;matrix&quot;:[[&quot;2&quot;,null,null],[&quot;0&quot;,&quot;2&quot;,null],[&quot;0&quot;,&quot;0&quot;,&quot;-1&quot;]]},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:13,&quot;context&quot;:{&quot;size&quot;:&quot;3&quot;},&quot;dimensions&quot;:{&quot;size&quot;:3},&quot;solutions&quot;:{&quot;matrix&quot;:[[&quot;1&quot;,null,null],[&quot;0&quot;,&quot;-1&quot;,null],[&quot;0&quot;,&quot;0&quot;,&quot;-1&quot;]]},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:16,&quot;context&quot;:{&quot;size&quot;:&quot;3&quot;},&quot;dimensions&quot;:{&quot;size&quot;:3},&quot;solutions&quot;:{&quot;matrix&quot;:[[&quot;2&quot;,null,null],[&quot;0&quot;,&quot;2&quot;,null],[&quot;0&quot;,&quot;0&quot;,&quot;1&quot;]]},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:17,&quot;context&quot;:{&quot;size&quot;:&quot;4&quot;},&quot;dimensions&quot;:{&quot;size&quot;:4},&quot;solutions&quot;:{&quot;matrix&quot;:[[&quot;2&quot;,null,null,null],[&quot;0&quot;,&quot;1&quot;,null,null],[&quot;0&quot;,&quot;0&quot;,&quot;1&quot;,null],[&quot;0&quot;,&quot;0&quot;,&quot;0&quot;,&quot;1&quot;]]},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:18,&quot;context&quot;:{&quot;size&quot;:&quot;2&quot;},&quot;dimensions&quot;:{&quot;size&quot;:2},&quot;solutions&quot;:{&quot;matrix&quot;:[[&quot;-2&quot;,null],[&quot;0&quot;,&quot;2&quot;]]},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:19,&quot;context&quot;:{&quot;size&quot;:&quot;4&quot;},&quot;dimensions&quot;:{&quot;size&quot;:4},&quot;solutions&quot;:{&quot;matrix&quot;:[[&quot;-2&quot;,null,null,null],[&quot;0&quot;,&quot;-2&quot;,null,null],[&quot;0&quot;,&quot;0&quot;,&quot;-1&quot;,null],[&quot;0&quot;,&quot;0&quot;,&quot;0&quot;,&quot;2&quot;]]},&quot;choices&quot;:{},&quot;orders&quot;:{}}]</pre>
 </div>
 </section>
