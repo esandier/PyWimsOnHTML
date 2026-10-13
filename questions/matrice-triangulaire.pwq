@@ -42,33 +42,34 @@ $$\text{rang} = n\iff \text{coefficients diagonaux non nuls}.$$
 % question_check
 %
 # Vérifie chaque case : toute valeur est numérique, et celles sous la diagonale sont nulles.
-feedback = ""
+# Chaque case est vérifiée (pas de break) pour que toutes les cases fausses soient colorées ;
+# chaque message n'est ajouté qu'une fois, même si plusieurs cases sont fausses.
+messages = []
 
-for i in range(1,size):
-    for j in range(i-1):
-        ok_answer[f"matrix[{i}][{j}]"] = True
-        value = py_wims(matrix[i][j])
-        if not(value == 0):
-            ok_answer[f"matrix[{i}][{j}]"] = False
-            feedback += "Les coefficients sous la diagonale doivent être nuls.<br>"
-            break
+def add_message(text):
+    if text not in messages:
+        messages.append(text)
+
 for i in range(size):
-    ok_answer[f"matrix[{i}][{i}]"] = True
-    value = py_wims(matrix[i][i])
-    if (value == 0) or (value == None) or (not value.is_number):
-        ok_answer[f"matrix[{i}][{i}]"] = False
-        feedback += "Les coefficients diagonaux doivent être des nombres différents de zéro.<br>"
-        break
-for i in range(size-1):
-    for j in range(i+1,size):
-        ok_answer[f"matrix[{i}][{j}]"] = True
+    for j in range(size):
         value = py_wims(matrix[i][j])
-        if (value == None) or not value.is_number:
-            ok_answer[f"matrix[{i}][{j}]"] = False
-            feedback += "Tous les coefficients doivent être des nombres."
-        break
-if feedback == "":
-    feedback = f"Bravo, cette matrice est triangulaire supérieure et son rang est {size}!"
-        
-    
+        is_number = value is not None and value.is_number
+        if i > j:
+            correct = is_number and value == 0
+            message = "Les coefficients sous la diagonale doivent être nuls."
+        elif i == j:
+            correct = is_number and value != 0
+            message = "Les coefficients diagonaux doivent être des nombres différents de zéro."
+        else:
+            correct = is_number
+            message = "Tous les coefficients doivent être des nombres."
+        ok_answer[f"matrix[{i}][{j}]"] = correct
+        if not correct:
+            add_message(message)
+
+if messages:
+    feedback = "<br>".join(messages)
+else:
+    feedback = f"Bravo, cette matrice est triangulaire supérieure et son rang est {size} !"
+
 %
