@@ -1326,7 +1326,7 @@ Une page `guide/` (« Créer »), en sections :
   - à droite, sans titre, la liste d’ordre (§ 11.9) dans son cadre quand elle
     sert, puis l’**Aperçu** (ligne d’état et page de la question) sur la hauteur
     restante.
-- **Ligne de compilation** : le bouton « Compiler la sélection », puis le
+- **Ligne de compilation** : le bouton « Exporter la sélection », puis le
   choix « Activité unique » ou « Pages séparées (ZIP) », présent seulement si
   plusieurs questions sont cochées, puis « Titre » et son champ, et la case
   « Style compact » (§ 5.7), présents seulement pour une activité unique. La

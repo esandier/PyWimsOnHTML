@@ -64,7 +64,7 @@ demandé tout de suite, et l’aperçu s’en sert aussi pour vérifier les rép
 Une erreur dans `question_setup` est signalée au-dessus de l’aperçu, qui reste
 provisoire.
 
-Coche une ou plusieurs questions, puis **Compiler la sélection** :
+Coche une ou plusieurs questions, puis **Exporter la sélection** :
 
 - une question : un fichier HTML ;
 - plusieurs questions : soit une **activité**, un seul fichier HTML qui les
