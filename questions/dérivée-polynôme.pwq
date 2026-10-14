@@ -36,7 +36,7 @@ term_derivatives = " ; ".join("$(" + latex(term) + ")' = " + latex(diff(term, x)
 Soit la fonction polynomiale
 $f(x) = {{ function}}$.
 Donnez sa dérivée $f'(x)$ :
-{% input_math 'student_derivative' solution=derivative %}
+{% input_math 'answer' solution=derivative %}
 %
 % question_solution_explanation
 %
@@ -46,9 +46,9 @@ On dérive terme à terme avec $(x^n)' = n\,x^{n-1}$ : {{term_derivatives}}.
 %
 # L’expression ASCII issue de MathLive est analysée par la fonction sécurisée
 # du runtime, puis comparée à la dérivée exacte sans imposer une forme unique.
-answer = math_expression(student_derivative)
+answer = math_expression(answer)
 correct = answer is not None and simplify(answer - derivative) == 0
-ok_answer["student_derivative"] = correct
+ok_answer["answer"] = correct
 
 if correct:
     feedback = "Bravo, cette dérivée est correcte !"
