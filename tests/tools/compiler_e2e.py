@@ -520,28 +520,44 @@ def main():
                 page.click("#select-visible")
                 print("activité en partie notée : avertissement dans le cadre de l’aperçu")
 
-                # Paquet SCORM 1.2 (§ 5.9) d’une question seule : archive du manifeste et de la feuille,
-                # qui contient la liaison au LMS ; la case n’existe pas pour des pages séparées.
+                # Paquet SCORM 1.2 (§ 5.9), un mode de la liste : archive du manifeste et de la feuille, qui
+                # contient la liaison au LMS. Une question : « Page HTML » ou « Paquet SCORM » ; plusieurs :
+                # pages séparées, activité unique en HTML ou en SCORM.
+                modes = "[...document.querySelectorAll('#output-mode option')].map(option => option.value)"
+
+                def export_scorm(mode):
+                    page.select_option("#output-mode", mode)
+                    with page.expect_download(timeout=180_000) as waiting:
+                        page.click("#compile-question")
+                    package = waiting.value
+                    with zipfile.ZipFile(package.path()) as archive:
+                        names = sorted(archive.namelist())
+                        manifest = archive.read("imsmanifest.xml").decode("utf-8") if "imsmanifest.xml" in names else ""
+                        sheet = archive.read("index.html").decode("utf-8") if "index.html" in names else ""
+                    if not package.suggested_filename.endswith("-scorm.zip") or names != ["imsmanifest.xml", "index.html"] \
+                            or "<schemaversion>1.2</schemaversion>" not in manifest or 'href="index.html"' not in manifest \
+                            or "PyWimsScorm" not in sheet:
+                        raise AssertionError(f"paquet SCORM inattendu : {package.suggested_filename}, {names}")
+                    return package.suggested_filename
+
                 page.click(f".question-selection >> nth={titles.index('PGCD')}")
-                page.check("#scorm-package")
-                with page.expect_download(timeout=180_000) as waiting:
-                    page.click("#compile-question")
-                package = waiting.value
-                with zipfile.ZipFile(package.path()) as archive:
-                    names = sorted(archive.namelist())
-                    manifest = archive.read("imsmanifest.xml").decode("utf-8") if "imsmanifest.xml" in names else ""
-                    sheet = archive.read("index.html").decode("utf-8") if "index.html" in names else ""
-                if not package.suggested_filename.endswith("-scorm.zip") or names != ["imsmanifest.xml", "index.html"] \
-                        or "<schemaversion>1.2</schemaversion>" not in manifest or 'href="index.html"' not in manifest \
-                        or "PyWimsScorm" not in sheet:
-                    raise AssertionError(f"paquet SCORM inattendu : {package.suggested_filename}, {names}")
-                page.uncheck("#scorm-package")
+                if page.evaluate(modes) != ["page", "page-scorm"]:
+                    raise AssertionError(f"modes d’une question seule : {page.evaluate(modes)}")
+                single = export_scorm("page-scorm")
+                # Le mode choisi est retenu : on revient à la page HTML pour la suite du test.
+                page.select_option("#output-mode", "page")
                 page.click(f".question-selection >> nth={titles.index('Reconnaître des nombres premiers')}")
-                if page.is_visible("#scorm-field"):
-                    raise AssertionError("case « Paquet SCORM » visible pour des pages séparées")
+                if page.evaluate(modes) != ["separate", "activity", "activity-scorm"]:
+                    raise AssertionError(f"modes de plusieurs questions : {page.evaluate(modes)}")
+                page.select_option("#output-mode", "activity-scorm")
+                page.fill("#activity-title", "Activité SCORM")
+                if not page.is_visible("#activity-order"):
+                    raise AssertionError("l’ordre des questions manque pour une activité SCORM")
+                activity = export_scorm("activity-scorm")
+                page.select_option("#output-mode", "separate")
                 page.click("#select-visible")
                 page.click("#select-visible")
-                print(f"paquet SCORM : {package.suggested_filename} (manifeste et feuille)")
+                print(f"paquet SCORM : {single} et {activity} (manifeste et feuille)")
 
                 # Une question sans « question_check » : la compilation lit le module pywims et le script du
                 # Worker pour ses tirages, mais le fichier n’en contient aucun (il ne charge pas Python).

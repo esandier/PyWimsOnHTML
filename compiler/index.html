@@ -629,14 +629,13 @@
       <div class="editor-view" id="editor-view" hidden></div>
     </section>
 
-    <!-- Compilation : le bouton, puis le mode (plusieurs questions cochées) et le titre (activité). -->
+    <!-- Compilation : le bouton, puis le mode et le titre (activité). Les modes dépendent du nombre de
+         questions cochées (compiler.js, outputChoices) : page HTML ou paquet SCORM pour une question ;
+         pages séparées, activité unique en HTML ou en paquet SCORM pour plusieurs (§ 5.9). -->
     <div class="compile-row">
       <button id="compile-question" type="button" disabled>Exporter la sélection</button>
       <span id="multi-output-controls" hidden>
-        <select id="output-mode" aria-label="Export de la sélection">
-          <option value="separate">Pages séparées (ZIP)</option>
-          <option value="activity">Activité unique</option>
-        </select>
+        <select id="output-mode" aria-label="Format de l’export"></select>
       </span>
       <span class="activity-title-field" id="activity-title-label" hidden>
         <label for="activity-title">Titre</label>
@@ -644,10 +643,6 @@
         <!-- Style « feuille de TD » de l’activité (SPECIFICATION.md, § 5.7). -->
         <label class="compact-style-field"><input id="compact-style" type="checkbox"> Style compact</label>
       </span>
-      <!-- Paquet SCORM 1.2 pour Moodle (SPECIFICATION.md, § 5.9) : une question seule ou une activité
-           unique, pas des pages séparées. -->
-      <label class="compact-style-field" id="scorm-field" hidden
-        title="Paquet à déposer dans une activité SCORM de Moodle : la progression de l’élève y est transmise"><input id="scorm-package" type="checkbox"> Paquet SCORM</label>
     </div>
 
     <div class="main-column">

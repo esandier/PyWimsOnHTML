@@ -72,8 +72,8 @@ Coche une ou plusieurs questions, puis **Exporter la sélection** :
   flèches « ↑ » et « ↓ » de la liste « Ordre des questions » le changent), soit
   des **pages séparées**, une question par fichier, réunies dans une archive ZIP.
 
-Pour une question ou une activité, la case **Paquet SCORM** produit à la place
-un paquet SCORM 1.2 (`…-scorm.zip`) pour une activité SCORM de Moodle, qui
+Pour une question ou une activité, le format **Paquet SCORM** (ou **Activité
+unique (SCORM)**) produit à la place un paquet SCORM 1.2 (`…-scorm.zip`) pour une activité SCORM de Moodle, qui
 reçoit la progression de l’élève (SPECIFICATION.md, § 5.9).
 
 La compilation calcule 20 tirages par question (graines 0 à 19), ou le nombre

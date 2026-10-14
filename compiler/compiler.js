@@ -24,11 +24,13 @@
   const compileButton = document.getElementById("compile-question");
   const multiOutputControls = document.getElementById("multi-output-controls");
   const outputMode = document.getElementById("output-mode");
+  // Dernier mode choisi pour une question et pour plusieurs : décocher puis recocher une question, ou
+  // « Relire » le dossier (qui vide un instant la sélection), ne le perd pas.
+  const defaultOutputMode = { single: "page", multiple: "separate" };
+  let lastOutputMode = { ...defaultOutputMode };
   const activityTitleInput = document.getElementById("activity-title");
   const activityTitleLabel = document.getElementById("activity-title-label");
   const compactStyleInput = document.getElementById("compact-style");
-  const scormField = document.getElementById("scorm-field");
-  const scormInput = document.getElementById("scorm-package");
   const messages = document.getElementById("messages");
   const activityOrder = document.getElementById("activity-order");
   const activityOrderList = document.getElementById("activity-order-list");
@@ -459,7 +461,9 @@
     selectedQuestion = undefined;
     selectedQuestions = [];
     if (!keepSelection) {
-      outputMode.value = "separate";
+      // Modes par défaut, et liste reconstruite au prochain choix.
+      lastOutputMode = { ...defaultOutputMode };
+      delete outputMode.dataset.kind;
       activityTitleInput.value = "";
       compactStyleInput.checked = false;
       search.value = "";
@@ -829,17 +833,16 @@
   function updateCompilationControls() {
     const selected = selectedQuestions.filter(question => !question.error);
     const multiple = selected.length > 1;
-    const activityMode = multiple && outputMode.value === "activity";
+    if (selected.length) setOutputChoices(multiple ? "multiple" : "single");
+    const activityMode = multiple && isActivityMode();
     selectionCount.textContent = selected.length === 0
       ? "Aucune question sélectionnée."
       : `${selected.length} question${selected.length === 1 ? "" : "s"} sélectionnée${selected.length === 1 ? "" : "s"}.`;
-    multiOutputControls.hidden = !multiple;
+    multiOutputControls.hidden = selected.length === 0;
     activityTitleInput.hidden = !activityMode;
     activityTitleLabel.hidden = !activityMode;
     compileButton.disabled = selected.length === 0 ||
       (activityMode && !activityTitleInput.value.trim());
-    // Un paquet SCORM contient une seule feuille : question seule ou activité unique.
-    scormField.hidden = !(selected.length === 1 || activityMode);
     const warning = activityMode ? partialScoringWarning(selected) : "";
     scoringWarning.textContent = warning;
     scoringWarning.hidden = !warning;
@@ -862,9 +865,30 @@
       `${unscored.map(({ path }) => path).join(", ")}.`;
   }
 
+  // Modes d’export (SPECIFICATION.md, § 5.9), selon le nombre de questions cochées. Le paquet SCORM est
+  // un mode de la liste, et non une case à part : il ne vaut que pour une feuille (question seule ou
+  // activité unique), jamais pour des pages séparées.
+  const outputChoices = {
+    single: [["page", "Page HTML"], ["page-scorm", "Paquet SCORM"]],
+    multiple: [["separate", "Pages séparées (ZIP)"], ["activity", "Activité unique (HTML)"],
+      ["activity-scorm", "Activité unique (SCORM)"]]
+  };
+
+  // Reconstruit la liste quand on passe d’une question à plusieurs, ou l’inverse, avec le dernier mode
+  // choisi pour ce nombre ; sans question cochée, la liste ne change pas.
+  function setOutputChoices(kind) {
+    if (outputMode.dataset.kind === kind) return;
+    outputMode.dataset.kind = kind;
+    outputMode.replaceChildren(...outputChoices[kind].map(([value, label]) => new Option(label, value)));
+    outputMode.value = lastOutputMode[kind];
+  }
+
+  const isActivityMode = () => outputMode.value === "activity" || outputMode.value === "activity-scorm";
+  const isScormMode = () => outputMode.value.endsWith("-scorm");
+
   // L’ordre ne compte que pour une activité unique : hors de ce mode, ni rang ni liste d’ordre.
   function activityOrderShown() {
-    return selectedQuestions.length > 1 && outputMode.value === "activity";
+    return selectedQuestions.length > 1 && isActivityMode();
   }
 
   // Rang de chaque question cochée, à côté de sa case dans la liste des questions.
@@ -1118,8 +1142,8 @@
     try {
       // Tous les fichiers du projet sont lus une fois, au début : ceux des tirages et ceux de
       // l’assemblage sont de la même version.
-      // Paquet SCORM (§ 5.9) : seulement pour une question seule ou une activité unique (case visible).
-      const scorm = !scormField.hidden && scormInput.checked;
+      // Paquet SCORM (§ 5.9) : un mode de la liste, pour une question seule ou une activité unique.
+      const scorm = isScormMode();
       const keys = [...new Set([...pythonResources, ...neededResources(selected.map(({ fields }) => fields)),
         ...(scorm ? ["scorm"] : [])])];
       const resources = await readProjectResources(keys);
@@ -1161,7 +1185,7 @@
         : downloadBlob(html(content), createQuestionFilename(title));
       if (compiled.length === 1) {
         deliverSheet(compileSheet(compiled, resources, null, { scorm }), compiled[0].fields.question_title);
-      } else if (outputMode.value === "activity") {
+      } else if (isActivityMode()) {
         const title = activityTitleInput.value.trim();
         if (!title) {
           throw new Error("Indiquez un titre pour l’activité.");
@@ -1291,7 +1315,10 @@
   search.addEventListener("input", renderQuestionList);
   selectVisibleButton.addEventListener("click", toggleVisibleSelection);
   compileButton.addEventListener("click", downloadQuestion);
-  outputMode.addEventListener("change", updateCompilationControls);
+  outputMode.addEventListener("change", () => {
+    lastOutputMode[outputMode.dataset.kind] = outputMode.value;
+    updateCompilationControls();
+  });
   activityTitleInput.addEventListener("input", updateCompilationControls);
   moveUpButton.addEventListener("click", () => moveChosen(-1));
   moveDownButton.addEventListener("click", () => moveChosen(1));

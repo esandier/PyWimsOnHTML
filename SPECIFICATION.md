@@ -838,7 +838,8 @@ réunies dans un `span` insécable.
 ### 5.9 Paquet SCORM
 
 L’atelier peut exporter une question seule ou une activité unique en **paquet
-SCORM 1.2** (case « Paquet SCORM », absente pour des pages séparées) : une
+SCORM 1.2** (format « Paquet SCORM » d’une question, « Activité unique
+(SCORM) » de plusieurs ; jamais pour des pages séparées) : une
 archive `…-scorm.zip` qui contient `imsmanifest.xml` et la feuille,
 `index.html`, à déposer dans une activité SCORM de Moodle.
 
@@ -1376,11 +1377,13 @@ Une page `guide/` (« Créer »), en sections :
   - à droite, sans titre, la liste d’ordre (§ 11.9) dans son cadre quand elle
     sert, puis l’**Aperçu** (ligne d’état et page de la question) sur la hauteur
     restante.
-- **Ligne de compilation** : le bouton « Exporter la sélection », puis le
-  choix « Activité unique » ou « Pages séparées (ZIP) », présent seulement si
-  plusieurs questions sont cochées, puis « Titre » et son champ, et la case
-  « Style compact » (§ 5.7), présents seulement pour une activité unique. La
-  case est décochée à l’ouverture d’un dossier, comme le titre est vidé.
+- **Ligne de compilation** : le bouton « Exporter la sélection », puis la
+  liste du format, qui dépend du nombre de questions cochées : « Page HTML »
+  ou « Paquet SCORM » pour une question ; « Pages séparées (ZIP) »,
+  « Activité unique (HTML) » ou « Activité unique (SCORM) » pour plusieurs
+  (§ 5.9). Puis « Titre » et son champ, et la case « Style compact » (§ 5.7),
+  présents seulement pour une activité unique. La case est décochée à
+  l’ouverture d’un dossier, comme le titre est vidé.
 - Sur téléphone, tout s’empile : dossier, Liste, ligne de compilation,
   liste d’ordre, Aperçu.
 
