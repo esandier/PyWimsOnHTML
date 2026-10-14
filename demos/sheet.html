@@ -246,14 +246,17 @@ body {
   line-height: 1.05;
 }
 
-/* Une question seule n’a pas de progression ni de note d’activité, donc rien à réinitialiser. L’aide
-   ne parle de la note que si une question est notée (data-scored, posé par sheet.js). */
+/* Une question seule n’a pas de progression ni de note d’activité, donc rien à réinitialiser. Elle
+   n’affiche pas non plus la note de son barème (SPECIFICATION.md, § 10.5) : la note sert à suivre une
+   activité, et seule, elle se lisait comme une évaluation. L’aide ne parle de la note que dans une
+   activité dont une question est notée (data-scored, posé par sheet.js). */
 [data-sheet="single"] .pw-completion,
 [data-sheet="single"] .pw-restart-button,
 [data-sheet="single"] .pw-progress,
 [data-sheet="single"] .pw-completion-tip,
 [data-sheet="single"] .pw-help-activity,
-[data-sheet="single"] .pw-help-score-activity,
+[data-sheet="single"] .pw-help-score,
+[data-sheet="single"] .pw-q-score,
 body:not([data-scored]) .pw-help-score {
   display: none;
 }
@@ -268,8 +271,9 @@ body:not([data-scored]) .pw-help-score {
   position: relative;
 }
 
-/* Sélecteur assez précis pour l’emporter sur les marges de la carte, y compris sur téléphone. */
-.pw-sheet .pw-question[data-scored] {
+/* Sélecteur assez précis pour l’emporter sur les marges de la carte, y compris sur téléphone.
+   Activité seulement : une question seule n’affiche pas sa note, donc ne lui réserve rien. */
+[data-sheet="activity"] .pw-sheet .pw-question[data-scored] {
   padding-bottom: 1rem;
 }
 
@@ -289,10 +293,6 @@ body:not([data-scored]) .pw-help-score {
   visibility: hidden;
 }
 
-[data-sheet="single"] .pw-q-score {
-  right: 2em;
-}
-
 /* Zone d’énoncé et barre des actions de réponse. */
 .form-statement {
   min-height: 3rem;
@@ -307,6 +307,20 @@ body:not([data-scored]) .pw-help-score {
 .pw-feedback img {
   max-width: 100%;
   height: auto;
+}
+
+/* Formule plus large que l’énoncé ou le retour (is-wide, posé par question.js au-delà de 1 px) : elle
+   seule défile en largeur, sur sa propre ligne, et la page ne défile pas de côté sur téléphone. En
+   hauteur, rien ne défile : la marge intérieure contient ce qu’une formule dépasse de sa ligne (3 à
+   6 px mesurés), comme pour un choix trop large. Une formule qui tient ne défile jamais : un arrondi de
+   sa largeur n’affiche donc pas de barre (voir .pw-choice-text). */
+.form-statement mjx-container.is-wide,
+.pw-feedback mjx-container.is-wide {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-block: 0.4em;
 }
 
 .validation-statement {
@@ -987,39 +1001,32 @@ body:not([data-scored]) .pw-help-score {
 /* Un mot ou une formule n’est jamais coupé. « overflow-wrap: normal » annule le
    « overflow-wrap: anywhere » de l’énoncé, qui coupait les mots n’importe où (« dérivabl/e ») ;
    il garde aussi le débordement mesurable par le widget de choix, qui retire alors des colonnes.
-   « overflow-x: auto » ne sert qu’en dernier recours, sur une seule colonne : une formule plus
-   large que l’écran défile dans son choix au lieu de passer sous l’icône du verdict. */
+
+   Le texte d’un choix ne défile pas : seul un choix qui déborde vraiment (is-wide, posé par le widget,
+   au-delà de 1 px) défile, en dernier recours, quand il ne reste qu’une colonne ; une formule plus
+   large que l’écran défile alors au lieu de passer sous l’icône du verdict.
+   Pourquoi : quand chaque texte de choix défilait (overflow-x: auto, donc aussi en hauteur, la règle
+   CSS n’admettant pas un seul axe), tout dépassement d’une fraction de pixel affichait une barre. Ces
+   dépassements n’ont pas de fin : copie MathML de MathJax, métriques de la police, arrondi de la
+   largeur d’une formule aux pixels de l’écran (style compact, où le choix a la largeur exacte de son
+   contenu : « n/2 » à 28,953 px, barre sur 1 à 3 choix sur 104, mesuré en octobre 2026). Trois
+   correctifs successifs en ont chacun supprimé un, et le problème revenait ailleurs.
+   Solution écartée : continuer à supprimer chaque source de dépassement. Les vérifications de ces
+   correctifs ne voyaient d’ailleurs pas les barres (Edge sans interface les masquait, voir edge.py). */
 .pw-choice-text {
   flex: 1 1 auto;
   min-width: 0;
-  overflow-x: auto;
   overflow-wrap: normal;
 }
 
-/* Copie MathML d’une formule, que MathJax ajoute pour les lecteurs d’écran : découpée pour ne rien
-   montrer (clip), mais sa boîte gardait la hauteur de la formule rendue par le navigateur, et elle
-   comptait dans le débordement des zones qui défilent. Dans un choix (overflow-x: auto, donc aussi
-   défilement vertical), elle dépassait de 2 ou 3 px selon la police de la charte : des flèches de
-   défilement apparaissaient sous chaque formule. Hauteur de 1 px, comme le texte réservé aux
-   lecteurs d’écran (.pw-sr-only) : elle reste lue, et ne déborde plus.
-   Solution écartée : désactiver cette copie (enableAssistiveMml: false), au prix de l’accessibilité. */
-mjx-assistive-mml {
-  height: 1px;
-}
-
-/* Formule d’un choix en bloc en ligne (inline-block) : sa boîte est alors celle de l’image SVG, et la
-   ligne s’ajuste à sa hauteur. En ligne (inline), la boîte du conteneur suivait les métriques de la
-   police et dépassait la case de 3 à 6 px en hauteur (sortie SVG de MathJax, police Source Sans de la
-   charte) ; la case, qui défile en dernier recours (overflow-x: auto, donc aussi en hauteur),
-   affichait des flèches de défilement sous chaque formule. Mesuré en octobre 2026 : barres sur
-   toutes les pages essayées avant, sur aucune après, de 90 % à 175 % de zoom, de 375 à 1280 px.
-   Solutions écartées :
-   - « overflow-y: hidden » sur la case : il aurait pu rogner le bas d’une fraction ;
-   - garder la marge de 1 px à droite qui compensait l’arrondi de la largeur à 110 % (« min(m, n) ») :
-     en bloc en ligne, cette marge compte dans le débordement, et faisait elle-même apparaître une
-     barre ; sans elle, l’arrondi ne déborde plus, mesuré au même zoom. */
-.pw-choice-text mjx-container {
-  display: inline-block;
+/* Choix trop large : défilement horizontal seulement. Une formule dépasse sa ligne de quelques pixels
+   en haut et en bas (métriques de MathJax et de la police, 3 à 6 px mesurés) : la marge intérieure
+   les contient, comme celle des zones de retour, et « overflow-y: hidden » ne rogne donc rien de
+   visible, tout en empêchant une seconde barre, verticale, pour une fraction de pixel. */
+.pw-choice-text.is-wide {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-block: 0.4em;
 }
 
 .pw-choice:has(input:focus-visible) {
@@ -1273,7 +1280,8 @@ mjx-assistive-mml {
   scroll-margin-top: 4.5rem;
 }
 
-[data-style="compact"] .pw-sheet .pw-question[data-scored] {
+/* [data-sheet] : aussi précis que la règle habituelle ([data-sheet="activity"] …), qu’il doit battre. */
+[data-style="compact"][data-sheet] .pw-sheet .pw-question[data-scored] {
   padding-bottom: 1.1rem;
 }
 
@@ -1789,14 +1797,17 @@ body {
   line-height: 1.05;
 }
 
-/* Une question seule n’a pas de progression ni de note d’activité, donc rien à réinitialiser. L’aide
-   ne parle de la note que si une question est notée (data-scored, posé par sheet.js). */
+/* Une question seule n’a pas de progression ni de note d’activité, donc rien à réinitialiser. Elle
+   n’affiche pas non plus la note de son barème (SPECIFICATION.md, § 10.5) : la note sert à suivre une
+   activité, et seule, elle se lisait comme une évaluation. L’aide ne parle de la note que dans une
+   activité dont une question est notée (data-scored, posé par sheet.js). */
 [data-sheet="single"] .pw-completion,
 [data-sheet="single"] .pw-restart-button,
 [data-sheet="single"] .pw-progress,
 [data-sheet="single"] .pw-completion-tip,
 [data-sheet="single"] .pw-help-activity,
-[data-sheet="single"] .pw-help-score-activity,
+[data-sheet="single"] .pw-help-score,
+[data-sheet="single"] .pw-q-score,
 body:not([data-scored]) .pw-help-score {
   display: none;
 }
@@ -1811,8 +1822,9 @@ body:not([data-scored]) .pw-help-score {
   position: relative;
 }
 
-/* Sélecteur assez précis pour l’emporter sur les marges de la carte, y compris sur téléphone. */
-.pw-sheet .pw-question[data-scored] {
+/* Sélecteur assez précis pour l’emporter sur les marges de la carte, y compris sur téléphone.
+   Activité seulement : une question seule n’affiche pas sa note, donc ne lui réserve rien. */
+[data-sheet="activity"] .pw-sheet .pw-question[data-scored] {
   padding-bottom: 1rem;
 }
 
@@ -1832,10 +1844,6 @@ body:not([data-scored]) .pw-help-score {
   visibility: hidden;
 }
 
-[data-sheet="single"] .pw-q-score {
-  right: 2em;
-}
-
 /* Zone d’énoncé et barre des actions de réponse. */
 .form-statement {
   min-height: 3rem;
@@ -1850,6 +1858,20 @@ body:not([data-scored]) .pw-help-score {
 .pw-feedback img {
   max-width: 100%;
   height: auto;
+}
+
+/* Formule plus large que l’énoncé ou le retour (is-wide, posé par question.js au-delà de 1 px) : elle
+   seule défile en largeur, sur sa propre ligne, et la page ne défile pas de côté sur téléphone. En
+   hauteur, rien ne défile : la marge intérieure contient ce qu’une formule dépasse de sa ligne (3 à
+   6 px mesurés), comme pour un choix trop large. Une formule qui tient ne défile jamais : un arrondi de
+   sa largeur n’affiche donc pas de barre (voir .pw-choice-text). */
+.form-statement mjx-container.is-wide,
+.pw-feedback mjx-container.is-wide {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-block: 0.4em;
 }
 
 .validation-statement {
@@ -2530,39 +2552,32 @@ body:not([data-scored]) .pw-help-score {
 /* Un mot ou une formule n’est jamais coupé. « overflow-wrap: normal » annule le
    « overflow-wrap: anywhere » de l’énoncé, qui coupait les mots n’importe où (« dérivabl/e ») ;
    il garde aussi le débordement mesurable par le widget de choix, qui retire alors des colonnes.
-   « overflow-x: auto » ne sert qu’en dernier recours, sur une seule colonne : une formule plus
-   large que l’écran défile dans son choix au lieu de passer sous l’icône du verdict. */
+
+   Le texte d’un choix ne défile pas : seul un choix qui déborde vraiment (is-wide, posé par le widget,
+   au-delà de 1 px) défile, en dernier recours, quand il ne reste qu’une colonne ; une formule plus
+   large que l’écran défile alors au lieu de passer sous l’icône du verdict.
+   Pourquoi : quand chaque texte de choix défilait (overflow-x: auto, donc aussi en hauteur, la règle
+   CSS n’admettant pas un seul axe), tout dépassement d’une fraction de pixel affichait une barre. Ces
+   dépassements n’ont pas de fin : copie MathML de MathJax, métriques de la police, arrondi de la
+   largeur d’une formule aux pixels de l’écran (style compact, où le choix a la largeur exacte de son
+   contenu : « n/2 » à 28,953 px, barre sur 1 à 3 choix sur 104, mesuré en octobre 2026). Trois
+   correctifs successifs en ont chacun supprimé un, et le problème revenait ailleurs.
+   Solution écartée : continuer à supprimer chaque source de dépassement. Les vérifications de ces
+   correctifs ne voyaient d’ailleurs pas les barres (Edge sans interface les masquait, voir edge.py). */
 .pw-choice-text {
   flex: 1 1 auto;
   min-width: 0;
-  overflow-x: auto;
   overflow-wrap: normal;
 }
 
-/* Copie MathML d’une formule, que MathJax ajoute pour les lecteurs d’écran : découpée pour ne rien
-   montrer (clip), mais sa boîte gardait la hauteur de la formule rendue par le navigateur, et elle
-   comptait dans le débordement des zones qui défilent. Dans un choix (overflow-x: auto, donc aussi
-   défilement vertical), elle dépassait de 2 ou 3 px selon la police de la charte : des flèches de
-   défilement apparaissaient sous chaque formule. Hauteur de 1 px, comme le texte réservé aux
-   lecteurs d’écran (.pw-sr-only) : elle reste lue, et ne déborde plus.
-   Solution écartée : désactiver cette copie (enableAssistiveMml: false), au prix de l’accessibilité. */
-mjx-assistive-mml {
-  height: 1px;
-}
-
-/* Formule d’un choix en bloc en ligne (inline-block) : sa boîte est alors celle de l’image SVG, et la
-   ligne s’ajuste à sa hauteur. En ligne (inline), la boîte du conteneur suivait les métriques de la
-   police et dépassait la case de 3 à 6 px en hauteur (sortie SVG de MathJax, police Source Sans de la
-   charte) ; la case, qui défile en dernier recours (overflow-x: auto, donc aussi en hauteur),
-   affichait des flèches de défilement sous chaque formule. Mesuré en octobre 2026 : barres sur
-   toutes les pages essayées avant, sur aucune après, de 90 % à 175 % de zoom, de 375 à 1280 px.
-   Solutions écartées :
-   - « overflow-y: hidden » sur la case : il aurait pu rogner le bas d’une fraction ;
-   - garder la marge de 1 px à droite qui compensait l’arrondi de la largeur à 110 % (« min(m, n) ») :
-     en bloc en ligne, cette marge compte dans le débordement, et faisait elle-même apparaître une
-     barre ; sans elle, l’arrondi ne déborde plus, mesuré au même zoom. */
-.pw-choice-text mjx-container {
-  display: inline-block;
+/* Choix trop large : défilement horizontal seulement. Une formule dépasse sa ligne de quelques pixels
+   en haut et en bas (métriques de MathJax et de la police, 3 à 6 px mesurés) : la marge intérieure
+   les contient, comme celle des zones de retour, et « overflow-y: hidden » ne rogne donc rien de
+   visible, tout en empêchant une seconde barre, verticale, pour une fraction de pixel. */
+.pw-choice-text.is-wide {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-block: 0.4em;
 }
 
 .pw-choice:has(input:focus-visible) {
@@ -2816,7 +2831,8 @@ mjx-assistive-mml {
   scroll-margin-top: 4.5rem;
 }
 
-[data-style="compact"] .pw-sheet .pw-question[data-scored] {
+/* [data-sheet] : aussi précis que la règle habituelle ([data-sheet="activity"] …), qu’il doit battre. */
+[data-style="compact"][data-sheet] .pw-sheet .pw-question[data-scored] {
   padding-bottom: 1.1rem;
 }
 
@@ -4563,19 +4579,32 @@ window.PyWimsWidgets = (() => {
   // colonnes, même sur téléphone. On repart du nombre voulu par l’auteur à chaque appel, car la
   // fenêtre a pu s’élargir depuis (rotation du téléphone).
   // Appelée par la question après la composition des formules, et au redimensionnement.
+  //
+  // Elle pose aussi « is-wide » sur un texte qui déborde encore une fois les colonnes réglées : lui
+  // seul défile (question.css). La même mesure décide des colonnes et du défilement : un choix jugé
+  // « tient dans sa colonne » ne défile jamais, et un dépassement d’une fraction de pixel (arrondi
+  // d’une formule aux pixels de l’écran) n’affiche pas de barre.
   function fitChoiceColumns(root) {
     for (const group of root.querySelectorAll(".pw-choices")) {
+      const texts = [...group.querySelectorAll(".pw-choice-text")];
+      // Mesures faites sans défilement : la fenêtre a pu s’élargir depuis le dernier appel.
+      texts.forEach(text => text.classList.remove("is-wide"));
       if (group.classList.contains("is-compact")) {
         fitCompactChoices(group);
-        continue;
+      } else {
+        for (let columns = Number(group.dataset.columns); columns >= 1; columns -= 1) {
+          group.style.setProperty("--pw-choice-columns", String(columns));
+          if (!texts.some(overflows)) break;
+        }
       }
-      for (let columns = Number(group.dataset.columns); columns >= 1; columns -= 1) {
-        group.style.setProperty("--pw-choice-columns", String(columns));
-        const overflowing = [...group.querySelectorAll(".pw-choice-text")]
-          .some(text => text.scrollWidth > text.clientWidth + 1);
-        if (!overflowing) break;
-      }
+      texts.forEach(text => text.classList.toggle("is-wide", overflows(text)));
     }
+  }
+
+  // Un texte de choix déborde si sa largeur de contenu dépasse sa largeur visible de plus de 1 px.
+  // scrollWidth se mesure aussi sur un élément qui ne défile pas (vérifié dans Edge et Firefox).
+  function overflows(text) {
+    return text.scrollWidth > text.clientWidth + 1;
   }
 
   return Object.freeze({ ...existing, inputChoice, inputSelect, fitSelects, fitChoiceColumns });
@@ -5872,6 +5901,24 @@ window.PyWimsQuestion = (() => {
       await window.MathJax.typesetPromise([element]);
     }
     frenchSpacing(element);
+    fitWideFormulas(element);
+  }
+
+  // Marque « is-wide » chaque formule plus large que sa zone (énoncé, retour) : elle seule défile en
+  // largeur (question.css), au lieu de faire défiler toute la page sur téléphone (« A = […], B = […] »
+  // de 454 px pour 360 px). Une formule ne déborde que de plus de 1 px, comme un choix (widget de
+  // choix) : un arrondi de sa largeur aux pixels de l’écran n’affiche jamais de barre. Les formules
+  // des choix ont leur propre règle. Rappelée au redimensionnement : la place a pu changer.
+  // Solution écartée : réduire la formule à la largeur de l’écran, illisible sur téléphone.
+  function fitWideFormulas(element) {
+    const style = getComputedStyle(element);
+    const available = element.clientWidth - Number.parseFloat(style.paddingLeft) - Number.parseFloat(style.paddingRight);
+    for (const formula of element.querySelectorAll("mjx-container")) {
+      if (formula.closest(".pw-choice-text")) continue;
+      // La largeur de l’image, et non celle du conteneur, qui défile une fois marqué.
+      const image = formula.querySelector("svg");
+      formula.classList.toggle("is-wide", !!image && image.getBoundingClientRect().width > available + 1);
+    }
   }
 
   // Espace insécable avant « : ; ! ? » et « », et après « « (SPECIFICATION.md, § 5.8) : une espace
@@ -6346,6 +6393,12 @@ window.PyWimsQuestion = (() => {
     // Largeur de la fenêtre changée (rotation du téléphone) : les hauteurs mesurées ne valent plus.
     forgetPromptHeight() {
       this.promptElement.style.minHeight = "";
+    }
+
+    // Redimensionnement : une formule de l’énoncé ou du retour peut avoir cessé de tenir, ou tenir de nouveau.
+    fitWideFormulas() {
+      fitWideFormulas(this.promptElement);
+      fitWideFormulas(this.feedbackElement);
     }
 
     // Affiche un tirage tout de suite, à partir des valeurs précalculées.
@@ -7003,6 +7056,7 @@ window.PyWimsQuestion = (() => {
       questions.forEach(question => {
         if (widthChanged) question.forgetPromptHeight();
         PyWimsWidgets.fitChoiceColumns?.(question.promptElement);
+        question.fitWideFormulas();
         question.layoutFeedback();
       });
     });

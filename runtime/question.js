@@ -42,6 +42,24 @@ window.PyWimsQuestion = (() => {
       await window.MathJax.typesetPromise([element]);
     }
     frenchSpacing(element);
+    fitWideFormulas(element);
+  }
+
+  // Marque « is-wide » chaque formule plus large que sa zone (énoncé, retour) : elle seule défile en
+  // largeur (question.css), au lieu de faire défiler toute la page sur téléphone (« A = […], B = […] »
+  // de 454 px pour 360 px). Une formule ne déborde que de plus de 1 px, comme un choix (widget de
+  // choix) : un arrondi de sa largeur aux pixels de l’écran n’affiche jamais de barre. Les formules
+  // des choix ont leur propre règle. Rappelée au redimensionnement : la place a pu changer.
+  // Solution écartée : réduire la formule à la largeur de l’écran, illisible sur téléphone.
+  function fitWideFormulas(element) {
+    const style = getComputedStyle(element);
+    const available = element.clientWidth - Number.parseFloat(style.paddingLeft) - Number.parseFloat(style.paddingRight);
+    for (const formula of element.querySelectorAll("mjx-container")) {
+      if (formula.closest(".pw-choice-text")) continue;
+      // La largeur de l’image, et non celle du conteneur, qui défile une fois marqué.
+      const image = formula.querySelector("svg");
+      formula.classList.toggle("is-wide", !!image && image.getBoundingClientRect().width > available + 1);
+    }
   }
 
   // Espace insécable avant « : ; ! ? » et « », et après « « (SPECIFICATION.md, § 5.8) : une espace
@@ -516,6 +534,12 @@ window.PyWimsQuestion = (() => {
     // Largeur de la fenêtre changée (rotation du téléphone) : les hauteurs mesurées ne valent plus.
     forgetPromptHeight() {
       this.promptElement.style.minHeight = "";
+    }
+
+    // Redimensionnement : une formule de l’énoncé ou du retour peut avoir cessé de tenir, ou tenir de nouveau.
+    fitWideFormulas() {
+      fitWideFormulas(this.promptElement);
+      fitWideFormulas(this.feedbackElement);
     }
 
     // Affiche un tirage tout de suite, à partir des valeurs précalculées.

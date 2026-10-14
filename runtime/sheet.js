@@ -283,6 +283,7 @@
       questions.forEach(question => {
         if (widthChanged) question.forgetPromptHeight();
         PyWimsWidgets.fitChoiceColumns?.(question.promptElement);
+        question.fitWideFormulas();
         question.layoutFeedback();
       });
     });

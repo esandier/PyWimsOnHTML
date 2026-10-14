@@ -1305,7 +1305,9 @@ Une page `guide/` (« Créer »), en sections :
   avec la charte neutre. Un script (`tests/tools/demos.py`) les recompile par
   le vrai compilateur ; on le lance avant de publier une modification du
   moteur.
-- Lisible sur téléphone : aucune page ne défile en largeur.
+- Lisible sur téléphone : aucune page ne défile en largeur. Une formule de
+  l’énoncé ou du retour plus large que sa zone (de plus de 1 px) défile
+  seule, sur sa propre ligne ; une formule qui tient ne défile jamais.
 
 ### 11.7 Étapes
 

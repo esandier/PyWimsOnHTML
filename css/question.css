@@ -234,6 +234,20 @@ body:not([data-scored]) .pw-help-score {
   height: auto;
 }
 
+/* Formule plus large que l’énoncé ou le retour (is-wide, posé par question.js au-delà de 1 px) : elle
+   seule défile en largeur, sur sa propre ligne, et la page ne défile pas de côté sur téléphone. En
+   hauteur, rien ne défile : la marge intérieure contient ce qu’une formule dépasse de sa ligne (3 à
+   6 px mesurés), comme pour un choix trop large. Une formule qui tient ne défile jamais : un arrondi de
+   sa largeur n’affiche donc pas de barre (voir .pw-choice-text). */
+.form-statement mjx-container.is-wide,
+.pw-feedback mjx-container.is-wide {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-block: 0.4em;
+}
+
 .validation-statement {
   margin-top: 1em;
   padding: 0.3em;
