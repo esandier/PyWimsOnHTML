@@ -559,7 +559,9 @@ window.PyWimsPython = (() => {
         frame.remove();
       });
 
-      await test("une question seule notée affiche sa note, sans note d’activité ; sans barème, rien", async () => {
+      // La note ne s’affiche que dans une activité (SPECIFICATION.md, § 10.5) : elle est calculée,
+      // mais masquée, ainsi que le paragraphe de l’aide qui en parle.
+      await test("une question seule notée n’affiche ni sa note ni note d’activité ; sans barème, rien", async () => {
         const scoredQuestion = { ...choiceQuestion, question_statement: choiceQuestion.question_statement.replace("columns=2", "scoring='mz=1'") };
         const single = await openQuestion(scoredQuestion, choiceDraws, choiceOptions);
         await waitFor(() => single.$("#q1 .pw-choices"), "affichage des choix");
@@ -568,8 +570,8 @@ window.PyWimsPython = (() => {
         single.role("check").click();
         await waitFor(() => single.role("score").textContent, "note");
         if (single.role("score").textContent !== "Note : 1 / 1" || !single.$("#pw-score-total").hidden ||
-            getComputedStyle(single.$(".pw-help-score")).display === "none" ||
-            getComputedStyle(single.$(".pw-help-score-activity")).display !== "none") {
+            getComputedStyle(single.role("score")).display !== "none" ||
+            getComputedStyle(single.$(".pw-help-score")).display !== "none") {
           throw new Error(`Question seule notée inattendue : ${single.role("score").textContent}`);
         }
         single.frame.remove();

@@ -171,14 +171,17 @@ body {
   line-height: 1.05;
 }
 
-/* Une question seule n’a pas de progression ni de note d’activité, donc rien à réinitialiser. L’aide
-   ne parle de la note que si une question est notée (data-scored, posé par sheet.js). */
+/* Une question seule n’a pas de progression ni de note d’activité, donc rien à réinitialiser. Elle
+   n’affiche pas non plus la note de son barème (SPECIFICATION.md, § 10.5) : la note sert à suivre une
+   activité, et seule, elle se lisait comme une évaluation. L’aide ne parle de la note que dans une
+   activité dont une question est notée (data-scored, posé par sheet.js). */
 [data-sheet="single"] .pw-completion,
 [data-sheet="single"] .pw-restart-button,
 [data-sheet="single"] .pw-progress,
 [data-sheet="single"] .pw-completion-tip,
 [data-sheet="single"] .pw-help-activity,
-[data-sheet="single"] .pw-help-score-activity,
+[data-sheet="single"] .pw-help-score,
+[data-sheet="single"] .pw-q-score,
 body:not([data-scored]) .pw-help-score {
   display: none;
 }
@@ -193,8 +196,9 @@ body:not([data-scored]) .pw-help-score {
   position: relative;
 }
 
-/* Sélecteur assez précis pour l’emporter sur les marges de la carte, y compris sur téléphone. */
-.pw-sheet .pw-question[data-scored] {
+/* Sélecteur assez précis pour l’emporter sur les marges de la carte, y compris sur téléphone.
+   Activité seulement : une question seule n’affiche pas sa note, donc ne lui réserve rien. */
+[data-sheet="activity"] .pw-sheet .pw-question[data-scored] {
   padding-bottom: 1rem;
 }
 
@@ -212,10 +216,6 @@ body:not([data-scored]) .pw-help-score {
 
 .pw-q-score:empty {
   visibility: hidden;
-}
-
-[data-sheet="single"] .pw-q-score {
-  right: 2em;
 }
 
 /* Zone d’énoncé et barre des actions de réponse. */
@@ -1198,7 +1198,8 @@ mjx-assistive-mml {
   scroll-margin-top: 4.5rem;
 }
 
-[data-style="compact"] .pw-sheet .pw-question[data-scored] {
+/* [data-sheet] : aussi précis que la règle habituelle ([data-sheet="activity"] …), qu’il doit battre. */
+[data-style="compact"][data-sheet] .pw-sheet .pw-question[data-scored] {
   padding-bottom: 1.1rem;
 }
 

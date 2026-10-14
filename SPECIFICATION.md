@@ -1027,6 +1027,8 @@ directive absente d’un barème donné prend la valeur indiquée :
   l’entraînement, pas une évaluation. Sa place est réservée dès l’affichage
   (son apparition ne déplace rien), mais au plus juste : elle empiète sur la
   marge qui suit le groupe de choix, sans toucher au dernier choix.
+- Dans une activité seulement : une question seule n’affiche pas de note, et
+  son aide n’en parle pas. Son barème reste vérifié à la compilation.
 
 ### 10.6 Contrôles à la compilation
 
