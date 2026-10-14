@@ -1075,12 +1075,16 @@
           // vrai Pyodide dans python-tests.html.
           test("la nouvelle question génère un polynôme et corrige sa dérivée symboliquement", () => {
             const fields = PyWimsCompiler.parseQuestionSource(derivativeQuestion, "dérivée-polynôme.pwq");
+            // Le nom du champ appartient à l’auteur : on le lit dans la balise, sans le supposer.
+            const field = PyWimsTemplate.parseTags(fields.question_statement)
+              .find(tag => tag.type === "input_math" && tag.attributes.solution === "derivative")?.name;
             if (fields.question_title !== "Dérivée d’un polynôme" ||
                 PyWimsTemplate.validateTemplate(fields.question_statement).length ||
                 !fields.question_setup.includes("derivative = diff(function, x)") ||
-                !fields.question_statement.includes("{% input_math 'student_derivative' solution=derivative %}") ||
+                !field ||
                 !fields.question_setup.includes("from pywims import math_expression") ||
-                !fields.question_check.includes("math_expression(student_derivative)") ||
+                !fields.question_check.includes(`math_expression(${field})`) ||
+                !fields.question_check.includes(`ok_answer["${field}"]`) ||
                 !fields.question_check.includes("simplify(answer - derivative) == 0")) {
               throw new Error("La question de dérivation ne génère pas ou ne corrige pas la réponse attendue.");
             }
