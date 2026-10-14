@@ -798,9 +798,11 @@ charte (couleurs, polices, logo).
   réussie a un ✓ vert dans la marge, devant son numéro, qui reste visible.
 - **Boutons** : les trois icônes, sans libellé, en petit et en gris, au bout de
   la première ligne de l’énoncé ; une infobulle donne leur nom. « Vérifier »
-  prend la couleur de la charte quand il est actif. La note indicative
-  (§ 10.7) est sous les icônes. Sur écran étroit, les icônes et la note sont
-  sur une ligne au-dessus de l’énoncé.
+  prend la couleur de la charte quand il est actif. La note de la question
+  (§ 10.5) est dans la barre d’icônes, juste à gauche de « Nouvel énoncé » ;
+  sa largeur est réservée, et son apparition ne déplace aucun bouton. Sur
+  écran étroit, les icônes et la note sont sur une ligne au-dessus de
+  l’énoncé.
 - **Choix** : à la suite dans le texte, sans cadre, chacun à sa largeur ; ils
   passent à la ligne quand la place manque. Le verdict colore le texte et le
   fond léger du choix. Sur écran tactile, chaque choix garde 44 px de haut.
@@ -1027,8 +1029,12 @@ directive absente d’un barème donné prend la valeur indiquée :
   l’entraînement, pas une évaluation. Sa place est réservée dès l’affichage
   (son apparition ne déplace rien), mais au plus juste : elle empiète sur la
   marge qui suit le groupe de choix, sans toucher au dernier choix.
-- Dans une activité seulement : une question seule n’affiche pas de note, et
-  son aide n’en parle pas. Son barème reste vérifié à la compilation.
+- La note est réservée à une activité dont **toutes** les questions ont un
+  barème, un « examen blanc » de QCM. Si une question au moins n’en a pas,
+  aucune question n’affiche de note, l’activité n’a pas de note indicative
+  (seulement sa progression), et l’aide n’en parle pas. Une question seule
+  n’a jamais de note. Dans tous les cas, le barème reste vérifié à la
+  compilation.
 
 ### 10.6 Contrôles à la compilation
 
@@ -1049,9 +1055,9 @@ En plus du § 2.4, le compilateur refuse la question si, pour l’un des tirages
 
 - La réussite d’une question reste en tout ou rien et seule compte dans le
   pourcentage (§ 5.3).
-- Si au moins une question a un barème, la barre de titre de l’activité
-  affiche aussi une **note indicative**, à côté du pourcentage : la somme des
-  notes des questions notées sur la somme de leurs maxima, avec « sur k questions notées » si certaines n’ont pas de barème. La
+- Si toutes les questions ont un barème (§ 10.5), la barre de titre de
+  l’activité affiche aussi une **note indicative**, à côté du pourcentage :
+  la somme des notes des questions sur la somme de leurs maxima. La
   note d’une question est celle de sa dernière vérification ; elle vaut 0
   avant toute vérification et revient à 0 après « Nouvel énoncé », mais pas
   après « Solution ». L’aide (§ 5.6) l’explique.

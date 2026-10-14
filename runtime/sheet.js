@@ -98,26 +98,22 @@
   });
   document.addEventListener("click", () => toggleCompletionTip(false));
 
-  // Note indicative de l’activité : somme des dernières notes des questions notées, sur la somme de
-  // leurs maxima. Elle n’apparaît que si une question au moins a un barème.
+  // Note indicative de l’activité : somme des dernières notes des questions, sur la somme de leurs
+  // maxima. Elle n’existe que si toutes les questions ont un barème (voir plus bas).
   const scoreTotal = document.getElementById("pw-score-total");
   const scoreTotalValue = document.getElementById("pw-score-total-value");
   const scoreTotalLabel = document.getElementById("pw-score-total-label");
 
   // Affiche dans l’en-tête la note indicative de l’activité.
   function updateScoreTotal(questions) {
-    const scored = questions.filter(question => question.scoring);
-    if (!scored.length) {
+    if (!questions.every(question => question.scoring)) {
       return;
     }
-    const sum = scored.reduce((total, question) => total + question.score, 0);
-    const max = scored.reduce((total, question) => total + question.scoreMax, 0);
+    const sum = questions.reduce((total, question) => total + question.score, 0);
+    const max = questions.reduce((total, question) => total + question.scoreMax, 0);
     scoreTotalValue.textContent = `${formatScore(sum)} / ${formatScore(max)}`;
-    scoreTotalLabel.textContent = scored.length === questions.length
-      ? "note indicative"
-      : `sur ${scored.length} question${scored.length > 1 ? "s" : ""} notée${scored.length > 1 ? "s" : ""}`;
-    scoreTotal.title = `Note indicative : ${scoreTotalValue.textContent}, ${scored.length === questions.length
-      ? "toutes les questions sont notées" : scoreTotalLabel.textContent}`;
+    scoreTotalLabel.textContent = "note indicative";
+    scoreTotal.title = `Note indicative : ${scoreTotalValue.textContent}`;
     scoreTotal.hidden = false;
   }
 
@@ -253,8 +249,13 @@
       onFeedback: compactStyle ? onFeedback : null
     })
   );
-  if (questions.some(question => question.scoring)) {
+  // La note est réservée à une activité dont toutes les questions ont un barème, un « examen blanc »
+  // (SPECIFICATION.md, § 10.5) : une note sur une partie des questions seulement se lisait comme une
+  // évaluation de toute l’activité. Sinon, aucune question n’est notée : il reste la progression.
+  if (!singleQuestion && questions.every(question => question.scoring)) {
     document.body.dataset.scored = "true";
+  } else {
+    questions.forEach(question => question.dropScoring());
   }
   if (!singleQuestion) {
     // Réussites retrouvées : le ✓ revient, tout le reste repart vierge. Une feuille retrouvée

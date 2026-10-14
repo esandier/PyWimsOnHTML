@@ -510,7 +510,8 @@ window.PyWimsPython = (() => {
         long.frame.remove();
       });
 
-      await test("une question notée affiche sa note, et l’activité une note indicative", async () => {
+      // La note est réservée à une activité dont toutes les questions ont un barème (§ 10.5).
+      await test("dans une activité toute notée, chaque question a sa note, et l’activité une note indicative", async () => {
         const scoredQuestion = { ...choiceQuestion, question_statement: choiceQuestion.question_statement.replace("columns=2", "scoring='b=2,m=-0.5'") };
         const scoredDraws = [choiceDraws[0], { ...choiceDraws[0], seed: 1, orders: { r: [0, 1, 2, 3] } }];
         const seedOptions = {
@@ -519,12 +520,12 @@ window.PyWimsPython = (() => {
           answers: { 0: choiceOptions.answers[0], 1: choiceOptions.answers[0] }
         };
         const { page, $, role, frame } = await openSheet(
-          [{ fields: scoredQuestion, draws: scoredDraws }, { fields: textQuestion, draws: textDraws }],
-          { questions: { q1: seedOptions, q2: textOptions } }, "Révisions notées");
+          [{ fields: scoredQuestion, draws: scoredDraws }, { fields: scoredQuestion, draws: scoredDraws }],
+          { questions: { q1: seedOptions, q2: seedOptions } }, "Examen blanc");
         await waitFor(() => $("#q1 .pw-choices") && !$("#pw-score-total").hidden, "affichage de la note indicative");
         const total = () => `${$("#pw-score-total-value").textContent} | ${$("#pw-score-total-label").textContent}`;
-        if (total() !== "0 / 8 | sur 1 question notée" || role("score", 1).textContent || role("score", 1).hidden ||
-            !role("score", 2).hidden || $("#q1").dataset.scored !== "true" || page.body.dataset.scored !== "true") {
+        if (total() !== "0 / 16 | note indicative" || role("score", 1).textContent || role("score", 1).hidden ||
+            role("score", 2).hidden || $("#q1").dataset.scored !== "true" || page.body.dataset.scored !== "true") {
           throw new Error(`État initial inattendu : ${total()}`);
         }
         const box = index => $(`#q1 .pw-choice[data-choice-index="${index}"] input`);
@@ -532,7 +533,7 @@ window.PyWimsPython = (() => {
         box(3).click();
         role("check").click();
         await waitFor(() => role("score").textContent, "note de la vérification");
-        if (role("score").textContent !== "Note : 3 / 8" || total() !== "3 / 8 | sur 1 question notée") {
+        if (role("score").textContent !== "Note : 3 / 8" || total() !== "3 / 16 | note indicative") {
           throw new Error(`Note inattendue : ${role("score").textContent} ; ${total()}`);
         }
         role("check").click();
@@ -540,18 +541,18 @@ window.PyWimsPython = (() => {
         box(2).click();
         role("check").click();
         await waitFor(() => role("score").textContent === "Note : 8 / 8", "nouvelle note");
-        if (total() !== "8 / 8 | sur 1 question notée") throw new Error(`Total inattendu : ${total()}`);
+        if (total() !== "8 / 16 | note indicative") throw new Error(`Total inattendu : ${total()}`);
         role("new-draw").click();
         await waitFor(() => !role("new-draw").disabled && $("#q1").dataset.state === "open" && !role("score").textContent,
           "remise à zéro après un nouvel énoncé");
-        if (total() !== "0 / 8 | sur 1 question notée") throw new Error(`Total après un nouvel énoncé : ${total()}`);
+        if (total() !== "0 / 16 | note indicative") throw new Error(`Total après un nouvel énoncé : ${total()}`);
         box(1).click();
         role("check").click();
         await waitFor(() => role("score").textContent, "note après erreur");
         role("solution").click();
         await waitFor(() => $("#q1").dataset.state === "solution", "solution");
         // Choix 1 seul coché : trois cases mal traitées (−0,5 chacune), une bien traitée (2).
-        if (role("score").textContent !== "Note : 0,5 / 8" || total() !== "0,5 / 8 | sur 1 question notée") {
+        if (role("score").textContent !== "Note : 0,5 / 8" || total() !== "0,5 / 16 | note indicative") {
           throw new Error(`La solution a changé la note : ${role("score").textContent} ; ${total()}`);
         }
         $("#pw-help-button").click();
@@ -561,10 +562,24 @@ window.PyWimsPython = (() => {
         }
         $("#pw-help").close();
         frame.remove();
+
+        // Une question sans barème dans l’activité : plus aucune note, seulement la progression.
+        const mixed = await openSheet(
+          [{ fields: scoredQuestion, draws: scoredDraws }, { fields: textQuestion, draws: textDraws }],
+          { questions: { q1: seedOptions, q2: textOptions } }, "Révisions");
+        await waitFor(() => mixed.$("#q1 .pw-choices"), "affichage des choix");
+        mixed.$('#q1 .pw-choice[data-choice-index="0"] input').click();
+        mixed.role("check").click();
+        await waitFor(() => mixed.role("feedback").classList.contains("is-visible"), "retour de la vérification");
+        if (!mixed.role("score", 1).hidden || mixed.role("score", 1).textContent || !mixed.$("#pw-score-total").hidden ||
+            mixed.$("#q1").dataset.scored || mixed.page.body.dataset.scored ||
+            getComputedStyle(mixed.$(".pw-help-score")).display !== "none") {
+          throw new Error("Une activité en partie notée affiche une note.");
+        }
+        mixed.frame.remove();
       });
 
-      // La note ne s’affiche que dans une activité (SPECIFICATION.md, § 10.5) : elle est calculée,
-      // mais masquée, ainsi que le paragraphe de l’aide qui en parle.
+      // Une question seule n’a jamais de note (SPECIFICATION.md, § 10.5), ni l’aide de paragraphe sur la note.
       await test("une question seule notée n’affiche ni sa note ni note d’activité ; sans barème, rien", async () => {
         const scoredQuestion = { ...choiceQuestion, question_statement: choiceQuestion.question_statement.replace("columns=2", "scoring='mz=1'") };
         const single = await openQuestion(scoredQuestion, choiceDraws, choiceOptions);
@@ -572,10 +587,9 @@ window.PyWimsPython = (() => {
         single.$('#q1 .pw-choice[data-choice-index="0"] input').click();
         single.$('#q1 .pw-choice[data-choice-index="2"] input').click();
         single.role("check").click();
-        await waitFor(() => single.role("score").textContent, "note");
-        if (single.role("score").textContent !== "Note : 1 / 1" || !single.$("#pw-score-total").hidden ||
-            getComputedStyle(single.role("score")).display !== "none" ||
-            getComputedStyle(single.$(".pw-help-score")).display !== "none") {
+        await waitFor(() => single.role("feedback").classList.contains("is-visible"), "retour de la vérification");
+        if (!single.role("score").hidden || single.role("score").textContent || !single.$("#pw-score-total").hidden ||
+            single.page.body.dataset.scored || getComputedStyle(single.$(".pw-help-score")).display !== "none") {
           throw new Error(`Question seule notée inattendue : ${single.role("score").textContent}`);
         }
         single.frame.remove();

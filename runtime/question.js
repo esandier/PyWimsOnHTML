@@ -154,6 +154,12 @@ window.PyWimsQuestion = (() => {
       this.checkButton = element("check");
       this.solutionButton = element("solution");
       this.newDrawButton = element("new-draw");
+      // Style compact : la note se place dans la barre d’icônes, juste à gauche de « Nouvel énoncé »
+      // (SPECIFICATION.md, § 5.7). Dans sa propre case de la grille, sous les icônes, elle flottait à
+      // côté des choix. Sa largeur est réservée (question.css) : son apparition ne déplace aucun bouton.
+      if (compactStyle) {
+        this.newDrawButton.before(this.scoreElement);
+      }
       // Une question à un seul tirage (sans aléatoire, choix non mélangés) : le bouton remet la
       // question vierge, sous le nom « Recommencer » (SPECIFICATION.md, § 5.2). Il n’est pas masqué,
       // car c’est le seul moyen de refaire la question après « Solution ».
@@ -534,6 +540,15 @@ window.PyWimsQuestion = (() => {
     // Largeur de la fenêtre changée (rotation du téléphone) : les hauteurs mesurées ne valent plus.
     forgetPromptHeight() {
       this.promptElement.style.minHeight = "";
+    }
+
+    // Question sans note, bien qu’elle ait un barème : question seule, ou activité dont une question au
+    // moins n’a pas de barème (SPECIFICATION.md, § 10.5). Appelée par la feuille avant start().
+    dropScoring() {
+      this.scoring = null;
+      this.scoredTag = null;
+      delete this.section.dataset.scored;
+      this.scoreElement.hidden = true;
     }
 
     // Redimensionnement : une formule de l’énoncé ou du retour peut avoir cessé de tenir, ou tenir de nouveau.

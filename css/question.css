@@ -171,17 +171,14 @@ body {
   line-height: 1.05;
 }
 
-/* Une question seule n’a pas de progression ni de note d’activité, donc rien à réinitialiser. Elle
-   n’affiche pas non plus la note de son barème (SPECIFICATION.md, § 10.5) : la note sert à suivre une
-   activité, et seule, elle se lisait comme une évaluation. L’aide ne parle de la note que dans une
-   activité dont une question est notée (data-scored, posé par sheet.js). */
+/* Une question seule n’a pas de progression ni de note d’activité, donc rien à réinitialiser. L’aide
+   ne parle de la note que dans une activité notée, dont toutes les questions ont un barème
+   (data-scored, posé par sheet.js ; SPECIFICATION.md, § 10.5). */
 [data-sheet="single"] .pw-completion,
 [data-sheet="single"] .pw-restart-button,
 [data-sheet="single"] .pw-progress,
 [data-sheet="single"] .pw-completion-tip,
 [data-sheet="single"] .pw-help-activity,
-[data-sheet="single"] .pw-help-score,
-[data-sheet="single"] .pw-q-score,
 body:not([data-scored]) .pw-help-score {
   display: none;
 }
@@ -197,8 +194,8 @@ body:not([data-scored]) .pw-help-score {
 }
 
 /* Sélecteur assez précis pour l’emporter sur les marges de la carte, y compris sur téléphone.
-   Activité seulement : une question seule n’affiche pas sa note, donc ne lui réserve rien. */
-[data-sheet="activity"] .pw-sheet .pw-question[data-scored] {
+   data-scored n’est posé que dans une activité notée (sheet.js). */
+.pw-sheet .pw-question[data-scored] {
   padding-bottom: 1rem;
 }
 
@@ -1193,7 +1190,7 @@ body:not([data-scored]) .pw-help-score {
   grid-template-rows: auto 1fr;
   grid-template-areas:
     "badge question_statement actions"
-    "badge question_statement score"
+    "badge question_statement ."
     ". status status"
     ". feedback feedback";
   gap: 0 0.75rem;
@@ -1205,8 +1202,7 @@ body:not([data-scored]) .pw-help-score {
   scroll-margin-top: 4.5rem;
 }
 
-/* [data-sheet] : aussi précis que la règle habituelle ([data-sheet="activity"] …), qu’il doit battre. */
-[data-style="compact"][data-sheet] .pw-sheet .pw-question[data-scored] {
+[data-style="compact"] .pw-sheet .pw-question[data-scored] {
   padding-bottom: 1.1rem;
 }
 
@@ -1293,14 +1289,17 @@ body:not([data-scored]) .pw-help-score {
   opacity: 0.35;
 }
 
-/* Note de la question, sous les icônes. */
+/* Note de la question, dans la barre d’icônes, à gauche de « Nouvel énoncé » (déplacée par
+   question.js). Sa largeur est réservée dès l’affichage, vide et invisible : à la vérification, la note
+   apparaît sans déplacer le bouton sur lequel on vient de cliquer. 15ch suffisent à « Note : 12,5 / 20 ». */
 [data-style="compact"] .pw-q-score {
   position: static;
-  grid-area: score;
-  align-self: start;
-  justify-self: end;
-  margin-top: 0.3rem;
+  align-self: center;
+  min-width: 15ch;
+  margin: 0 0.3rem;
   font-size: 0.8rem;
+  text-align: center;
+  white-space: nowrap;
 }
 
 [data-style="compact"] .form-statement {
@@ -1449,17 +1448,12 @@ body:not([data-scored]) .pw-help-score {
     grid-template-columns: 2.4rem minmax(0, 1fr) auto;
     grid-template-rows: auto auto;
     grid-template-areas:
-      ". score actions"
+      ". . actions"
       "badge question_statement question_statement"
       ". status status"
       ". feedback feedback";
     gap: 0 0.5rem;
     padding: 0.8rem 0 0.9rem;
-  }
-
-  [data-style="compact"] .pw-q-score {
-    align-self: center;
-    margin: 0;
   }
 
   /* Même agrandissement en douceur que le style habituel sur téléphone (≤ 820 px), dès 1000 px : sans

@@ -246,17 +246,14 @@ body {
   line-height: 1.05;
 }
 
-/* Une question seule n’a pas de progression ni de note d’activité, donc rien à réinitialiser. Elle
-   n’affiche pas non plus la note de son barème (SPECIFICATION.md, § 10.5) : la note sert à suivre une
-   activité, et seule, elle se lisait comme une évaluation. L’aide ne parle de la note que dans une
-   activité dont une question est notée (data-scored, posé par sheet.js). */
+/* Une question seule n’a pas de progression ni de note d’activité, donc rien à réinitialiser. L’aide
+   ne parle de la note que dans une activité notée, dont toutes les questions ont un barème
+   (data-scored, posé par sheet.js ; SPECIFICATION.md, § 10.5). */
 [data-sheet="single"] .pw-completion,
 [data-sheet="single"] .pw-restart-button,
 [data-sheet="single"] .pw-progress,
 [data-sheet="single"] .pw-completion-tip,
 [data-sheet="single"] .pw-help-activity,
-[data-sheet="single"] .pw-help-score,
-[data-sheet="single"] .pw-q-score,
 body:not([data-scored]) .pw-help-score {
   display: none;
 }
@@ -272,8 +269,8 @@ body:not([data-scored]) .pw-help-score {
 }
 
 /* Sélecteur assez précis pour l’emporter sur les marges de la carte, y compris sur téléphone.
-   Activité seulement : une question seule n’affiche pas sa note, donc ne lui réserve rien. */
-[data-sheet="activity"] .pw-sheet .pw-question[data-scored] {
+   data-scored n’est posé que dans une activité notée (sheet.js). */
+.pw-sheet .pw-question[data-scored] {
   padding-bottom: 1rem;
 }
 
@@ -1268,7 +1265,7 @@ body:not([data-scored]) .pw-help-score {
   grid-template-rows: auto 1fr;
   grid-template-areas:
     "badge question_statement actions"
-    "badge question_statement score"
+    "badge question_statement ."
     ". status status"
     ". feedback feedback";
   gap: 0 0.75rem;
@@ -1280,8 +1277,7 @@ body:not([data-scored]) .pw-help-score {
   scroll-margin-top: 4.5rem;
 }
 
-/* [data-sheet] : aussi précis que la règle habituelle ([data-sheet="activity"] …), qu’il doit battre. */
-[data-style="compact"][data-sheet] .pw-sheet .pw-question[data-scored] {
+[data-style="compact"] .pw-sheet .pw-question[data-scored] {
   padding-bottom: 1.1rem;
 }
 
@@ -1368,14 +1364,17 @@ body:not([data-scored]) .pw-help-score {
   opacity: 0.35;
 }
 
-/* Note de la question, sous les icônes. */
+/* Note de la question, dans la barre d’icônes, à gauche de « Nouvel énoncé » (déplacée par
+   question.js). Sa largeur est réservée dès l’affichage, vide et invisible : à la vérification, la note
+   apparaît sans déplacer le bouton sur lequel on vient de cliquer. 15ch suffisent à « Note : 12,5 / 20 ». */
 [data-style="compact"] .pw-q-score {
   position: static;
-  grid-area: score;
-  align-self: start;
-  justify-self: end;
-  margin-top: 0.3rem;
+  align-self: center;
+  min-width: 15ch;
+  margin: 0 0.3rem;
   font-size: 0.8rem;
+  text-align: center;
+  white-space: nowrap;
 }
 
 [data-style="compact"] .form-statement {
@@ -1524,17 +1523,12 @@ body:not([data-scored]) .pw-help-score {
     grid-template-columns: 2.4rem minmax(0, 1fr) auto;
     grid-template-rows: auto auto;
     grid-template-areas:
-      ". score actions"
+      ". . actions"
       "badge question_statement question_statement"
       ". status status"
       ". feedback feedback";
     gap: 0 0.5rem;
     padding: 0.8rem 0 0.9rem;
-  }
-
-  [data-style="compact"] .pw-q-score {
-    align-self: center;
-    margin: 0;
   }
 
   /* Même agrandissement en douceur que le style habituel sur téléphone (≤ 820 px), dès 1000 px : sans
@@ -1797,17 +1791,14 @@ body {
   line-height: 1.05;
 }
 
-/* Une question seule n’a pas de progression ni de note d’activité, donc rien à réinitialiser. Elle
-   n’affiche pas non plus la note de son barème (SPECIFICATION.md, § 10.5) : la note sert à suivre une
-   activité, et seule, elle se lisait comme une évaluation. L’aide ne parle de la note que dans une
-   activité dont une question est notée (data-scored, posé par sheet.js). */
+/* Une question seule n’a pas de progression ni de note d’activité, donc rien à réinitialiser. L’aide
+   ne parle de la note que dans une activité notée, dont toutes les questions ont un barème
+   (data-scored, posé par sheet.js ; SPECIFICATION.md, § 10.5). */
 [data-sheet="single"] .pw-completion,
 [data-sheet="single"] .pw-restart-button,
 [data-sheet="single"] .pw-progress,
 [data-sheet="single"] .pw-completion-tip,
 [data-sheet="single"] .pw-help-activity,
-[data-sheet="single"] .pw-help-score,
-[data-sheet="single"] .pw-q-score,
 body:not([data-scored]) .pw-help-score {
   display: none;
 }
@@ -1823,8 +1814,8 @@ body:not([data-scored]) .pw-help-score {
 }
 
 /* Sélecteur assez précis pour l’emporter sur les marges de la carte, y compris sur téléphone.
-   Activité seulement : une question seule n’affiche pas sa note, donc ne lui réserve rien. */
-[data-sheet="activity"] .pw-sheet .pw-question[data-scored] {
+   data-scored n’est posé que dans une activité notée (sheet.js). */
+.pw-sheet .pw-question[data-scored] {
   padding-bottom: 1rem;
 }
 
@@ -2819,7 +2810,7 @@ body:not([data-scored]) .pw-help-score {
   grid-template-rows: auto 1fr;
   grid-template-areas:
     "badge question_statement actions"
-    "badge question_statement score"
+    "badge question_statement ."
     ". status status"
     ". feedback feedback";
   gap: 0 0.75rem;
@@ -2831,8 +2822,7 @@ body:not([data-scored]) .pw-help-score {
   scroll-margin-top: 4.5rem;
 }
 
-/* [data-sheet] : aussi précis que la règle habituelle ([data-sheet="activity"] …), qu’il doit battre. */
-[data-style="compact"][data-sheet] .pw-sheet .pw-question[data-scored] {
+[data-style="compact"] .pw-sheet .pw-question[data-scored] {
   padding-bottom: 1.1rem;
 }
 
@@ -2919,14 +2909,17 @@ body:not([data-scored]) .pw-help-score {
   opacity: 0.35;
 }
 
-/* Note de la question, sous les icônes. */
+/* Note de la question, dans la barre d’icônes, à gauche de « Nouvel énoncé » (déplacée par
+   question.js). Sa largeur est réservée dès l’affichage, vide et invisible : à la vérification, la note
+   apparaît sans déplacer le bouton sur lequel on vient de cliquer. 15ch suffisent à « Note : 12,5 / 20 ». */
 [data-style="compact"] .pw-q-score {
   position: static;
-  grid-area: score;
-  align-self: start;
-  justify-self: end;
-  margin-top: 0.3rem;
+  align-self: center;
+  min-width: 15ch;
+  margin: 0 0.3rem;
   font-size: 0.8rem;
+  text-align: center;
+  white-space: nowrap;
 }
 
 [data-style="compact"] .form-statement {
@@ -3075,17 +3068,12 @@ body:not([data-scored]) .pw-help-score {
     grid-template-columns: 2.4rem minmax(0, 1fr) auto;
     grid-template-rows: auto auto;
     grid-template-areas:
-      ". score actions"
+      ". . actions"
       "badge question_statement question_statement"
       ". status status"
       ". feedback feedback";
     gap: 0 0.5rem;
     padding: 0.8rem 0 0.9rem;
-  }
-
-  [data-style="compact"] .pw-q-score {
-    align-self: center;
-    margin: 0;
   }
 
   /* Même agrandissement en douceur que le style habituel sur téléphone (≤ 820 px), dès 1000 px : sans
@@ -6013,6 +6001,12 @@ window.PyWimsQuestion = (() => {
       this.checkButton = element("check");
       this.solutionButton = element("solution");
       this.newDrawButton = element("new-draw");
+      // Style compact : la note se place dans la barre d’icônes, juste à gauche de « Nouvel énoncé »
+      // (SPECIFICATION.md, § 5.7). Dans sa propre case de la grille, sous les icônes, elle flottait à
+      // côté des choix. Sa largeur est réservée (question.css) : son apparition ne déplace aucun bouton.
+      if (compactStyle) {
+        this.newDrawButton.before(this.scoreElement);
+      }
       // Une question à un seul tirage (sans aléatoire, choix non mélangés) : le bouton remet la
       // question vierge, sous le nom « Recommencer » (SPECIFICATION.md, § 5.2). Il n’est pas masqué,
       // car c’est le seul moyen de refaire la question après « Solution ».
@@ -6393,6 +6387,15 @@ window.PyWimsQuestion = (() => {
     // Largeur de la fenêtre changée (rotation du téléphone) : les hauteurs mesurées ne valent plus.
     forgetPromptHeight() {
       this.promptElement.style.minHeight = "";
+    }
+
+    // Question sans note, bien qu’elle ait un barème : question seule, ou activité dont une question au
+    // moins n’a pas de barème (SPECIFICATION.md, § 10.5). Appelée par la feuille avant start().
+    dropScoring() {
+      this.scoring = null;
+      this.scoredTag = null;
+      delete this.section.dataset.scored;
+      this.scoreElement.hidden = true;
     }
 
     // Redimensionnement : une formule de l’énoncé ou du retour peut avoir cessé de tenir, ou tenir de nouveau.
@@ -6871,26 +6874,22 @@ window.PyWimsQuestion = (() => {
   });
   document.addEventListener("click", () => toggleCompletionTip(false));
 
-  // Note indicative de l’activité : somme des dernières notes des questions notées, sur la somme de
-  // leurs maxima. Elle n’apparaît que si une question au moins a un barème.
+  // Note indicative de l’activité : somme des dernières notes des questions, sur la somme de leurs
+  // maxima. Elle n’existe que si toutes les questions ont un barème (voir plus bas).
   const scoreTotal = document.getElementById("pw-score-total");
   const scoreTotalValue = document.getElementById("pw-score-total-value");
   const scoreTotalLabel = document.getElementById("pw-score-total-label");
 
   // Affiche dans l’en-tête la note indicative de l’activité.
   function updateScoreTotal(questions) {
-    const scored = questions.filter(question => question.scoring);
-    if (!scored.length) {
+    if (!questions.every(question => question.scoring)) {
       return;
     }
-    const sum = scored.reduce((total, question) => total + question.score, 0);
-    const max = scored.reduce((total, question) => total + question.scoreMax, 0);
+    const sum = questions.reduce((total, question) => total + question.score, 0);
+    const max = questions.reduce((total, question) => total + question.scoreMax, 0);
     scoreTotalValue.textContent = `${formatScore(sum)} / ${formatScore(max)}`;
-    scoreTotalLabel.textContent = scored.length === questions.length
-      ? "note indicative"
-      : `sur ${scored.length} question${scored.length > 1 ? "s" : ""} notée${scored.length > 1 ? "s" : ""}`;
-    scoreTotal.title = `Note indicative : ${scoreTotalValue.textContent}, ${scored.length === questions.length
-      ? "toutes les questions sont notées" : scoreTotalLabel.textContent}`;
+    scoreTotalLabel.textContent = "note indicative";
+    scoreTotal.title = `Note indicative : ${scoreTotalValue.textContent}`;
     scoreTotal.hidden = false;
   }
 
@@ -7026,8 +7025,13 @@ window.PyWimsQuestion = (() => {
       onFeedback: compactStyle ? onFeedback : null
     })
   );
-  if (questions.some(question => question.scoring)) {
+  // La note est réservée à une activité dont toutes les questions ont un barème, un « examen blanc »
+  // (SPECIFICATION.md, § 10.5) : une note sur une partie des questions seulement se lisait comme une
+  // évaluation de toute l’activité. Sinon, aucune question n’est notée : il reste la progression.
+  if (!singleQuestion && questions.every(question => question.scoring)) {
     document.body.dataset.scored = "true";
+  } else {
+    questions.forEach(question => question.dropScoring());
   }
   if (!singleQuestion) {
     // Réussites retrouvées : le ✓ revient, tout le reste repart vierge. Une feuille retrouvée
