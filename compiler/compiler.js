@@ -20,6 +20,7 @@
   const selectVisibleButton = document.getElementById("select-visible");
   const previewFrame = document.getElementById("preview-frame");
   const previewNotice = document.getElementById("preview-notice");
+  const scoringWarning = document.getElementById("scoring-warning");
   const compileButton = document.getElementById("compile-question");
   const multiOutputControls = document.getElementById("multi-output-controls");
   const outputMode = document.getElementById("output-mode");
@@ -835,8 +836,26 @@
     activityTitleLabel.hidden = !activityMode;
     compileButton.disabled = selected.length === 0 ||
       (activityMode && !activityTitleInput.value.trim());
+    const warning = activityMode ? partialScoringWarning(selected) : "";
+    scoringWarning.textContent = warning;
+    scoringWarning.hidden = !warning;
     updateRanks();
     renderActivityOrder();
+  }
+
+  // Activité en partie notée : la note n’y est pas affichée du tout (SPECIFICATION.md, § 10.5).
+  // L’auteur qui a écrit des barèmes doit savoir qu’ils ne servent pas, et lesquels manquent ; vide si
+  // toutes les questions, ou aucune, ont un barème.
+  function partialScoringWarning(questions) {
+    const hasScoring = ({ fields }) => PyWimsTemplate.parseTags(fields.question_statement)
+      .some(tag => Object.hasOwn(tag.attributes, "scoring"));
+    const unscored = questions.filter(question => !hasScoring(question));
+    if (!unscored.length || unscored.length === questions.length) {
+      return "";
+    }
+    return "Aucune note ne sera affichée : la note est réservée à une activité dont toutes les questions " +
+      `ont un barème (scoring), et ${unscored.length > 1 ? "ces questions n’en ont pas" : "cette question n’en a pas"} : ` +
+      `${unscored.map(({ path }) => path).join(", ")}.`;
   }
 
   // L’ordre ne compte que pour une activité unique : hors de ce mode, ni rang ni liste d’ordre.
@@ -1148,18 +1167,6 @@
       }
       // Les avertissements ne bloquent pas la compilation ; ils restent affichés pour être lus.
       const warnings = compiled.flatMap(({ fields, path }) => templateWarnings(fields).map(text => `${path} : ${text}`));
-      // Activité en partie notée : la note n’y est pas affichée du tout (SPECIFICATION.md, § 10.5).
-      // L’auteur qui a écrit des barèmes doit savoir qu’ils ne servent pas, et lesquels manquent.
-      if (compiled.length > 1 && outputMode.value === "activity") {
-        const hasScoring = ({ fields }) => PyWimsTemplate.parseTags(fields.question_statement)
-          .some(tag => Object.hasOwn(tag.attributes, "scoring"));
-        const unscored = compiled.filter(question => !hasScoring(question));
-        if (unscored.length && unscored.length < compiled.length) {
-          warnings.push(`Aucune note ne sera affichée : la note est réservée à une activité dont toutes les ` +
-            `questions ont un barème (scoring), et ${unscored.length > 1 ? "ces questions n’en ont pas" : "cette question n’en a pas"} : ` +
-            `${unscored.map(({ path }) => path).join(", ")}.`);
-        }
-      }
       if (warnings.length) {
         showMessage(messages, `L’export a été téléchargé. Avertissement : ${warnings.join(" ")}`, "warning");
       } else {

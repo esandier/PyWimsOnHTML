@@ -380,6 +380,15 @@
 
     #preview-notice { margin: 0 0 0.6rem; font-size: 0.85rem; }
     #preview-notice:empty { display: none; }
+    /* Encadré ambré, filet à gauche : il doit se voir, à la différence d’une ligne d’état. */
+    .scoring-warning {
+      margin: 0 0 0.6rem;
+      padding: 0.45rem 0.7rem;
+      border-left: 3px solid #b26b00;
+      border-radius: 0 6px 6px 0;
+      background: #fff6e5;
+      font-size: 0.85rem;
+    }
 
     /* Cadre de l’aperçu : il occupe la hauteur restante du panneau et défile lui-même. */
     #preview-frame {
@@ -651,6 +660,9 @@
       </section>
 
       <section class="panel panel-preview" aria-label="Aperçu">
+        <!-- Activité en partie notée (SPECIFICATION.md, § 10.5) : avertissement visible pendant le choix des
+             questions, sous leur ordre. Dans le message de l’en-tête, à l’export, il passait inaperçu. -->
+        <p id="scoring-warning" class="warning scoring-warning" role="status" hidden></p>
         <!-- Ligne d’état : attente du tirage réel ou erreur ; vide une fois l’aperçu prêt. -->
         <p id="preview-notice" class="muted">Choisissez une question dans la liste pour afficher son aperçu.</p>
         <!-- La page réelle de la question, isolée : sans « allow-same-origin », son HTML ne peut pas
