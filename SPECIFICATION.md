@@ -835,6 +835,33 @@ Après une formule, Edge et Chrome coupent quand même entre la formule et
 l’espace insécable : la formule et la ponctuation qui la suit sont alors
 réunies dans un `span` insécable.
 
+### 5.9 Paquet SCORM
+
+L’atelier peut exporter une question seule ou une activité unique en **paquet
+SCORM 1.2** (case « Paquet SCORM », absente pour des pages séparées) : une
+archive `…-scorm.zip` qui contient `imsmanifest.xml` et la feuille,
+`index.html`, à déposer dans une activité SCORM de Moodle.
+
+- **Ce qui est transmis : la seule progression.** La part des questions
+  réussies, de 0 à 100 (0 ou 100 pour une question seule), est la note SCORM
+  (`cmi.core.score.raw`, sur 100), que Moodle reporte dans son carnet de
+  notes ; l’état est « incomplete », puis « completed » à 100 %. La note des
+  barèmes (§ 10.5) n’est pas transmise.
+- **La note transmise ne baisse jamais** : « Réinitialiser la feuille » efface
+  les réussites, pas une note acquise, ni l’état « completed ».
+- **Mémoire.** Dans un LMS, les réussites (numéros des questions) sont gardées
+  par le LMS (`cmi.suspend_data`), à la place du navigateur : l’élève les
+  retrouve sur un autre appareil. À la fermeture, la tentative est suspendue
+  (`cmi.core.exit = suspend`), pour être reprise. Hors LMS (paquet ouvert
+  seul), la feuille garde sa mémoire habituelle, dans le navigateur (§ 5.3).
+- SCORM 1.2 plutôt que 2004 : c’est la version que Moodle gère le mieux ;
+  elle n’a pas de champ de progression, d’où la note sur 100. Le manifeste
+  n’a pas de `masteryscore` (le LMS en déduirait « passed » ou « failed »), et
+  les schémas XSD ne sont pas joints, Moodle ne les demandant pas.
+- Code : `runtime/scorm.js`, intégré seulement au paquet ; la feuille
+  (`sheet.js`) s’en sert s’il trouve l’API SCORM du LMS dans une fenêtre
+  parente ou dans celle qui l’a ouverte.
+
 ## 6. Organisation du code
 
 | Fichier | Rôle |

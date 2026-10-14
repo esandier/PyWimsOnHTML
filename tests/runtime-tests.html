@@ -111,6 +111,10 @@ window.PyWimsPython = (() => {
         resources[key] = await (await fetch(`../${PyWimsCompiler.resourcePaths[key]}`)).text();
       }
       resources.python = fakePython(options);
+      // options.scorm : feuille d’un paquet SCORM, avec sa liaison au LMS (§ 5.9).
+      if (options?.scorm) {
+        resources.scorm = await (await fetch(`../${PyWimsCompiler.resourcePaths.scorm}`)).text();
+      }
       const frame = document.createElement("iframe");
       // options.width : largeur du cadre, qui décide des règles « grand écran » de la feuille.
       frame.style.cssText = `width:${options?.width ?? 900}px;height:700px`;
@@ -1006,6 +1010,100 @@ window.PyWimsPython = (() => {
           throw new Error("Le bouton ↺ n’a pas effacé la progression.");
         }
         again.frame.remove();
+      });
+
+      // Paquet SCORM 1.2 (SPECIFICATION.md, § 5.9) : un faux LMS, sur cette page, parente du cadre de la
+      // feuille, comme le cadre de Moodle. La feuille lui transmet sa progression et lui confie ses réussites.
+      await test("un paquet SCORM transmet la progression au LMS, qui garde les réussites", async () => {
+        const store = { "cmi.core.lesson_status": "not attempted" };
+        const calls = [];
+        window.API = {
+          LMSInitialize: () => { calls.push("init"); return "true"; },
+          LMSGetValue: name => store[name] ?? "",
+          LMSSetValue: (name, value) => { store[name] = value; return "true"; },
+          LMSCommit: () => { calls.push("commit"); return "true"; },
+          LMSFinish: () => { calls.push("finish"); return "true"; },
+          LMSGetLastError: () => "0"
+        };
+        try {
+          const title = `SCORM ${Date.now()}`;
+          const sheet = [
+            { fields: { ...choiceWithoutApres, question_title: "Première" }, draws: choiceDraws },
+            { fields: { ...choiceWithoutApres, question_title: "Seconde" }, draws: choiceDraws }
+          ];
+          const solve = async ({ $, role }, question, percent) => {
+            await waitFor(() => $(`#q${question} .pw-choices`), "affichage des choix");
+            $(`#q${question} .pw-choice[data-choice-index="0"] input`).click();
+            $(`#q${question} .pw-choice[data-choice-index="2"] input`).click();
+            role("check", question).click();
+            if (percent !== null) await waitFor(() => $("#pw-completion-value").textContent === `${percent} %`, `progression à ${percent} %`);
+          };
+          const first = await openSheet(sheet, { scorm: true }, title);
+          if (store["cmi.core.lesson_status"] !== "incomplete" || calls[0] !== "init") {
+            throw new Error(`Ouverture inattendue : ${JSON.stringify(store)} ${calls}`);
+          }
+          await solve(first, 2, 50);
+          const key = `pywims-progression:${first.page.body.dataset.sheetId}`;
+          if (store["cmi.suspend_data"] !== JSON.stringify({ reussies: [2] }) || store["cmi.core.score.raw"] !== "50" ||
+              store["cmi.core.score.max"] !== "100" || store["cmi.core.lesson_status"] !== "incomplete" ||
+              !calls.includes("commit") || localStorage.getItem(key) !== null) {
+            throw new Error(`Progression transmise inattendue : ${JSON.stringify(store)}, navigateur : ${localStorage.getItem(key)}`);
+          }
+          // Fermeture : la tentative est suspendue, pour être reprise avec ses réussites.
+          first.frame.remove();
+          if (store["cmi.core.exit"] !== "suspend" || calls.at(-1) !== "finish") {
+            throw new Error(`Fermeture inattendue : ${store["cmi.core.exit"]} ${calls}`);
+          }
+
+          // Réouverture : les réussites viennent du LMS, pas du navigateur.
+          const again = await openSheet(sheet, { scorm: true }, title);
+          await waitFor(() => again.$("#pw-completion-value").textContent === "50 %", "réussites retrouvées du LMS");
+          if (again.role("badge", 2).textContent !== "✓") throw new Error("La réussite gardée par le LMS n’est pas affichée.");
+          // ↺ : les réussites sont effacées, la note acquise reste (elle ne baisse jamais).
+          again.window.confirm = () => true;
+          const reloaded = new Promise(resolve => again.frame.addEventListener("load", resolve, { once: true }));
+          again.$("#pw-restart").click();
+          await reloaded;
+          await waitFor(() => again.frame.contentDocument.querySelector("#q2 [data-role='badge']")?.textContent === "2", "feuille rechargée");
+          if (store["cmi.suspend_data"] !== "" || store["cmi.core.score.raw"] !== "50") {
+            throw new Error(`Après ↺ : ${JSON.stringify(store)}`);
+          }
+          // Les deux questions réussies : 100 %, « completed ».
+          const page = again.frame.contentDocument;
+          const reopened = { $: selector => page.querySelector(selector),
+            role: (name, question = 1) => page.querySelector(`#q${question} [data-role="${name}"]`) };
+          await solve(reopened, 1, 50);
+          await solve(reopened, 2, 100);
+          if (store["cmi.core.score.raw"] !== "100" || store["cmi.core.lesson_status"] !== "completed") {
+            throw new Error(`Activité terminée : ${JSON.stringify(store)}`);
+          }
+          again.frame.remove();
+
+          // Question seule : 0, puis 100 % à sa réussite.
+          for (const name of Object.keys(store)) delete store[name];
+          const single = await openSheet([{ fields: choiceWithoutApres, draws: choiceDraws }], { scorm: true });
+          await solve(single, 1, null);
+          await waitFor(() => store["cmi.core.score.raw"] === "100", "réussite transmise");
+          if (store["cmi.core.lesson_status"] !== "completed") throw new Error(`Question seule : ${JSON.stringify(store)}`);
+          single.frame.remove();
+        } finally {
+          delete window.API;
+        }
+        // Hors LMS, le même paquet garde sa progression dans le navigateur.
+        const title = `SCORM sans LMS ${Date.now()}`;
+        const alone = await openSheet([
+          { fields: { ...choiceWithoutApres, question_title: "Première" }, draws: choiceDraws },
+          { fields: { ...choiceWithoutApres, question_title: "Seconde" }, draws: choiceDraws }
+        ], { scorm: true }, title);
+        await waitFor(() => alone.$("#q2 .pw-choices"), "affichage des choix");
+        alone.$(`#q2 .pw-choice[data-choice-index="0"] input`).click();
+        alone.$(`#q2 .pw-choice[data-choice-index="2"] input`).click();
+        alone.role("check", 2).click();
+        await waitFor(() => alone.$("#pw-completion-value").textContent === "50 %", "progression hors LMS");
+        if (localStorage.getItem(`pywims-progression:${alone.page.body.dataset.sheetId}`) !== JSON.stringify({ reussies: [2] })) {
+          throw new Error("Hors LMS, la progression n’est pas gardée par le navigateur.");
+        }
+        alone.frame.remove();
       });
 
       await test("une question seule n’a pas de mémoire de progression", async () => {

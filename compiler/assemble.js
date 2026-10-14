@@ -34,7 +34,10 @@
     sheet: "runtime/sheet.js",
     python: "runtime/python.js",
     pywims: "runtime/pywims.py",
-    pythonWorker: "runtime/python-worker.js"
+    pythonWorker: "runtime/python-worker.js",
+    // Liaison au LMS d’un paquet SCORM (§ 5.9) : neededResources ne la demande jamais ; l’atelier
+    // l’ajoute aux ressources pour un export SCORM, et sa présence suffit à l’intégrer.
+    scorm: "runtime/scorm.js"
   };
 
   // Indique quels fichiers du projet utilisent une question ou l’ensemble des questions d’une feuille.
@@ -45,6 +48,7 @@
     // seules chargent Python.
     const usesPython = list.some(fields => fields.question_check !== undefined);
     return Object.keys(resourcePaths).filter(key =>
+      key !== "scorm" &&
       (!["pywims", "pythonWorker"].includes(key) || usesPython) &&
       (key !== "mathWidget" || tagTypes.has("input_math")) &&
       (key !== "matrixWidget" || tagTypes.has("input_matrix") || tagTypes.has("input_vmatrix")) &&
@@ -95,7 +99,8 @@ ${renderDrawData(draws)}
   // Emplacements de la mise en page qui reçoivent du code tel quel, avec la balise qui l’entoure.
   const inlinedPlaceholders = {
     CSS: "style", TEMPLATE: "script", CORRECTION: "script", WIDGETS: "script", MATHLIVE_LOADER: "script",
-    PYWIMS: "script", PYTHON_WORKER: "script", PYTHON_RUNTIME: "script", FIELDS: "script", QUESTION: "script", SHEET: "script"
+    PYWIMS: "script", PYTHON_WORKER: "script", PYTHON_RUNTIME: "script", FIELDS: "script", QUESTION: "script",
+    SCORM: "script", SHEET: "script"
   };
 
   // Refuse un code qui fermerait sa balise : « </script » au milieu d’un script termine la balise
@@ -193,6 +198,8 @@ window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
       QUESTIONS: sections.join("\n"),
       FIELDS: resources.fields,
       QUESTION: resources.question,
+      // Vide hors paquet SCORM : la feuille garde alors sa mémoire dans le navigateur.
+      SCORM: resources.scorm ?? "",
       SHEET: resources.sheet
     };
     return resources.layout.replace(/@@([A-Z_]+)@@/g, (_match, name) => {
@@ -213,6 +220,40 @@ window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
     return `${slug || "question"}.html`;
   }
 
+  // Fichiers d’un paquet SCORM 1.2 (SPECIFICATION.md, § 5.9) : la feuille, assemblée avec la liaison au
+  // LMS (ressource scorm), et le manifeste qui la déclare comme unique SCO. Sans « masteryscore » : le
+  // LMS en déduirait « passed » ou « failed » d’après la note, alors que la feuille dit elle-même
+  // « completed » à 100 %. Les schémas XSD de l’ADL ne sont pas joints : Moodle ne les demande pas.
+  function scormPackageEntries(html, title) {
+    const xmlTitle = escapeHtml(title);
+    const manifest = `<?xml version="1.0" encoding="UTF-8"?>
+<manifest identifier="pwoh-${Date.now().toString(36)}" version="1.0"
+  xmlns="http://www.imsproject.org/xsd/imscp_rootv1p1p2"
+  xmlns:adlcp="http://www.adlnet.org/xsd/adlcp_rootv1p2"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.imsproject.org/xsd/imscp_rootv1p1p2 imscp_rootv1p1p2.xsd http://www.adlnet.org/xsd/adlcp_rootv1p2 adlcp_rootv1p2.xsd">
+  <metadata>
+    <schema>ADL SCORM</schema>
+    <schemaversion>1.2</schemaversion>
+  </metadata>
+  <organizations default="organisation">
+    <organization identifier="organisation">
+      <title>${xmlTitle}</title>
+      <item identifier="feuille" identifierref="ressource">
+        <title>${xmlTitle}</title>
+      </item>
+    </organization>
+  </organizations>
+  <resources>
+    <resource identifier="ressource" type="webcontent" adlcp:scormtype="sco" href="index.html">
+      <file href="index.html"/>
+    </resource>
+  </resources>
+</manifest>
+`;
+    return [{ name: "imsmanifest.xml", content: manifest }, { name: "index.html", content: html }];
+  }
+
   window.PyWimsCompiler = Object.freeze({
     ...window.PyWimsCompiler,
     renderDrawData,
@@ -221,6 +262,7 @@ window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
     assembleQuestion,
     assembleActivity,
     renderQuestionData,
-    createQuestionFilename
+    createQuestionFilename,
+    scormPackageEntries
   });
 })();

@@ -4,7 +4,7 @@
 // page (SPECIFICATION.md, § 11.1) ; le dossier choisi par l’utilisateur ne contient que ses questions.
 (() => {
   // Fonctions des modules du compilateur (format.js, draws.js, assemble.js, zip.js).
-  const { archiveQuestionSource, assembleActivity, assembleQuestion, computeDraws, createQuestionFilename, createZip, fieldKindsLabel, isArchive, isQuestionFile, neededResources, parseQuestionSource, previewPlaceholderDraw, readZip, resourcePaths, splitPastedQuestions, splitQuestionSource, templateWarnings } = PyWimsCompiler;
+  const { archiveQuestionSource, assembleActivity, assembleQuestion, computeDraws, createQuestionFilename, createZip, fieldKindsLabel, isArchive, isQuestionFile, neededResources, parseQuestionSource, previewPlaceholderDraw, readZip, resourcePaths, scormPackageEntries, splitPastedQuestions, splitQuestionSource, templateWarnings } = PyWimsCompiler;
 
   const chooseFolderButton = document.getElementById("choose-folder");
   const filePicker = document.getElementById("question-folder");
@@ -27,6 +27,8 @@
   const activityTitleInput = document.getElementById("activity-title");
   const activityTitleLabel = document.getElementById("activity-title-label");
   const compactStyleInput = document.getElementById("compact-style");
+  const scormField = document.getElementById("scorm-field");
+  const scormInput = document.getElementById("scorm-package");
   const messages = document.getElementById("messages");
   const activityOrder = document.getElementById("activity-order");
   const activityOrderList = document.getElementById("activity-order-list");
@@ -836,6 +838,8 @@
     activityTitleLabel.hidden = !activityMode;
     compileButton.disabled = selected.length === 0 ||
       (activityMode && !activityTitleInput.value.trim());
+    // Un paquet SCORM contient une seule feuille : question seule ou activité unique.
+    scormField.hidden = !(selected.length === 1 || activityMode);
     const warning = activityMode ? partialScoringWarning(selected) : "";
     scoringWarning.textContent = warning;
     scoringWarning.hidden = !warning;
@@ -965,9 +969,11 @@
   // Seuls les fichiers dont ces questions ont besoin sont intégrés : la compilation lit aussi le
   // module pywims et le script du Worker pour calculer les tirages, mais une feuille sans « question_check »
   // ne charge jamais Python et n’a pas à les contenir.
-  function compileSheet(questions, resources, activityTitle = null, options = {}) {
+  // options.scorm : la liaison au LMS d’un paquet SCORM (§ 5.9) est intégrée.
+  function compileSheet(questions, resources, activityTitle = null, { scorm = false, ...options } = {}) {
     const needed = Object.fromEntries(
       neededResources(questions.map(({ fields }) => fields)).map(key => [key, resources[key]]));
+    if (scorm) needed.scorm = resources.scorm;
     return activityTitle === null
       ? assembleQuestion(questions[0].fields, questions[0].draws, needed)
       : assembleActivity(activityTitle, questions, needed, options);
@@ -1112,7 +1118,10 @@
     try {
       // Tous les fichiers du projet sont lus une fois, au début : ceux des tirages et ceux de
       // l’assemblage sont de la même version.
-      const keys = [...new Set([...pythonResources, ...neededResources(selected.map(({ fields }) => fields))])];
+      // Paquet SCORM (§ 5.9) : seulement pour une question seule ou une activité unique (case visible).
+      const scorm = !scormField.hidden && scormInput.checked;
+      const keys = [...new Set([...pythonResources, ...neededResources(selected.map(({ fields }) => fields)),
+        ...(scorm ? ["scorm"] : [])])];
       const resources = await readProjectResources(keys);
       await installPythonSources(resources);
       // Les questions sont relues : un fichier modifié depuis l’ouverture est compilé dans sa
@@ -1146,14 +1155,18 @@
         compiled.push({ fields: question.fields, draws, path: question.path });
       }
       const html = content => new Blob([content], { type: "text/html;charset=utf-8" });
+      // Une feuille : fichier HTML, ou paquet SCORM (archive ZIP du manifeste et de la feuille).
+      const deliverSheet = (content, title) => scorm
+        ? downloadBlob(createZip(scormPackageEntries(content, title)), createQuestionFilename(title).replace(/\.html$/, "-scorm.zip"))
+        : downloadBlob(html(content), createQuestionFilename(title));
       if (compiled.length === 1) {
-        downloadBlob(html(compileSheet(compiled, resources)), createQuestionFilename(compiled[0].fields.question_title));
+        deliverSheet(compileSheet(compiled, resources, null, { scorm }), compiled[0].fields.question_title);
       } else if (outputMode.value === "activity") {
         const title = activityTitleInput.value.trim();
         if (!title) {
           throw new Error("Indiquez un titre pour l’activité.");
         }
-        downloadBlob(html(compileSheet(compiled, resources, title, { compact: compactStyleInput.checked })), createQuestionFilename(title));
+        deliverSheet(compileSheet(compiled, resources, title, { compact: compactStyleInput.checked, scorm }), title);
       } else {
         // Pages séparées : une feuille d’une question par fichier.
         const archiveEntries = [];

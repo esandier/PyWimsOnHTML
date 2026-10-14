@@ -125,8 +125,15 @@
   // Le stockage peut être indisponible (navigation privée, réglages) : la feuille marche sans.
   const sheetId = document.body.dataset.sheetId;
   const progressKey = !singleQuestion && sheetId ? `pywims-progression:${sheetId}` : null;
+  // Paquet SCORM ouvert dans un LMS (§ 5.9) : le LMS garde les réussites à la place du navigateur, qui
+  // ne les retrouverait pas sur un autre appareil. Hors LMS, ou hors paquet SCORM, null.
+  const scorm = window.PyWimsScorm?.connect() ?? null;
+  if (scorm) {
+    addEventListener("pagehide", () => scorm.finish());
+  }
 
   function loadProgress() {
+    if (scorm) return singleQuestion ? [] : scorm.succeeded();
     if (!progressKey) return [];
     try {
       const saved = JSON.parse(localStorage.getItem(progressKey) ?? "null");
@@ -137,9 +144,11 @@
   }
 
   function saveProgress(questions) {
-    if (!progressKey) return;
+    const succeeded = questions.filter(question => question.succeeded).map(question => question.index + 1);
+    // Progression transmise au LMS : part des questions réussies ; pour une question seule, 0 ou 100 %.
+    scorm?.report(succeeded, Math.round(succeeded.length * 100 / questions.length));
+    if (!progressKey || scorm) return;
     try {
-      const succeeded = questions.filter(question => question.succeeded).map(question => question.index + 1);
       localStorage.setItem(progressKey, JSON.stringify({ reussies: succeeded }));
     } catch {
       // Sans stockage, la progression est seulement perdue à la fermeture de la page.
@@ -150,6 +159,8 @@
   // la feuille pour repartir de questions vierges.
   document.getElementById("pw-restart")?.addEventListener("click", () => {
     if (!confirm("Effacer vos réussites et recommencer la feuille ?")) return;
+    // Dans un LMS, la note acquise reste : seules les réussites sont effacées (§ 5.9).
+    scorm?.clear();
     try {
       localStorage.removeItem(progressKey);
     } catch {
@@ -241,7 +252,8 @@
 
   const questions = sections.map(
     (section, index) => new Question(section, index, {
-      onSuccess: singleQuestion ? null : () => {
+      // Une question seule n’a pas de progression affichée ; dans un LMS, sa réussite est transmise (100 %).
+      onSuccess: singleQuestion ? (scorm ? () => saveProgress(questions) : null) : () => {
         updateProgress(questions);
         saveProgress(questions);
       },

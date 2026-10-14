@@ -520,6 +520,29 @@ def main():
                 page.click("#select-visible")
                 print("activité en partie notée : avertissement dans le cadre de l’aperçu")
 
+                # Paquet SCORM 1.2 (§ 5.9) d’une question seule : archive du manifeste et de la feuille,
+                # qui contient la liaison au LMS ; la case n’existe pas pour des pages séparées.
+                page.click(f".question-selection >> nth={titles.index('PGCD')}")
+                page.check("#scorm-package")
+                with page.expect_download(timeout=180_000) as waiting:
+                    page.click("#compile-question")
+                package = waiting.value
+                with zipfile.ZipFile(package.path()) as archive:
+                    names = sorted(archive.namelist())
+                    manifest = archive.read("imsmanifest.xml").decode("utf-8") if "imsmanifest.xml" in names else ""
+                    sheet = archive.read("index.html").decode("utf-8") if "index.html" in names else ""
+                if not package.suggested_filename.endswith("-scorm.zip") or names != ["imsmanifest.xml", "index.html"] \
+                        or "<schemaversion>1.2</schemaversion>" not in manifest or 'href="index.html"' not in manifest \
+                        or "PyWimsScorm" not in sheet:
+                    raise AssertionError(f"paquet SCORM inattendu : {package.suggested_filename}, {names}")
+                page.uncheck("#scorm-package")
+                page.click(f".question-selection >> nth={titles.index('Reconnaître des nombres premiers')}")
+                if page.is_visible("#scorm-field"):
+                    raise AssertionError("case « Paquet SCORM » visible pour des pages séparées")
+                page.click("#select-visible")
+                page.click("#select-visible")
+                print(f"paquet SCORM : {package.suggested_filename} (manifeste et feuille)")
+
                 # Une question sans « question_check » : la compilation lit le module pywims et le script du
                 # Worker pour ses tirages, mais le fichier n’en contient aucun (il ne charge pas Python).
                 page.fill("#question-search", "Valeur approchée")
