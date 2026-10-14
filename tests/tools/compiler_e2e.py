@@ -501,6 +501,25 @@ def main():
                 page.click("#select-visible")
                 print("ordre : trois « ↓ » descendent trois fois la question choisie")
 
+                # Activité en partie notée (§ 10.5) : exportée, avec un avertissement qui nomme la question
+                # sans barème (PGCD), puisque la note de « nombres premiers » n’y sera pas affichée.
+                titles = page.eval_on_selector_all("#question-list li:not(.question-group)",
+                                                   "items => items.map(li => li.querySelector('.question-title').textContent)")
+                for title in ("PGCD", "Reconnaître des nombres premiers"):
+                    page.click(f".question-selection >> nth={titles.index(title)}")
+                page.select_option("#output-mode", "activity")
+                page.fill("#activity-title", "En partie notée")
+                with page.expect_download(timeout=180_000):
+                    page.click("#compile-question")
+                page.wait_for_function("document.getElementById('messages').classList.contains('warning')", timeout=30_000)
+                message = page.text_content("#messages")
+                if "Aucune note ne sera affichée" not in message or "pgcd.pwq" not in message:
+                    raise AssertionError(f"avertissement attendu pour une activité en partie notée : {message}")
+                page.select_option("#output-mode", "separate")
+                page.click("#select-visible")
+                page.click("#select-visible")
+                print("activité en partie notée : exportée, avec un avertissement")
+
                 # Une question sans « question_check » : la compilation lit le module pywims et le script du
                 # Worker pour ses tirages, mais le fichier n’en contient aucun (il ne charge pas Python).
                 page.fill("#question-search", "Valeur approchée")

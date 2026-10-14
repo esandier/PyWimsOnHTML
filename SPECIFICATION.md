@@ -1034,7 +1034,9 @@ directive absente d’un barème donné prend la valeur indiquée :
   aucune question n’affiche de note, l’activité n’a pas de note indicative
   (seulement sa progression), et l’aide n’en parle pas. Une question seule
   n’a jamais de note. Dans tous les cas, le barème reste vérifié à la
-  compilation.
+  compilation. L’export d’une activité dont une partie seulement des
+  questions a un barème se fait, avec un avertissement qui nomme les
+  questions sans barème.
 
 ### 10.6 Contrôles à la compilation
 
