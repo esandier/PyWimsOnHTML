@@ -912,39 +912,32 @@ body:not([data-scored]) .pw-help-score {
 /* Un mot ou une formule n’est jamais coupé. « overflow-wrap: normal » annule le
    « overflow-wrap: anywhere » de l’énoncé, qui coupait les mots n’importe où (« dérivabl/e ») ;
    il garde aussi le débordement mesurable par le widget de choix, qui retire alors des colonnes.
-   « overflow-x: auto » ne sert qu’en dernier recours, sur une seule colonne : une formule plus
-   large que l’écran défile dans son choix au lieu de passer sous l’icône du verdict. */
+
+   Le texte d’un choix ne défile pas : seul un choix qui déborde vraiment (is-wide, posé par le widget,
+   au-delà de 1 px) défile, en dernier recours, quand il ne reste qu’une colonne ; une formule plus
+   large que l’écran défile alors au lieu de passer sous l’icône du verdict.
+   Pourquoi : quand chaque texte de choix défilait (overflow-x: auto, donc aussi en hauteur, la règle
+   CSS n’admettant pas un seul axe), tout dépassement d’une fraction de pixel affichait une barre. Ces
+   dépassements n’ont pas de fin : copie MathML de MathJax, métriques de la police, arrondi de la
+   largeur d’une formule aux pixels de l’écran (style compact, où le choix a la largeur exacte de son
+   contenu : « n/2 » à 28,953 px, barre sur 1 à 3 choix sur 104, mesuré en octobre 2026). Trois
+   correctifs successifs en ont chacun supprimé un, et le problème revenait ailleurs.
+   Solution écartée : continuer à supprimer chaque source de dépassement. Les vérifications de ces
+   correctifs ne voyaient d’ailleurs pas les barres (Edge sans interface les masquait, voir edge.py). */
 .pw-choice-text {
   flex: 1 1 auto;
   min-width: 0;
-  overflow-x: auto;
   overflow-wrap: normal;
 }
 
-/* Copie MathML d’une formule, que MathJax ajoute pour les lecteurs d’écran : découpée pour ne rien
-   montrer (clip), mais sa boîte gardait la hauteur de la formule rendue par le navigateur, et elle
-   comptait dans le débordement des zones qui défilent. Dans un choix (overflow-x: auto, donc aussi
-   défilement vertical), elle dépassait de 2 ou 3 px selon la police de la charte : des flèches de
-   défilement apparaissaient sous chaque formule. Hauteur de 1 px, comme le texte réservé aux
-   lecteurs d’écran (.pw-sr-only) : elle reste lue, et ne déborde plus.
-   Solution écartée : désactiver cette copie (enableAssistiveMml: false), au prix de l’accessibilité. */
-mjx-assistive-mml {
-  height: 1px;
-}
-
-/* Formule d’un choix en bloc en ligne (inline-block) : sa boîte est alors celle de l’image SVG, et la
-   ligne s’ajuste à sa hauteur. En ligne (inline), la boîte du conteneur suivait les métriques de la
-   police et dépassait la case de 3 à 6 px en hauteur (sortie SVG de MathJax, police Source Sans de la
-   charte) ; la case, qui défile en dernier recours (overflow-x: auto, donc aussi en hauteur),
-   affichait des flèches de défilement sous chaque formule. Mesuré en octobre 2026 : barres sur
-   toutes les pages essayées avant, sur aucune après, de 90 % à 175 % de zoom, de 375 à 1280 px.
-   Solutions écartées :
-   - « overflow-y: hidden » sur la case : il aurait pu rogner le bas d’une fraction ;
-   - garder la marge de 1 px à droite qui compensait l’arrondi de la largeur à 110 % (« min(m, n) ») :
-     en bloc en ligne, cette marge compte dans le débordement, et faisait elle-même apparaître une
-     barre ; sans elle, l’arrondi ne déborde plus, mesuré au même zoom. */
-.pw-choice-text mjx-container {
-  display: inline-block;
+/* Choix trop large : défilement horizontal seulement. Une formule dépasse sa ligne de quelques pixels
+   en haut et en bas (métriques de MathJax et de la police, 3 à 6 px mesurés) : la marge intérieure
+   les contient, comme celle des zones de retour, et « overflow-y: hidden » ne rogne donc rien de
+   visible, tout en empêchant une seconde barre, verticale, pour une fraction de pixel. */
+.pw-choice-text.is-wide {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-block: 0.4em;
 }
 
 .pw-choice:has(input:focus-visible) {

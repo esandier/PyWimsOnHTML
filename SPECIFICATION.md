@@ -1092,6 +1092,15 @@ En plus du § 2.4, le compilateur refuse la question si, pour l’un des tirages
   choix ne tient pas dans sa colonne : un mot ou une formule n’est jamais
   coupé ni masqué, ce qui changerait le sens du choix. Des choix courts
   restent ainsi côte à côte sur téléphone.
+- **Défilement.** Le texte d’un choix ne défile pas. Seul un choix qui
+  déborde encore de plus de 1 px quand il ne reste qu’une colonne défile en
+  largeur, en dernier recours ; la même mesure décide des colonnes et du
+  défilement. Avant octobre 2026, chaque choix pouvait défiler, et tout
+  dépassement d’une fraction de pixel d’une formule (métriques de MathJax et
+  de la police, arrondi aux pixels de l’écran) affichait une barre ; trois
+  correctifs locaux n’y ont pas suffi. Le test `tests/tools/scrollbars.py`
+  vérifie, sur des activités exportées dans les deux styles, à plusieurs
+  zooms et largeurs, qu’aucune barre n’apparaît sans débordement réel.
 
 ### 10.8 Conversion depuis AMC
 

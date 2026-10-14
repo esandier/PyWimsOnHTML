@@ -13,7 +13,10 @@ import pathlib
 def launch_edge(playwright, path=None):
     """Edge sans interface ; chemin : exécutable d’Edge, si Playwright ne le trouve pas seul."""
     options = {"executable_path": path} if path else {"channel": "msedge"}
-    return playwright.chromium.launch(headless=True, **options)
+    # Barres de défilement visibles, comme chez l’élève : sans interface, Playwright les masque
+    # (--hide-scrollbars). Les vérifications des barres parasites sous les choix ne les voyaient
+    # donc pas (octobre 2026), et une page qui défile n’avait pas la largeur réelle.
+    return playwright.chromium.launch(headless=True, ignore_default_args=["--hide-scrollbars"], **options)
 
 
 def page_address(target):

@@ -31,6 +31,10 @@ try {
     "== Interface du compilateur : dossier, liste, aperçu, compilation (tests/tools/compiler_e2e.py)"
     python -I -X utf8 "$PSScriptRoot\compiler_e2e.py" "http://127.0.0.1:$port/compiler/index.html"
     if ($LASTEXITCODE) { $failed = $true }
+    # Barres de défilement parasites et page plus large que l’écran, sur des activités exportées.
+    "== Barres de défilement : zooms, largeurs, deux styles (tests/tools/scrollbars.py)"
+    python -I -X utf8 "$PSScriptRoot\scrollbars.py" "http://127.0.0.1:$port/compiler/index.html"
+    if ($LASTEXITCODE) { $failed = $true }
   }
 } finally {
   Stop-Process -Id $server.Id -Force -ErrorAction SilentlyContinue

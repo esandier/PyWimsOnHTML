@@ -430,17 +430,19 @@ window.PyWimsPython = (() => {
         frame.remove();
       });
 
-      // La copie MathML des formules (lecteurs d’écran) comptait dans le débordement du texte d’un
-      // choix : des flèches de défilement apparaissaient sous chaque formule à exposant.
-      await test("une formule à exposant ne fait pas déborder le texte de son choix", async () => {
+      // Une formule dépasse toujours un peu sa ligne (métriques de MathJax et de la police, arrondis) :
+      // le texte d’un choix ne doit donc pas défiler, sinon ce dépassement affiche une barre
+      // (question.css, .pw-choice-text). Seul un choix trop large pour sa colonne défile (is-wide).
+      await test("une formule à exposant ne fait pas défiler le texte de son choix", async () => {
         const draws = [{ ...choiceDraws[0], choices: { r: ["$2^{-1}$", "$2^{-3}$", "$\\frac{1}{2}$", "$9$"] } }];
         const { $, frame } = await openQuestion(choiceQuestion, draws,
           { ...choiceOptions, choices: { 0: { choix: draws[0].choices.r } } });
         await waitFor(() => $("#q1 .pw-choices").querySelectorAll("mjx-container").length === 4, "composition des choix", 20000);
-        const overflowing = [...$("#q1 .pw-choices").querySelectorAll(".pw-choice-text")]
-          .filter(text => text.scrollHeight > text.clientHeight);
-        if (overflowing.length) {
-          throw new Error(`${overflowing.length} choix débordent : ${overflowing.map(text => `${text.scrollHeight}/${text.clientHeight}`).join(", ")}`);
+        const scrolling = [...$("#q1 .pw-choices").querySelectorAll(".pw-choice-text")]
+          .filter(text => text.classList.contains("is-wide") ||
+            getComputedStyle(text).overflowX !== "visible" || getComputedStyle(text).overflowY !== "visible");
+        if (scrolling.length) {
+          throw new Error(`${scrolling.length} choix peuvent défiler`);
         }
         frame.remove();
       });
@@ -463,7 +465,9 @@ window.PyWimsPython = (() => {
       });
 
       await test("sans columns, les choix ont la taille du plus grand, sur autant de colonnes que possible", async () => {
-        // Choix calculés à formules, comme ceux de mcq : ni débordement, ni barre de défilement.
+        // Choix calculés à formules, comme ceux de mcq : ni débordement en largeur (au-delà de 1 px,
+        // la tolérance du widget), ni défilement. En hauteur, une formule dépasse un peu sa ligne,
+        // sans conséquence : le texte d’un choix ne défile pas.
         const formulas = ["$x^{2} + 5 x + 4$", "$x^{2} - 4$", "$x^{2} + 3 x - 4$", "$x^{2} + 3 x + 3$"];
         const question = { ...choiceQuestion, question_statement: choiceQuestion.question_statement.replace(" columns=2", "") };
         const open = texts => openQuestion(question, [{ ...choiceDraws[0], choices: { r: texts } }],
@@ -474,7 +478,7 @@ window.PyWimsPython = (() => {
           short.$("#q1 .pw-choices").style.gridTemplateColumns.startsWith("repeat(4"), "quatre colonnes", 20000);
         const boxes = layout(short.$);
         const overflowing = [...short.$("#q1 .pw-choices").querySelectorAll(".pw-choice-text")]
-          .filter(text => text.scrollWidth > text.clientWidth || text.scrollHeight > text.clientHeight);
+          .filter(text => text.scrollWidth > text.clientWidth + 1 || text.classList.contains("is-wide"));
         if (new Set(boxes.map(box => Math.round(box.top))).size !== 1 ||
             new Set(boxes.map(box => Math.round(box.width))).size !== 1 || overflowing.length) {
           throw new Error(`Grille inattendue : ${JSON.stringify(boxes.map(box => [box.top, box.width]))}, ${overflowing.length} débordement(s)`);

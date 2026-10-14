@@ -115,19 +115,32 @@ window.PyWimsWidgets = (() => {
   // colonnes, même sur téléphone. On repart du nombre voulu par l’auteur à chaque appel, car la
   // fenêtre a pu s’élargir depuis (rotation du téléphone).
   // Appelée par la question après la composition des formules, et au redimensionnement.
+  //
+  // Elle pose aussi « is-wide » sur un texte qui déborde encore une fois les colonnes réglées : lui
+  // seul défile (question.css). La même mesure décide des colonnes et du défilement : un choix jugé
+  // « tient dans sa colonne » ne défile jamais, et un dépassement d’une fraction de pixel (arrondi
+  // d’une formule aux pixels de l’écran) n’affiche pas de barre.
   function fitChoiceColumns(root) {
     for (const group of root.querySelectorAll(".pw-choices")) {
+      const texts = [...group.querySelectorAll(".pw-choice-text")];
+      // Mesures faites sans défilement : la fenêtre a pu s’élargir depuis le dernier appel.
+      texts.forEach(text => text.classList.remove("is-wide"));
       if (group.classList.contains("is-compact")) {
         fitCompactChoices(group);
-        continue;
+      } else {
+        for (let columns = Number(group.dataset.columns); columns >= 1; columns -= 1) {
+          group.style.setProperty("--pw-choice-columns", String(columns));
+          if (!texts.some(overflows)) break;
+        }
       }
-      for (let columns = Number(group.dataset.columns); columns >= 1; columns -= 1) {
-        group.style.setProperty("--pw-choice-columns", String(columns));
-        const overflowing = [...group.querySelectorAll(".pw-choice-text")]
-          .some(text => text.scrollWidth > text.clientWidth + 1);
-        if (!overflowing) break;
-      }
+      texts.forEach(text => text.classList.toggle("is-wide", overflows(text)));
     }
+  }
+
+  // Un texte de choix déborde si sa largeur de contenu dépasse sa largeur visible de plus de 1 px.
+  // scrollWidth se mesure aussi sur un élément qui ne défile pas (vérifié dans Edge et Firefox).
+  function overflows(text) {
+    return text.scrollWidth > text.clientWidth + 1;
   }
 
   return Object.freeze({ ...existing, inputChoice, inputSelect, fitSelects, fitChoiceColumns });
