@@ -4,7 +4,7 @@
 // page (SPECIFICATION.md, § 11.1) ; le dossier choisi par l’utilisateur ne contient que ses questions.
 (() => {
   // Fonctions des modules du compilateur (format.js, draws.js, assemble.js, zip.js).
-  const { archiveQuestionSource, assembleActivity, assembleQuestion, computeDraws, createQuestionFilename, createZip, fieldKindsLabel, isArchive, isQuestionFile, neededResources, parseQuestionSource, previewPlaceholderDraw, readZip, resourcePaths, scormPackageEntries, splitPastedQuestions, splitQuestionSource, templateWarnings } = PyWimsCompiler;
+  const { archiveQuestionSource, assembleActivity, assembleQuestion, computeDraws, createQuestionFilename, createZip, fieldKindsLabel, isArchive, isPwqFile, isQuestionFile, neededResources, parseQuestionSource, previewPlaceholderDraw, pwqExtension, questionExtension, readZip, resourcePaths, scormPackageEntries, splitPastedQuestions, splitQuestionSource, templateWarnings } = PyWimsCompiler;
 
   const chooseFolderButton = document.getElementById("choose-folder");
   const filePicker = document.getElementById("question-folder");
@@ -139,7 +139,7 @@
   // Texte d’un fichier de question : celui d’un .pwq, ou celui du .pwq d’une archive, ses images
   // intégrées (SPECIFICATION.md, § 2.7) ; null pour un .zip qui ne contient pas de question.
   async function questionText(file, path) {
-    if (/\.pwq$/i.test(path)) {
+    if (isPwqFile(path)) {
       return file.text();
     }
     let files;
@@ -351,7 +351,8 @@
     const reply = message => event.source.postMessage(
       { pwPreviewReply: data.pwPreviewCall, epoch: PyWimsPython.epoch(), ...message }, "*");
     new Promise(resolve => {
-      if (!previewSessionMethods.includes(data.method) || !/^[A-Za-z0-9_-]+$/.test(data.session) || !Array.isArray(data.args)) {
+      // L’identifiant de session est contrôlé par createSession, seule définition de sa forme.
+      if (!previewSessionMethods.includes(data.method) || typeof data.session !== "string" || !Array.isArray(data.args)) {
         throw new Error("Appel Python de l’aperçu invalide.");
       }
       const sessionId = `apercu${previewFrameNumber}-${data.session}`;
@@ -970,17 +971,34 @@
   // Fichiers dont Python a besoin pour calculer des tirages, qu’une question ait un « question_check » ou non.
   const pythonResources = ["pywims", "pythonWorker"];
 
-  // Lit les fichiers du projet à côté de cette page (« ../ » depuis compiler/). « no-cache » les fait
-  // revalider auprès du serveur à chaque lecture : après une publication, une compilation ne mêle
-  // jamais l’ancienne et la nouvelle version (le cache de GitHub Pages dure quelques minutes).
+  // Fichiers du moteur (runtime/, widgets/, css/…, à côté de cette page) lus une seule fois, à
+  // l’ouverture : l’aperçu, les tirages et la compilation utilisent la version des scripts que la page
+  // a chargés. Relus à chaque usage, ils pouvaient être plus récents qu’un atelier resté ouvert, qui
+  // mêlait alors deux versions (« Variable de question inconnue » pour une variable accentuée, en
+  // octobre 2026). Une modification du moteur demande donc de recharger la page. « no-cache » fait
+  // revalider chaque fichier auprès du serveur : après une publication, la lecture ne mêle pas l’ancienne
+  // et la nouvelle version (le cache de GitHub Pages dure quelques minutes). Une lecture qui échoue
+  // (réseau, page ouverte depuis le disque) est retentée au prochain usage.
+  // Solution écartée : comparer les fichiers relus à ceux de la page et demander de la recharger.
+  const engineFiles = new Map();
+  function readEngineFile(key) {
+    if (!engineFiles.has(key)) {
+      const reading = fetch(new URL(`../${resourcePaths[key]}`, location.href), { cache: "no-cache" })
+        .then(async response => {
+          if (!response.ok) {
+            throw new Error(`Fichier du projet introuvable : « ${resourcePaths[key]} » (${response.status}).`);
+          }
+          return response.text();
+        });
+      reading.catch(() => engineFiles.delete(key));
+      engineFiles.set(key, reading);
+    }
+    return engineFiles.get(key);
+  }
+  for (const key of Object.keys(resourcePaths)) readEngineFile(key);
+
   async function readProjectResources(keys) {
-    const entries = await Promise.all(keys.map(async key => {
-      const response = await fetch(new URL(`../${resourcePaths[key]}`, location.href), { cache: "no-cache" });
-      if (!response.ok) {
-        throw new Error(`Fichier du projet introuvable : « ${resourcePaths[key]} » (${response.status}).`);
-      }
-      return [key, await response.text()];
-    }));
+    const entries = await Promise.all(keys.map(async key => [key, await readEngineFile(key)]));
     const resources = Object.fromEntries(entries);
     // La charte du dossier remplace la charte neutre ; relue à chaque fois, comme les questions.
     if (folderBrand && "brandCss" in resources) {
@@ -1090,7 +1108,7 @@
   async function uniquePath(name) {
     const taken = new Set(questions.map(question => question.path.toLocaleLowerCase()));
     for await (const entry of folderHandle.keys()) taken.add(entry.toLocaleLowerCase());
-    const stem = name.replace(/\.pwq$/i, "");
+    const stem = name.replace(pwqExtension, "");
     let candidate = name;
     for (let index = 2; taken.has(candidate.toLocaleLowerCase()); index += 1) {
       candidate = `${stem}-${index}.pwq`;
@@ -1213,7 +1231,7 @@
         const archiveEntries = [];
         for (const question of compiled) {
           archiveEntries.push({
-            name: question.path.replace(/\.(pwq|pwqa|zip)$/i, ".html"),
+            name: question.path.replace(questionExtension, ".html"),
             content: compileSheet([question], resources)
           });
         }

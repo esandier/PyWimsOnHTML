@@ -85,6 +85,15 @@
         throw new Error("Un texte sans question devait donner une liste vide.");
       }
     });
+    // Lignes de structure, définies une seule fois (format.js) pour l’analyse, le découpage et l’éditeur.
+    test("le délimiteur et l’intertitre d’un champ ont une seule définition", () => {
+      const { isDelimiter, fieldHeader } = PyWimsCompiler;
+      if (!isDelimiter(" % ") || isDelimiter("%%") || isDelimiter(undefined) ||
+          fieldHeader("  % question_title ") !== "question_title" || fieldHeader("%") !== null ||
+          fieldHeader("% question title") !== null || fieldHeader(undefined) !== null) {
+        throw new Error("Les lignes de structure d’un .pwq sont mal reconnues.");
+      }
+    });
     test("analyse le format des champs", () => {
       const fields = PyWimsCompiler.parseQuestionSource(source);
       if (fields.question_title !== "Essai" || fields.question_keywords !== "mathématiques, PGCD") throw new Error("Les valeurs des champs sont différentes.");

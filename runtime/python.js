@@ -116,13 +116,13 @@ window.PyWimsPython = (() => {
     });
   }
 
-  // Nom de variable : même règle que runtime/template.js (identifiants de Python, lettres accentuées
-  // comprises), recopiée pour que ce module ne dépende pas de la grammaire des modèles.
-  const namePattern = /^[\p{ID_Start}_]\p{ID_Continue}*$/u;
+  // Nom de variable : la règle de runtime/template.js (identifiants de Python, lettres accentuées
+  // comprises), toujours chargé avant ce module : une copie ici obligeait à changer la règle deux fois.
+  const isName = name => PyWimsTemplate.isName(name);
 
   // Fournit le module pywims lu dans le dossier du projet (compilateur, tests). Si Python tourne
-  // déjà, le module est remplacé : un dossier rouvert après une modification de pywims.py prend effet
-  // sans recharger la page.
+  // déjà, le module est remplacé (les tests s’en servent ; le compilateur, lui, lit pywims.py une
+  // seule fois, à son ouverture).
   function setModuleSource(source) {
     if (typeof source !== "string") {
       throw new Error("Le module pywims doit être un texte.");
@@ -164,7 +164,7 @@ window.PyWimsPython = (() => {
   // Les contrôles des arguments restent dans la page : une donnée invalide échoue tout de suite, avec
   // un message précis, sans aller-retour.
   function setMatrix(name, values, sessionId = "default") {
-    if (!namePattern.test(name) ||
+    if (!isName(name) ||
         !Array.isArray(values) ||
         values.length === 0 ||
         values.length > 10 ||
@@ -184,7 +184,7 @@ window.PyWimsPython = (() => {
   // indices cochés (choix multiple).
   function setChoice(name, value, sessionId = "default") {
     const isIndex = item => Number.isInteger(item) && item >= 0 && item < 1000;
-    if (!namePattern.test(name) ||
+    if (!isName(name) ||
         !(value === null || isIndex(value) || (Array.isArray(value) && value.length <= 1000 && value.every(isIndex)))) {
       throw new Error("La saisie du champ à choix est invalide.");
     }
@@ -194,11 +194,12 @@ window.PyWimsPython = (() => {
   // Préparation de « question_check » (SPECIFICATION.md, §§ 2.6 et 2.8) : verdicts par défaut ({ clé: booléen },
   // « m[0][1] » pour une case), textes saisis et valeurs [n, d] (ou null) des champs input_value.
   function prepareCheck({ verdicts = {}, texts = {}, values = {} } = {}, sessionId = "default") {
-    const keyPattern = /^[\p{ID_Start}_]\p{ID_Continue}*(\[\d+\]\[\d+\])?$/u;
+    // Clé d’un verdict : un nom, ou « m[0][1] » pour une case de matrice.
+    const isKey = key => isName(key.replace(/\[\d+\]\[\d+\]$/, ""));
     const integer = /^-?\d+$/;
-    const valid = (record, check, pattern = namePattern) =>
-      record && typeof record === "object" && Object.entries(record).every(([key, value]) => pattern.test(key) && check(value));
-    if (!valid(verdicts, value => typeof value === "boolean", keyPattern) ||
+    const valid = (record, check, isValidKey = isName) =>
+      record && typeof record === "object" && Object.entries(record).every(([key, value]) => isValidKey(key) && check(value));
+    if (!valid(verdicts, value => typeof value === "boolean", isKey) ||
         !valid(texts, value => typeof value === "string") ||
         !valid(values, value => value === null ||
           (Array.isArray(value) && value.length === 2 && value.every(part => typeof part === "string" && integer.test(part))))) {
@@ -208,14 +209,14 @@ window.PyWimsPython = (() => {
   }
 
   function getChoiceTexts(name, sessionId = "default", plain = false) {
-    if (!namePattern.test(name)) {
+    if (!isName(name)) {
       throw new Error(`Liste de choix non prise en charge : ${name}`);
     }
     return call("getChoiceTexts", [sessionId, name, Boolean(plain)]);
   }
 
   function getTemplateValue(name, sessionId = "default") {
-    if (!namePattern.test(name)) {
+    if (!isName(name)) {
       throw new Error(`Variable de modèle non prise en charge : ${name}`);
     }
     return call("getTemplateValue", [sessionId, name]);

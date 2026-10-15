@@ -6,7 +6,7 @@
 // Script classique (et non module ES), comme les autres scripts du compilateur ; il publie
 // window.PyWimsEditor.
 window.PyWimsEditor = (() => {
-  const { parseQuestionSource } = PyWimsCompiler;
+  const { parseQuestionSource, isDelimiter, fieldHeader } = PyWimsCompiler;
 
   const pythonFields = new Set(["question_setup", "question_check"]);
   const htmlFields = new Set(["question_statement", "question_solution_explanation"]);
@@ -97,12 +97,11 @@ window.PyWimsEditor = (() => {
         copyState: ({ mode, state }) => ({ mode, state: mode ? CodeMirror.copyState(mode, state) : null }),
         token(stream, state) {
           if (stream.sol()) {
-            const line = stream.string.trim();
-            const header = line.match(/^%\s+([A-Za-z_][A-Za-z0-9_]*)$/);
-            if (line === "%" || header) {
+            const header = fieldHeader(stream.string);
+            if (header || isDelimiter(stream.string)) {
               stream.skipToEnd();
               if (header) {
-                state.mode = inner(header[1]);
+                state.mode = inner(header);
                 state.state = state.mode ? CodeMirror.startState(state.mode) : null;
               }
               return header ? "pwq-header" : "pwq-delimiter";
@@ -125,9 +124,9 @@ window.PyWimsEditor = (() => {
     // Repli d’une section : de son intertitre « % question_… » jusqu’à la ligne qui précède le « % »
     // suivant (ou la fin du fichier).
     CodeMirror.registerHelper("fold", "pwq", (cm, start) => {
-      if (!/^%\s+[A-Za-z_]/.test(cm.getLine(start.line).trim())) return undefined;
+      if (!fieldHeader(cm.getLine(start.line))) return undefined;
       let end = start.line + 2;
-      while (end < cm.lineCount() && cm.getLine(end).trim() !== "%") end += 1;
+      while (end < cm.lineCount() && !isDelimiter(cm.getLine(end))) end += 1;
       end -= 1;
       if (end <= start.line) return undefined;
       return { from: CodeMirror.Pos(start.line, cm.getLine(start.line).length), to: CodeMirror.Pos(end, cm.getLine(end).length) };
@@ -143,7 +142,7 @@ window.PyWimsEditor = (() => {
     const lines = text.replace(/\r\n?/g, "\n").split("\n");
     const fieldLine = message.match(/«\s*(question_[a-z_]+)\s*»[^]*?ligne (\d+)/);
     if (fieldLine) {
-      const header = lines.findIndex(line => line.trim().match(/^%\s+([A-Za-z_]+)$/)?.[1] === fieldLine[1]);
+      const header = lines.findIndex(line => fieldHeader(line) === fieldLine[1]);
       return header < 0 ? null : header + 2 + Number(fieldLine[2]);
     }
     const tag = message.match(/\{%.*?%\}/);

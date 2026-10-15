@@ -1226,9 +1226,12 @@ liste par titre (§ 11.3) sont déjà en place dans le compilateur local.
 - Chaque push sur `master` met à jour le site.
 - Les fichiers du projet utiles à l’assemblage (`layouts/`, `runtime/`,
   `widgets/`, `css/`) sont lus par le compilateur à côté de lui (même origine),
-  et non plus dans un dossier choisi par l’utilisateur. Ils sont relus à chaque
-  compilation, sans cache périmé (revalidation auprès du serveur) : une
-  compilation n’utilise jamais deux versions mêlées du projet.
+  et non plus dans un dossier choisi par l’utilisateur. Ils sont lus une seule
+  fois, à l’ouverture du compilateur, sans cache périmé (revalidation auprès du
+  serveur) : l’aperçu, les tirages et la compilation utilisent la version des
+  scripts de la page, jamais deux versions mêlées du projet. Une modification du
+  moteur demande de recharger la page (relus à chaque compilation, ils
+  pouvaient être plus récents qu’un atelier resté ouvert, octobre 2026).
 - Le module `pywims` et le script du Worker sont lus en ligne avec les autres
   fichiers, puis intégrés au fichier généré : tirages calculés et rejoués
   utilisent le même code (§ 3).

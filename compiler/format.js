@@ -11,8 +11,18 @@
   // Fichiers de question d’un dossier : un .pwq, ou une archive qui contient un .pwq et ses images
   // (SPECIFICATION.md, § 2.7). « .pwqa » dit que c’est une question ; un « .zip » quelconque peut
   // être autre chose, et n’est une question que s’il contient un .pwq.
-  const isQuestionFile = name => /\.(pwq|pwqa|zip)$/i.test(name);
+  const questionExtension = /\.(pwq|pwqa|zip)$/i;
+  const pwqExtension = /\.pwq$/i;
+  const isQuestionFile = name => questionExtension.test(name);
   const isArchive = name => /\.(pwqa|zip)$/i.test(name);
+  const isPwqFile = name => pwqExtension.test(name);
+
+  // Lignes de structure d’un .pwq (§ 2) : le délimiteur, « % » seul avec d’éventuels espaces, et
+  // l’intertitre d’un champ, « % question_… », dont fieldHeader renvoie le nom (null sinon). Seule
+  // définition du format : l’analyse, le découpage et l’éditeur (coloration, repli, lien vers une
+  // ligne) s’en servent, pour qu’ils ne divergent pas.
+  const isDelimiter = line => line?.trim() === "%";
+  const fieldHeader = line => line?.trim().match(/^%\s+([A-Za-z_][A-Za-z0-9_]*)$/)?.[1] ?? null;
 
   // Formats d’image admis, d’après l’extension : ceux que tous les navigateurs affichent.
   const imageTypes = {
@@ -53,7 +63,7 @@
   function archiveQuestionSource(files, path) {
     // Fichiers ajoutés par macOS, sans rapport avec la question.
     let entries = files.filter(({ name }) => !name.startsWith("__MACOSX/") && !name.split("/").at(-1).startsWith("."));
-    const sources = entries.filter(({ name }) => /\.pwq$/i.test(name));
+    const sources = entries.filter(({ name }) => isPwqFile(name));
     if (!sources.length) {
       if (/\.zip$/i.test(path)) return null;
       throw new Error(`${path} : l’archive ne contient pas de fichier .pwq.`);
@@ -75,7 +85,7 @@
     let text = "";
     for (const { name, bytes } of entries) {
       const type = imageTypes[name.split(".").at(-1).toLowerCase()];
-      if (/\.pwq$/i.test(name)) {
+      if (isPwqFile(name)) {
         text = new TextDecoder().decode(bytes);
       } else if (type) {
         images.set(name, `data:${type};base64,${base64(bytes)}`);
@@ -107,23 +117,17 @@
     const fields = {};
     let index = 0;
 
-    // Le séparateur ne contient que le signe « % », avec d’éventuels espaces.
-    function isDelimiter(line) {
-      return line.trim() === "%";
-    }
-
     if (!isDelimiter(lines[index])) {
       throw new Error(`${path} : le fichier doit commencer par une ligne délimiteur « % ».`);
     }
     index += 1;
 
     while (index < lines.length) {
-      const header = lines[index].trim().match(/^%\s+([A-Za-z_][A-Za-z0-9_]*)$/);
-      if (!header) {
+      const name = fieldHeader(lines[index]);
+      if (!name) {
         throw new Error(`${path}:${index + 1} : en-tête de champ attendu, par exemple « % question_title ».`);
       }
 
-      const name = header[1];
       if (!knownFields.has(name)) {
         throw new Error(`${path}:${index + 1} : champ inconnu « ${name} ».`);
       }
@@ -194,7 +198,6 @@
   function splitQuestionSource(source) {
     const crlf = /\r\n/.test(source);
     const lines = source.replace(/^﻿/, "").replace(/\r\n?/g, "\n").split("\n");
-    const isDelimiter = line => line?.trim() === "%";
     let index = 0;
     while (index < lines.length && lines[index].trim() === "") index += 1;
     if (!isDelimiter(lines[index])) return null;
@@ -202,15 +205,15 @@
     const fields = [];
     let closed = false;
     while (index < lines.length && !lines.slice(index).every(line => line.trim() === "")) {
-      const header = lines[index].trim().match(/^%\s+([A-Za-z_][A-Za-z0-9_]*)$/);
-      if (!header || !isDelimiter(lines[index + 1])) return null;
+      const name = fieldHeader(lines[index]);
+      if (!name || !isDelimiter(lines[index + 1])) return null;
       index += 2;
       const content = [];
       while (index < lines.length && !isDelimiter(lines[index])) {
         content.push(lines[index]);
         index += 1;
       }
-      fields.push({ name: header[1], content: content.join("\n").trimEnd() });
+      fields.push({ name, content: content.join("\n").trimEnd() });
       closed = index < lines.length;
       index += 1;
     }
@@ -262,17 +265,17 @@
       }
     } else {
       lines.forEach((line, index) => {
-        if (line.trim() === "%" && /^%\s+question_title\s*$/.test(lines[index + 1]?.trim() ?? "")) {
+        if (isDelimiter(line) && fieldHeader(lines[index + 1]) === "question_title") {
           pieces.push({ name: null, lines: [] });
         }
         pieces.at(-1)?.lines.push(line);
       });
     }
     return pieces.map(({ name, lines: pieceLines }) => {
-      const start = pieceLines.findIndex(line => line.trim() === "%");
+      const start = pieceLines.findIndex(isDelimiter);
       const source = start < 0 ? "" : `${pieceLines.slice(start).join("\n").trimEnd()}\n`;
       // Un nom de fichier, sans chemin : « sous-dossier/x.pwq » ou « x » deviennent « x.pwq ».
-      const fileName = name && `${name.split(/[\\/]/).pop().replace(/\.pwq$/i, "")}.pwq`;
+      const fileName = name && `${name.split(/[\\/]/).pop().replace(pwqExtension, "")}.pwq`;
       return { name: fileName, source };
     }).filter(({ source }) => source);
   }
@@ -327,6 +330,11 @@
     knownFields,
     isQuestionFile,
     isArchive,
+    isPwqFile,
+    questionExtension,
+    pwqExtension,
+    isDelimiter,
+    fieldHeader,
     archiveQuestionSource,
     fieldKindsLabel,
     templateWarnings
