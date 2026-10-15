@@ -151,7 +151,7 @@
     <p>Un champ s’écrit dans <code>question_statement</code>, à l’endroit où il doit apparaître :</p>
 <pre><code>{% type 'nom' paramètre=valeur paramètre=valeur … %}</code></pre>
     <ul>
-      <li><code>'nom'</code> : un nom de variable Python (lettres, chiffres, <code>_</code>), différent des
+      <li><code>'nom'</code> : un nom de variable Python (lettres, accentuées comprises, chiffres, <code>_</code>), différent des
         variables de <code>question_setup</code> ; dans <code>question_check</code>, la saisie arrive dans cette variable.</li>
       <li>Une valeur est un nom de variable de <code>question_setup</code> (<code>solution=product</code>), un
         nombre (<code>columns=4</code>, <code>tolerance=0.01</code>), un mot parmi ceux que le champ admet

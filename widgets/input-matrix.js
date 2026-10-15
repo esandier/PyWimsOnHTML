@@ -20,7 +20,7 @@ window.PyWimsWidgets = (() => {
 
   // Construit une matrice accessible carrée ou rectangulaire de dimensions fixes.
   function inputMatrix(name, rowCount, columnsOrOptions = rowCount, suppliedOptions = {}) {
-    if (!/^[A-Za-z_]\w*$/.test(name)) {
+    if (!PyWimsTemplate.isName(name)) {
       throw new Error(`Nom invalide pour input_matrix : ${name}`);
     }
     const columnCount = typeof columnsOrOptions === "number"
@@ -46,7 +46,7 @@ window.PyWimsWidgets = (() => {
 
   // Affiche une grille redimensionnable tout en préparant le nombre maximal de cases.
   function inputVMatrix(name, maxRows = 10, maxColumns = 10, options = {}) {
-    if (!/^[A-Za-z_]\w*$/.test(name)) {
+    if (!PyWimsTemplate.isName(name)) {
       throw new Error(`Nom invalide pour input_vmatrix : ${name}`);
     }
     if (!Number.isInteger(maxRows) || maxRows < 1 || maxRows > 10 ||

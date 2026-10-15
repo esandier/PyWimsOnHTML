@@ -16,7 +16,7 @@ window.PyWimsWidgets = (() => {
 
   // Crée un champ MathLive avec clavier virtuel et nom accessible.
   function inputMath(name, options = {}) {
-    if (!/^[A-Za-z_]\w*$/.test(name)) {
+    if (!PyWimsTemplate.isName(name)) {
       throw new Error(`Nom invalide pour input_math : ${name}`);
     }
 

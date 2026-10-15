@@ -1,7 +1,17 @@
 // Grammaire unique des modèles de question, partagée par le compilateur et la question générée.
 window.PyWimsTemplate = (() => {
   const tagPattern = /{%\s*(.*?)\s*%}/gs;
-  const variablePattern = /{{\s*([A-Za-z_]\w*)\s*}}/g;
+  // Nom de variable : la règle des identifiants de Python, lettres accentuées comprises (« résultat »),
+  // puisque chaque nom désigne une variable de « question_setup ». Python ramène un nom à sa forme
+  // NFKC : un « é » tapé en deux caractères (e + accent) désigne la même variable que « é » ; pythonName
+  // fait de même ici, sans quoi la variable serait introuvable dans l’espace Python. Solution écartée :
+  // les seules lettres ASCII, que Python n’impose pas et qu’un auteur francophone ne devine pas.
+  const nameSource = String.raw`[\p{ID_Start}_]\p{ID_Continue}*`;
+  const namePattern = new RegExp(`^${nameSource}$`, "u");
+  const isName = name => typeof name === "string" && namePattern.test(name);
+  const pythonName = name => name.normalize("NFKC");
+  // Accolades échappées : en mode Unicode (u), une accolade seule est une erreur de syntaxe.
+  const variablePattern = new RegExp(String.raw`\{\{\s*(${nameSource})\s*\}\}`, "gu");
   // Formule d’un modèle, avec les délimiteurs de MathJax (compiler/assemble.js).
   const mathPattern = /\$\$[\s\S]*?\$\$|(?<!\\)\$(?:\\[\s\S]|[^$\\])+\$|\\\([\s\S]*?\\\)|\\\[[\s\S]*?\\\]/;
 
@@ -162,17 +172,19 @@ window.PyWimsTemplate = (() => {
   // Analyse le contenu d’une balise {% … %} et renvoie sa description, ou lève une erreur explicite.
   function parseTag(source) {
     const tagSource = source.trim();
-    const head = tagSource.match(/^([A-Za-z_]\w*)\s+(['"])([A-Za-z_]\w*)\2/);
+    const head = tagSource.match(new RegExp(String.raw`^(${nameSource})\s+(['"])(${nameSource})\2`, "u"));
     if (!head || !Object.hasOwn(tagSchemas, head[1])) {
       throw new Error(`Balise de modèle non prise en charge : {% ${tagSource} %}`);
     }
-    const [, type, , name] = head;
+    const [, type, , rawName] = head;
+    const name = pythonName(rawName);
     if (reservedNames.has(name)) {
       throw new Error(`Le nom de champ « ${name} » est réservé ; choisissez-en un autre dans {% ${tagSource} %}`);
     }
     const schema = tagSchemas[type];
     const attributes = {};
-    const attributePattern = /^\s+([A-Za-z_]\w*)\s*=\s*(?:(\d+(?:\.\d+)?|\.\d+)|([A-Za-z_]\w*)|(['"])(.*?)\4)/s;
+    const attributePattern = new RegExp(
+      String.raw`^\s+(${nameSource})\s*=\s*(?:(\d+(?:\.\d+)?|\.\d+)|(${nameSource})|(['"])(.*?)\4)`, "su");
     let rest = tagSource.slice(head[0].length);
 
     while (rest.trim()) {
@@ -180,7 +192,8 @@ window.PyWimsTemplate = (() => {
       if (!match) {
         throw new Error(`Syntaxe d’attribut invalide dans {% ${tagSource} %}`);
       }
-      const [, key, number, variable, , text] = match;
+      const [, key, number, rawVariable, , text] = match;
+      const variable = rawVariable === undefined ? undefined : pythonName(rawVariable);
       const integer = number !== undefined && /^\d+$/.test(number) ? number : undefined;
       if (!Object.hasOwn(schema, key)) {
         throw new Error(`Attribut « ${key} » inconnu pour ${type} dans {% ${tagSource} %}`);
@@ -290,7 +303,7 @@ window.PyWimsTemplate = (() => {
 
   // Variables Python nécessaires à l’affichage : {{ variable }} et dimensions matricielles nommées.
   function templateVariables(template) {
-    const names = new Set([...template.matchAll(variablePattern)].map(match => match[1]));
+    const names = new Set([...template.matchAll(variablePattern)].map(match => pythonName(match[1])));
     for (const tag of parseTags(template)) {
       if (tag.type !== "input_matrix") continue;
       for (const key of ["size", "rows", "cols"]) {
@@ -315,7 +328,8 @@ window.PyWimsTemplate = (() => {
     const tagOrMath = new RegExp(`${tagPattern.source}|${mathPattern.source}`, "gs");
     const withTags = template.replace(tagOrMath, (match, source) =>
       source === undefined ? match.replaceAll("<", "&lt;") : renderTag(parseTag(source)));
-    return withTags.replace(variablePattern, (_match, name) => {
+    return withTags.replace(variablePattern, (_match, rawName) => {
+      const name = pythonName(rawName);
       if (!Object.hasOwn(context, name)) {
         throw new Error(`Variable de question inconnue : ${name}`);
       }
@@ -326,6 +340,8 @@ window.PyWimsTemplate = (() => {
   return Object.freeze({
     tagPattern,
     variablePattern,
+    isName,
+    pythonName,
     reservedNames,
     choiceTypes,
     rawInputAttributes,

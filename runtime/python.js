@@ -116,7 +116,9 @@ window.PyWimsPython = (() => {
     });
   }
 
-  const namePattern = /^[A-Za-z_]\w*$/;
+  // Nom de variable : même règle que runtime/template.js (identifiants de Python, lettres accentuées
+  // comprises), recopiée pour que ce module ne dépende pas de la grammaire des modèles.
+  const namePattern = /^[\p{ID_Start}_]\p{ID_Continue}*$/u;
 
   // Fournit le module pywims lu dans le dossier du projet (compilateur, tests). Si Python tourne
   // déjà, le module est remplacé : un dossier rouvert après une modification de pywims.py prend effet
@@ -192,7 +194,7 @@ window.PyWimsPython = (() => {
   // Préparation de « question_check » (SPECIFICATION.md, §§ 2.6 et 2.8) : verdicts par défaut ({ clé: booléen },
   // « m[0][1] » pour une case), textes saisis et valeurs [n, d] (ou null) des champs input_value.
   function prepareCheck({ verdicts = {}, texts = {}, values = {} } = {}, sessionId = "default") {
-    const keyPattern = /^[A-Za-z_]\w*(\[\d+\]\[\d+\])?$/;
+    const keyPattern = /^[\p{ID_Start}_]\p{ID_Continue}*(\[\d+\]\[\d+\])?$/u;
     const integer = /^-?\d+$/;
     const valid = (record, check, pattern = namePattern) =>
       record && typeof record === "object" && Object.entries(record).every(([key, value]) => pattern.test(key) && check(value));

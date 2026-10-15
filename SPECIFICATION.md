@@ -142,6 +142,12 @@ définie par `question_setup` :
 {% input_select 'verb' choices=forms solution=correct %}
 ```
 
+**Noms.** Un nom de champ, de variable (`solution=`, `choices=`, `rows=`…) ou
+de `{{variable}}` suit la règle des identifiants de Python : lettres, accentuées
+comprises (`résultat`, `Δx`), chiffres et `_`, sans chiffre en tête. Comme
+Python, la page ramène chaque nom à sa forme NFKC : un « é » écrit en deux
+caractères (e suivi de l’accent) désigne la même variable que « é ».
+
 Les questions à choix (`input_radio`, `input_checkbox`) sont décrites au § 10,
 les valeurs numériques (`input_value`) au § 2.8, les listes déroulantes d’un
 texte à trous (`input_select`) au § 2.9.

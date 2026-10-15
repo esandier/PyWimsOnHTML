@@ -10,7 +10,7 @@ window.PyWimsWidgets = (() => {
   // Sans columns (attribut absent), les choix sont empilés, tous de la largeur du plus long
   // (SPECIFICATION.md, § 10.7) ; avec columns, ils forment une grille de colonnes égales.
   function inputChoice(name, { multiple = false, texts, order, columns, idPrefix = "" } = {}) {
-    if (!/^[A-Za-z_]\w*$/.test(name)) {
+    if (!PyWimsTemplate.isName(name)) {
       throw new Error(`Nom invalide pour un champ à choix : ${name}`);
     }
     idPrefix = PyWimsTemplate.checkIdPrefix(idPrefix);
@@ -41,7 +41,7 @@ window.PyWimsWidgets = (() => {
   // choix ; masquée et inactive, elle ne peut pas être choisie de nouveau. Chaque option porte
   // l’indice du choix dans la liste de l’auteur, que reçoit « question_check ».
   function inputSelect(name, { texts, order, idPrefix = "" } = {}) {
-    if (!/^[A-Za-z_]\w*$/.test(name)) {
+    if (!PyWimsTemplate.isName(name)) {
       throw new Error(`Nom invalide pour une liste déroulante : ${name}`);
     }
     idPrefix = PyWimsTemplate.checkIdPrefix(idPrefix);

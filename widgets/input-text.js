@@ -6,7 +6,7 @@ window.PyWimsWidgets = (() => {
   // Produit le champ éditable et son champ fantôme, qui réserve sa largeur pendant les animations.
   // Le préfixe distingue les identifiants des questions d’une même feuille (« q2-… »).
   function inputText(name, options = {}) {
-    if (!/^[A-Za-z_]\w*$/.test(name)) {
+    if (!PyWimsTemplate.isName(name)) {
       throw new Error(`Nom invalide pour input_text : ${name}`);
     }
 

@@ -119,6 +119,22 @@
       expectTagError("input_value 'answer_text' solution=s", "Le nom de champ « answer_text » est réservé");
       expectTagError("input_text 'lambda' solution=s", "Le nom de champ « lambda » est réservé");
     });
+    // Règle des identifiants de Python : lettres accentuées admises, chiffre en tête refusé.
+    test("un nom de champ ou de variable peut être accentué", () => {
+      const tag = PyWimsTemplate.parseTag("input_matrix 'matrice_é' rows=nb_lignes cols=p solution=résultat");
+      if (tag.name !== "matrice_é" || tag.attributes.solution !== "résultat" || tag.attributes.rows !== "nb_lignes") {
+        throw new Error(`Balise mal lue : ${JSON.stringify(tag)}`);
+      }
+      // « é » écrit en deux caractères (e + accent) : le nom est ramené à la forme de Python.
+      if (PyWimsTemplate.parseTag("input_text 'réponse' solution=s").name !== "réponse") {
+        throw new Error("Le nom n’est pas normalisé comme en Python (NFKC).");
+      }
+      expectTagError("input_text '2x' solution=s", "Balise de modèle non prise en charge");
+      expectTagError("input_text 'x' solution=2é", "doit être un nom de variable");
+      if (!PyWimsTemplate.isName("Δx") || PyWimsTemplate.isName("2x") || PyWimsTemplate.isName("a-b")) {
+        throw new Error("La règle des noms diffère de celle de Python.");
+      }
+    });
     test("les balises invalides produisent un message précis", () => {
       expectTagError("input_drag 'choix'", "Balise de modèle non prise en charge");
       expectTagError("input_text 'x' couleur='rouge'", "Attribut « couleur » inconnu pour input_text");

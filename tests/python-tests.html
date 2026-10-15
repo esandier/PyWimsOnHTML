@@ -214,6 +214,30 @@
         if (!rejected) throw new Error("Une variable absente n’est pas signalée clairement.");
       });
 
+      // Noms accentués (runtime/template.js, pythonName) : « é » en un caractère ou en deux (e + accent)
+      // désigne la même variable Python, que la page lit, affiche et remplit.
+      await test("un nom de variable accentué sert de l’énoncé à « question_check »", async () => {
+        const session = PyWimsPython.createSession("accents");
+        await session.initialize("résultat = 1");
+        await session.run("résultat = 12\nréponse_attendue = 5");
+        const decomposed = "résultat";
+        const statement = `{{ résultat }} et {{ ${decomposed} }} : {% input_value 'réponse' solution=réponse_attendue %}`;
+        const names = [...PyWimsTemplate.templateVariables(statement)];
+        if (names.length !== 1 || names[0] !== "résultat") {
+          throw new Error(`Variables de l’énoncé inattendues : ${JSON.stringify(names)}`);
+        }
+        const context = { résultat: await session.getTemplateValue(names[0]) };
+        const html = PyWimsTemplate.renderTemplate(statement, context,
+          tag => `[${tag.name}:${tag.attributes.solution}]`);
+        if (html !== "12 et 12 : [réponse:réponse_attendue]") throw new Error(`Rendu inattendu : ${html}`);
+        await session.setChoice("choix_é", 1);
+        await session.prepareCheck({ verdicts: { "réponse": true }, texts: { "réponse": "5" }, values: { "réponse": ["5", "1"] } });
+        await expectPython(session,
+          "réponse == 5 and choix_é == 1 and ok_answer == {'réponse': True} and answer_text == {'réponse': '5'}",
+          "Les champs aux noms accentués n’arrivent pas en Python");
+        await session.dispose();
+      });
+
       await test("les solutions sont converties en saisie d’élève, avec ANY pour les valeurs quelconques", async () => {
         const session = PyWimsPython.createSession("solutions");
         await session.initialize("from sympy import *\nfrom pywims import ANY");
