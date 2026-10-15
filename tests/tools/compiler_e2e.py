@@ -262,11 +262,21 @@ def editor_and_paste(browser, url, pgcd):
     if written != pgcd.replace("\nPGCD\n", "\nPGCD modifié\n", 1):
         difference = "".join(difflib.unified_diff(pgcd.splitlines(True), written.splitlines(True)))
         raise AssertionError(f"Le fichier enregistré n’est pas l’original au titre près :\n{difference[:800]}")
-    # L’aperçu suit, avec un tirage réel.
+    # L’aperçu ne suit qu’à la demande : la ligne d’état le dit, puis Ctrl+Entrée le met à jour, avec un
+    # tirage réel.
+    page.wait_for_function("document.getElementById('preview-notice').textContent.startsWith('Le texte a changé')",
+                           timeout=30_000)
+    if "PGCD modifié" in page.evaluate("document.getElementById('preview-frame').srcdoc"):
+        raise AssertionError("L’aperçu a suivi la frappe sans « Actualiser l’aperçu ».")
+    before = page.evaluate(f"{editor}.getValue()")
+    page.focus("#editor-view .CodeMirror textarea")
+    page.keyboard.press("Control+Enter")
     page.wait_for_function(
         "document.getElementById('preview-frame').srcdoc.includes('PGCD modifié') && "
         "!document.getElementById('preview-notice').textContent.startsWith('Aperçu provisoire')", timeout=180_000)
-    print("atelier : « Éditeur » montre la question courante, la modification est enregistrée seule, l’aperçu suit")
+    if page.evaluate(f"{editor}.getValue()") != before:
+        raise AssertionError("Ctrl+Entrée a modifié le texte de l’éditeur.")
+    print("atelier : « Éditeur » montre la question courante, la modification est enregistrée seule, l’aperçu suit à la demande")
 
     # Une balise fautive : l’erreur s’affiche sous l’éditeur, avec un lien vers sa ligne ; l’annuler l’efface.
     statement_line = page.evaluate(f"{editor}.getValue().split('\\n').indexOf('% question_statement') + 2")
@@ -281,8 +291,9 @@ def editor_and_paste(browser, url, pgcd):
 
     # L’aperçu se corrige avec le Python de l’atelier, déjà chargé (pont, SPECIFICATION.md § 3) : le
     # retour de « question_check » arrive sans charger un second Pyodide (6 à 8 s mesurées).
-    # Ctrl+Z a relancé l’aperçu vivant : on attend qu’il ne change plus (le pont porte le numéro du
-    # cadre, donc chaque cadre a son srcdoc).
+    # Après Ctrl+Z, « Actualiser l’aperçu » le recalcule : on attend qu’il ne change plus (le pont porte
+    # le numéro du cadre, donc chaque cadre a son srcdoc).
+    page.click("#preview-refresh")
     shown = None
     for _ in range(60):
         page.wait_for_timeout(1500)

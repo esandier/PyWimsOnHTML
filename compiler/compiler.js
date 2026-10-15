@@ -40,6 +40,8 @@
   const workspace = document.querySelector(".workspace");
   const pasteButton = document.getElementById("paste-questions");
   const backButton = document.getElementById("back-to-list");
+  const previewBar = document.getElementById("preview-bar");
+  const previewRefreshButton = document.getElementById("preview-refresh");
   const questionsView = document.getElementById("questions-view");
   const editorView = document.getElementById("editor-view");
   const pasteStatus = document.getElementById("paste-status");
@@ -364,7 +366,7 @@
     previewNotice.className = className;
   }
 
-  // Dernier aperçu affiché : sa question, que l’aperçu vivant garde pendant le calcul.
+  // Dernier aperçu affiché : sa question, qu’« Actualiser l’aperçu » garde pendant le calcul.
   let shownPreview = null;
   // L’atelier (Chrome, Edge) : écrire dans le dossier n’est possible que là (§ 11.10).
   const canEdit = canRememberFolder;
@@ -727,11 +729,11 @@
         refreshList();
         if (!changed || selectedQuestion !== question) return;
         previewDrawCache.delete(question);
-        if (fields) {
-          showPreview(question, { live: true });
-        } else {
-          showPreviewNotice("La question contient une erreur : voir sous l’éditeur.", "error");
-        }
+        // L’aperçu ne suit le texte qu’à la demande : recalculé à chaque pause, il montrait les erreurs
+        // passagères de la frappe et lançait des tirages Python inutiles (§ 11.10).
+        showPreviewNotice(fields
+          ? "Le texte a changé depuis cet aperçu : « Actualiser l’aperçu » (Ctrl+Entrée) le met à jour."
+          : "La question contient une erreur : voir sous l’éditeur.", fields ? "warning" : "error");
       },
       onSave: saveQuestion,
       onPaste: addPastedQuestions
@@ -742,9 +744,24 @@
     return editorReady;
   }
 
+  // « Actualiser l’aperçu » ou Ctrl+Entrée : le texte en attente de la pause de la frappe est pris
+  // d’abord, puis l’aperçu montre la question telle qu’elle est écrite.
+  async function refreshPreview() {
+    await editor?.flush?.();
+    const question = selectedQuestion;
+    if (!question) return;
+    if (question.error) {
+      showPreviewNotice("La question contient une erreur : voir sous l’éditeur.", "error");
+      return;
+    }
+    previewDrawCache.delete(question);
+    showPreview(question, { live: true });
+  }
+
   async function setViewMode(mode) {
     viewMode = mode;
     backButton.hidden = mode !== "editor";
+    previewBar.hidden = mode !== "editor";
     questionsView.hidden = mode !== "list";
     editorView.hidden = mode !== "editor";
     // En mode Éditeur, le panneau de gauche s’élargit aux trois cinquièmes.
@@ -1232,6 +1249,13 @@
   // « ← » pour revenir. Sous Firefox et Safari, une phrase les remplace.
   if (canEdit) {
     backButton.addEventListener("click", () => setViewMode("list"));
+    previewRefreshButton.addEventListener("click", refreshPreview);
+    editorView.addEventListener("keydown", event => {
+      if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+        event.preventDefault();
+        refreshPreview();
+      }
+    }, true);
   } else {
     pasteButton.hidden = true;
     showPasteStatus("Pour modifier les questions, ouvrez l’atelier dans Edge ou Chrome.", "muted");

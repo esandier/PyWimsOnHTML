@@ -378,6 +378,8 @@
     }
     .question-rank:empty { display: none; }
 
+    .preview-bar { display: flex; align-items: center; gap: 0.6rem; margin: 0 0 0.6rem; font-size: 0.85rem; }
+    .preview-bar[hidden] { display: none; }
     #preview-notice { margin: 0 0 0.6rem; font-size: 0.85rem; }
     #preview-notice:empty { display: none; }
     /* Encadré ambré, filet à gauche : il doit se voir, à la différence d’une ligne d’état. */
@@ -662,6 +664,11 @@
         <!-- Activité en partie notée (SPECIFICATION.md, § 10.5) : avertissement visible pendant le choix des
              questions, sous leur ordre. Dans le message de l’en-tête, à l’export, il passait inaperçu. -->
         <p id="scoring-warning" class="warning scoring-warning" role="status" hidden></p>
+        <!-- Dans l’éditeur, l’aperçu ne suit le texte qu’à la demande (SPECIFICATION.md, § 11.10). -->
+        <div class="preview-bar" id="preview-bar" hidden>
+          <button id="preview-refresh" type="button">Actualiser l’aperçu</button>
+          <span class="muted">Ctrl+Entrée</span>
+        </div>
         <!-- Ligne d’état : attente du tirage réel ou erreur ; vide une fois l’aperçu prêt. -->
         <p id="preview-notice" class="muted">Choisissez une question dans la liste pour afficher son aperçu.</p>
         <!-- La page réelle de la question, isolée : sans « allow-same-origin », son HTML ne peut pas

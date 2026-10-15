@@ -1487,14 +1487,19 @@ Numéros de ligne, Tab (quatre espaces), retour à la ligne indenté, Ctrl+Z (ch
 question garde son historique pendant la visite). CodeMirror 6 a été écarté : il
 demande un outil de construction (bundler).
 
-**Aperçu vivant.** Après une courte pause de la frappe, l’aperçu montre la
-version de l’éditeur, avec ses tirages réels calculés par Python, et il
-fonctionne comme pour l’élève (§ 3, Aperçu) : on retouche puis on vérifie
-aussitôt une réponse, juste ou fausse, et le retour qu’elle donne. Il montre
-toujours le premier tirage, pour ne pas changer de nombres à chaque lettre ;
-« Nouvel énoncé », dans la question, passe aux autres. Une mise à jour remet la
-question à zéro. L’aperçu précédent reste affiché pendant le calcul. (Un bouton
-« Essayer », d’abord, obligeait à le demander.)
+**Aperçu à la demande.** « Actualiser l’aperçu », au-dessus de l’aperçu, ou
+Ctrl+Entrée dans l’éditeur, montre la version de l’éditeur, avec ses tirages
+réels calculés par Python, et il fonctionne comme pour l’élève (§ 3, Aperçu) :
+on retouche puis on vérifie une réponse, juste ou fausse, et le retour qu’elle
+donne. Il montre toujours le premier tirage ; « Nouvel énoncé », dans la
+question, passe aux autres. Une mise à jour remet la question à zéro, et
+l’aperçu précédent reste affiché pendant le calcul. Après une pause de la
+frappe, la ligne d’état de l’aperçu dit seulement que le texte a changé ; la
+validation du format et l’enregistrement, eux, restent automatiques. Historique :
+un bouton « Essayer » a d’abord obligé à le demander ; l’aperçu a ensuite suivi
+chaque pause de la frappe, et montrait alors les erreurs passagères de la
+saisie et lançait des tirages inutiles (octobre 2026) : l’auteur a préféré une
+action volontaire.
 
 **Erreurs.** Sous l’éditeur, une ligne d’état donne l’erreur de format ou de
 balise (à la frappe) et l’erreur Python du tirage de l’aperçu, avec un lien
