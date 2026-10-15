@@ -3141,7 +3141,7 @@ body:not([data-scored]) .pw-help-score {
     <div class="pw-progress" aria-hidden="true"><div class="pw-progress-fill" id="pw-progress-fill"></div></div>
     <!-- Bulle du pourcentage : au survol, au focus clavier ou au toucher. -->
     <p class="pw-completion-tip" id="pw-completion-tip" role="tooltip">
-      Part des questions que vous avez réussies vous-même. Une question complétée avec « Solution » ne compte pas ;
+      Part des questions que vous avez réussies vous-même. Une question complétée avec « Correction » ne compte pas ;
       une réussite reste acquise après un nouvel énoncé.
     </p>
   </div>
@@ -3239,7 +3239,7 @@ else:
       <li><span class="pw-help-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg></span>
         <span><strong>Corriger ma réponse</strong> rouvre les champs faux, avec votre saisie. Les champs justes restent acquis.</span></li>
       <li><span class="pw-help-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg></span>
-        <span><strong>Solution</strong> remplit les champs avec la réponse attendue et, quand elle existe, affiche une explication.</span></li>
+        <span><strong>Correction</strong> remplit les champs avec la réponse attendue et, quand elle existe, affiche une explication.</span></li>
       <li><span class="pw-help-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 3v5h5"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 21v-5h-5"/></svg></span>
         <span><strong>Nouvel énoncé</strong> propose la même question avec d’autres valeurs, pour vous entraîner encore.</span></li>
     </ol>
@@ -3249,7 +3249,7 @@ else:
       <p>Il indique la part des questions que vous avez réussies vous-même : une question est réussie dès qu’une
         de vos vérifications est entièrement juste, et son numéro devient ✓.</p>
       <ul>
-        <li>Une question complétée avec « Solution » n’est pas comptée.</li>
+        <li>Une question complétée avec « Correction » n’est pas comptée.</li>
         <li>Une réussite reste acquise, même si vous demandez ensuite un nouvel énoncé.</li>
         <li>Toutes les questions ont le même poids.</li>
       </ul>
@@ -3282,9 +3282,9 @@ else:
           <!-- Les deux libellés occupent la même case : le bouton garde la largeur du plus long. -->
           <span class="pw-act-label pw-swap"><span data-label="check">Vérifier ma réponse</span><span data-label="fix">Corriger ma réponse</span></span>
         </button>
-        <button class="pw-act" data-role="solution" type="button" aria-label="Solution">
+        <button class="pw-act" data-role="solution" type="button" aria-label="Correction">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>
-          <span class="pw-act-label">Solution</span>
+          <span class="pw-act-label">Correction</span>
         </button>
         <button class="pw-act" data-role="new-draw" type="button" aria-label="Nouvel énoncé">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 3v5h5"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 21v-5h-5"/></svg>
@@ -3665,7 +3665,7 @@ window.PyWimsTemplate = (() => {
 </script>
   <!-- Correction par défaut des questions sans « question_check », sans Python. -->
   <script>// Correction par défaut, sans Python (SPECIFICATION.md, § 2.6) : sans « question_check », l’élève doit
-// donner ce qu’affiche le bouton « Solution ». Partagée par le fichier généré et par le compilateur
+// donner ce qu’affiche le bouton « Correction ». Partagée par le fichier généré et par le compilateur
 // (contrôle de cohérence).
 window.PyWimsCorrection = (() => {
   const choiceTypes = new Set(["input_radio", "input_checkbox", "input_select"]);
@@ -4034,7 +4034,7 @@ window.PyWimsWidgets = (() => {
   // toujours la largeur de sa plus longue option, alors qu’un trou rempli doit se lire comme une
   // phrase. Le texte est mesuré dans un élément invisible de même police ; une liste vide reprend la
   // largeur du trou (4em, question.css). Solution écartée : « field-sizing: content », que seuls
-  // Chrome et Edge connaissent. Appelée par la question à chaque saisie et après « Solution ».
+  // Chrome et Edge connaissent. Appelée par la question à chaque saisie et après « Correction ».
   function fitSelects(root) {
     for (const select of root.querySelectorAll("select.pw-select")) {
       const option = select.selectedOptions[0];
@@ -4166,7 +4166,7 @@ def _float_text(value):
     """Flottant arrondi à 12 chiffres significatifs, en écriture décimale avec un point.
 
     L’arrondi efface les artefacts du calcul binaire (0.1 + 0.2 vaut 0.30000000000000004) : sans
-    lui, le bouton « Solution » afficherait ces chiffres et la correction par défaut les exigerait
+    lui, le bouton « Correction » afficherait ces chiffres et la correction par défaut les exigerait
     (SPECIFICATION.md, § 2.6). Douze chiffres gardent toute valeur qu’une question demande.
     """
     import decimal
@@ -5534,7 +5534,7 @@ window.PyWimsQuestion = (() => {
       }
       // Une question à un seul tirage (sans aléatoire, choix non mélangés) : le bouton remet la
       // question vierge, sous le nom « Recommencer » (SPECIFICATION.md, § 5.2). Il n’est pas masqué,
-      // car c’est le seul moyen de refaire la question après « Solution ».
+      // car c’est le seul moyen de refaire la question après « Correction ».
       if (this.draws.length === 1) {
         this.newDrawButton.setAttribute("aria-label", "Recommencer");
         this.newDrawButton.querySelector(".pw-act-label").textContent = "Recommencer";
@@ -5748,7 +5748,10 @@ window.PyWimsQuestion = (() => {
         absent: !(this.state === "open" || failed),
         disabled: this.busy || (this.state === "open" && !this.openFields().some(isFilled))
       });
-      setButton(this.solutionButton, { absent: !(this.state === "open" || failed), disabled: this.busy });
+      // « Correction » reste offerte après une réponse juste : l’élève voit la réponse attendue et
+      // l’explication ; sa réussite, déjà comptée, le reste. Solution écartée : garder ses réponses et
+      // ajouter l’explication dessous, une seconde action pour un bouton qui doit rester simple.
+      setButton(this.solutionButton, { absent: !(this.state === "open" || this.state === "checked"), disabled: this.busy });
       setButton(this.newDrawButton, { disabled: this.busy });
       // Sans libellé, une infobulle donne le nom de chaque icône, qui peut changer avec l’état.
       if (compactStyle) {
