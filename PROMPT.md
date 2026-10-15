@@ -18,7 +18,7 @@ Ajoute chaque champ après une ligne délimiteur contenant uniquement `%`.
 Les champs sont, dans cet ordre : `question_title`, `question_keywords`, `question_layout`,
 `question_setup`, `question_statement`, `question_solution_explanation` et `question_check`.
 Ils sont obligatoires et non vides, sauf `question_solution_explanation` (voir
-« Solution ») et `question_check` (voir « Correction : avec ou sans
+« Correction ») et `question_check` (voir « Correction : avec ou sans
 `question_check` »), qui sont facultatifs. Un dernier champ facultatif,
 `question_draws`, fixe le nombre de tirages calculés (entier de 1 à 200, 20 par
 défaut) : n’en mets un que si on te le demande. Les noms des champs, des
@@ -106,7 +106,7 @@ Ce qui doit varier dépend de la compétence visée :
 
 ## Correction : avec ou sans `question_check`
 
-- **Sans `question_check`**, l’élève doit donner ce qu’affiche le bouton « Solution » :
+- **Sans `question_check`**, l’élève doit donner ce qu’affiche le bouton « Correction » :
   chaque saisie est comparée à la solution du tirage, sans Python, ce qui rend
   la question plus légère et plus rapide. Sont seulement ignorés les espaces, le
   signe moins typographique « − » et le codage des accents. Tout le reste
@@ -265,7 +265,7 @@ Ce qui doit varier dépend de la compétence visée :
 
 ## Solution
 
-- Le bouton « Solution » remplit tous les champs avec leur solution, y compris
+- Le bouton « Correction » remplit tous les champs avec leur solution, y compris
   ceux que l’élève avait justes. Pour une matrice, la solution est une `Matrix`
   ou une liste de lignes.
 - Quand plusieurs réponses sont justes, marque les valeurs quelconques avec
@@ -286,7 +286,7 @@ Ce qui doit varier dépend de la compétence visée :
 ## Retour à l’élève
 
 La variable `feedback` explique l’erreur sans donner la réponse : la réponse est le rôle du
-bouton « Solution ». Par exemple « 6 est bien un diviseur commun, mais ce n’est
+bouton « Correction ». Par exemple « 6 est bien un diviseur commun, mais ce n’est
 pas le plus grand » plutôt que « la réponse était 12 ».
 
 Dans `feedback`, et dans une valeur `{{variable}}`, seules ces balises de mise en

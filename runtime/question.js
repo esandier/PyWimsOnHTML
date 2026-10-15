@@ -162,7 +162,7 @@ window.PyWimsQuestion = (() => {
       }
       // Une question à un seul tirage (sans aléatoire, choix non mélangés) : le bouton remet la
       // question vierge, sous le nom « Recommencer » (SPECIFICATION.md, § 5.2). Il n’est pas masqué,
-      // car c’est le seul moyen de refaire la question après « Solution ».
+      // car c’est le seul moyen de refaire la question après « Correction ».
       if (this.draws.length === 1) {
         this.newDrawButton.setAttribute("aria-label", "Recommencer");
         this.newDrawButton.querySelector(".pw-act-label").textContent = "Recommencer";
@@ -376,7 +376,10 @@ window.PyWimsQuestion = (() => {
         absent: !(this.state === "open" || failed),
         disabled: this.busy || (this.state === "open" && !this.openFields().some(isFilled))
       });
-      setButton(this.solutionButton, { absent: !(this.state === "open" || failed), disabled: this.busy });
+      // « Correction » reste offerte après une réponse juste : l’élève voit la réponse attendue et
+      // l’explication ; sa réussite, déjà comptée, le reste. Solution écartée : garder ses réponses et
+      // ajouter l’explication dessous, une seconde action pour un bouton qui doit rester simple.
+      setButton(this.solutionButton, { absent: !(this.state === "open" || this.state === "checked"), disabled: this.busy });
       setButton(this.newDrawButton, { disabled: this.busy });
       // Sans libellé, une infobulle donne le nom de chaque icône, qui peut changer avec l’état.
       if (compactStyle) {

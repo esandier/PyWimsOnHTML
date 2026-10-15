@@ -57,6 +57,6 @@ elif answer is None:
 elif simplify(answer - function) == 0:
     feedback = "Vous avez recopié la fonction au lieu de la dériver."
 else:
-    # Rappelle la règle sans donner la réponse, que le bouton « Solution » fournit.
+    # Rappelle la règle sans donner la réponse, que le bouton « Correction » fournit.
     feedback = r"Ce n’est pas la bonne dérivée. Dérivez terme à terme avec $(x^n)' = n\,x^{n-1}$ ; la dérivée d’une constante est nulle."
 %

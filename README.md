@@ -164,7 +164,7 @@ noms sont en anglais. Chaque balise de saisie désigne sa solution
 les outils du module `pywims` (`py_wims`, `is_number`, `math_expression`,
 `decimal_comma`, `mcq`, `ANY`). `question_check` peut définir la variable `feedback`.
 
-**Sans `question_check`, l’élève doit donner ce qu’affiche le bouton « Solution ».**
+**Sans `question_check`, l’élève doit donner ce qu’affiche le bouton « Correction ».**
 Seuls les espaces, le signe moins typographique et le codage des accents sont
 ignorés ; les majuscules, l’ordre des termes et le séparateur décimal comptent.
 On écrit donc `question_check` quand plusieurs écritures sont justes, pour un retour

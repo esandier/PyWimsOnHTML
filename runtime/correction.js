@@ -1,5 +1,5 @@
 // Correction par défaut, sans Python (SPECIFICATION.md, § 2.6) : sans « question_check », l’élève doit
-// donner ce qu’affiche le bouton « Solution ». Partagée par le fichier généré et par le compilateur
+// donner ce qu’affiche le bouton « Correction ». Partagée par le fichier généré et par le compilateur
 // (contrôle de cohérence).
 window.PyWimsCorrection = (() => {
   const choiceTypes = new Set(["input_radio", "input_checkbox", "input_select"]);

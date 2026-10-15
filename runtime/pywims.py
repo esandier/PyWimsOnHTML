@@ -41,7 +41,7 @@ def _float_text(value):
     """Flottant arrondi à 12 chiffres significatifs, en écriture décimale avec un point.
 
     L’arrondi efface les artefacts du calcul binaire (0.1 + 0.2 vaut 0.30000000000000004) : sans
-    lui, le bouton « Solution » afficherait ces chiffres et la correction par défaut les exigerait
+    lui, le bouton « Correction » afficherait ces chiffres et la correction par défaut les exigerait
     (SPECIFICATION.md, § 2.6). Douze chiffres gardent toute valeur qu’une question demande.
     """
     import decimal

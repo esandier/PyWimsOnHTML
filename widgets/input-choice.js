@@ -59,7 +59,7 @@ window.PyWimsWidgets = (() => {
   // toujours la largeur de sa plus longue option, alors qu’un trou rempli doit se lire comme une
   // phrase. Le texte est mesuré dans un élément invisible de même police ; une liste vide reprend la
   // largeur du trou (4em, question.css). Solution écartée : « field-sizing: content », que seuls
-  // Chrome et Edge connaissent. Appelée par la question à chaque saisie et après « Solution ».
+  // Chrome et Edge connaissent. Appelée par la question à chaque saisie et après « Correction ».
   function fitSelects(root) {
     for (const select of root.querySelectorAll("select.pw-select")) {
       const option = select.selectedOptions[0];

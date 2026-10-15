@@ -349,7 +349,7 @@ json.dumps({
               await session.setChoice(tag.name, JSON.parse(await session.run(solutionJson(tag))));
               verdicts[tag.name] = true;
             } else if (tag.type === "input_value") {
-              // Le texte qu’affiche « Solution », calculé comme à la compilation.
+              // Le texte qu’affiche « Correction », calculé comme à la compilation.
               const raw = JSON.parse(await session.run(solutionJson(tag)));
               texts[tag.name] = PyWimsCorrection.valueSolutionText(raw, tag.attributes);
               exactValues[tag.name] = PyWimsCorrection.exactValue(texts[tag.name]);

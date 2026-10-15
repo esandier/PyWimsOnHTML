@@ -439,14 +439,14 @@ def main():
                     timeout=180_000)
                 print("aperçu : tirage réel affiché")
 
-                # L’aperçu fonctionne comme pour l’élève : « Solution », puis « Nouvel énoncé ».
+                # L’aperçu fonctionne comme pour l’élève : « Correction », puis « Nouvel énoncé ».
                 preview = page.frame_locator("#preview-frame")
                 preview.locator("#q1[data-state='open']").wait_for(timeout=30_000)
                 preview.locator("#q1 [data-role=solution]").click()
                 preview.locator("#q1[data-state='solution']").wait_for(timeout=30_000)
                 preview.locator("#q1 [data-role=new-draw]").click()
                 preview.locator("#q1[data-state='open']").wait_for(timeout=30_000)
-                print("aperçu : « Solution » et « Nouvel énoncé » fonctionnent")
+                print("aperçu : « Correction » et « Nouvel énoncé » fonctionnent")
 
                 # Compilation de cette question : un fichier HTML autonome est téléchargé.
                 page.click(".question-selection >> nth=0")

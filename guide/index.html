@@ -137,7 +137,7 @@
 
     <h3>Le champ <code>question_check</code></h3>
     <p>Si le champ n’est pas fourni, la réponse de l’élève est comparée à la solution, telle que l’affiche
-      le bouton « Solution ». Cela convient pour un QCM, ou une saisie très simple. Mais attention :
+      le bouton « Correction ». Cela convient pour un QCM, ou une saisie très simple. Mais attention :
       <code>7/12</code> est faux si la solution est <code>14/24</code>, <code>0,5</code> faux si c’est
       <code>0.5</code>. La comparaison de la réponse et de la solution est purement visuelle.</p>
     <p>Le champ facultatif <code>question_check</code> est du Python qui étudie la saisie de chaque champ de réponse
@@ -307,7 +307,7 @@
     <details class="field-item">
       <summary>Plusieurs réponses justes : <code>ANY</code></summary>
       <p>Dans une solution, <code>ANY</code> (de <code>from pywims import ANY</code>) marque une valeur
-        quelconque : toute réponse y est juste, et le bouton « Solution » y affiche « ∗ ». Par exemple, pour
+        quelconque : toute réponse y est juste, et le bouton « Correction » y affiche « ∗ ». Par exemple, pour
         une matrice triangulaire : <code>Matrix(n, n, lambda i, j: 0 if i &gt; j else ANY)</code>.</p>
     </details>
 
@@ -316,7 +316,7 @@
       <li>Ouvrez l’<a href="../compiler/">atelier</a> et choisissez votre dossier de questions (ses
         sous-dossiers sont lus aussi). Sur Chrome et Edge, il est mémorisé pour la visite suivante.</li>
       <li>Cliquez sur une question pour la voir (les flèches ↑ ↓ passent à la suivante) : l’aperçu
-        fonctionne comme pour l’élève (saisie, <strong>Vérifier</strong>, <strong>Solution</strong>,
+        fonctionne comme pour l’élève (saisie, <strong>Vérifier</strong>, <strong>Correction</strong>,
         <strong>Nouvel énoncé</strong>). Dans Edge ou Chrome, <strong>Éditeur</strong>, au bout de la ligne
         (ou Entrée), ouvre la question : le fichier à gauche, l’aperçu à droite, qui suit ce que vous
         écrivez ; chaque modification est enregistrée dans le dossier, et <strong>←</strong> ramène à la

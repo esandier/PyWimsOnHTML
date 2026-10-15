@@ -220,8 +220,14 @@ window.PyWimsPython = (() => {
         type(field, textOptions.answers[seeds().at(-1)].r);
         check.click();
         await waitFor(() => feedback.classList.contains("is-correct"), "retour juste");
-        if (!field.classList.contains("is-correct") || !absent(check) || !absent(role("solution")) || absent(role("new-draw"))) {
-          throw new Error("Après une réponse juste, seul « Nouvel énoncé » doit rester.");
+        if (!field.classList.contains("is-correct") || !absent(check) || absent(role("solution")) || absent(role("new-draw"))) {
+          throw new Error("Après une réponse juste, « Correction » et « Nouvel énoncé » doivent rester.");
+        }
+        // « Correction » après une réponse juste : l’explication s’affiche, la réussite reste comptée.
+        role("solution").click();
+        await waitFor(() => feedback.classList.contains("is-explanation"), "explication après une réponse juste");
+        if ($("#q1").dataset.succeeded !== "true" || !absent(role("solution"))) {
+          throw new Error("« Correction » après une réponse juste a retiré la réussite ou reste offerte.");
         }
         frame.remove();
       });

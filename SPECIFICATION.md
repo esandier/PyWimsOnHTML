@@ -154,7 +154,7 @@ texte à trous (`input_select`) au § 2.9.
 
 **Conversion de la solution.** À la compilation, pour chaque tirage, la
 valeur Python de la variable de solution (calculée par `question_setup`) est convertie
-en la valeur que le bouton « Solution » écrit dans le champ. Cette valeur
+en la valeur que le bouton « Correction » écrit dans le champ. Cette valeur
 convertie est enregistrée dans le tirage (`solutions`, § 3) ; le navigateur
 n’a pas besoin de Python pour l’afficher.
 
@@ -267,7 +267,7 @@ else:
 ```
 
 Le retour explique l’erreur sans donner la réponse : c’est le rôle du bouton
-« Solution ».
+« Correction ».
 
 ### 2.6 Correction par défaut
 
@@ -278,7 +278,7 @@ d’une expression, formule) et aux retours ciblés ; une valeur numérique,
 même approchée, se corrige avec `input_value` (§ 2.8).
 
 **Principe : sans `question_check`, l’élève doit donner ce qu’affiche le bouton
-« Solution ».** L’auteur le vérifie dans l’aperçu du compilateur.
+« Correction ».** L’auteur le vérifie dans l’aperçu du compilateur.
 
 - **Avec `question_check`** : `ok_answer` est pré-rempli par la correction par
   défaut, champ par champ (case par case pour une matrice), et `question_check`
@@ -502,7 +502,7 @@ $[0 ; +\infty[$. »
   prennent la couleur du verdict, sur un fond léger.
 - **Largeur.** Un `<select>` natif a toujours la largeur de son plus long
   choix ; le script mesure donc le texte choisi et règle la largeur à chaque
-  changement, y compris quand « Solution » remplit le champ.
+  changement, y compris quand « Correction » remplit le champ.
 - **Saisie.** C’est un `<select>` natif : sur téléphone, le sélecteur du
   système s’ouvre, plus facile au doigt qu’une liste dessinée par la page ; au
   clavier, il se manie comme tout champ. Le champ compte comme rempli dès
@@ -564,7 +564,7 @@ $[0 ; +\infty[$. »
   exige `ok_answer` vrai pour chaque champ (et chaque case d’une matrice).
   Sinon la compilation est refusée avec la graine, le champ et
   le `feedback` obtenu, par exemple « Graine 7 : la solution du champ « r » est
-  jugée fausse par « question_check » ». Ainsi le bouton « Solution » ne montre jamais
+  jugée fausse par « question_check » ». Ainsi le bouton « Correction » ne montre jamais
   une réponse que la correction refuse, et `question_check` ne plante pour aucun tirage.
   Saisie utilisée :
   - `input_text`, case de matrice : le texte de la solution (§ 2.3) ;
@@ -614,7 +614,7 @@ $[0 ; +\infty[$. »
   vérifient les tests.
 - **Aperçu.** La page réelle de la question s’affiche dans un cadre isolé
   (`sandbox="allow-scripts"`), et elle fonctionne comme pour l’élève : saisir,
-  « Vérifier », retour de l’auteur, « Solution » (champs remplis et explication),
+  « Vérifier », retour de l’auteur, « Correction » (champs remplis et explication),
   « Nouvel énoncé ». D’abord un tirage provisoire où chaque variable porte son
   nom, boutons inactifs ; puis 5 tirages réels calculés par le Python de la page
   du compilateur, chargé une seule fois et gardé en mémoire pour chaque
@@ -695,10 +695,10 @@ $[0 ; +\infty[$. »
 
 | État | Boutons visibles |
 |---|---|
-| Saisie | Vérifier ma réponse (grisé tant qu’aucun champ ouvert n’est rempli) · Solution · Nouvel énoncé |
-| Vérifiée, avec erreur | Corriger ma réponse · Solution · Nouvel énoncé |
-| Vérifiée, tout juste | Nouvel énoncé |
-| Solution affichée | Nouvel énoncé |
+| Saisie | Vérifier ma réponse (grisé tant qu’aucun champ ouvert n’est rempli) · Correction · Nouvel énoncé |
+| Vérifiée, avec erreur | Corriger ma réponse · Correction · Nouvel énoncé |
+| Vérifiée, tout juste | Correction · Nouvel énoncé |
+| Correction affichée | Nouvel énoncé |
 
 - **Vérifier ma réponse** : les saisies sont transmises à Python (y compris
   celles des champs déjà verts), `question_check` est exécuté, puis chaque champ ouvert
@@ -706,7 +706,10 @@ $[0 ; +\infty[$. »
 - **Corriger ma réponse** : retour à la saisie sur le même tirage. Les champs
   justes restent verts et figés ; les champs faux sont rouverts avec la saisie
   de l’élève.
-- **Solution** : tous les champs, y compris ceux déjà justes, sont remplis avec
+- **Correction** (nommée ainsi pour inciter à la lire ; « Solution » jusqu’en
+  octobre 2026) : offerte aussi après une réponse juste, pour voir la réponse
+  attendue et l’explication, la réussite restant acquise. Tous les champs, y
+  compris ceux déjà justes, sont remplis avec
   leur solution et passent au vert (ou « ∗ » neutre pour une valeur libre). Si la
   question a un `question_solution_explanation`, il est rendu avec les valeurs
   du tirage et remplace le retour dans son emplacement, avec la même animation
@@ -718,13 +721,13 @@ $[0 ; +\infty[$. »
   recalculée en arrière-plan. Une question qui n’a qu’un tirage (sans
   aléatoire, et `shuffle=0` s’il y a des choix) affiche le même bouton sous le
   nom **Recommencer** : il remet la question vierge. On a écarté de le masquer,
-  car c’est le seul moyen de refaire la question après « Solution ».
+  car c’est le seul moyen de refaire la question après « Correction ».
 
 ### 5.3 Progression
 
 - Une question est **réussie** quand une vérification de l’élève est
   entièrement juste. Elle le reste ensuite, même après un nouvel énoncé.
-- Une question complétée par « Solution » n’est pas réussie.
+- Une question complétée par « Correction » n’est pas réussie.
 - La barre de titre de l’activité affiche le pourcentage de questions réussies
   (même poids pour chaque question) et une barre de progression. Une question
   seule n’affiche pas de progression.
@@ -1098,7 +1101,7 @@ En plus du § 2.4, le compilateur refuse la question si, pour l’un des tirages
   la somme des notes des questions sur la somme de leurs maxima. La
   note d’une question est celle de sa dernière vérification ; elle vaut 0
   avant toute vérification et revient à 0 après « Nouvel énoncé », mais pas
-  après « Solution ». L’aide (§ 5.6) l’explique.
+  après « Correction ». L’aide (§ 5.6) l’explique.
 - Chaque choix est une ligne entière cliquable d’au moins 44 px de haut, dans
   un `fieldset`. Seule sa case (bouton radio ou case à cocher) est encadrée :
   comme pour les autres champs, ce qui est entouré, c’est la zone de saisie. Le

@@ -82,7 +82,7 @@
 
   // Contrôle de cohérence d’un tirage (SPECIFICATION.md, § 3) : la solution de chaque champ est
   // saisie comme le ferait un élève, puis « question_check » doit la juger juste. Sans ce contrôle, le bouton
-  // « Solution » pourrait montrer une réponse que la correction refuse (fraction non simplifiée,
+  // « Correction » pourrait montrer une réponse que la correction refuse (fraction non simplifiée,
   // indices dans un autre ordre…), ou « question_check » planter pour un tirage rare. La session est celle
   // du tirage, où « question_setup » vient d’être exécuté ; elle est jetée ensuite. Renvoie les messages.
   async function coherenceErrors(session, tags, draw, question_check, timeoutMs = drawTimeoutMs) {
@@ -190,7 +190,7 @@
   }
 
   // Solutions des champs input_value (SPECIFICATION.md, § 2.8) : Python donne la valeur exacte
-  // ({ value: "n/d", exact }) ; on y ajoute le texte qu’écrit le bouton « Solution », selon form et
+  // ({ value: "n/d", exact }) ; on y ajoute le texte qu’écrit le bouton « Correction », selon form et
   // tolerance. Le tirage garde les deux : le texte pour l’affichage, la valeur pour la correction.
   // Renvoie les messages des solutions qui ne peuvent pas s’écrire ainsi.
   function valueSolutionErrors(tags, draw) {
