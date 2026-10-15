@@ -3592,7 +3592,17 @@ else:
   <script>// Grammaire unique des modèles de question, partagée par le compilateur et la question générée.
 window.PyWimsTemplate = (() => {
   const tagPattern = /{%\s*(.*?)\s*%}/gs;
-  const variablePattern = /{{\s*([A-Za-z_]\w*)\s*}}/g;
+  // Nom de variable : la règle des identifiants de Python, lettres accentuées comprises (« résultat »),
+  // puisque chaque nom désigne une variable de « question_setup ». Python ramène un nom à sa forme
+  // NFKC : un « é » tapé en deux caractères (e + accent) désigne la même variable que « é » ; pythonName
+  // fait de même ici, sans quoi la variable serait introuvable dans l’espace Python. Solution écartée :
+  // les seules lettres ASCII, que Python n’impose pas et qu’un auteur francophone ne devine pas.
+  const nameSource = String.raw`[\p{ID_Start}_]\p{ID_Continue}*`;
+  const namePattern = new RegExp(`^${nameSource}$`, "u");
+  const isName = name => typeof name === "string" && namePattern.test(name);
+  const pythonName = name => name.normalize("NFKC");
+  // Accolades échappées : en mode Unicode (u), une accolade seule est une erreur de syntaxe.
+  const variablePattern = new RegExp(String.raw`\{\{\s*(${nameSource})\s*\}\}`, "gu");
   // Formule d’un modèle, avec les délimiteurs de MathJax (compiler/assemble.js).
   const mathPattern = /\$\$[\s\S]*?\$\$|(?<!\\)\$(?:\\[\s\S]|[^$\\])+\$|\\\([\s\S]*?\\\)|\\\[[\s\S]*?\\\]/;
 
@@ -3753,17 +3763,19 @@ window.PyWimsTemplate = (() => {
   // Analyse le contenu d’une balise {% … %} et renvoie sa description, ou lève une erreur explicite.
   function parseTag(source) {
     const tagSource = source.trim();
-    const head = tagSource.match(/^([A-Za-z_]\w*)\s+(['"])([A-Za-z_]\w*)\2/);
+    const head = tagSource.match(new RegExp(String.raw`^(${nameSource})\s+(['"])(${nameSource})\2`, "u"));
     if (!head || !Object.hasOwn(tagSchemas, head[1])) {
       throw new Error(`Balise de modèle non prise en charge : {% ${tagSource} %}`);
     }
-    const [, type, , name] = head;
+    const [, type, , rawName] = head;
+    const name = pythonName(rawName);
     if (reservedNames.has(name)) {
       throw new Error(`Le nom de champ « ${name} » est réservé ; choisissez-en un autre dans {% ${tagSource} %}`);
     }
     const schema = tagSchemas[type];
     const attributes = {};
-    const attributePattern = /^\s+([A-Za-z_]\w*)\s*=\s*(?:(\d+(?:\.\d+)?|\.\d+)|([A-Za-z_]\w*)|(['"])(.*?)\4)/s;
+    const attributePattern = new RegExp(
+      String.raw`^\s+(${nameSource})\s*=\s*(?:(\d+(?:\.\d+)?|\.\d+)|(${nameSource})|(['"])(.*?)\4)`, "su");
     let rest = tagSource.slice(head[0].length);
 
     while (rest.trim()) {
@@ -3771,7 +3783,8 @@ window.PyWimsTemplate = (() => {
       if (!match) {
         throw new Error(`Syntaxe d’attribut invalide dans {% ${tagSource} %}`);
       }
-      const [, key, number, variable, , text] = match;
+      const [, key, number, rawVariable, , text] = match;
+      const variable = rawVariable === undefined ? undefined : pythonName(rawVariable);
       const integer = number !== undefined && /^\d+$/.test(number) ? number : undefined;
       if (!Object.hasOwn(schema, key)) {
         throw new Error(`Attribut « ${key} » inconnu pour ${type} dans {% ${tagSource} %}`);
@@ -3881,7 +3894,7 @@ window.PyWimsTemplate = (() => {
 
   // Variables Python nécessaires à l’affichage : {{ variable }} et dimensions matricielles nommées.
   function templateVariables(template) {
-    const names = new Set([...template.matchAll(variablePattern)].map(match => match[1]));
+    const names = new Set([...template.matchAll(variablePattern)].map(match => pythonName(match[1])));
     for (const tag of parseTags(template)) {
       if (tag.type !== "input_matrix") continue;
       for (const key of ["size", "rows", "cols"]) {
@@ -3906,7 +3919,8 @@ window.PyWimsTemplate = (() => {
     const tagOrMath = new RegExp(`${tagPattern.source}|${mathPattern.source}`, "gs");
     const withTags = template.replace(tagOrMath, (match, source) =>
       source === undefined ? match.replaceAll("<", "&lt;") : renderTag(parseTag(source)));
-    return withTags.replace(variablePattern, (_match, name) => {
+    return withTags.replace(variablePattern, (_match, rawName) => {
+      const name = pythonName(rawName);
       if (!Object.hasOwn(context, name)) {
         throw new Error(`Variable de question inconnue : ${name}`);
       }
@@ -3917,6 +3931,8 @@ window.PyWimsTemplate = (() => {
   return Object.freeze({
     tagPattern,
     variablePattern,
+    isName,
+    pythonName,
     reservedNames,
     choiceTypes,
     rawInputAttributes,
@@ -4232,7 +4248,7 @@ window.PyWimsWidgets = (() => {
   // Produit le champ éditable et son champ fantôme, qui réserve sa largeur pendant les animations.
   // Le préfixe distingue les identifiants des questions d’une même feuille (« q2-… »).
   function inputText(name, options = {}) {
-    if (!/^[A-Za-z_]\w*$/.test(name)) {
+    if (!PyWimsTemplate.isName(name)) {
       throw new Error(`Nom invalide pour input_text : ${name}`);
     }
 
@@ -4262,7 +4278,7 @@ window.PyWimsWidgets = (() => {
 
   // Crée un champ MathLive avec clavier virtuel et nom accessible.
   function inputMath(name, options = {}) {
-    if (!/^[A-Za-z_]\w*$/.test(name)) {
+    if (!PyWimsTemplate.isName(name)) {
       throw new Error(`Nom invalide pour input_math : ${name}`);
     }
 
@@ -4311,7 +4327,7 @@ window.PyWimsWidgets = (() => {
 
   // Construit une matrice accessible carrée ou rectangulaire de dimensions fixes.
   function inputMatrix(name, rowCount, columnsOrOptions = rowCount, suppliedOptions = {}) {
-    if (!/^[A-Za-z_]\w*$/.test(name)) {
+    if (!PyWimsTemplate.isName(name)) {
       throw new Error(`Nom invalide pour input_matrix : ${name}`);
     }
     const columnCount = typeof columnsOrOptions === "number"
@@ -4337,7 +4353,7 @@ window.PyWimsWidgets = (() => {
 
   // Affiche une grille redimensionnable tout en préparant le nombre maximal de cases.
   function inputVMatrix(name, maxRows = 10, maxColumns = 10, options = {}) {
-    if (!/^[A-Za-z_]\w*$/.test(name)) {
+    if (!PyWimsTemplate.isName(name)) {
       throw new Error(`Nom invalide pour input_vmatrix : ${name}`);
     }
     if (!Number.isInteger(maxRows) || maxRows < 1 || maxRows > 10 ||
@@ -4462,7 +4478,7 @@ window.PyWimsWidgets = (() => {
   // Sans columns (attribut absent), les choix sont empilés, tous de la largeur du plus long
   // (SPECIFICATION.md, § 10.7) ; avec columns, ils forment une grille de colonnes égales.
   function inputChoice(name, { multiple = false, texts, order, columns, idPrefix = "" } = {}) {
-    if (!/^[A-Za-z_]\w*$/.test(name)) {
+    if (!PyWimsTemplate.isName(name)) {
       throw new Error(`Nom invalide pour un champ à choix : ${name}`);
     }
     idPrefix = PyWimsTemplate.checkIdPrefix(idPrefix);
@@ -4493,7 +4509,7 @@ window.PyWimsWidgets = (() => {
   // choix ; masquée et inactive, elle ne peut pas être choisie de nouveau. Chaque option porte
   // l’indice du choix dans la liste de l’auteur, que reçoit « question_check ».
   function inputSelect(name, { texts, order, idPrefix = "" } = {}) {
-    if (!/^[A-Za-z_]\w*$/.test(name)) {
+    if (!PyWimsTemplate.isName(name)) {
       throw new Error(`Nom invalide pour une liste déroulante : ${name}`);
     }
     idPrefix = PyWimsTemplate.checkIdPrefix(idPrefix);
@@ -5594,7 +5610,9 @@ window.PyWimsPython = (() => {
     });
   }
 
-  const namePattern = /^[A-Za-z_]\w*$/;
+  // Nom de variable : même règle que runtime/template.js (identifiants de Python, lettres accentuées
+  // comprises), recopiée pour que ce module ne dépende pas de la grammaire des modèles.
+  const namePattern = /^[\p{ID_Start}_]\p{ID_Continue}*$/u;
 
   // Fournit le module pywims lu dans le dossier du projet (compilateur, tests). Si Python tourne
   // déjà, le module est remplacé : un dossier rouvert après une modification de pywims.py prend effet
@@ -5670,7 +5688,7 @@ window.PyWimsPython = (() => {
   // Préparation de « question_check » (SPECIFICATION.md, §§ 2.6 et 2.8) : verdicts par défaut ({ clé: booléen },
   // « m[0][1] » pour une case), textes saisis et valeurs [n, d] (ou null) des champs input_value.
   function prepareCheck({ verdicts = {}, texts = {}, values = {} } = {}, sessionId = "default") {
-    const keyPattern = /^[A-Za-z_]\w*(\[\d+\]\[\d+\])?$/;
+    const keyPattern = /^[\p{ID_Start}_]\p{ID_Continue}*(\[\d+\]\[\d+\])?$/u;
     const integer = /^-?\d+$/;
     const valid = (record, check, pattern = namePattern) =>
       record && typeof record === "object" && Object.entries(record).every(([key, value]) => pattern.test(key) && check(value));
