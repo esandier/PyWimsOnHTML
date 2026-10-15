@@ -1,7 +1,9 @@
 # Spécification — feuilles de questions et tirages précalculés
 
 Ce document décrit PyWimsOnHTML tel qu’il est. Il sert de référence : une
-modification commence par lui, avant le code (§ 9).
+modification commence par lui, avant le code (§ 9). Le pourquoi des choix, les
+solutions écartées et leur histoire sont dans `DECISIONS.md`, sous les mêmes
+numéros de section.
 
 ## 1. Objectifs
 
@@ -45,12 +47,10 @@ Python et HTML : champs (préfixés par `question_`), outils de `pywims`
 (`ANY`, `decimal_comma`, `is_number`, `mcq`), attributs des balises (`scoring`), et noms des
 exemples. Les anciens noms de PyWims (`avant`, `enonce`, `apres`, `tirages`,
 `bareme`, `LIBRE`, `decimal_fr`, `is_nombre`, `explication_solution`) sont refusés comme
-tout nom inconnu, sans compatibilité : un mélange des deux langues serait
-pire qu’une conversion, faite une fois.
+tout nom inconnu.
 
-**Explication de la solution.** Elle s’écrit comme l’énoncé, et non plus en
-Python (variable `explication_solution`, avant octobre 2026) : ni chaîne
-`rf"…"`, ni accolades de LaTeX à doubler. Ses `{{variable}}` font partie des
+**Explication de la solution.** Elle s’écrit comme l’énoncé (HTML, formules,
+`{{variable}}`), sans chaîne Python. Ses `{{variable}}` font partie des
 valeurs affichées du tirage (`context`, § 3). Une explication calculée (étapes
 d’un algorithme, dérivée de chaque terme) est préparée en texte dans
 `question_setup`, puis affichée par `{{variable}}`.
@@ -185,12 +185,8 @@ reçoivent ce que l’élève tape, tel quel :
   jugé faux car les majuscules comptent, § 2.6), et la correction automatique
   peut remplacer un mot ;
 - clavier texte complet (`inputmode="text"`), y compris pour les cases de
-  matrice. Le pavé décimal, plus rapide pour des chiffres, n’a sur iPhone ni
-  signe moins, ni barre de fraction, ni lettre, et seulement le séparateur
-  décimal de la langue du téléphone : `-1`, `1/2` ou `0.5` y seraient
-  impossibles à taper. Le prix est une saisie des chiffres un peu plus lente
-  (page « 123 » du clavier). Un choix du clavier par l’auteur pourra être
-  ajouté plus tard, si le besoin apparaît.
+  matrice : le pavé décimal de l’iPhone n’a ni signe moins, ni barre de
+  fraction, ni lettre.
 
 Les champs MathLive ont leur propre clavier virtuel et ne sont pas concernés.
 
@@ -289,10 +285,6 @@ même approchée, se corrige avec `input_value` (§ 2.8).
   un `if …: ok_answer['x'] = True` sans `else` laisse, sinon, le verdict par
   défaut ; et le compilateur ne voit plus un champ oublié dans
   `question_check`, puisque son verdict par défaut est juste pour la solution.
-  On avait d’abord écarté ce pré-remplissage (v1.0, `question_check` décidait
-  seul) ; il est revenu avec `input_value` (§ 2.8), où le verdict par défaut
-  (tolérance, forme) est le point de départ naturel d’un retour ciblé, et
-  s’étend à tous les champs pour garder une seule règle.
 - **Python** n’est chargé que par les questions qui ont un `question_check` (§ 5.1).
 
 | Champ | Saisie juste si |
@@ -341,18 +333,10 @@ sans `question_check` : la comparaison y est sans ambiguïté.
   réponse de l’élève peut aller dans `question_solution_explanation`,
   affichée avec la solution.
 - **`input_math` exige un `question_check`**, et le compilateur le dit. Une
-  formule ne se compare pas à l’écriture de sa solution ; essai fait sur 23
-  cas, en passant la solution et une frappe d’élève par MathLive :
-  - SymPy, et non l’auteur, choisit l’écriture de la solution : `(x+1)/2`
-    devient `x/2 + 1/2`, `ln(x)` devient `\log(x)`, et l’ordre des termes est
-    le sien ; l’élève devrait deviner ces conventions ;
-  - MathLive garde des traces de la frappe (un numérateur tapé entre
-    parenthèses les conserve) ;
-  - ignorer les espaces confondrait le produit `p i` et le nombre π.
-
-  Surtout, pour une formule, l’enseignant attend presque toujours une
+  formule ne se compare pas à l’écriture de sa solution, que SymPy choisit
+  (`(x+1)/2` devient `x/2 + 1/2`), et l’enseignant attend presque toujours une
   expression égale, pas une écriture : c’est une comparaison symbolique, donc
-  Python. Des outils `pywims` pour l’écrire en une ligne viendront plus tard.
+  Python.
 - **Code partagé.** Les règles sont dans `runtime/correction.js`, intégré au
   fichier généré et utilisé aussi par le compilateur pour le contrôle de
   cohérence (§ 3) : la solution doit être jugée juste par la correction par
@@ -467,14 +451,7 @@ n’exigent plus un `question_check`.
   sa forme : l’auteur n’écrit que les erreurs qu’il veut repérer.
   Un seul lecteur de nombres, celui de la correction par défaut
   (`runtime/correction.js`), sert ainsi à l’élève, au compilateur (§ 3,
-  « Cohérence ») et à `question_check`. On a écarté une fonction Python de
-  lecture (`read_number`) : un second lecteur, à garder identique au premier ;
-  et un dictionnaire par champ (`nom["value"]`, `nom["ok"]`) pour tous les
-  types : il changeait le format de toutes les questions, alourdissait le cas
-  courant (un champ texte n’a que son texte) et se prêtait mal aux matrices.
-- On a écarté une tolérance relative (`1%`) et une tolérance calculée par
-  tirage (variable de `question_setup`) : l’écart absolu couvre les exercices
-  courants, et l’un ou l’autre s’ajoutera sans rien changer à l’existant.
+  « Cohérence ») et à `question_check`.
 
 ### 2.9 Texte à trous : `input_select`
 
@@ -516,10 +493,7 @@ $[0 ; +\infty[$. »
 - **Correction** : sans Python, le choix est juste s’il est celui de la
   solution ; `question_check` reçoit l’indice choisi dans l’ordre de
   l’auteur, ou `None`. Pas de barème : une liste est un trou parmi d’autres.
-- **Solution** : le bon choix est sélectionné, en vert.
-- On a écarté une liste dessinée par la page (pour y afficher des formules) :
-  elle se manie mal au doigt et au clavier, et le natif suffit aux mots d’un
-  texte à trous.
+- **Correction** : le bon choix est sélectionné, en vert.
 
 ## 3. Compilation
 
@@ -533,10 +507,9 @@ $[0 ; +\infty[$. »
   `numpy.random.seed` si NumPy est importé), puis exécute `question_setup`.
 - **Hachage fixe.** Pyodide est lancé avec `PYTHONHASHSEED=0`, à la compilation
   comme dans le fichier généré. Sinon le hachage des chaînes change à chaque
-  chargement de Pyodide, et avec lui l’ordre d’un `set` de chaînes (mesuré :
-  `{"pomme", "poire", "kiwi", "figue"}` sort dans un ordre différent d’une
-  instance à l’autre) : `choice(list(un_ensemble))` donnerait un autre tirage
-  dans le navigateur qu’à la compilation.
+  chargement de Pyodide, et avec lui l’ordre d’un `set` de chaînes :
+  `choice(list(un_ensemble))` donnerait un autre tirage dans le navigateur
+  qu’à la compilation.
 - **Calcul trop long.** Chaque exécution de `question_setup`, et de `question_check` pour le
   contrôle de cohérence, est limitée à **30 s** (comptées comme au § 5.1).
   Au-delà, la compilation s’arrête : « « question_setup » n’a pas terminé en 30 s pour
@@ -591,18 +564,14 @@ $[0 ; +\infty[$. »
 - Versions figées : MathJax **3.2.2**, MathLive **0.111.0**. Le widget MathLive
   passe à l’attribut `math-virtual-keyboard-policy`.
 - **Module `pywims`.** C’est un vrai fichier Python, `runtime/pywims.py`. Le
-  compilateur le lit en ligne avec les autres fichiers du projet (§ 11.1), au
-  début de chaque compilation, l’installe dans son Pyodide pour
-  calculer les tirages, et l’intègre tel quel au fichier généré (bloc
+  compilateur le lit avec les autres fichiers du projet, une seule fois, à son
+  ouverture (§ 11.1), l’installe dans son Pyodide pour calculer les tirages,
+  et l’intègre tel quel au fichier généré (bloc
   `<script type="text/x-python" id="pywims-module">`, que le navigateur
   n’exécute pas), seulement si une question a un `question_check`. Tirages calculés et
-  tirages rejoués utilisent donc le même module : une page du compilateur
-  restée en cache ne peut plus les désaccorder. Un module modifié depuis la
-  compilation précédente remplace le module déjà chargé.
+  tirages rejoués utilisent donc le même module.
 - **Script du Worker.** Le code du Web Worker de Python est un vrai fichier,
-  `runtime/python-worker.js`, et non le texte d’une fonction de `python.js`
-  (une telle fonction ne pouvait utiliser aucune variable de son fichier, piège
-  que les outils ne signalent pas). Il suit le chemin du module `pywims` : le
+  `runtime/python-worker.js`. Il suit le chemin du module `pywims` : le
   compilateur le lit en ligne avec les autres fichiers et le donne à `python.js`
   (`setWorkerSource`), les tests aussi, et le fichier généré l’intègre tel
   quel dans un bloc `<script type="text/x-worker" id="pywims-worker">`, que
@@ -627,14 +596,10 @@ $[0 ; +\infty[$. »
   un pont qui transmet chaque appel de session au compilateur par `postMessage` ;
   le compilateur l’exécute dans une session à lui, préfixée par le numéro du
   cadre, et renvoie la réponse. Les sessions d’un cadre remplacé sont libérées,
-  et les messages d’un ancien cadre ignorés. Mesuré : un cadre qui chargeait son
-  propre Pyodide attendait 6 à 8 s avant la première vérification, à chaque
-  mise à jour de l’aperçu ; par le pont, la réponse est immédiate. La sécurité ne
-  change pas : le code de la question tourne déjà dans le Worker du compilateur
-  pour les tirages, et seules les opérations de session passent par le pont.
-  (Une case « Afficher la solution » et un bouton « Nouveau tirage », au-dessus
-  d’un aperçu aux boutons inactifs, ont précédé ; les boutons de la question
-  font la même chose.)
+  et les messages d’un ancien cadre ignorés. La vérification est ainsi
+  immédiate, sans second Pyodide. La sécurité ne change pas : le code de la
+  question tourne déjà dans le Worker du compilateur pour les tirages, et
+  seules les opérations de session passent par le pont.
 
 ## 4. Structure du fichier généré
 
@@ -668,11 +633,9 @@ $[0 ; +\infty[$. »
    carte, ou « Vérifier ma réponse ») : chargement en arrière-plan de Pyodide
    et des paquets détectés, puis exécution de `question_setup` avec la graine du
    tirage. Un élève qui ne fait que lire la feuille, ou ne travaille que les
-   questions sans `question_check`, ne télécharge jamais Pyodide. Le chargement n’est
-   pas lancé à l’apparition de la question à l’écran : il le serait aussi
-   pour une question seulement regardée, alors que l’élève qui commence à
-   répondre laisse de toute façon à Pyodide le temps de se charger.
-   « Nouvel énoncé » avant ce premier contact ne prépare rien non plus.
+   questions sans `question_check`, ne télécharge jamais Pyodide. L’apparition
+   de la question à l’écran ne lance pas le chargement, ni « Nouvel énoncé »
+   avant ce premier contact.
 4. Contrôle (questions avec Python) : le `context` recalculé doit être
    identique au `context` stocké. Sinon la question affiche une erreur et ne
    peut pas être vérifiée.
@@ -706,8 +669,7 @@ $[0 ; +\infty[$. »
 - **Corriger ma réponse** : retour à la saisie sur le même tirage. Les champs
   justes restent verts et figés ; les champs faux sont rouverts avec la saisie
   de l’élève.
-- **Correction** (nommée ainsi pour inciter à la lire ; « Solution » jusqu’en
-  octobre 2026) : offerte aussi après une réponse juste, pour voir la réponse
+- **Correction** : offerte aussi après une réponse juste, pour voir la réponse
   attendue et l’explication, la réussite restant acquise. Tous les champs, y
   compris ceux déjà justes, sont remplis avec
   leur solution et passent au vert (ou « ∗ » neutre pour une valeur libre). Si la
@@ -720,8 +682,8 @@ $[0 ; +\infty[$. »
   remplace l’énoncé instantanément ; la session Python correspondante est
   recalculée en arrière-plan. Une question qui n’a qu’un tirage (sans
   aléatoire, et `shuffle=0` s’il y a des choix) affiche le même bouton sous le
-  nom **Recommencer** : il remet la question vierge. On a écarté de le masquer,
-  car c’est le seul moyen de refaire la question après « Correction ».
+  nom **Recommencer** : il remet la question vierge. C’est le seul moyen de
+  refaire la question après « Correction ».
 
 ### 5.3 Progression
 
@@ -781,9 +743,9 @@ $[0 ; +\infty[$. »
 ### 5.6 Aide de l’élève
 
 - Un bouton « ? » dans l’en-tête ouvre une fenêtre d’aide : le rôle des quatre
-  boutons (Vérifier, Corriger, Solution, Nouvel énoncé), avec leurs icônes.
+  boutons (Vérifier, Corriger, Correction, Nouvel énoncé), avec leurs icônes.
 - Dans une activité, l’aide explique aussi le pourcentage : part des questions
-  réussies par l’élève lui-même, une solution affichée ne compte pas, une
+  réussies par l’élève lui-même, une question complétée par « Correction » ne compte pas, une
   réussite reste acquise après un nouvel énoncé, même poids pour chaque
   question. Elle précise que les réussites sont gardées sur cet appareil, et
   que le bouton ↺ de l’en-tête réinitialise la feuille (§ 5.3).
@@ -830,8 +792,6 @@ charte (couleurs, polices, logo).
 - **Retour sur écran étroit** : sous la question, comme dans le style habituel,
   sans encadré coloré ni animation d’apparition : texte dans la police de la
   charte, avec un filet de la couleur du verdict à gauche.
-- Un tiroir montant du bas, sur téléphone, a été essayé (octobre 2026) et
-  écarté au profit du retour sous la question.
 
 ### 5.8 Espaces avant la ponctuation
 
@@ -876,7 +836,7 @@ archive `…-scorm.zip` qui contient `imsmanifest.xml` et la feuille,
 
 | Fichier | Rôle |
 |---|---|
-| `runtime/template.js` (nouveau) | grammaire unique des balises et échappement HTML, utilisés par le compilateur (validation, aperçu) et par le fichier généré (rendu) |
+| `runtime/template.js` | grammaire unique des balises et échappement HTML, utilisés par le compilateur (validation, aperçu) et par le fichier généré (rendu) |
 | `runtime/correction.js` | correction par défaut sans Python (§ 2.6) : comparaison des choix et des textes, aux différences typographiques près ; utilisée par le fichier généré et par le compilateur |
 | `runtime/pywims.py` | module `pywims` : outils de l’auteur, conversion des solutions, contrôles des tirages |
 | `runtime/python.js` | Pyodide partagé, dans un Web Worker (la page ne gèle pas, un calcul sans fin peut être arrêté) : création et relance du Worker, appels asynchrones, sessions par question. L’interface reste asynchrone et inchangée pour `question.js` et le compilateur |
@@ -947,14 +907,17 @@ un sous-projet distinct, traité plus tard.
   évidents, y compris les solutions écartées quand elles éclairent le choix
   (par exemple pour l’affichage sur téléphone). Ils décrivent le code tel qu’il
   est, pas l’histoire de ses versions, qui est celle de git.
+- La spécification décrit ce qui est. Une solution écartée, un essai, un
+  changement de comportement vont dans `DECISIONS.md`, sous le numéro de la
+  section concernée.
 - Le rendu se vérifie sur ordinateur et sur téléphone (375 px de large,
   `tests/tools/capture.py`).
 
 ## 10. Questions à choix
 
 Les questions à choix unique ou multiple suivent le modèle des autres champs :
-les choix et la solution sont calculés par `question_setup`, la correction est écrite
-dans `question_check`. Le compilateur n’analyse pas le LaTeX d’AMC : la conversion d’une
+les choix et la solution sont calculés par `question_setup`, et la saisie est
+comparée à la solution, sans Python, sauf `question_check` (§ 10.3). Le compilateur n’analyse pas le LaTeX d’AMC : la conversion d’une
 question AMC en fichier `.pwq` est confiée à un LLM, guidé par `PROMPT.md`
 (§ 10.8).
 
@@ -1025,7 +988,7 @@ c’est un choix comme les autres, qui n’exclut pas les autres cases.
   les choix verts restent cochés et figés ; les choix rouges perdent leur
   couleur et restent cochés ; eux et les choix non cochés redeviennent
   modifiables.
-- **Solution.** Les bons choix sont cochés et verts, les autres décochés et
+- **Correction.** Les bons choix sont cochés et verts, les autres décochés et
   neutres ; le groupe est figé.
 - Rien ne bouge : seules les couleurs, les icônes et l’état des cases changent.
   Les choix colorés s’animent l’un après l’autre, comme les cases d’une matrice.
@@ -1074,8 +1037,7 @@ directive absente d’un barème donné prend la valeur indiquée :
   compilation. Dans l’atelier, en mode « Activité unique », si une partie
   seulement des questions choisies a un barème, un avertissement qui nomme
   les questions sans barème s’affiche en haut du cadre de l’aperçu, sous
-  l’ordre des questions, dès le choix ; l’export reste possible. (Dans le
-  message de l’en-tête, à l’export, il passait inaperçu.)
+  l’ordre des questions, dès le choix ; l’export reste possible.
 
 ### 10.6 Contrôles à la compilation
 
@@ -1105,8 +1067,7 @@ En plus du § 2.4, le compilateur refuse la question si, pour l’un des tirages
 - Chaque choix est une ligne entière cliquable d’au moins 44 px de haut, dans
   un `fieldset`. Seule sa case (bouton radio ou case à cocher) est encadrée :
   comme pour les autres champs, ce qui est entouré, c’est la zone de saisie. Le
-  verdict colore le texte et le fond léger du choix, avec son icône. (Jusqu’en
-  octobre 2026, un cadre arrondi entourait chaque choix.)
+  verdict colore le texte et le fond léger du choix, avec son icône.
 - **Sans `columns`**, les choix restent alignés en grille : tous ont la
   largeur et la hauteur du plus grand, et le nombre de colonnes est le plus
   grand qui tienne dans la largeur de l’énoncé, sans autre limite que le
@@ -1117,22 +1078,10 @@ En plus du § 2.4, le compilateur refuse la question si, pour l’un des tirages
   de colonnes, en mesurant les choix une fois les formules composées ; la
   grille, ajustée à son contenu, donne elle-même à ses colonnes égales la
   largeur du plus grand choix.
-  Avant octobre 2026, chaque choix prenait toute la largeur de l’énoncé : sur
-  grand écran, « 12 » ou « vrai » se trouvait à l’extrémité gauche d’un long
-  rectangle vide, loin de l’icône du verdict. On a écarté :
-  - les choix empilés à la largeur du plus long (essayé en octobre 2026) :
-    une liste de nombres occupait toute la hauteur de l’écran pour rien ;
-  - les choix à la suite, chacun à sa largeur (essayé aussi) : des boîtes
-    inégales ne s’alignent pas. Le style compact (§ 5.7) les met pourtant à
-    la suite : sans cadre, l’inégalité ne se voit plus.
 - **Place de l’icône du verdict.** Elle est réservée par une largeur
   (`width: 1.2em`), et non par une base flexible (`flex-basis`) : Firefox ne
   compte pas une base flexible dans la largeur naturelle d’une case tant que
-  la place est vide. La case était alors trop étroite de 19 px, et le texte
-  perdait ces 19 px : un nombre court disparaissait, un mot passait à la
-  ligne, une formule était coupée et défilait. Constaté par un essai comparant
-  Firefox et Edge (octobre 2026) ; le conteneur (`fieldset` ou `div`) et
-  l’écriture des colonnes (`1fr` ou `minmax(0, 1fr)`) n’y changeaient rien.
+  la place est vide, et le texte du choix perdait cette largeur.
 - **Avec `columns=n`**, les choix forment une grille de n colonnes
   de même largeur ; sur écran étroit, le nombre de colonnes diminue pour que
   chaque choix garde une largeur minimale (environ 8 em), puis tant qu’un
@@ -1142,10 +1091,7 @@ En plus du § 2.4, le compilateur refuse la question si, pour l’un des tirages
 - **Défilement.** Le texte d’un choix ne défile pas. Seul un choix qui
   déborde encore de plus de 1 px quand il ne reste qu’une colonne défile en
   largeur, en dernier recours ; la même mesure décide des colonnes et du
-  défilement. Avant octobre 2026, chaque choix pouvait défiler, et tout
-  dépassement d’une fraction de pixel d’une formule (métriques de MathJax et
-  de la police, arrondi aux pixels de l’écran) affichait une barre ; trois
-  correctifs locaux n’y ont pas suffi. Le test `tests/tools/scrollbars.py`
+  défilement. Le test `tests/tools/scrollbars.py`
   vérifie, sur des activités exportées dans les deux styles, à plusieurs
   zooms et largeurs, qu’aucune barre n’apparaît sans débordement réel.
 
@@ -1205,16 +1151,12 @@ choices, correct = mcq(correct=a * b, wrong=[a + b, a * b + 1, a * (b - 1), a * 
   `{% input_radio 'answer' choices=choices solution=correct %}`. L’ordre étant
   déjà tiré au hasard, le mélange du compilateur ne change rien ; avec
   `shuffle=0`, l’ordre de `mcq` est gardé.
-- On a écarté une syntaxe propre dans l’énoncé (choix écrits dans la balise) :
-  les choix calculés dépendent des valeurs de `question_setup`, et une fonction
-  Python les couple naturellement au même aléa.
 
 ## 11. Site du projet : compilateur hébergé, accueil, mode d’emploi
 
 Le projet est publié en ligne : une page d’accueil qui le présente et le montre,
 le compilateur, où l’on ne choisit plus que son dossier de questions, et un mode
-d’emploi pour créer une question, avec ou sans IA. La cohérence (§ 3) et la
-liste par titre (§ 11.3) sont déjà en place dans le compilateur local.
+d’emploi pour créer une question, avec ou sans IA.
 
 ### 11.1 Publication
 
@@ -1226,26 +1168,23 @@ liste par titre (§ 11.3) sont déjà en place dans le compilateur local.
 - Chaque push sur `master` met à jour le site.
 - Les fichiers du projet utiles à l’assemblage (`layouts/`, `runtime/`,
   `widgets/`, `css/`) sont lus par le compilateur à côté de lui (même origine),
-  et non plus dans un dossier choisi par l’utilisateur. Ils sont lus une seule
-  fois, à l’ouverture du compilateur, sans cache périmé (revalidation auprès du
+  une seule fois, à son ouverture, sans cache périmé (revalidation auprès du
   serveur) : l’aperçu, les tirages et la compilation utilisent la version des
   scripts de la page, jamais deux versions mêlées du projet. Une modification du
-  moteur demande de recharger la page (relus à chaque compilation, ils
-  pouvaient être plus récents qu’un atelier resté ouvert, octobre 2026).
+  moteur demande de recharger la page.
 - Le module `pywims` et le script du Worker sont lus en ligne avec les autres
   fichiers, puis intégrés au fichier généré : tirages calculés et rejoués
   utilisent le même code (§ 3).
 - Python (Pyodide, SymPy et le module `pywims`) se charge dès l’ouverture du
   compilateur, en arrière-plan : le premier aperçu et la première compilation
-  n’attendent plus son chargement (de 10 s à beaucoup plus, selon le navigateur
+  n’attendent pas son chargement (de 10 s à beaucoup plus, selon le navigateur
   et la connexion). Un échec de ce préchargement est silencieux : la
   compilation recommence le chargement, et en donne l’erreur.
 - **Développement local** : `compiler/run-local.ps1` démarre un serveur
   local à la racine du projet et ouvre le compilateur dans le navigateur ; on
   essaie ainsi une modification du moteur avant de la publier. Le serveur
-  (`compiler/local-server.py`) interdit le cache (`Cache-Control: no-store`) :
-  avec le serveur de Python seul, le navigateur gardait d’anciennes versions
-  des scripts, et une modification n’apparaissait pas. Ouvert
+  (`compiler/local-server.py`) interdit le cache (`Cache-Control: no-store`),
+  pour qu’une modification apparaisse au rechargement. Ouvert
   directement depuis le disque (`file://`), le compilateur ne peut pas lire
   ses fichiers : il le dit, et indique ce script.
 - Les questions ne sont jamais envoyées : la page les lit sur l’ordinateur.
@@ -1262,8 +1201,7 @@ liste par titre (§ 11.3) sont déjà en place dans le compilateur local.
   « Rouvrir « nom du dossier » » suffit : le navigateur demande seulement de
   confirmer l’accès. Un bouton « Relire » prend en compte les fichiers modifiés,
   ajoutés ou supprimés, sans choisir de nouveau le dossier ; la compilation
-  relit elle aussi les fichiers, et un fichier modifié depuis l’ouverture ne
-  pose plus de problème.
+  relit elle aussi les fichiers de questions.
 - **Firefox et Safari** : ces navigateurs ne permettent pas à une page de
   rouvrir un dossier d’une visite à l’autre. Le dossier se choisit à chaque
   visite ; le nom du dernier dossier est rappelé pour aider à le retrouver.
@@ -1278,9 +1216,7 @@ liste par titre (§ 11.3) sont déjà en place dans le compilateur local.
   les types de champs de réponse qu’elle utilise, dans l’ordre de l’énoncé et
   sans répétition : « texte », « nombre », « formule », « matrice », « matrice
   redimensionnable », « choix unique », « choix multiple ». Un titre trop long
-  est coupé par « … » ; le survol donne le titre, les types et le chemin. (Titre
-  et types sur deux lignes, d’abord : une question prenait 64 px de haut, 27 px
-  sur une ligne, pour une page de travail désormais compacte.)
+  est coupé par « … » ; le survol donne le titre, les types et le chemin.
 - Les questions sont regroupées par sous-dossier (le dossier choisi d’abord,
   puis chaque sous-dossier sous son chemin, en intertitre), et triés par titre
   dans l’ordre naturel (« (2) » avant « (10) ») dans chaque groupe. Sans
@@ -1340,8 +1276,8 @@ Une page `guide/` (« Créer »), en sections :
   « PWOH », « questions à données aléatoires dans une page HTML », et les
   boutons Accueil, Créer, Atelier, Prompt, Code source, à droite. « Prompt »
   copie `PROMPT.md` (`banner.js`) et le dit sur le bouton lui-même (« Prompt
-  copié ✓ »). La page du compilateur s’appelle « Atelier » pour l’utilisateur
-  (octobre 2026) ; son dossier reste `compiler/`, pour ne pas casser les
+  copié ✓ »). La page du compilateur s’appelle « Atelier » pour l’utilisateur ;
+  son dossier reste `compiler/`, pour ne pas casser les
   adresses déjà diffusées. Sur l’atelier, le bandeau remplace le titre (la page tient dans la fenêtre), et les
   messages se placent entre la devise et les boutons.
 - **Style** : celui du compilateur (accent orange, panneaux blancs sur fond
@@ -1361,15 +1297,7 @@ Une page `guide/` (« Créer »), en sections :
 
 ### 11.7 Étapes
 
-1. **Fichiers du projet lus en ligne** : plus de choix du dossier du projet ;
-   `compiler/run-local.ps1` ; README mis à jour. Activation de GitHub Pages
-   (par l’auteur).
-2. **Dossier mémorisé** sur Chrome et Edge, nom rappelé sur Firefox et Safari,
-   bouton « Relire ».
-3. **Charte** : charte neutre par défaut, UPEC en exemple, charte du dossier.
-4. **Liste regroupée par sous-dossier.**
-5. **Mode d’emploi et modèles**, puis **page d’accueil et démonstrations**,
-   publiés ensemble.
+Réalisées ; leur déroulement est dans `DECISIONS.md`.
 
 ### 11.8 Disposition du compilateur
 
@@ -1401,9 +1329,8 @@ Une page `guide/` (« Créer »), en sections :
 
 ### 11.9 Ordre des questions d’une activité
 
-Une activité suit l’ordre dans lequel les questions ont été cochées. Cet ordre
-était invisible, ne se changeait qu’en décochant et recochant, et « Relire » le
-remplaçait par l’ordre de la liste.
+Une activité suit l’ordre dans lequel les questions ont été cochées, que
+l’auteur voit et change.
 
 - **Liste d’ordre.** En mode « Activité unique », un cadre montre « Ordre des
   questions » et la liste numérotée des questions cochées, une par ligne. La
@@ -1416,13 +1343,7 @@ remplaçait par l’ordre de la liste.
   questions », déplacent la question choisie d’un rang ; ils sont inactifs sans
   question choisie, « ↑ » en tête et « ↓ » en fin. Des clics répétés au même
   endroit déplacent donc toujours la même question, à la souris comme au
-  clavier ; la liste défile pour la garder visible. On a écarté :
-  - des flèches sur chaque ligne : la question déplacée quitte sa ligne, et un
-    second clic au même endroit déplaçait l’autre question, ce qui annulait le
-    premier ;
-  - le glisser-déposer : le glisser-déposer HTML ne marche pas au toucher, et
-    le refaire avec les événements de pointeur coûte beaucoup pour un gain
-    faible.
+  clavier ; la liste défile pour la garder visible.
 - **Rang dans la liste des questions.** En mode « Activité unique », chaque
   question cochée porte son rang (1, 2, …) à côté de sa case.
 - **Ordre gardé.** Cocher ajoute la question à la fin, décocher la retire ;
@@ -1442,20 +1363,13 @@ La page sert trois parcours :
 3. **Coller une question écrite par une IA**, la vérifier et la retoucher.
 
 Tous tournent autour d’**une seule question courante** : celle qu’on choisit dans
-la liste, que montre l’aperçu, et que montre l’éditeur. Des onglets, une
-question ouverte chacun, ont été essayés (octobre 2026) : ils faisaient une
-seconde « question courante », et on ne savait plus laquelle l’aperçu montrait.
+la liste, que montre l’aperçu, et que montre l’éditeur.
 
 **Edge et Chrome seulement.** Firefox et Safari interdisent à une page d’écrire
-dans un dossier : il fallait télécharger le fichier, le remettre dans le
-dossier, rouvrir le dossier. Un premier éditeur fondé sur ce détour (octobre
-2026) a été jugé inutilisable. Sous Firefox et Safari, le compilateur garde
+dans un dossier. Sous Firefox et Safari, le compilateur garde
 l’aperçu, la composition des feuilles et la compilation ; l’atelier y est
-remplacé par la phrase « Pour modifier les questions, ouvrez le compilateur dans
-Edge ou Chrome. » Ont été écartés : un serveur local qui écrirait les fichiers
-(il faut Python, absent des Mac récents), une bibliothèque de questions gardée
-dans le navigateur (le dossier cesse d’être la référence), une application de
-bureau (installateurs et signature à maintenir).
+remplacé par la phrase « Pour modifier les questions, ouvrez l’atelier dans
+Edge ou Chrome. »
 
 **Dossier ouvert en écriture.** Sous Edge et Chrome, le dossier est ouvert en
 lecture et écriture : le navigateur demande l’autorisation une fois, à
@@ -1468,9 +1382,7 @@ son aperçu ; au clavier, dans la liste, ↑ ↓ passent à la question précéd
 suivante, avec son aperçu, Entrée l’ouvre dans l’éditeur et Espace la coche. On
 regarde d’abord, et on décide de modifier en voyant la question : « Éditeur »
 la montre. Dans l’éditeur, « ← » (infobulle « Retour à la liste ») ramène à la
-liste. (On a écarté une bascule « Liste | Éditeur » en tête du panneau, moins
-visible qu’un bouton sur la ligne, et un bouton « Modifier » au-dessus de
-l’aperçu.) **Supprimer** efface le fichier du dossier après confirmation : une
+liste. **Supprimer** efface le fichier du dossier après confirmation : une
 question écrite par une IA n’est souvent suivie par aucun git. Changer de question ne perd rien :
 l’enregistrement est automatique. En mode Éditeur, le panneau de gauche s’élargit
 aux trois cinquièmes de la largeur ; l’aperçu reste à droite. La case à cocher
@@ -1480,15 +1392,13 @@ ses images, ne s’édite pas : l’éditeur le dit.
 
 **Un seul bloc.** La question s’édite en entier, comme dans un éditeur de code :
 une question se lit d’un bloc, les variables de `question_setup` servent dans
-l’énoncé. Des sous-onglets par champ, essayés d’abord, obligeaient à basculer
-sans cesse. CodeMirror 5 (cdnjs, version fixée, chargé à la première ouverture)
+l’énoncé. CodeMirror 5 (cdnjs, version fixée, chargé à la première ouverture)
 colore chaque section selon son contenu : les lignes `%` et `% question_…` en
 intertitres, Python pour `question_setup` et `question_check`, HTML pour
 l’énoncé et l’explication, avec en couleur les balises `{% … %}`, les variables
 `{{ … }}` et les formules. Chaque section se replie par son intertitre.
 Numéros de ligne, Tab (quatre espaces), retour à la ligne indenté, Ctrl+Z (chaque
-question garde son historique pendant la visite). CodeMirror 6 a été écarté : il
-demande un outil de construction (bundler).
+question garde son historique pendant la visite).
 
 **Aperçu à la demande.** « Actualiser l’aperçu », au-dessus de l’aperçu, ou
 Ctrl+Entrée dans l’éditeur, montre la version de l’éditeur, avec ses tirages
@@ -1498,11 +1408,7 @@ donne. Il montre toujours le premier tirage ; « Nouvel énoncé », dans la
 question, passe aux autres. Une mise à jour remet la question à zéro, et
 l’aperçu précédent reste affiché pendant le calcul. Après une pause de la
 frappe, la ligne d’état de l’aperçu dit seulement que le texte a changé ; la
-validation du format et l’enregistrement, eux, restent automatiques. Historique :
-un bouton « Essayer » a d’abord obligé à le demander ; l’aperçu a ensuite suivi
-chaque pause de la frappe, et montrait alors les erreurs passagères de la
-saisie et lançait des tirages inutiles (octobre 2026) : l’auteur a préféré une
-action volontaire.
+validation du format et l’enregistrement, eux, restent automatiques.
 
 **Erreurs.** Sous l’éditeur, une ligne d’état donne l’erreur de format ou de
 balise (à la frappe) et l’erreur Python du tirage de l’aperçu, avec un lien
@@ -1519,8 +1425,7 @@ confirmation. Les fins de ligne du fichier (CRLF ou LF) sont gardées. « Relire
 met à jour la question de l’éditeur si son fichier a changé sur le disque.
 
 **Prompt et collage.** « Prompt », dans le bandeau (§ 11.6), copie `PROMPT.md`.
-En tête du panneau de gauche, à droite, précédé de son message bref (sur la ligne
-du dossier, essayée d’abord, il écrasait le nom du dossier) :
+En tête du panneau de gauche, à droite, précédé de son message bref :
 
 - **Coller question(s)** (infobulle : « Coller le code d’une ou plusieurs
   questions ») : passe à l’éditeur, vide, avec « Collez ici le code d’une ou

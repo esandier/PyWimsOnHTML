@@ -11,7 +11,8 @@ avec des démonstrations, donne un mode d’emploi pour créer une question (ave
 sans IA, avec des modèles) et héberge le compilateur.
 
 La conception d’ensemble est décrite dans [`SPECIFICATION.md`](SPECIFICATION.md),
-qui fait référence ; le format des questions est détaillé dans
+qui fait référence ; le pourquoi des choix et les solutions écartées sont dans
+[`DECISIONS.md`](DECISIONS.md), et le format des questions est détaillé dans
 [`PROMPT.md`](PROMPT.md).
 
 ## Structure du projet
