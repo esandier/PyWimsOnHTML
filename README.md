@@ -26,7 +26,7 @@ qui fait référence ; le pourquoi des choix et les solutions écartées sont da
   unique ou multiple
 - `css/` — charte neutre par défaut (`brand.css`), exemples de chartes (`brands/`, dont
   celle de l’UPEC) et styles des questions (`question.css`)
-- `runtime/` — code intégré au fichier généré : grammaire des balises
+- `runtime/` — code intégré au fichier généré : lecture des champs de réponse
   (`template.js`), correction sans Python (`correction.js`), Python dans un
   Worker (`python.js`, `python-worker.js`) et module `pywims` (`pywims.py`),
   champs (`fields.js`), cycle de vie d’une question (`question.js`) et feuille
@@ -57,13 +57,12 @@ fichiers, et il le dit.
 une question en affiche l’aperçu à droite, dans une fenêtre qui défile : la vraie
 page de la question, qui fonctionne comme pour l’élève : saisie, **Vérifier**,
 retour, **Solution** (ce qu’attend la correction, avec l’explication), **Nouvel
-énoncé**. Il apparaît tout de suite, avec chaque variable de l’énoncé sous son
-nom et les boutons inactifs, puis il est remplacé par des tirages réels dès que
-Python les a calculés. Python se charge dès l’ouverture du compilateur, en
+énoncé**. Il apparaît dès que Python a calculé ses tirages : l’énoncé est rendu par
+Jinja, dans Python. Python se charge dès l’ouverture du compilateur, en
 arrière-plan (10 à 20 secondes) : le premier aperçu ne l’attend que s’il est
 demandé tout de suite, et l’aperçu s’en sert aussi pour vérifier les réponses.
-Une erreur dans `question_setup` est signalée au-dessus de l’aperçu, qui reste
-provisoire.
+Une erreur dans `question_setup` ou dans le modèle est signalée au-dessus de
+l’aperçu.
 
 Coche une ou plusieurs questions, puis **Exporter la sélection** :
 
@@ -156,22 +155,24 @@ MathJax reconnaît `$...$`, `$$...$$`, `\(...\)` et `\[...\]`.
 
 Un fichier `.pwq` contient les champs `question_title`, `question_keywords`,
 `question_layout` (`STD`), `question_setup` (tirage et calcul des solutions),
-`question_statement` (modèle de l’énoncé, avec `{{variable}}` et des balises de
-saisie) et, facultativement, `question_solution_explanation` (explication affichée
-avec la solution, écrite comme l’énoncé), `question_check` (correction) et
+`question_statement` (modèle Jinja de l’énoncé, avec `{{ … }}`, `{% if %}`,
+`{% for %}` et des champs de saisie `{{ input_value('n', solution=s) }}`) et,
+facultativement, `question_solution_explanation` (explication affichée avec la
+solution, écrite comme l’énoncé), `question_check` (correction) et
 `question_draws` (nombre de tirages calculés, de 1 à 200 ; 20 par défaut). Tous les
-noms sont en anglais. Chaque balise de saisie désigne sa solution
+noms sont en anglais. Chaque champ de saisie désigne sa solution
 (`solution=variable`). La question importe elle-même ses bibliothèques, ainsi que
-les outils du module `pywims` (`py_wims`, `is_number`, `math_expression`,
-`decimal_comma`, `mcq`, `ANY`). `question_check` peut définir la variable `feedback`.
+les outils du module `pywims` (`math_expression`, `mcq`, `tex`, `ANY`). Une valeur
+`{{ p }}` s’écrit par `tex` : fraction en ligne `3/4`, en grand avec `{{ p|frac }}`,
+en décimal avec `{{ p|dec }}` ou `{{ p|dec(2) }}`. `question_check` peut définir la variable `feedback`.
 
 **Sans `question_check`, l’élève doit donner ce qu’affiche le bouton « Correction ».**
 Seuls les espaces, le signe moins typographique et le codage des accents sont
 ignorés ; les majuscules, l’ordre des termes et le séparateur décimal comptent.
 On écrit donc `question_check` quand plusieurs écritures sont justes, pour un retour
 ciblé selon l’erreur, et toujours pour un champ MathLive (`input_math`), qui se
-corrige par une comparaison symbolique. Pour une réponse décimale écrite avec
-une virgule, `decimal_comma(x, 2)` donne la solution (`"1,41"`).
+corrige par une comparaison symbolique. Pour une réponse numérique, `input_value`
+accepte la virgule et le point.
 
 Les questions à choix unique (`input_radio`) ou multiple (`input_checkbox`)
 prennent leurs choix dans une liste de `question_setup` (`choices=`) et leur solution
@@ -204,7 +205,7 @@ Les matrices redimensionnables commencent à 2 × 2 ; la poignée ↘ ajoute ou
 retire des lignes et des colonnes jusqu’aux limites déclarées, à la souris ou
 aux touches fléchées. Seules les cases visibles sont transmises à la correction.
 
-Les autres balises PyWims (menus déroulants `input_select`, glisser-déposer
+Les autres champs PyWims (glisser-déposer
 `input_drag` / `input_drop`…) ne sont pas encore prises en charge : le
 compilateur les signale au lieu de les transformer silencieusement.
 

@@ -35,7 +35,7 @@ units_product = a * units
 % question_statement
 %
 Calculez ${{a}} \times {{b}}$ :
-{% input_value 'answer' solution=product style='width:4em' %}
+{{ input_value('answer', solution=product, style='width:4em') }}
 %
 % question_solution_explanation
 %

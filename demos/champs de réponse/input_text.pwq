@@ -36,7 +36,7 @@ a, b, c = sides
 % question_statement
 %
 Un triangle a pour côtés ${{a}}$ cm, ${{b}}$ cm et ${{c}}$ cm. Il est
-{% input_text 'nature' solution=kind match=loose style='width:8em' %}.
+{{ input_text('nature', solution=kind, match=loose, style='width:8em') }}.
 %
 % question_solution_explanation
 %

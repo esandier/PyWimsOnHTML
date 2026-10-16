@@ -25,13 +25,10 @@ A = Matrix(m, n, lambda i, j: randint(-1, 1))
 B = Matrix(n, p, lambda i, j: randint(-1, 1))
 product = A * B
 
-# Calcul détaillé du premier coefficient, pour l’explication de la solution.
-def parenthesized(value):
-    return "({})".format(value) if value < 0 else str(value)
-
-first_coefficient = " + ".join(
-    parenthesized(A[0, k]) + r" \times " + parenthesized(B[k, 0]) for k in range(n)
-) + " = " + str(product[0, 0])
+# Calcul détaillé du premier coefficient, pour l’explication de la solution : les produits
+# A[0, k] × B[k, 0], et leur somme.
+first_products = [(A[0, k], B[k, 0]) for k in range(n)]
+first_coefficient = product[0, 0]
 %
 % question_statement
 %
@@ -46,7 +43,10 @@ Entrez le résultat ci-dessous :
 % question_solution_explanation
 %
 Le coefficient $(AB)_{ij}$ est la somme des produits des coefficients de la ligne $i$ de $A$ par
-ceux de la colonne $j$ de $B$ ; par exemple $(AB)_{11} = {{first_coefficient}}$.
+ceux de la colonne $j$ de $B$ ; par exemple
+{#- Un facteur négatif s’écrit entre parenthèses. #}
+{%- macro factor(v) %}{% if v < 0 %}({{ v }}){% else %}{{ v }}{% endif %}{% endmacro %}
+$(AB)_{11} = {% for a, b in first_products %}{{ factor(a) }} \times {{ factor(b) }}{% if not loop.last %} + {% endif %}{% endfor %} = {{ first_coefficient }}$.
 %
 % question_check
 %

@@ -96,7 +96,7 @@
           <tr><td><code>question_keywords</code></td><td>obligatoire</td><td>mots-clés séparés par des virgules (recherche dans l’atelier)</td></tr>
           <tr><td><code>question_layout</code></td><td>obligatoire</td><td>toujours <code>STD</code></td></tr>
           <tr><td><code>question_setup</code></td><td>obligatoire</td><td>code Python : tirage des valeurs et calcul des solutions</td></tr>
-          <tr><td><code>question_statement</code></td><td>obligatoire</td><td>énoncé en HTML, avec formules, valeurs <code>{{variable}}</code> et champs de réponse</td></tr>
+          <tr><td><code>question_statement</code></td><td>obligatoire</td><td>énoncé en HTML, avec formules, modèle Jinja : HTML, formules, valeurs <code>{{ … }}</code>, cas <code>{% if %}</code> et champs de réponse</td></tr>
           <tr><td><code>question_solution_explanation</code></td><td>facultatif</td><td>explication affichée avec la solution, écrite comme l’énoncé, sans champ de réponse</td></tr>
           <tr><td><code>question_check</code></td><td>facultatif</td><td>code Python de correction, pour accepter plusieurs écritures ou donner un retour ciblé</td></tr>
           <tr><td><code>question_draws</code></td><td>facultatif</td><td>nombre de tirages préparés, de 1 à 200 (20 par défaut)</td></tr>
@@ -121,19 +121,24 @@
       <li>C’est du HTML.</li>
       <li>Les formules s’écrivent en LaTeX entre <code>$…$</code> (dans la ligne) ou <code>$$…$$</code>
         (centrées).</li>
-      <li><code>{{nom}}</code> affiche la valeur d’une variable de <code>question_setup</code> : une expression SymPy
-        s’affiche en LaTeX, à mettre donc dans une formule : <code>$f(x) = {{f}}$</code>. Dans une commande
-        LaTeX, laissez des espaces autour : <code>\frac{ {{n}} }{ {{m}} }</code>.</li>
-      <li>Les champs de réponse sont des balises <code>{% … %}</code>, détaillées ci-dessous ; chacune
-        contient sa solution.</li>
+      <li>C’est un modèle Jinja. <code>{{ nom }}</code> affiche la valeur d’une variable de
+        <code>question_setup</code> : une expression SymPy s’affiche en LaTeX, à mettre donc dans une formule :
+        <code>$f(x) = {{ f }}$</code>. Une fraction s’écrit en ligne (<code>3/4</code>) ;
+        <code>{{ p|frac }}</code> l’écrit en grand, <code>{{ p|dec }}</code> en décimal (<code>0{,}75</code>),
+        <code>{{ p|dec(2) }}</code> arrondie au centième. Dans une commande LaTeX, laissez des espaces autour :
+        <code>x^{ {{n}} }</code>.</li>
+      <li>Le texte qui change d’un tirage à l’autre s’écrit dans l’énoncé, avec
+        <code>{% if cas == 'a' %}…{% else %}…{% endif %}</code> ou <code>{% for … %}…{% endfor %}</code>.</li>
+      <li>Les champs de réponse s’écrivent <code>{{ input_value('answer', solution=s) }}</code>, détaillés
+        ci-dessous ; chacun contient sa solution. Un champ ne peut pas être dans un <code>{% if %}</code>.</li>
     </ol>
 
     <h3>Le champ <code>question_solution_explanation</code></h3>
     <p>Facultatif, il est affiché quand l’élève demande la solution. Il s’écrit exactement comme l’énoncé
-      (HTML, formules, valeurs <code>{{variable}}</code>), sans champ de réponse :</p>
-<pre><code>On calcule ${{a}} \times {{b}} = {{product}}$.</code></pre>
-    <p>Une explication qui demande un calcul (les étapes d’un algorithme, par exemple) se prépare en
-      texte dans <code>question_setup</code>, puis s’affiche avec <code>{{variable}}</code>.</p>
+      (HTML, formules, Jinja), sans champ de réponse :</p>
+<pre><code>On calcule ${{ a }} \times {{ b }} = {{ product }}$.</code></pre>
+    <p>Une explication propre au cas tiré s’écrit avec <code>{% if %}</code>, une somme de termes avec
+      <code>{% for %}</code>.</p>
 
     <h3>Le champ <code>question_check</code></h3>
     <p>Si le champ n’est pas fourni, la réponse de l’élève est comparée à la solution, telle que l’affiche
@@ -158,14 +163,14 @@
         (<code>form=decimal</code>) ou un texte entre apostrophes (<code>style='width:4em'</code>).</li>
       <li><code>solution=</code> est obligatoire pour tous les champs : la variable qui contient la bonne
         réponse.</li>
-      <li>Une unité s’attache au champ par une espace insécable : <code>{% input_value 'length' solution=bc %}&amp;nbsp;cm</code>.
+      <li>Une unité s’attache au champ par une espace insécable : <code>{{ input_value('length', solution=bc) }}&amp;nbsp;cm</code>.
         Sinon, « cm » peut passer seul à la ligne, et l’élève est tenté de l’écrire dans le champ.</li>
     </ul>
 
     <details class="field-item">
       <summary><code>input_value</code> : réponse numérique</summary>
-<pre><code>{% input_value 'answer' solution=product %}
-{% input_value 'length' solution=hypotenuse tolerance=0.01 form=decimal %}</code></pre>
+<pre><code>{{ input_value('answer', solution=product) }}
+{{ input_value('length', solution=hypotenuse, tolerance=0.01, form=decimal) }}</code></pre>
       <div class="table-wrap"><table>
         <thead><tr><th>Paramètre</th><th>Statut</th><th>Rôle</th></tr></thead>
         <tbody>
@@ -187,7 +192,7 @@
 
     <details class="field-item">
       <summary><code>input_text</code> : réponse écrite</summary>
-<pre><code>{% input_text 'answer' solution=noun match=loose %}</code></pre>
+<pre><code>{{ input_text('answer', solution=noun, match=loose) }}</code></pre>
       <div class="table-wrap"><table>
         <thead><tr><th>Paramètre</th><th>Statut</th><th>Rôle</th></tr></thead>
         <tbody>
@@ -201,7 +206,7 @@
 
     <details class="field-item">
       <summary><code>input_math</code> : formule, avec clavier mathématique</summary>
-<pre><code>{% input_math 'derivative' solution=f_prime %}</code></pre>
+<pre><code>{{ input_math('derivative', solution=f_prime) }}</code></pre>
       <div class="table-wrap"><table>
         <thead><tr><th>Paramètre</th><th>Statut</th><th>Rôle</th></tr></thead>
         <tbody>
@@ -215,7 +220,7 @@
 
     <details class="field-item">
       <summary><code>input_matrix</code> : matrice de taille fixe</summary>
-<pre><code>{% input_matrix 'M' rows=2 cols=3 solution=product input_style='width:2.5em' %}</code></pre>
+<pre><code>{{ input_matrix('M', rows=2, cols=3, solution=product, input_style='width:2.5em') }}</code></pre>
       <div class="table-wrap"><table>
         <thead><tr><th>Paramètre</th><th>Statut</th><th>Rôle</th></tr></thead>
         <tbody>
@@ -232,7 +237,7 @@
 
     <details class="field-item">
       <summary><code>input_vmatrix</code> : matrice dont l’élève choisit la taille</summary>
-<pre><code>{% input_vmatrix 'M' max_rows=5 max_cols=5 solution=product %}</code></pre>
+<pre><code>{{ input_vmatrix('M', max_rows=5, max_cols=5, solution=product) }}</code></pre>
       <div class="table-wrap"><table>
         <thead><tr><th>Paramètre</th><th>Statut</th><th>Rôle</th></tr></thead>
         <tbody>
@@ -248,8 +253,8 @@
 
     <details class="field-item">
       <summary><code>input_radio</code> et <code>input_checkbox</code> : choix unique, choix multiple</summary>
-<pre><code>{% input_radio 'answer' choices=choices solution=correct columns=4 fixed_last=1 %}
-{% input_checkbox 'answers' choices=choices solution=correct scoring='b=1,m=-0.5' %}</code></pre>
+<pre><code>{{ input_radio('answer', choices=choices, solution=correct, columns=4, fixed_last=1) }}
+{{ input_checkbox('answers', choices=choices, solution=correct, scoring='b=1,m=-0.5') }}</code></pre>
       <div class="table-wrap"><table>
         <thead><tr><th>Paramètre</th><th>Statut</th><th>Rôle</th></tr></thead>
         <tbody>
@@ -271,7 +276,7 @@
 
     <details class="field-item">
       <summary><code>input_select</code> : texte à trous</summary>
-<pre><code>La fonction est {% input_select 'sense' choices=senses solution=correct shuffle=0 %} sur cet intervalle.</code></pre>
+<pre><code>La fonction est {{ input_select('sense', choices=senses, solution=correct, shuffle=0) }} sur cet intervalle.</code></pre>
       <div class="table-wrap"><table>
         <thead><tr><th>Paramètre</th><th>Statut</th><th>Rôle</th></tr></thead>
         <tbody>

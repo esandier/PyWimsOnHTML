@@ -3114,7 +3114,7 @@ body:not([data-scored]) .pw-help-score {
 <!-- data-sheet : « single » pour une question seule, « activity » pour une feuille de plusieurs questions. -->
 <!-- data-sheet-id : empreinte d’une activité, clé de la mémoire de sa progression (absente pour une question seule). -->
 <!-- data-style : « compact » pour une activité au style « feuille de TD » (SPECIFICATION.md, § 5.7), absent sinon. -->
-<body data-sheet="activity" data-sheet-id="p8ypa14dy3">
+<body data-sheet="activity" data-sheet-id="tfoqsb5doh">
   <!-- En-tête : titre, progression (activité seulement), aide et logo. Il reste visible au défilement d’une activité. -->
   <div class="pw-top">
     <!-- Le logo de marque est décoratif ; son image et son style sont définis dans brand.css. -->
@@ -3162,7 +3162,7 @@ correct = [i for i, n in enumerate(numbers) if isprime(n)]
 if not correct:
     correct = [4]</pre>
 <pre data-field="question_statement">Parmi les nombres suivants, lesquels sont &lt;b&gt;premiers&lt;/b&gt; ?
-{% input_checkbox &#39;answer&#39; choices=choices solution=correct columns=5 fixed_last=1 scoring=&#39;b=1,m=-0.5,p=0&#39; %}</pre>
+{{ input_checkbox(&#39;answer&#39;, choices=choices, solution=correct, columns=5, fixed_last=1, scoring=&#39;b=1,m=-0.5,p=0&#39;) }}</pre>
 <pre data-field="question_solution_explanation">Un nombre premier a exactement deux diviseurs : $1$ et lui-même.</pre>
 <pre data-field="question_check"># « question_check » ne sert qu’aux retours ciblés : sans lui, la correction par défaut jugerait déjà la
 # réponse en tout ou rien. La saisie et « correct » sont des listes croissantes d’indices.
@@ -3175,7 +3175,7 @@ elif any(i &lt; 4 and not isprime(numbers[i]) for i in answer):
     feedback = &#39;Au moins un nombre coché a un diviseur autre que $1$ et lui-même.&#39;
 else:
     feedback = &#39;Il manque au moins un nombre premier.&#39;</pre>
-<pre data-draws>[{&quot;seed&quot;:0,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[4]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$26$&quot;,&quot;$28$&quot;,&quot;$4$&quot;,&quot;$18$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[1,3,2,0,4]}},{&quot;seed&quot;:1,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[4]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$10$&quot;,&quot;$38$&quot;,&quot;$6$&quot;,&quot;$18$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[1,0,2,3,4]}},{&quot;seed&quot;:2,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[0,1]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$5$&quot;,&quot;$7$&quot;,&quot;$25$&quot;,&quot;$12$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[1,3,0,2,4]}},{&quot;seed&quot;:3,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[0]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$17$&quot;,&quot;$39$&quot;,&quot;$36$&quot;,&quot;$10$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[0,3,1,2,4]}},{&quot;seed&quot;:4,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[0]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$17$&quot;,&quot;$21$&quot;,&quot;$8$&quot;,&quot;$48$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[0,1,2,3,4]}},{&quot;seed&quot;:5,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[0]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$41$&quot;,&quot;$18$&quot;,&quot;$49$&quot;,&quot;$24$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[3,0,2,1,4]}},{&quot;seed&quot;:6,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[1]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$38$&quot;,&quot;$7$&quot;,&quot;$33$&quot;,&quot;$18$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[0,3,2,1,4]}},{&quot;seed&quot;:7,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[1,3]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$22$&quot;,&quot;$11$&quot;,&quot;$27$&quot;,&quot;$43$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[1,3,2,0,4]}},{&quot;seed&quot;:8,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[4]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$16$&quot;,&quot;$25$&quot;,&quot;$26$&quot;,&quot;$10$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[3,1,0,2,4]}},{&quot;seed&quot;:9,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[0,1,3]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$31$&quot;,&quot;$41$&quot;,&quot;$25$&quot;,&quot;$19$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[2,1,3,0,4]}},{&quot;seed&quot;:10,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[2]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$38$&quot;,&quot;$4$&quot;,&quot;$29$&quot;,&quot;$32$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[1,2,3,0,4]}},{&quot;seed&quot;:11,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[1,2]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$30$&quot;,&quot;$37$&quot;,&quot;$31$&quot;,&quot;$34$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[1,3,2,0,4]}},{&quot;seed&quot;:12,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[1]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$32$&quot;,&quot;$19$&quot;,&quot;$44$&quot;,&quot;$35$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[3,1,0,2,4]}},{&quot;seed&quot;:13,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[3]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$18$&quot;,&quot;$20$&quot;,&quot;$45$&quot;,&quot;$13$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[3,1,0,2,4]}},{&quot;seed&quot;:14,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[1,3]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$8$&quot;,&quot;$41$&quot;,&quot;$46$&quot;,&quot;$43$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[2,1,3,0,4]}},{&quot;seed&quot;:15,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[1]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$15$&quot;,&quot;$2$&quot;,&quot;$35$&quot;,&quot;$49$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[0,1,2,3,4]}},{&quot;seed&quot;:16,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[4]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$25$&quot;,&quot;$32$&quot;,&quot;$20$&quot;,&quot;$28$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[1,0,3,2,4]}},{&quot;seed&quot;:17,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[4]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$35$&quot;,&quot;$28$&quot;,&quot;$21$&quot;,&quot;$25$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[2,3,0,1,4]}},{&quot;seed&quot;:18,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[0]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$13$&quot;,&quot;$9$&quot;,&quot;$44$&quot;,&quot;$30$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[3,2,1,0,4]}},{&quot;seed&quot;:19,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[4]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$45$&quot;,&quot;$4$&quot;,&quot;$35$&quot;,&quot;$9$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[2,1,3,0,4]}}]</pre>
+<pre data-draws>[{&quot;seed&quot;:0,&quot;statement&quot;:&quot;Parmi les nombres suivants, lesquels sont &lt;b&gt;premiers&lt;/b&gt; ?\n\u0001answer\u0001&quot;,&quot;explanation&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[4]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$26$&quot;,&quot;$28$&quot;,&quot;$4$&quot;,&quot;$18$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[1,3,2,0,4]}},{&quot;seed&quot;:1,&quot;statement&quot;:&quot;Parmi les nombres suivants, lesquels sont &lt;b&gt;premiers&lt;/b&gt; ?\n\u0001answer\u0001&quot;,&quot;explanation&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[4]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$10$&quot;,&quot;$38$&quot;,&quot;$6$&quot;,&quot;$18$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[1,0,2,3,4]}},{&quot;seed&quot;:2,&quot;statement&quot;:&quot;Parmi les nombres suivants, lesquels sont &lt;b&gt;premiers&lt;/b&gt; ?\n\u0001answer\u0001&quot;,&quot;explanation&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[0,1]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$5$&quot;,&quot;$7$&quot;,&quot;$25$&quot;,&quot;$12$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[1,3,0,2,4]}},{&quot;seed&quot;:3,&quot;statement&quot;:&quot;Parmi les nombres suivants, lesquels sont &lt;b&gt;premiers&lt;/b&gt; ?\n\u0001answer\u0001&quot;,&quot;explanation&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[0]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$17$&quot;,&quot;$39$&quot;,&quot;$36$&quot;,&quot;$10$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[0,3,1,2,4]}},{&quot;seed&quot;:4,&quot;statement&quot;:&quot;Parmi les nombres suivants, lesquels sont &lt;b&gt;premiers&lt;/b&gt; ?\n\u0001answer\u0001&quot;,&quot;explanation&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[0]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$17$&quot;,&quot;$21$&quot;,&quot;$8$&quot;,&quot;$48$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[0,1,2,3,4]}},{&quot;seed&quot;:5,&quot;statement&quot;:&quot;Parmi les nombres suivants, lesquels sont &lt;b&gt;premiers&lt;/b&gt; ?\n\u0001answer\u0001&quot;,&quot;explanation&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[0]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$41$&quot;,&quot;$18$&quot;,&quot;$49$&quot;,&quot;$24$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[3,0,2,1,4]}},{&quot;seed&quot;:6,&quot;statement&quot;:&quot;Parmi les nombres suivants, lesquels sont &lt;b&gt;premiers&lt;/b&gt; ?\n\u0001answer\u0001&quot;,&quot;explanation&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[1]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$38$&quot;,&quot;$7$&quot;,&quot;$33$&quot;,&quot;$18$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[0,3,2,1,4]}},{&quot;seed&quot;:7,&quot;statement&quot;:&quot;Parmi les nombres suivants, lesquels sont &lt;b&gt;premiers&lt;/b&gt; ?\n\u0001answer\u0001&quot;,&quot;explanation&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[1,3]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$22$&quot;,&quot;$11$&quot;,&quot;$27$&quot;,&quot;$43$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[1,3,2,0,4]}},{&quot;seed&quot;:8,&quot;statement&quot;:&quot;Parmi les nombres suivants, lesquels sont &lt;b&gt;premiers&lt;/b&gt; ?\n\u0001answer\u0001&quot;,&quot;explanation&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[4]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$16$&quot;,&quot;$25$&quot;,&quot;$26$&quot;,&quot;$10$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[3,1,0,2,4]}},{&quot;seed&quot;:9,&quot;statement&quot;:&quot;Parmi les nombres suivants, lesquels sont &lt;b&gt;premiers&lt;/b&gt; ?\n\u0001answer\u0001&quot;,&quot;explanation&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[0,1,3]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$31$&quot;,&quot;$41$&quot;,&quot;$25$&quot;,&quot;$19$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[2,1,3,0,4]}},{&quot;seed&quot;:10,&quot;statement&quot;:&quot;Parmi les nombres suivants, lesquels sont &lt;b&gt;premiers&lt;/b&gt; ?\n\u0001answer\u0001&quot;,&quot;explanation&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[2]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$38$&quot;,&quot;$4$&quot;,&quot;$29$&quot;,&quot;$32$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[1,2,3,0,4]}},{&quot;seed&quot;:11,&quot;statement&quot;:&quot;Parmi les nombres suivants, lesquels sont &lt;b&gt;premiers&lt;/b&gt; ?\n\u0001answer\u0001&quot;,&quot;explanation&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[1,2]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$30$&quot;,&quot;$37$&quot;,&quot;$31$&quot;,&quot;$34$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[1,3,2,0,4]}},{&quot;seed&quot;:12,&quot;statement&quot;:&quot;Parmi les nombres suivants, lesquels sont &lt;b&gt;premiers&lt;/b&gt; ?\n\u0001answer\u0001&quot;,&quot;explanation&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[1]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$32$&quot;,&quot;$19$&quot;,&quot;$44$&quot;,&quot;$35$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[3,1,0,2,4]}},{&quot;seed&quot;:13,&quot;statement&quot;:&quot;Parmi les nombres suivants, lesquels sont &lt;b&gt;premiers&lt;/b&gt; ?\n\u0001answer\u0001&quot;,&quot;explanation&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[3]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$18$&quot;,&quot;$20$&quot;,&quot;$45$&quot;,&quot;$13$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[3,1,0,2,4]}},{&quot;seed&quot;:14,&quot;statement&quot;:&quot;Parmi les nombres suivants, lesquels sont &lt;b&gt;premiers&lt;/b&gt; ?\n\u0001answer\u0001&quot;,&quot;explanation&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[1,3]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$8$&quot;,&quot;$41$&quot;,&quot;$46$&quot;,&quot;$43$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[2,1,3,0,4]}},{&quot;seed&quot;:15,&quot;statement&quot;:&quot;Parmi les nombres suivants, lesquels sont &lt;b&gt;premiers&lt;/b&gt; ?\n\u0001answer\u0001&quot;,&quot;explanation&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[1]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$15$&quot;,&quot;$2$&quot;,&quot;$35$&quot;,&quot;$49$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[0,1,2,3,4]}},{&quot;seed&quot;:16,&quot;statement&quot;:&quot;Parmi les nombres suivants, lesquels sont &lt;b&gt;premiers&lt;/b&gt; ?\n\u0001answer\u0001&quot;,&quot;explanation&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[4]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$25$&quot;,&quot;$32$&quot;,&quot;$20$&quot;,&quot;$28$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[1,0,3,2,4]}},{&quot;seed&quot;:17,&quot;statement&quot;:&quot;Parmi les nombres suivants, lesquels sont &lt;b&gt;premiers&lt;/b&gt; ?\n\u0001answer\u0001&quot;,&quot;explanation&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[4]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$35$&quot;,&quot;$28$&quot;,&quot;$21$&quot;,&quot;$25$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[2,3,0,1,4]}},{&quot;seed&quot;:18,&quot;statement&quot;:&quot;Parmi les nombres suivants, lesquels sont &lt;b&gt;premiers&lt;/b&gt; ?\n\u0001answer\u0001&quot;,&quot;explanation&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[0]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$13$&quot;,&quot;$9$&quot;,&quot;$44$&quot;,&quot;$30$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[3,2,1,0,4]}},{&quot;seed&quot;:19,&quot;statement&quot;:&quot;Parmi les nombres suivants, lesquels sont &lt;b&gt;premiers&lt;/b&gt; ?\n\u0001answer\u0001&quot;,&quot;explanation&quot;:&quot;Un nombre premier a exactement deux diviseurs : $1$ et lui-même.&quot;,&quot;context&quot;:{},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;answer&quot;:[4]},&quot;choices&quot;:{&quot;answer&quot;:[&quot;$45$&quot;,&quot;$4$&quot;,&quot;$35$&quot;,&quot;$9$&quot;,&quot;Aucun de ces nombres&quot;]},&quot;orders&quot;:{&quot;answer&quot;:[2,1,3,0,4]}}]</pre>
 </div>
 </section>
 <section class="pw-question" id="q2" data-python="true">
@@ -3197,17 +3197,17 @@ total = Rational(n, m) + Rational(p, q)
 common = ilcm(m, q)
 n_common = n * (common // m)
 p_common = p * (common // q)
-numerator_sum = n_common + p_common
-# Dernière égalité, seulement si la fraction obtenue se simplifie.
-simplified = &quot;&quot; if total.q == common else &quot; = &quot; + latex(total)</pre>
+numerator_sum = n_common + p_common</pre>
 <pre data-field="question_statement">Additionnez ces fractions et donnez le résultat sous forme d’une fraction
 irréductible :
 &lt;br&gt;
-$\displaystyle \frac{ {{n}} }{ {{m}} } + \frac{ {{p}} }{ {{q}} } =$ {% input_text &#39;result&#39; solution=total style=&#39;width:5em&#39; %}</pre>
+$\displaystyle \frac{ {{n}} }{ {{m}} } + \frac{ {{p}} }{ {{q}} } =$ {{ input_text(&#39;result&#39;, solution=total, style=&#39;width:5em&#39;) }}</pre>
 <pre data-field="question_solution_explanation">On réduit au même dénominateur ${{common}}$ :
 $\displaystyle \frac{ {{n}} }{ {{m}} } + \frac{ {{p}} }{ {{q}} }
 = \frac{ {{n_common}} }{ {{common}} } + \frac{ {{p_common}} }{ {{common}} }
-= \frac{ {{numerator_sum}} }{ {{common}} }{{simplified}}$.</pre>
+= \frac{ {{numerator_sum}} }{ {{common}} }
+{#- Dernière égalité, seulement si la fraction obtenue se simplifie. #}
+{%- if total.q != common %} = {{ total|frac }}{% endif %}$.</pre>
 <pre data-field="question_check"># Interprète la réponse, puis vérifie la valeur avant la forme irréductible.
 answer = math_expression(result)
 ok_answer[&#39;result&#39;] = False
@@ -3225,7 +3225,7 @@ else:
     else:
         ok_answer[&#39;result&#39;] = True
         feedback = &quot;Bravo, c’est exact !&quot;</pre>
-<pre data-draws>[{&quot;seed&quot;:0,&quot;context&quot;:{&quot;n&quot;:&quot;5&quot;,&quot;m&quot;:&quot;4&quot;,&quot;p&quot;:&quot;3&quot;,&quot;q&quot;:&quot;5&quot;,&quot;common&quot;:&quot;20&quot;,&quot;n_common&quot;:&quot;25&quot;,&quot;p_common&quot;:&quot;12&quot;,&quot;numerator_sum&quot;:&quot;37&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;37/20&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:1,&quot;context&quot;:{&quot;n&quot;:&quot;1&quot;,&quot;m&quot;:&quot;4&quot;,&quot;p&quot;:&quot;5&quot;,&quot;q&quot;:&quot;2&quot;,&quot;common&quot;:&quot;4&quot;,&quot;n_common&quot;:&quot;1&quot;,&quot;p_common&quot;:&quot;10&quot;,&quot;numerator_sum&quot;:&quot;11&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;11/4&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:2,&quot;context&quot;:{&quot;n&quot;:&quot;5&quot;,&quot;m&quot;:&quot;4&quot;,&quot;p&quot;:&quot;1&quot;,&quot;q&quot;:&quot;2&quot;,&quot;common&quot;:&quot;4&quot;,&quot;n_common&quot;:&quot;5&quot;,&quot;p_common&quot;:&quot;2&quot;,&quot;numerator_sum&quot;:&quot;7&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;7/4&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:3,&quot;context&quot;:{&quot;n&quot;:&quot;1&quot;,&quot;m&quot;:&quot;5&quot;,&quot;p&quot;:&quot;5&quot;,&quot;q&quot;:&quot;4&quot;,&quot;common&quot;:&quot;20&quot;,&quot;n_common&quot;:&quot;4&quot;,&quot;p_common&quot;:&quot;25&quot;,&quot;numerator_sum&quot;:&quot;29&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;29/20&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:4,&quot;context&quot;:{&quot;n&quot;:&quot;1&quot;,&quot;m&quot;:&quot;5&quot;,&quot;p&quot;:&quot;3&quot;,&quot;q&quot;:&quot;2&quot;,&quot;common&quot;:&quot;10&quot;,&quot;n_common&quot;:&quot;2&quot;,&quot;p_common&quot;:&quot;15&quot;,&quot;numerator_sum&quot;:&quot;17&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;17/10&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:5,&quot;context&quot;:{&quot;n&quot;:&quot;4&quot;,&quot;m&quot;:&quot;3&quot;,&quot;p&quot;:&quot;3&quot;,&quot;q&quot;:&quot;2&quot;,&quot;common&quot;:&quot;6&quot;,&quot;n_common&quot;:&quot;8&quot;,&quot;p_common&quot;:&quot;9&quot;,&quot;numerator_sum&quot;:&quot;17&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;17/6&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:6,&quot;context&quot;:{&quot;n&quot;:&quot;5&quot;,&quot;m&quot;:&quot;3&quot;,&quot;p&quot;:&quot;5&quot;,&quot;q&quot;:&quot;4&quot;,&quot;common&quot;:&quot;12&quot;,&quot;n_common&quot;:&quot;20&quot;,&quot;p_common&quot;:&quot;15&quot;,&quot;numerator_sum&quot;:&quot;35&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;35/12&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:7,&quot;context&quot;:{&quot;n&quot;:&quot;2&quot;,&quot;m&quot;:&quot;5&quot;,&quot;p&quot;:&quot;1&quot;,&quot;q&quot;:&quot;4&quot;,&quot;common&quot;:&quot;20&quot;,&quot;n_common&quot;:&quot;8&quot;,&quot;p_common&quot;:&quot;5&quot;,&quot;numerator_sum&quot;:&quot;13&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;13/20&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:8,&quot;context&quot;:{&quot;n&quot;:&quot;1&quot;,&quot;m&quot;:&quot;5&quot;,&quot;p&quot;:&quot;3&quot;,&quot;q&quot;:&quot;4&quot;,&quot;common&quot;:&quot;20&quot;,&quot;n_common&quot;:&quot;4&quot;,&quot;p_common&quot;:&quot;15&quot;,&quot;numerator_sum&quot;:&quot;19&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;19/20&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:9,&quot;context&quot;:{&quot;n&quot;:&quot;3&quot;,&quot;m&quot;:&quot;4&quot;,&quot;p&quot;:&quot;5&quot;,&quot;q&quot;:&quot;2&quot;,&quot;common&quot;:&quot;4&quot;,&quot;n_common&quot;:&quot;3&quot;,&quot;p_common&quot;:&quot;10&quot;,&quot;numerator_sum&quot;:&quot;13&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;13/4&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:10,&quot;context&quot;:{&quot;n&quot;:&quot;4&quot;,&quot;m&quot;:&quot;3&quot;,&quot;p&quot;:&quot;1&quot;,&quot;q&quot;:&quot;2&quot;,&quot;common&quot;:&quot;6&quot;,&quot;n_common&quot;:&quot;8&quot;,&quot;p_common&quot;:&quot;3&quot;,&quot;numerator_sum&quot;:&quot;11&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;11/6&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:11,&quot;context&quot;:{&quot;n&quot;:&quot;3&quot;,&quot;m&quot;:&quot;4&quot;,&quot;p&quot;:&quot;4&quot;,&quot;q&quot;:&quot;5&quot;,&quot;common&quot;:&quot;20&quot;,&quot;n_common&quot;:&quot;15&quot;,&quot;p_common&quot;:&quot;16&quot;,&quot;numerator_sum&quot;:&quot;31&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;31/20&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:12,&quot;context&quot;:{&quot;n&quot;:&quot;3&quot;,&quot;m&quot;:&quot;4&quot;,&quot;p&quot;:&quot;2&quot;,&quot;q&quot;:&quot;5&quot;,&quot;common&quot;:&quot;20&quot;,&quot;n_common&quot;:&quot;15&quot;,&quot;p_common&quot;:&quot;8&quot;,&quot;numerator_sum&quot;:&quot;23&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;23/20&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:13,&quot;context&quot;:{&quot;n&quot;:&quot;2&quot;,&quot;m&quot;:&quot;3&quot;,&quot;p&quot;:&quot;3&quot;,&quot;q&quot;:&quot;2&quot;,&quot;common&quot;:&quot;6&quot;,&quot;n_common&quot;:&quot;4&quot;,&quot;p_common&quot;:&quot;9&quot;,&quot;numerator_sum&quot;:&quot;13&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;13/6&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:14,&quot;context&quot;:{&quot;n&quot;:&quot;1&quot;,&quot;m&quot;:&quot;3&quot;,&quot;p&quot;:&quot;5&quot;,&quot;q&quot;:&quot;4&quot;,&quot;common&quot;:&quot;12&quot;,&quot;n_common&quot;:&quot;4&quot;,&quot;p_common&quot;:&quot;15&quot;,&quot;numerator_sum&quot;:&quot;19&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;19/12&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:15,&quot;context&quot;:{&quot;n&quot;:&quot;1&quot;,&quot;m&quot;:&quot;5&quot;,&quot;p&quot;:&quot;1&quot;,&quot;q&quot;:&quot;2&quot;,&quot;common&quot;:&quot;10&quot;,&quot;n_common&quot;:&quot;2&quot;,&quot;p_common&quot;:&quot;5&quot;,&quot;numerator_sum&quot;:&quot;7&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;7/10&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:16,&quot;context&quot;:{&quot;n&quot;:&quot;2&quot;,&quot;m&quot;:&quot;5&quot;,&quot;p&quot;:&quot;5&quot;,&quot;q&quot;:&quot;2&quot;,&quot;common&quot;:&quot;10&quot;,&quot;n_common&quot;:&quot;4&quot;,&quot;p_common&quot;:&quot;25&quot;,&quot;numerator_sum&quot;:&quot;29&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;29/10&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:17,&quot;context&quot;:{&quot;n&quot;:&quot;3&quot;,&quot;m&quot;:&quot;5&quot;,&quot;p&quot;:&quot;4&quot;,&quot;q&quot;:&quot;3&quot;,&quot;common&quot;:&quot;15&quot;,&quot;n_common&quot;:&quot;9&quot;,&quot;p_common&quot;:&quot;20&quot;,&quot;numerator_sum&quot;:&quot;29&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;29/15&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:18,&quot;context&quot;:{&quot;n&quot;:&quot;1&quot;,&quot;m&quot;:&quot;4&quot;,&quot;p&quot;:&quot;1&quot;,&quot;q&quot;:&quot;3&quot;,&quot;common&quot;:&quot;12&quot;,&quot;n_common&quot;:&quot;3&quot;,&quot;p_common&quot;:&quot;4&quot;,&quot;numerator_sum&quot;:&quot;7&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;7/12&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:19,&quot;context&quot;:{&quot;n&quot;:&quot;4&quot;,&quot;m&quot;:&quot;5&quot;,&quot;p&quot;:&quot;1&quot;,&quot;q&quot;:&quot;2&quot;,&quot;common&quot;:&quot;10&quot;,&quot;n_common&quot;:&quot;8&quot;,&quot;p_common&quot;:&quot;5&quot;,&quot;numerator_sum&quot;:&quot;13&quot;,&quot;simplified&quot;:&quot;&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;13/10&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}}]</pre>
+<pre data-draws>[{&quot;seed&quot;:0,&quot;statement&quot;:&quot;Additionnez ces fractions et donnez le résultat sous forme d’une fraction\nirréductible :\n&lt;br&gt;\n$\\displaystyle \\frac{ 5 }{ 4 } + \\frac{ 3 }{ 5 } =$ \u0001result\u0001&quot;,&quot;explanation&quot;:&quot;On réduit au même dénominateur $20$ :\n$\\displaystyle \\frac{ 5 }{ 4 } + \\frac{ 3 }{ 5 }\n= \\frac{ 25 }{ 20 } + \\frac{ 12 }{ 20 }\n= \\frac{ 37 }{ 20 }$.&quot;,&quot;context&quot;:{&quot;common&quot;:&quot;20&quot;,&quot;m&quot;:&quot;4&quot;,&quot;n&quot;:&quot;5&quot;,&quot;n_common&quot;:&quot;25&quot;,&quot;numerator_sum&quot;:&quot;37&quot;,&quot;p&quot;:&quot;3&quot;,&quot;p_common&quot;:&quot;12&quot;,&quot;q&quot;:&quot;5&quot;,&quot;total&quot;:&quot;37/20&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;37/20&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:1,&quot;statement&quot;:&quot;Additionnez ces fractions et donnez le résultat sous forme d’une fraction\nirréductible :\n&lt;br&gt;\n$\\displaystyle \\frac{ 1 }{ 4 } + \\frac{ 5 }{ 2 } =$ \u0001result\u0001&quot;,&quot;explanation&quot;:&quot;On réduit au même dénominateur $4$ :\n$\\displaystyle \\frac{ 1 }{ 4 } + \\frac{ 5 }{ 2 }\n= \\frac{ 1 }{ 4 } + \\frac{ 10 }{ 4 }\n= \\frac{ 11 }{ 4 }$.&quot;,&quot;context&quot;:{&quot;common&quot;:&quot;4&quot;,&quot;m&quot;:&quot;4&quot;,&quot;n&quot;:&quot;1&quot;,&quot;n_common&quot;:&quot;1&quot;,&quot;numerator_sum&quot;:&quot;11&quot;,&quot;p&quot;:&quot;5&quot;,&quot;p_common&quot;:&quot;10&quot;,&quot;q&quot;:&quot;2&quot;,&quot;total&quot;:&quot;11/4&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;11/4&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:2,&quot;statement&quot;:&quot;Additionnez ces fractions et donnez le résultat sous forme d’une fraction\nirréductible :\n&lt;br&gt;\n$\\displaystyle \\frac{ 5 }{ 4 } + \\frac{ 1 }{ 2 } =$ \u0001result\u0001&quot;,&quot;explanation&quot;:&quot;On réduit au même dénominateur $4$ :\n$\\displaystyle \\frac{ 5 }{ 4 } + \\frac{ 1 }{ 2 }\n= \\frac{ 5 }{ 4 } + \\frac{ 2 }{ 4 }\n= \\frac{ 7 }{ 4 }$.&quot;,&quot;context&quot;:{&quot;common&quot;:&quot;4&quot;,&quot;m&quot;:&quot;4&quot;,&quot;n&quot;:&quot;5&quot;,&quot;n_common&quot;:&quot;5&quot;,&quot;numerator_sum&quot;:&quot;7&quot;,&quot;p&quot;:&quot;1&quot;,&quot;p_common&quot;:&quot;2&quot;,&quot;q&quot;:&quot;2&quot;,&quot;total&quot;:&quot;7/4&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;7/4&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:3,&quot;statement&quot;:&quot;Additionnez ces fractions et donnez le résultat sous forme d’une fraction\nirréductible :\n&lt;br&gt;\n$\\displaystyle \\frac{ 1 }{ 5 } + \\frac{ 5 }{ 4 } =$ \u0001result\u0001&quot;,&quot;explanation&quot;:&quot;On réduit au même dénominateur $20$ :\n$\\displaystyle \\frac{ 1 }{ 5 } + \\frac{ 5 }{ 4 }\n= \\frac{ 4 }{ 20 } + \\frac{ 25 }{ 20 }\n= \\frac{ 29 }{ 20 }$.&quot;,&quot;context&quot;:{&quot;common&quot;:&quot;20&quot;,&quot;m&quot;:&quot;5&quot;,&quot;n&quot;:&quot;1&quot;,&quot;n_common&quot;:&quot;4&quot;,&quot;numerator_sum&quot;:&quot;29&quot;,&quot;p&quot;:&quot;5&quot;,&quot;p_common&quot;:&quot;25&quot;,&quot;q&quot;:&quot;4&quot;,&quot;total&quot;:&quot;29/20&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;29/20&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:4,&quot;statement&quot;:&quot;Additionnez ces fractions et donnez le résultat sous forme d’une fraction\nirréductible :\n&lt;br&gt;\n$\\displaystyle \\frac{ 1 }{ 5 } + \\frac{ 3 }{ 2 } =$ \u0001result\u0001&quot;,&quot;explanation&quot;:&quot;On réduit au même dénominateur $10$ :\n$\\displaystyle \\frac{ 1 }{ 5 } + \\frac{ 3 }{ 2 }\n= \\frac{ 2 }{ 10 } + \\frac{ 15 }{ 10 }\n= \\frac{ 17 }{ 10 }$.&quot;,&quot;context&quot;:{&quot;common&quot;:&quot;10&quot;,&quot;m&quot;:&quot;5&quot;,&quot;n&quot;:&quot;1&quot;,&quot;n_common&quot;:&quot;2&quot;,&quot;numerator_sum&quot;:&quot;17&quot;,&quot;p&quot;:&quot;3&quot;,&quot;p_common&quot;:&quot;15&quot;,&quot;q&quot;:&quot;2&quot;,&quot;total&quot;:&quot;17/10&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;17/10&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:5,&quot;statement&quot;:&quot;Additionnez ces fractions et donnez le résultat sous forme d’une fraction\nirréductible :\n&lt;br&gt;\n$\\displaystyle \\frac{ 4 }{ 3 } + \\frac{ 3 }{ 2 } =$ \u0001result\u0001&quot;,&quot;explanation&quot;:&quot;On réduit au même dénominateur $6$ :\n$\\displaystyle \\frac{ 4 }{ 3 } + \\frac{ 3 }{ 2 }\n= \\frac{ 8 }{ 6 } + \\frac{ 9 }{ 6 }\n= \\frac{ 17 }{ 6 }$.&quot;,&quot;context&quot;:{&quot;common&quot;:&quot;6&quot;,&quot;m&quot;:&quot;3&quot;,&quot;n&quot;:&quot;4&quot;,&quot;n_common&quot;:&quot;8&quot;,&quot;numerator_sum&quot;:&quot;17&quot;,&quot;p&quot;:&quot;3&quot;,&quot;p_common&quot;:&quot;9&quot;,&quot;q&quot;:&quot;2&quot;,&quot;total&quot;:&quot;17/6&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;17/6&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:6,&quot;statement&quot;:&quot;Additionnez ces fractions et donnez le résultat sous forme d’une fraction\nirréductible :\n&lt;br&gt;\n$\\displaystyle \\frac{ 5 }{ 3 } + \\frac{ 5 }{ 4 } =$ \u0001result\u0001&quot;,&quot;explanation&quot;:&quot;On réduit au même dénominateur $12$ :\n$\\displaystyle \\frac{ 5 }{ 3 } + \\frac{ 5 }{ 4 }\n= \\frac{ 20 }{ 12 } + \\frac{ 15 }{ 12 }\n= \\frac{ 35 }{ 12 }$.&quot;,&quot;context&quot;:{&quot;common&quot;:&quot;12&quot;,&quot;m&quot;:&quot;3&quot;,&quot;n&quot;:&quot;5&quot;,&quot;n_common&quot;:&quot;20&quot;,&quot;numerator_sum&quot;:&quot;35&quot;,&quot;p&quot;:&quot;5&quot;,&quot;p_common&quot;:&quot;15&quot;,&quot;q&quot;:&quot;4&quot;,&quot;total&quot;:&quot;35/12&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;35/12&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:7,&quot;statement&quot;:&quot;Additionnez ces fractions et donnez le résultat sous forme d’une fraction\nirréductible :\n&lt;br&gt;\n$\\displaystyle \\frac{ 2 }{ 5 } + \\frac{ 1 }{ 4 } =$ \u0001result\u0001&quot;,&quot;explanation&quot;:&quot;On réduit au même dénominateur $20$ :\n$\\displaystyle \\frac{ 2 }{ 5 } + \\frac{ 1 }{ 4 }\n= \\frac{ 8 }{ 20 } + \\frac{ 5 }{ 20 }\n= \\frac{ 13 }{ 20 }$.&quot;,&quot;context&quot;:{&quot;common&quot;:&quot;20&quot;,&quot;m&quot;:&quot;5&quot;,&quot;n&quot;:&quot;2&quot;,&quot;n_common&quot;:&quot;8&quot;,&quot;numerator_sum&quot;:&quot;13&quot;,&quot;p&quot;:&quot;1&quot;,&quot;p_common&quot;:&quot;5&quot;,&quot;q&quot;:&quot;4&quot;,&quot;total&quot;:&quot;13/20&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;13/20&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:8,&quot;statement&quot;:&quot;Additionnez ces fractions et donnez le résultat sous forme d’une fraction\nirréductible :\n&lt;br&gt;\n$\\displaystyle \\frac{ 1 }{ 5 } + \\frac{ 3 }{ 4 } =$ \u0001result\u0001&quot;,&quot;explanation&quot;:&quot;On réduit au même dénominateur $20$ :\n$\\displaystyle \\frac{ 1 }{ 5 } + \\frac{ 3 }{ 4 }\n= \\frac{ 4 }{ 20 } + \\frac{ 15 }{ 20 }\n= \\frac{ 19 }{ 20 }$.&quot;,&quot;context&quot;:{&quot;common&quot;:&quot;20&quot;,&quot;m&quot;:&quot;5&quot;,&quot;n&quot;:&quot;1&quot;,&quot;n_common&quot;:&quot;4&quot;,&quot;numerator_sum&quot;:&quot;19&quot;,&quot;p&quot;:&quot;3&quot;,&quot;p_common&quot;:&quot;15&quot;,&quot;q&quot;:&quot;4&quot;,&quot;total&quot;:&quot;19/20&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;19/20&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:9,&quot;statement&quot;:&quot;Additionnez ces fractions et donnez le résultat sous forme d’une fraction\nirréductible :\n&lt;br&gt;\n$\\displaystyle \\frac{ 3 }{ 4 } + \\frac{ 5 }{ 2 } =$ \u0001result\u0001&quot;,&quot;explanation&quot;:&quot;On réduit au même dénominateur $4$ :\n$\\displaystyle \\frac{ 3 }{ 4 } + \\frac{ 5 }{ 2 }\n= \\frac{ 3 }{ 4 } + \\frac{ 10 }{ 4 }\n= \\frac{ 13 }{ 4 }$.&quot;,&quot;context&quot;:{&quot;common&quot;:&quot;4&quot;,&quot;m&quot;:&quot;4&quot;,&quot;n&quot;:&quot;3&quot;,&quot;n_common&quot;:&quot;3&quot;,&quot;numerator_sum&quot;:&quot;13&quot;,&quot;p&quot;:&quot;5&quot;,&quot;p_common&quot;:&quot;10&quot;,&quot;q&quot;:&quot;2&quot;,&quot;total&quot;:&quot;13/4&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;13/4&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:10,&quot;statement&quot;:&quot;Additionnez ces fractions et donnez le résultat sous forme d’une fraction\nirréductible :\n&lt;br&gt;\n$\\displaystyle \\frac{ 4 }{ 3 } + \\frac{ 1 }{ 2 } =$ \u0001result\u0001&quot;,&quot;explanation&quot;:&quot;On réduit au même dénominateur $6$ :\n$\\displaystyle \\frac{ 4 }{ 3 } + \\frac{ 1 }{ 2 }\n= \\frac{ 8 }{ 6 } + \\frac{ 3 }{ 6 }\n= \\frac{ 11 }{ 6 }$.&quot;,&quot;context&quot;:{&quot;common&quot;:&quot;6&quot;,&quot;m&quot;:&quot;3&quot;,&quot;n&quot;:&quot;4&quot;,&quot;n_common&quot;:&quot;8&quot;,&quot;numerator_sum&quot;:&quot;11&quot;,&quot;p&quot;:&quot;1&quot;,&quot;p_common&quot;:&quot;3&quot;,&quot;q&quot;:&quot;2&quot;,&quot;total&quot;:&quot;11/6&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;11/6&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:11,&quot;statement&quot;:&quot;Additionnez ces fractions et donnez le résultat sous forme d’une fraction\nirréductible :\n&lt;br&gt;\n$\\displaystyle \\frac{ 3 }{ 4 } + \\frac{ 4 }{ 5 } =$ \u0001result\u0001&quot;,&quot;explanation&quot;:&quot;On réduit au même dénominateur $20$ :\n$\\displaystyle \\frac{ 3 }{ 4 } + \\frac{ 4 }{ 5 }\n= \\frac{ 15 }{ 20 } + \\frac{ 16 }{ 20 }\n= \\frac{ 31 }{ 20 }$.&quot;,&quot;context&quot;:{&quot;common&quot;:&quot;20&quot;,&quot;m&quot;:&quot;4&quot;,&quot;n&quot;:&quot;3&quot;,&quot;n_common&quot;:&quot;15&quot;,&quot;numerator_sum&quot;:&quot;31&quot;,&quot;p&quot;:&quot;4&quot;,&quot;p_common&quot;:&quot;16&quot;,&quot;q&quot;:&quot;5&quot;,&quot;total&quot;:&quot;31/20&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;31/20&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:12,&quot;statement&quot;:&quot;Additionnez ces fractions et donnez le résultat sous forme d’une fraction\nirréductible :\n&lt;br&gt;\n$\\displaystyle \\frac{ 3 }{ 4 } + \\frac{ 2 }{ 5 } =$ \u0001result\u0001&quot;,&quot;explanation&quot;:&quot;On réduit au même dénominateur $20$ :\n$\\displaystyle \\frac{ 3 }{ 4 } + \\frac{ 2 }{ 5 }\n= \\frac{ 15 }{ 20 } + \\frac{ 8 }{ 20 }\n= \\frac{ 23 }{ 20 }$.&quot;,&quot;context&quot;:{&quot;common&quot;:&quot;20&quot;,&quot;m&quot;:&quot;4&quot;,&quot;n&quot;:&quot;3&quot;,&quot;n_common&quot;:&quot;15&quot;,&quot;numerator_sum&quot;:&quot;23&quot;,&quot;p&quot;:&quot;2&quot;,&quot;p_common&quot;:&quot;8&quot;,&quot;q&quot;:&quot;5&quot;,&quot;total&quot;:&quot;23/20&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;23/20&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:13,&quot;statement&quot;:&quot;Additionnez ces fractions et donnez le résultat sous forme d’une fraction\nirréductible :\n&lt;br&gt;\n$\\displaystyle \\frac{ 2 }{ 3 } + \\frac{ 3 }{ 2 } =$ \u0001result\u0001&quot;,&quot;explanation&quot;:&quot;On réduit au même dénominateur $6$ :\n$\\displaystyle \\frac{ 2 }{ 3 } + \\frac{ 3 }{ 2 }\n= \\frac{ 4 }{ 6 } + \\frac{ 9 }{ 6 }\n= \\frac{ 13 }{ 6 }$.&quot;,&quot;context&quot;:{&quot;common&quot;:&quot;6&quot;,&quot;m&quot;:&quot;3&quot;,&quot;n&quot;:&quot;2&quot;,&quot;n_common&quot;:&quot;4&quot;,&quot;numerator_sum&quot;:&quot;13&quot;,&quot;p&quot;:&quot;3&quot;,&quot;p_common&quot;:&quot;9&quot;,&quot;q&quot;:&quot;2&quot;,&quot;total&quot;:&quot;13/6&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;13/6&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:14,&quot;statement&quot;:&quot;Additionnez ces fractions et donnez le résultat sous forme d’une fraction\nirréductible :\n&lt;br&gt;\n$\\displaystyle \\frac{ 1 }{ 3 } + \\frac{ 5 }{ 4 } =$ \u0001result\u0001&quot;,&quot;explanation&quot;:&quot;On réduit au même dénominateur $12$ :\n$\\displaystyle \\frac{ 1 }{ 3 } + \\frac{ 5 }{ 4 }\n= \\frac{ 4 }{ 12 } + \\frac{ 15 }{ 12 }\n= \\frac{ 19 }{ 12 }$.&quot;,&quot;context&quot;:{&quot;common&quot;:&quot;12&quot;,&quot;m&quot;:&quot;3&quot;,&quot;n&quot;:&quot;1&quot;,&quot;n_common&quot;:&quot;4&quot;,&quot;numerator_sum&quot;:&quot;19&quot;,&quot;p&quot;:&quot;5&quot;,&quot;p_common&quot;:&quot;15&quot;,&quot;q&quot;:&quot;4&quot;,&quot;total&quot;:&quot;19/12&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;19/12&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:15,&quot;statement&quot;:&quot;Additionnez ces fractions et donnez le résultat sous forme d’une fraction\nirréductible :\n&lt;br&gt;\n$\\displaystyle \\frac{ 1 }{ 5 } + \\frac{ 1 }{ 2 } =$ \u0001result\u0001&quot;,&quot;explanation&quot;:&quot;On réduit au même dénominateur $10$ :\n$\\displaystyle \\frac{ 1 }{ 5 } + \\frac{ 1 }{ 2 }\n= \\frac{ 2 }{ 10 } + \\frac{ 5 }{ 10 }\n= \\frac{ 7 }{ 10 }$.&quot;,&quot;context&quot;:{&quot;common&quot;:&quot;10&quot;,&quot;m&quot;:&quot;5&quot;,&quot;n&quot;:&quot;1&quot;,&quot;n_common&quot;:&quot;2&quot;,&quot;numerator_sum&quot;:&quot;7&quot;,&quot;p&quot;:&quot;1&quot;,&quot;p_common&quot;:&quot;5&quot;,&quot;q&quot;:&quot;2&quot;,&quot;total&quot;:&quot;7/10&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;7/10&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:16,&quot;statement&quot;:&quot;Additionnez ces fractions et donnez le résultat sous forme d’une fraction\nirréductible :\n&lt;br&gt;\n$\\displaystyle \\frac{ 2 }{ 5 } + \\frac{ 5 }{ 2 } =$ \u0001result\u0001&quot;,&quot;explanation&quot;:&quot;On réduit au même dénominateur $10$ :\n$\\displaystyle \\frac{ 2 }{ 5 } + \\frac{ 5 }{ 2 }\n= \\frac{ 4 }{ 10 } + \\frac{ 25 }{ 10 }\n= \\frac{ 29 }{ 10 }$.&quot;,&quot;context&quot;:{&quot;common&quot;:&quot;10&quot;,&quot;m&quot;:&quot;5&quot;,&quot;n&quot;:&quot;2&quot;,&quot;n_common&quot;:&quot;4&quot;,&quot;numerator_sum&quot;:&quot;29&quot;,&quot;p&quot;:&quot;5&quot;,&quot;p_common&quot;:&quot;25&quot;,&quot;q&quot;:&quot;2&quot;,&quot;total&quot;:&quot;29/10&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;29/10&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:17,&quot;statement&quot;:&quot;Additionnez ces fractions et donnez le résultat sous forme d’une fraction\nirréductible :\n&lt;br&gt;\n$\\displaystyle \\frac{ 3 }{ 5 } + \\frac{ 4 }{ 3 } =$ \u0001result\u0001&quot;,&quot;explanation&quot;:&quot;On réduit au même dénominateur $15$ :\n$\\displaystyle \\frac{ 3 }{ 5 } + \\frac{ 4 }{ 3 }\n= \\frac{ 9 }{ 15 } + \\frac{ 20 }{ 15 }\n= \\frac{ 29 }{ 15 }$.&quot;,&quot;context&quot;:{&quot;common&quot;:&quot;15&quot;,&quot;m&quot;:&quot;5&quot;,&quot;n&quot;:&quot;3&quot;,&quot;n_common&quot;:&quot;9&quot;,&quot;numerator_sum&quot;:&quot;29&quot;,&quot;p&quot;:&quot;4&quot;,&quot;p_common&quot;:&quot;20&quot;,&quot;q&quot;:&quot;3&quot;,&quot;total&quot;:&quot;29/15&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;29/15&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:18,&quot;statement&quot;:&quot;Additionnez ces fractions et donnez le résultat sous forme d’une fraction\nirréductible :\n&lt;br&gt;\n$\\displaystyle \\frac{ 1 }{ 4 } + \\frac{ 1 }{ 3 } =$ \u0001result\u0001&quot;,&quot;explanation&quot;:&quot;On réduit au même dénominateur $12$ :\n$\\displaystyle \\frac{ 1 }{ 4 } + \\frac{ 1 }{ 3 }\n= \\frac{ 3 }{ 12 } + \\frac{ 4 }{ 12 }\n= \\frac{ 7 }{ 12 }$.&quot;,&quot;context&quot;:{&quot;common&quot;:&quot;12&quot;,&quot;m&quot;:&quot;4&quot;,&quot;n&quot;:&quot;1&quot;,&quot;n_common&quot;:&quot;3&quot;,&quot;numerator_sum&quot;:&quot;7&quot;,&quot;p&quot;:&quot;1&quot;,&quot;p_common&quot;:&quot;4&quot;,&quot;q&quot;:&quot;3&quot;,&quot;total&quot;:&quot;7/12&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;7/12&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}},{&quot;seed&quot;:19,&quot;statement&quot;:&quot;Additionnez ces fractions et donnez le résultat sous forme d’une fraction\nirréductible :\n&lt;br&gt;\n$\\displaystyle \\frac{ 4 }{ 5 } + \\frac{ 1 }{ 2 } =$ \u0001result\u0001&quot;,&quot;explanation&quot;:&quot;On réduit au même dénominateur $10$ :\n$\\displaystyle \\frac{ 4 }{ 5 } + \\frac{ 1 }{ 2 }\n= \\frac{ 8 }{ 10 } + \\frac{ 5 }{ 10 }\n= \\frac{ 13 }{ 10 }$.&quot;,&quot;context&quot;:{&quot;common&quot;:&quot;10&quot;,&quot;m&quot;:&quot;5&quot;,&quot;n&quot;:&quot;4&quot;,&quot;n_common&quot;:&quot;8&quot;,&quot;numerator_sum&quot;:&quot;13&quot;,&quot;p&quot;:&quot;1&quot;,&quot;p_common&quot;:&quot;5&quot;,&quot;q&quot;:&quot;2&quot;,&quot;total&quot;:&quot;13/10&quot;},&quot;dimensions&quot;:{},&quot;solutions&quot;:{&quot;result&quot;:&quot;13/10&quot;},&quot;choices&quot;:{},&quot;orders&quot;:{}}]</pre>
 </div>
 </section>
   </main>
@@ -3303,8 +3303,21 @@ else:
   </template>
   <!-- La grammaire des balises précède les widgets, qui utilisent son échappement. -->
   <script>// Grammaire unique des modèles de question, partagée par le compilateur et la question générée.
+// L’énoncé et l’explication sont des modèles Jinja, rendus par Python à la compilation
+// (SPECIFICATION.md, § 2.10) ; ce fichier ne lit que les champs de réponse, sans Python, et affiche
+// l’énoncé rendu.
 window.PyWimsTemplate = (() => {
-  const tagPattern = /{%\s*(.*?)\s*%}/gs;
+  // Champ de réponse : {{ input_value('n', solution=s, tolerance=0.01) }}. Un texte entre guillemets
+  // peut contenir une parenthèse (style='width:calc(…)') ; il est sauté d’un bloc.
+  const fieldPattern = /\{\{-?\s*(input_[A-Za-z_]+)\s*\(((?:[^()'"]|'[^']*'|"[^"]*")*)\)\s*-?\}\}/g;
+  // Ancienne notation, refusée avec un message qui donne la nouvelle (SPECIFICATION.md, § 2.3).
+  const legacyFieldPattern = /\{%\s*(input_[A-Za-z_]+)\b([\s\S]*?)%\}/g;
+  // Marque d’un champ dans le modèle donné à Jinja (« \u0001nom\u0001 ») : Jinja la laisse telle quelle,
+  // et la page la remplace par le champ, dont le HTML dépend de la page (identifiants q2-…, état).
+  // Un caractère de contrôle ne peut venir ni de l’auteur ni d’une formule.
+  const markCharacter = "\u0001";
+  const markPattern = /\u0001([^\u0001]+)\u0001/gu;
+  const fieldMark = name => `${markCharacter}${name}${markCharacter}`;
   // Nom de variable : la règle des identifiants de Python, lettres accentuées comprises (« résultat »),
   // puisque chaque nom désigne une variable de « question_setup ». Python ramène un nom à sa forme
   // NFKC : un « é » tapé en deux caractères (e + accent) désigne la même variable que « é » ; pythonName
@@ -3314,10 +3327,8 @@ window.PyWimsTemplate = (() => {
   const namePattern = new RegExp(`^${nameSource}$`, "u");
   const isName = name => typeof name === "string" && namePattern.test(name);
   const pythonName = name => name.normalize("NFKC");
-  // Accolades échappées : en mode Unicode (u), une accolade seule est une erreur de syntaxe.
-  const variablePattern = new RegExp(String.raw`\{\{\s*(${nameSource})\s*\}\}`, "gu");
-  // Formule d’un modèle, avec les délimiteurs de MathJax (compiler/assemble.js).
-  const mathPattern = /\$\$[\s\S]*?\$\$|(?<!\\)\$(?:\\[\s\S]|[^$\\])+\$|\\\([\s\S]*?\\\)|\\\[[\s\S]*?\\\]/;
+  // Formule d’un énoncé rendu, avec les délimiteurs de MathJax (compiler/assemble.js).
+  const mathPattern = /\$\$[\s\S]*?\$\$|(?<!\\)\$(?:\\[\s\S]|[^$\\])+\$|\\\([\s\S]*?\\\)|\\\[[\s\S]*?\\\]/g;
 
   // Types d’attributs : entier, nombre décimal positif (gardé en texte, pour une valeur exacte), nom
   // de variable Python, dimension (entier ou variable), texte entre guillemets, ou liste de mots
@@ -3360,7 +3371,7 @@ window.PyWimsTemplate = (() => {
   // écraser une variable du contrat de question, un outil pywims ni un mot-clé Python.
   const reservedNames = new Set([
     "ok_answer", "answer_text", "feedback",
-    "py_wims", "is_number", "math_expression", "decimal_comma", "mcq", "ANY", "pywims",
+    "math_expression", "mcq", "tex", "ANY", "pywims",
     "False", "None", "True", "and", "as", "assert", "async", "await", "break",
     "class", "continue", "def", "del", "elif", "else", "except", "finally", "for",
     "from", "global", "if", "import", "in", "is", "lambda", "nonlocal", "not",
@@ -3473,37 +3484,42 @@ window.PyWimsTemplate = (() => {
     return { score: noteFor(checked), max: scoring.MAX ?? noteFor(solution) };
   }
 
-  // Analyse le contenu d’une balise {% … %} et renvoie sa description, ou lève une erreur explicite.
+  // Analyse un champ, écrit {{ input_value('n', solution=s) }} ou sans accolades
+  // (« input_value('n', solution=s) »), et renvoie sa description, ou lève une erreur explicite.
+  // L’appel est lu, jamais exécuté : la page connaît ainsi ses champs sans Python (SPECIFICATION.md,
+  // § 2.3). Une valeur est donc un nombre, un texte entre guillemets ou un nom de variable.
   function parseTag(source) {
-    const tagSource = source.trim();
-    const head = tagSource.match(new RegExp(String.raw`^(${nameSource})\s+(['"])(${nameSource})\2`, "u"));
-    if (!head || !Object.hasOwn(tagSchemas, head[1])) {
-      throw new Error(`Balise de modèle non prise en charge : {% ${tagSource} %}`);
+    const shown = source.trim().startsWith("{{") ? source.trim() : `{{ ${source.trim()} }}`;
+    const call = shown.replace(/^\{\{-?\s*/, "").replace(/\s*-?\}\}$/, "");
+    const head = call.match(new RegExp(String.raw`^(${nameSource})\s*\(\s*(['"])(${nameSource})\2`, "u"));
+    if (!head || !Object.hasOwn(tagSchemas, head[1]) || !call.endsWith(")")) {
+      throw new Error(`Champ de réponse non pris en charge : ${shown}`);
     }
     const [, type, , rawName] = head;
     const name = pythonName(rawName);
     if (reservedNames.has(name)) {
-      throw new Error(`Le nom de champ « ${name} » est réservé ; choisissez-en un autre dans {% ${tagSource} %}`);
+      throw new Error(`Le nom de champ « ${name} » est réservé ; choisissez-en un autre dans ${shown}`);
     }
     const schema = tagSchemas[type];
     const attributes = {};
     const attributePattern = new RegExp(
-      String.raw`^\s+(${nameSource})\s*=\s*(?:(\d+(?:\.\d+)?|\.\d+)|(${nameSource})|(['"])(.*?)\4)`, "su");
-    let rest = tagSource.slice(head[0].length);
+      String.raw`^\s*,\s*(${nameSource})\s*=\s*(?:(\d+(?:\.\d+)?|\.\d+)|(${nameSource})|(['"])(.*?)\4)(?=\s*(?:,|$))`, "su");
+    let rest = call.slice(head[0].length, -1);
 
     while (rest.trim()) {
       const match = rest.match(attributePattern);
       if (!match) {
-        throw new Error(`Syntaxe d’attribut invalide dans {% ${tagSource} %}`);
+        // Le plus souvent une expression (solution=p*2) : seul un nom est lu, sans Python.
+        throw new Error(`Attribut invalide dans ${shown} : écrivez nom=valeur, séparés par des virgules ; une valeur est un nombre, un texte entre guillemets ou un nom de variable, pas une expression (calculez-la dans « question_setup »)`);
       }
       const [, key, number, rawVariable, , text] = match;
       const variable = rawVariable === undefined ? undefined : pythonName(rawVariable);
       const integer = number !== undefined && /^\d+$/.test(number) ? number : undefined;
       if (!Object.hasOwn(schema, key)) {
-        throw new Error(`Attribut « ${key} » inconnu pour ${type} dans {% ${tagSource} %}`);
+        throw new Error(`Attribut « ${key} » inconnu pour ${type} dans ${shown}`);
       }
       if (Object.hasOwn(attributes, key)) {
-        throw new Error(`Attribut « ${key} » répété dans {% ${tagSource} %}`);
+        throw new Error(`Attribut « ${key} » répété dans ${shown}`);
       }
       const expected = schema[key];
       const word = variable ?? text;
@@ -3520,7 +3536,7 @@ window.PyWimsTemplate = (() => {
         const description = Array.isArray(expected)
           ? `l’une des valeurs ${expected.join(", ")}`
           : typeDescriptions[expected];
-        throw new Error(`L’attribut « ${key} » doit être ${description} dans {% ${tagSource} %}`);
+        throw new Error(`L’attribut « ${key} » doit être ${description} dans ${shown}`);
       }
       attributes[key] = value;
       rest = rest.slice(match[0].length);
@@ -3528,7 +3544,7 @@ window.PyWimsTemplate = (() => {
 
     // Chaque champ désigne la variable de « question_setup » qui contient sa solution.
     if (!Object.hasOwn(attributes, "solution")) {
-      throw new Error(`Le champ « ${name} » doit indiquer sa solution, par exemple solution=variable, dans {% ${tagSource} %}`);
+      throw new Error(`Le champ « ${name} » doit indiquer sa solution, par exemple solution=variable, dans ${shown}`);
     }
 
     // Une matrice fixe a soit une taille carrée, soit un nombre de lignes et de colonnes.
@@ -3537,60 +3553,87 @@ window.PyWimsTemplate = (() => {
       const rectangular = Object.hasOwn(attributes, "rows") || Object.hasOwn(attributes, "cols");
       if (square === rectangular ||
           (rectangular && !(Object.hasOwn(attributes, "rows") && Object.hasOwn(attributes, "cols")))) {
-        throw new Error(`input_matrix exige soit size, soit rows et cols, dans {% ${tagSource} %}`);
+        throw new Error(`input_matrix exige soit size, soit rows et cols, dans ${shown}`);
       }
     }
 
     // Un champ à choix désigne la liste de ses choix ; colonnes et barème se vérifient sans Python.
     if (choiceTypes.has(type)) {
       if (!Object.hasOwn(attributes, "choices")) {
-        throw new Error(`Le champ « ${name} » doit indiquer ses choix, par exemple choices=variable, dans {% ${tagSource} %}`);
+        throw new Error(`Le champ « ${name} » doit indiquer ses choix, par exemple choices=variable, dans ${shown}`);
       }
       if (Object.hasOwn(attributes, "columns") && !(attributes.columns >= 1 && attributes.columns <= 6)) {
-        throw new Error(`L’attribut « columns » doit être compris entre 1 et 6 dans {% ${tagSource} %}`);
+        throw new Error(`L’attribut « columns » doit être compris entre 1 et 6 dans ${shown}`);
       }
       if (Object.hasOwn(attributes, "shuffle") && ![0, 1].includes(attributes.shuffle)) {
-        throw new Error(`L’attribut « shuffle » doit valoir 0 ou 1 dans {% ${tagSource} %}`);
+        throw new Error(`L’attribut « shuffle » doit valoir 0 ou 1 dans ${shown}`);
       }
       // Sans mélange, tous les choix restent à leur place : fixed_last ne dirait rien, et sa présence
       // trahit presque toujours une confusion de l’auteur.
       if (attributes.shuffle === 0 && Object.hasOwn(attributes, "fixed_last")) {
-        throw new Error(`fixed_last est sans effet avec shuffle=0, qui garde déjà tous les choix à leur place, dans {% ${tagSource} %}`);
+        throw new Error(`fixed_last est sans effet avec shuffle=0, qui garde déjà tous les choix à leur place, dans ${shown}`);
       }
       if (Object.hasOwn(attributes, "scoring")) {
         try {
           parseScoring(attributes.scoring);
         } catch (error) {
-          throw new Error(`${error.message} dans {% ${tagSource} %}`);
+          throw new Error(`${error.message} dans ${shown}`);
         }
       }
     }
     return Object.freeze({ type, name, attributes: Object.freeze(attributes) });
   }
 
-  // Analyse toutes les balises d’un modèle ; les balises invalides sont ignorées.
+  // Analyse tous les champs d’un modèle, dans l’ordre ; les champs invalides sont ignorés.
   function parseTags(template) {
     const tags = [];
-    for (const [, source] of template.matchAll(tagPattern)) {
+    for (const [source] of template.matchAll(fieldPattern)) {
       try {
         tags.push(parseTag(source));
       } catch {
-        // validateTemplate signale ces balises ; les autres fonctions les ignorent.
+        // validateTemplate signale ces champs ; les autres fonctions les ignorent.
       }
     }
     return tags;
   }
 
-  // Renvoie un message par balise invalide, pour signaler toutes les erreurs à la fois.
-  function validateTemplate(template) {
+  // Nouvelle écriture d’un champ de l’ancienne notation, pour le message qui la refuse :
+  // {% input_value 'n' solution=s tolerance=0.01 %} → {{ input_value('n', solution=s, tolerance=0.01) }}.
+  function legacyFieldCall(type, rest) {
+    const parts = [...rest.matchAll(/(['"])(?:(?!\1).)*\1|[^\s=]+\s*=\s*(?:(['"])(?:(?!\2).)*\2|\S+)/gs)]
+      .map(([part]) => part.replace(/\s*=\s*/, "="));
+    return `{{ ${type}(${parts.join(", ")}) }}`;
+  }
+
+  // Erreurs d’écriture d’un modèle, communes à l’énoncé et à l’explication, trouvées sans Python :
+  // ancienne notation des champs, et trois accolades de suite, où Jinja lirait « {{ » suivi de
+  // « {n} » et donnerait un message incompréhensible (SPECIFICATION.md, § 2.4).
+  function syntaxErrors(template) {
     const errors = [];
+    for (const [source, type, rest] of template.matchAll(legacyFieldPattern)) {
+      errors.push(`La notation des champs a changé : écrivez ${legacyFieldCall(type, rest)} au lieu de ${source}`);
+    }
+    if (/\{\{\{/.test(template)) {
+      errors.push("Trois accolades de suite (par exemple \\frac{{{n}}}{2}) : Jinja y lit « {{ » suivi de « {n} » ; écrivez \\frac{ {{n}} }{2}, avec des espaces.");
+    }
+    return errors;
+  }
+
+  // Renvoie un message par erreur de l’énoncé, pour les signaler toutes à la fois.
+  function validateTemplate(template) {
+    const errors = syntaxErrors(template);
     const tags = [];
-    for (const [, source] of template.matchAll(tagPattern)) {
+    for (const [source] of template.matchAll(fieldPattern)) {
       try {
         tags.push(parseTag(source));
       } catch (error) {
         errors.push(error.message);
       }
+    }
+    // Chaque champ est désigné par son nom : sa marque dans l’énoncé rendu, sa variable dans Python.
+    const names = tags.map(tag => tag.name);
+    for (const name of new Set(names.filter((name, index) => names.indexOf(name) !== index))) {
+      errors.push(`Deux champs portent le nom « ${name} » : donnez-leur des noms différents.`);
     }
     // La note porte sur toute la question : elle n’a de sens que pour un champ à choix seul.
     const scored = tags.find(tag => Object.hasOwn(tag.attributes, "scoring"));
@@ -3600,50 +3643,54 @@ window.PyWimsTemplate = (() => {
     return errors;
   }
 
-  // Indique les types de balises présents, par exemple pour charger MathLive seulement s’il sert.
+  // Indique les types de champs présents, par exemple pour charger MathLive seulement s’il sert.
   function tagTypes(template) {
     return new Set(parseTags(template).map(tag => tag.type));
   }
 
-  // Variables Python nécessaires à l’affichage : {{ variable }} et dimensions matricielles nommées.
-  function templateVariables(template) {
-    const names = new Set([...template.matchAll(variablePattern)].map(match => pythonName(match[1])));
-    for (const tag of parseTags(template)) {
-      if (tag.type !== "input_matrix") continue;
-      for (const key of ["size", "rows", "cols"]) {
-        if (typeof tag.attributes[key] === "string") names.add(tag.attributes[key]);
-      }
-    }
-    return names;
+  // Modèle donné à Jinja : chaque champ remplacé par sa marque, suivie des retours à la ligne de son
+  // écriture, pour que les numéros de ligne des erreurs de Jinja restent ceux du champ de l’auteur.
+  // Le code de Jinja ({{ … }}, {% … %}) est ramené à la forme NFKC, comme Python le fait pour ses
+  // noms : sans cela, un « é » tapé en deux caractères ne désignerait pas la variable « é » de
+  // « question_setup » (Jinja ne normalise pas). Le texte hors des délimiteurs reste tel quel.
+  function jinjaSource(template) {
+    return template
+      .replace(fieldPattern, source => {
+        const tag = parseTag(source);
+        return fieldMark(tag.name) + "\n".repeat((source.match(/\n/g) ?? []).length);
+      })
+      .replace(/\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\}/g, code => code.normalize("NFKC"));
   }
 
-  // Remplace chaque balise par le rendu fourni, puis chaque variable par sa valeur échappée. Une
-  // valeur admet les balises de mise en forme du retour (<b>, <br>…), comme une explication calculée
-  // dans « question_setup » et affichée par {{variable}} (SPECIFICATION.md, § 2.1) ; le reste est
-  // échappé, et un « x < 3 » s’affiche tel quel.
-  // Dans une formule du modèle, le « < » est échappé : le modèle est du HTML de l’auteur, et dans
-  // « $x_1<x_2$ » le navigateur lisait « <x_2$ … » comme une balise, qui avalait la fin de l’énoncé
-  // (SPECIFICATION.md, § 2.1). Les balises et les formules sont cherchées d’un seul passage, pour
-  // qu’un « $ » d’une balise ne soit jamais pris pour le début d’une formule. « \$ » est un dollar
-  // littéral (processEscapes de MathJax), jamais un délimiteur.
+  // Affiche un énoncé ou une explication rendus par Jinja (SPECIFICATION.md, § 2.10) : le « < » des
+  // formules est échappé, puis chaque marque est remplacée par le champ que fournit renderTag.
+  // Le « < » : l’énoncé est du HTML de l’auteur, et dans « $x_1<x_2$ » le navigateur lisait « <x_2$ … »
+  // comme une balise, qui avalait la fin de l’énoncé (SPECIFICATION.md, § 2.1). Fait sur l’énoncé rendu,
+  // il protège aussi les valeurs insérées dans une formule. Les marques ne contiennent pas de « $ » :
+  // un « $ » d’un attribut de champ (style) ne peut plus passer pour le début d’une formule. « \$ » est
+  // un dollar littéral (processEscapes de MathJax), jamais un délimiteur.
   // Solution écartée : demander aux auteurs d’écrire « \lt » ; les questions converties d’AMC et
   // celles des enseignants contiennent « < » tel quel.
-  function renderTemplate(template, context, renderTag) {
-    const tagOrMath = new RegExp(`${tagPattern.source}|${mathPattern.source}`, "gs");
-    const withTags = template.replace(tagOrMath, (match, source) =>
-      source === undefined ? match.replaceAll("<", "&lt;") : renderTag(parseTag(source)));
-    return withTags.replace(variablePattern, (_match, rawName) => {
-      const name = pythonName(rawName);
-      if (!Object.hasOwn(context, name)) {
-        throw new Error(`Variable de question inconnue : ${name}`);
-      }
-      return limitedHtml(context[name]);
-    });
+  function renderStatement(rendered, tags, renderTag) {
+    const byName = new Map(tags.map(tag => [tag.name, tag]));
+    return rendered
+      .replace(mathPattern, formula => formula.replaceAll("<", "&lt;"))
+      .replace(markPattern, (_mark, name) => {
+        if (!byName.has(name)) {
+          throw new Error(`Champ de question inconnu : ${name}`);
+        }
+        return renderTag(byName.get(name));
+      });
+  }
+
+  // Nombre d’apparitions de la marque d’un champ dans un énoncé rendu : 1 pour chaque champ, sinon le
+  // champ est dans un {% if %} ou un {% for %} (SPECIFICATION.md, § 2.3).
+  function markCount(rendered, name) {
+    return rendered.split(fieldMark(name)).length - 1;
   }
 
   return Object.freeze({
-    tagPattern,
-    variablePattern,
+    fieldPattern,
     isName,
     pythonName,
     reservedNames,
@@ -3656,10 +3703,12 @@ window.PyWimsTemplate = (() => {
     checkIdPrefix,
     parseTag,
     parseTags,
+    syntaxErrors,
     validateTemplate,
     tagTypes,
-    templateVariables,
-    renderTemplate
+    jinjaSource,
+    renderStatement,
+    markCount
   });
 })();
 </script>
@@ -4123,7 +4172,7 @@ window.PyWimsWidgets = (() => {
 </script>
   <!-- Module Python « pywims » (runtime/pywims.py), lu par le runtime Python : le type text/x-python
        empêche le navigateur de l’exécuter. Vide si aucune question n’a d’« question_check ». -->
-  <script type="text/x-python" id="pywims-module">"""Outils PyWims : from pywims import py_wims, is_number, math_expression, decimal_comma, mcq, ANY"""
+  <script type="text/x-python" id="pywims-module">"""Outils PyWims : from pywims import math_expression, mcq, tex, ANY"""
 # Module installé dans Pyodide par runtime/python.js, à la compilation comme dans le fichier généré,
 # qui l’intègre tel quel : les tirages calculés et rejoués utilisent ainsi le même code
 # (SPECIFICATION.md, § 3). Les fonctions dont le nom commence par « _ » servent au compilateur et à
@@ -4132,7 +4181,7 @@ window.PyWimsWidgets = (() => {
 import re as _re
 import sys as _sys
 
-__all__ = ["py_wims", "is_number", "math_expression", "decimal_comma", "mcq", "ANY"]
+__all__ = ["math_expression", "mcq", "tex", "ANY"]
 
 _any_value = None
 
@@ -4321,21 +4370,96 @@ def _is_matrix(value):
     return isinstance(value, (list, tuple))
 
 
+_jinja_environment = None
+
+
+def _jinja():
+    """Environnement Jinja des modèles (SPECIFICATION.md, § 2.10), créé une fois.
+
+    StrictUndefined : une variable absente est une erreur, au lieu d’un texte vide qu’on ne voit qu’en
+    relisant l’énoncé. Pas d’échappement : l’énoncé est le HTML de l’auteur, et une macro peut produire
+    du HTML ; le texte de l’élève n’entre jamais dans un modèle. finalize écrit chaque {{ valeur }}
+    par tex, et les filtres frac et dec en sont les options.
+    """
+    global _jinja_environment
+    if _jinja_environment is None:
+        import jinja2
+        environment = jinja2.Environment(undefined=jinja2.StrictUndefined, autoescape=False,
+                                         keep_trailing_newline=True, finalize=tex)
+        environment.filters["frac"] = lambda value: tex(value, frac=True)
+        environment.filters["dec"] = lambda value, digits=None: tex(value, dec=True, digits=digits)
+        _jinja_environment = environment
+    return _jinja_environment
+
+
+def _template_line(error):
+    """Ligne du modèle où une erreur de rendu s’est produite, ou None (pile d’appels réécrite par Jinja)."""
+    line = getattr(error, "lineno", None)
+    traceback = error.__traceback__
+    while traceback is not None:
+        if traceback.tb_frame.f_code.co_filename == "<template>":
+            line = traceback.tb_lineno
+        traceback = traceback.tb_next
+    return line
+
+
+def _render(namespace, source, field):
+    """Rend un modèle avec l’espace de noms du tirage ; renvoie (texte, noms lus), ou lève ValueError.
+
+    Les noms lus sont les variables que le modèle ne définit pas lui-même (meta de Jinja) : ce sont
+    celles de « question_setup » que la page contrôle quand elle rejoue le tirage (§ 5.1).
+    """
+    import jinja2
+    import jinja2.meta
+    environment = _jinja()
+    try:
+        names = jinja2.meta.find_undeclared_variables(environment.parse(source))
+        template = environment.from_string(source)
+    except jinja2.TemplateSyntaxError as error:
+        raise ValueError("« {} », ligne {} : {}.".format(field, error.lineno, error.message)) from None
+    try:
+        text = template.render(namespace)
+    except Exception as error:
+        line = _template_line(error)
+        where = "« {} »{}".format(field, ", ligne {}".format(line) if line else "")
+        undefined = _re.fullmatch(r"'([^']+)' is undefined", str(error))
+        if undefined:
+            raise ValueError("{} : la variable « {} » n’est pas définie par « question_setup ».".format(
+                where, undefined.group(1))) from None
+        raise ValueError("{} : {}: {}".format(where, type(error).__name__, error)) from None
+    return text, names
+
+
+def _is_plain_value(value):
+    """Valeur dont le texte est reproductible : ni fonction, ni module, ni classe (leur texte
+    contient une adresse, qui change d’une exécution à l’autre)."""
+    import types
+    return not (callable(value) or isinstance(value, types.ModuleType))
+
+
 def _collect_draw(namespace, spec):
     """Données d’un tirage pour le compilateur, avec la liste des erreurs de l’auteur.
 
-    spec (JSON) : {"variables": [...], "dimensions": [...],
+    spec (JSON) : {"statement": modèle, "explanation": modèle ou null, "dimensions": [...],
                    "fields": [{"name", "type", "solution", "choices" (champs à choix)}]}
+    Les modèles sont ceux que donne PyWimsTemplate.jinjaSource : chaque champ y est une marque.
     """
     import json
     spec = json.loads(spec)
     errors = []
-    context = {}
-    for name in spec["variables"]:
-        if name in namespace:
-            context[name] = _template_value(namespace[name])
-        else:
-            errors.append("La variable « {} » de l’énoncé ou de l’explication n’est pas définie par « question_setup ».".format(name))
+    rendered = {}
+    read = set()
+    for key, field in (("statement", "question_statement"), ("explanation", "question_solution_explanation")):
+        if spec.get(key) is None:
+            continue
+        try:
+            rendered[key], names = _render(namespace, spec[key], field)
+            read |= names
+        except ValueError as error:
+            errors.append(str(error))
+    read |= set(spec["dimensions"])
+    context = {name: _template_value(namespace[name]) for name in sorted(read)
+               if name in namespace and _is_plain_value(namespace[name])}
     dimensions = {}
     for name in spec["dimensions"]:
         value = namespace.get(name)
@@ -4387,6 +4511,7 @@ def _collect_draw(namespace, spec):
             except TypeError as error:
                 errors.append("La solution « {} » du champ « {} » : {}".format(variable, name, error))
     return json.dumps({
+        "statement": rendered.get("statement"), "explanation": rendered.get("explanation"),
         "context": context, "dimensions": dimensions, "solutions": solutions,
         "choices": choices, "errors": errors,
     }, ensure_ascii=False)
@@ -4446,47 +4571,116 @@ def _string_errors(source, field):
     return json.dumps(errors, ensure_ascii=False)
 
 
-def py_wims(value):
-    """Interprète une saisie de l’élève comme expression SymPy, ou renvoie None."""
-    import sympy
-    try:
-        return sympy.sympify(value, evaluate=False)
-    except (sympy.SympifyError, NameError, SyntaxError, IndexError, TypeError):
+def _ratio(value):
+    """Fraction exacte d’un entier, d’une Fraction ou d’un rationnel SymPy ; None pour un autre objet."""
+    import fractions
+    if isinstance(value, bool):
         return None
+    if isinstance(value, int):
+        return fractions.Fraction(value)
+    if isinstance(value, fractions.Fraction):
+        return value
+    sympy = _sys.modules.get("sympy")
+    if sympy is not None and isinstance(value, sympy.Rational):
+        return fractions.Fraction(int(value.p), int(value.q))
+    return None
 
 
-def decimal_comma(value, digits):
-    """Écriture française d’un nombre arrondi à digits décimales, sans zéros finaux.
+def _decimal_tex(exact, digits):
+    """Écriture décimale d’un Decimal, avec la virgule « {,} » de TeX, arrondie à digits décimales
+    (None : telle quelle), au plus proche, les demis vers le haut.
 
-    decimal_comma(sqrt(2), 2) → "1,41" ; decimal_comma(1.5, 2) → "1,5" ; decimal_comma(2, 2) → "2".
-    Sert de solution quand la réponse attendue s’écrit avec une virgule : la correction par défaut
-    ne confond pas la virgule et le point (SPECIFICATION.md, § 2.6).
-
-    L’arrondi se fait sur l’écriture décimale, au plus proche, les cas à mi-chemin vers le haut,
-    comme en classe : round(2.675, 2) donne 2.67 en Python, car le flottant 2.675 vaut en réalité
-    2.67499999…, alors qu’un élève attend 2,68.
+    Arrondi comme en classe : round(2.675, 2) donne 2.67 en Python, car le flottant 2.675 vaut en
+    réalité 2.67499999…, alors qu’un élève attend 2,68 ; l’arrondi porte donc sur l’écriture décimale.
+    La virgule seule serait suivie d’une espace dans une formule : MathJax la traite en ponctuation.
     """
     import decimal
-    if isinstance(digits, bool) or not isinstance(digits, int) or digits < 0:
-        raise TypeError("decimal_comma : le nombre de décimales doit être un entier positif ou nul.")
-    sympy = _sys.modules.get("sympy")
-    if isinstance(value, bool):
-        raise TypeError("decimal_comma : {!r} n’est pas un nombre.".format(value))
-    if isinstance(value, int):
-        exact = decimal.Decimal(value)
-    elif isinstance(value, float):
-        # repr donne l’écriture la plus courte qui redonne ce flottant : « 2.675 », pas 2.67499999…
-        exact = decimal.Decimal(repr(value))
-    elif sympy is not None and isinstance(value, sympy.Basic) and value.is_real:
-        # Assez de chiffres pour que l’arrondi demandé soit exact (sqrt(2), pi, 1/3…).
-        exact = decimal.Decimal(str(sympy.N(value, digits + 30)))
-    else:
-        raise TypeError("decimal_comma : {!r} n’est pas un nombre réel.".format(value))
-    # La précision par défaut (28 chiffres) ferait échouer quantize sur un grand nombre (10**30).
+    if digits is not None:
+        # La précision par défaut (28 chiffres) ferait échouer quantize sur un grand nombre (10**30).
+        with decimal.localcontext() as context:
+            context.prec = len(exact.as_tuple().digits) + digits + 10
+            exact = exact.quantize(decimal.Decimal(1).scaleb(-digits), rounding=decimal.ROUND_HALF_UP)
+    return _plain_decimal(exact).replace(".", "{,}")
+
+
+def _finite_decimal(ratio):
+    """Decimal égal à la fraction si elle s’écrit en décimal fini (dénominateur 2^a 5^b), sinon None."""
+    import decimal
+    denominator = ratio.denominator
+    for factor in (2, 5):
+        while denominator % factor == 0:
+            denominator //= factor
+    if denominator != 1:
+        return None
     with decimal.localcontext() as context:
-        context.prec = len(exact.as_tuple().digits) + digits + 10
-        rounded = exact.quantize(decimal.Decimal(1).scaleb(-digits), rounding=decimal.ROUND_HALF_UP)
-    return _plain_decimal(rounded).replace(".", ",")
+        context.prec = len(str(ratio.numerator)) + len(str(ratio.denominator)) + 10
+        return decimal.Decimal(ratio.numerator) / decimal.Decimal(ratio.denominator)
+
+
+def tex(value, frac=False, dec=False, digits=None):
+    r"""Écriture d’un nombre ou d’une expression dans une formule (SPECIFICATION.md, § 2.10).
+
+    C’est l’écriture de chaque {{ valeur }} des modèles, dont les filtres frac et dec sont les options ;
+    question_setup l’appelle pour fabriquer un texte, par exemple les choix d’un QCM.
+      tex(Rational(3, 4)) → "3/4" ; frac=True → r"\frac{3}{4}" ;
+      tex(Rational(9, 10), dec=True) → "0{,}9" (un rationnel sans décimal fini reste une fraction) ;
+      tex(sqrt(2), digits=2) → "1{,}41" (arrondi des demis vers le haut ; digits implique dec) ;
+      tex(0.1 + 0.2) → "0.3" (12 chiffres significatifs, avec un point) ; un texte reste tel quel.
+    Une expression SymPy est écrite par sympy.latex, fractions en ligne sauf avec frac=True.
+    """
+    import decimal
+    if digits is not None and (isinstance(digits, bool) or not isinstance(digits, int) or digits < 0):
+        raise TypeError("tex : le nombre de décimales doit être un entier positif ou nul, et non {!r}.".format(digits))
+    decimal_wanted = dec or digits is not None
+    sympy = _sys.modules.get("sympy")
+    ratio = _ratio(value)
+    if ratio is not None:
+        if decimal_wanted:
+            exact = _finite_decimal(ratio)
+            if digits is not None:
+                # Un décimal fini est exact, ce qui compte pour un demi (1/8 → 0,13) ; sinon assez de
+                # chiffres pour que l’arrondi soit juste (1/3).
+                return _decimal_tex(_ratio_decimal(ratio, digits) if exact is None else exact, digits)
+            if exact is not None:
+                return _decimal_tex(exact, None)
+        if ratio.denominator == 1:
+            return str(ratio.numerator)
+        if frac:
+            sign = "-" if ratio < 0 else ""
+            return r"{}\frac{{{}}}{{{}}}".format(sign, abs(ratio.numerator), ratio.denominator)
+        return "{}/{}".format(ratio.numerator, ratio.denominator)
+    is_float = isinstance(value, float) or (sympy is not None and isinstance(value, sympy.Float))
+    if is_float:
+        if digits is not None:
+            # repr donne l’écriture la plus courte qui redonne ce flottant : « 2.675 », pas 2.67499999…
+            return _decimal_tex(decimal.Decimal(repr(float(value))), digits)
+        text = _float_text(value)
+        return text.replace(".", "{,}") if dec else text
+    is_real_number = (sympy is not None and isinstance(value, sympy.Basic) and getattr(value, "is_number", False)
+                      and value.is_real)
+    if decimal_wanted:
+        if is_real_number and digits is not None:
+            # Assez de chiffres pour que l’arrondi demandé soit exact (sqrt(2), pi…).
+            return _decimal_tex(decimal.Decimal(str(sympy.N(value, digits + 30))), digits)
+        if is_real_number:
+            raise TypeError("tex : {} n’a pas d’écriture décimale exacte ; donnez le nombre de décimales, "
+                            "par exemple dec(2).".format(value))
+        raise TypeError("tex : dec ne s’applique qu’à un nombre, et non à {!r}.".format(value))
+    if sympy is not None:
+        from sympy.matrices.matrixbase import MatrixBase
+        if isinstance(value, (MatrixBase, sympy.Basic)):
+            # Matrices entre crochets, comme les champs matriciels, qui s’adaptent mieux à une matrice
+            # redimensionnable ; fold_short_frac écrit les fractions courtes en ligne (x^{2} / 2).
+            return sympy.latex(value, mat_delim="[", fold_short_frac=not frac)
+    return str(value)
+
+
+def _ratio_decimal(ratio, digits):
+    """Decimal assez précis pour arrondir exactement la fraction à digits décimales."""
+    import decimal
+    with decimal.localcontext() as context:
+        context.prec = len(str(abs(ratio.numerator) // ratio.denominator)) + digits + 30
+        return decimal.Decimal(ratio.numerator) / decimal.Decimal(ratio.denominator)
 
 
 def _choice_key(value):
@@ -4546,26 +4740,10 @@ def mcq(correct, wrong, count=4, correct_count=None):
     return (choices, indices) if multiple else (choices, indices[0])
 
 
-def is_number(value):
-    """Indique si la valeur est un nombre Python ou SymPy."""
-    import sympy
-    return isinstance(value, (int, float, sympy.Number, sympy.NumberSymbol))
-
-
 def _template_value(value):
-    """Texte affiché pour une variable de l’énoncé : LaTeX pour les objets SymPy.
-
-    Aucun \\displaystyle n’est ajouté : l’auteur choisit la taille des formules, en écrivant
-    $\\displaystyle {{f}}$ ou $$ {{f}} $$ ; un ajout d’office grossissait les fractions en ligne et
-    s’affichait tel quel hors d’une formule. Les matrices sont écrites entre crochets, comme les
-    champs de saisie matriciels, qui s’adaptent mieux à une matrice redimensionnable.
-    """
-    sympy = _sys.modules.get("sympy")
-    if sympy is not None:
-        from sympy.matrices.matrixbase import MatrixBase
-        if isinstance(value, (MatrixBase, sympy.Basic)):
-            return sympy.latex(value, mat_delim="[")
-    return str(value)
+    """Texte d’une valeur, celui de {{ valeur }} : la page le compare quand elle rejoue un tirage (§ 5.1),
+    et le compilateur s’en sert pour citer le retour de l’auteur."""
+    return tex(value)
 
 
 # Lecture d’une expression saisie : l’analyseur de SymPy (parse_expr), derrière un filtre. parse_expr
@@ -4878,9 +5056,12 @@ if importlib.util.find_spec("numpy") is not None:
     });
   },
 
-  // Rassemble les données d’un tirage (valeurs affichées, solutions, explication) et les erreurs
-  // de l’auteur.
-  collectDraw(sessionId, spec) {
+  // Rassemble les données d’un tirage (énoncé et explication rendus par Jinja, valeurs contrôlées,
+  // solutions) et les erreurs de l’auteur. Jinja ne sert qu’à la compilation : il est chargé ici, et
+  // la page de l’élève, qui n’appelle jamais collectDraw, ne le télécharge pas.
+  async collectDraw(sessionId, spec) {
+    sessionGlobals(sessionId);
+    await ensurePackages("import jinja2");
     const globals = sessionGlobals(sessionId);
     return enqueuePythonOperation(() => {
       const collect = pyodide.runPython('__import__("pywims")._collect_draw');
@@ -5117,13 +5298,13 @@ window.PyWimsPython = (() => {
     });
   }
 
-  // Nom de variable : même règle que runtime/template.js (identifiants de Python, lettres accentuées
-  // comprises), recopiée pour que ce module ne dépende pas de la grammaire des modèles.
-  const namePattern = /^[\p{ID_Start}_]\p{ID_Continue}*$/u;
+  // Nom de variable : la règle de runtime/template.js (identifiants de Python, lettres accentuées
+  // comprises), toujours chargé avant ce module : une copie ici obligeait à changer la règle deux fois.
+  const isName = name => PyWimsTemplate.isName(name);
 
   // Fournit le module pywims lu dans le dossier du projet (compilateur, tests). Si Python tourne
-  // déjà, le module est remplacé : un dossier rouvert après une modification de pywims.py prend effet
-  // sans recharger la page.
+  // déjà, le module est remplacé (les tests s’en servent ; le compilateur, lui, lit pywims.py une
+  // seule fois, à son ouverture).
   function setModuleSource(source) {
     if (typeof source !== "string") {
       throw new Error("Le module pywims doit être un texte.");
@@ -5165,7 +5346,7 @@ window.PyWimsPython = (() => {
   // Les contrôles des arguments restent dans la page : une donnée invalide échoue tout de suite, avec
   // un message précis, sans aller-retour.
   function setMatrix(name, values, sessionId = "default") {
-    if (!namePattern.test(name) ||
+    if (!isName(name) ||
         !Array.isArray(values) ||
         values.length === 0 ||
         values.length > 10 ||
@@ -5185,7 +5366,7 @@ window.PyWimsPython = (() => {
   // indices cochés (choix multiple).
   function setChoice(name, value, sessionId = "default") {
     const isIndex = item => Number.isInteger(item) && item >= 0 && item < 1000;
-    if (!namePattern.test(name) ||
+    if (!isName(name) ||
         !(value === null || isIndex(value) || (Array.isArray(value) && value.length <= 1000 && value.every(isIndex)))) {
       throw new Error("La saisie du champ à choix est invalide.");
     }
@@ -5195,11 +5376,12 @@ window.PyWimsPython = (() => {
   // Préparation de « question_check » (SPECIFICATION.md, §§ 2.6 et 2.8) : verdicts par défaut ({ clé: booléen },
   // « m[0][1] » pour une case), textes saisis et valeurs [n, d] (ou null) des champs input_value.
   function prepareCheck({ verdicts = {}, texts = {}, values = {} } = {}, sessionId = "default") {
-    const keyPattern = /^[\p{ID_Start}_]\p{ID_Continue}*(\[\d+\]\[\d+\])?$/u;
+    // Clé d’un verdict : un nom, ou « m[0][1] » pour une case de matrice.
+    const isKey = key => isName(key.replace(/\[\d+\]\[\d+\]$/, ""));
     const integer = /^-?\d+$/;
-    const valid = (record, check, pattern = namePattern) =>
-      record && typeof record === "object" && Object.entries(record).every(([key, value]) => pattern.test(key) && check(value));
-    if (!valid(verdicts, value => typeof value === "boolean", keyPattern) ||
+    const valid = (record, check, isValidKey = isName) =>
+      record && typeof record === "object" && Object.entries(record).every(([key, value]) => isValidKey(key) && check(value));
+    if (!valid(verdicts, value => typeof value === "boolean", isKey) ||
         !valid(texts, value => typeof value === "string") ||
         !valid(values, value => value === null ||
           (Array.isArray(value) && value.length === 2 && value.every(part => typeof part === "string" && integer.test(part))))) {
@@ -5209,14 +5391,14 @@ window.PyWimsPython = (() => {
   }
 
   function getChoiceTexts(name, sessionId = "default", plain = false) {
-    if (!namePattern.test(name)) {
+    if (!isName(name)) {
       throw new Error(`Liste de choix non prise en charge : ${name}`);
     }
     return call("getChoiceTexts", [sessionId, name, Boolean(plain)]);
   }
 
   function getTemplateValue(name, sessionId = "default") {
-    if (!namePattern.test(name)) {
+    if (!isName(name)) {
       throw new Error(`Variable de modèle non prise en charge : ${name}`);
     }
     return call("getTemplateValue", [sessionId, name]);
@@ -5506,6 +5688,7 @@ window.PyWimsQuestion = (() => {
       this.usesPython = section.dataset.python !== "false";
       this.python = this.usesPython ? PyWimsPython.createSession(section.id) : null;
       const tags = PyWimsTemplate.parseTags(this.definition.question_statement);
+      this.tags = tags;
       this.tagTypes = new Set(tags.map(tag => tag.type));
       // Type et attributs de la balise de chaque champ, d’après son nom : la correction par défaut en
       // dépend (match, tolerance, form).
@@ -5932,14 +6115,15 @@ window.PyWimsQuestion = (() => {
       fitWideFormulas(this.feedbackElement);
     }
 
-    // Affiche un tirage tout de suite, à partir des valeurs précalculées.
+    // Affiche un tirage tout de suite : son énoncé, rendu par Jinja à la compilation, où chaque marque
+    // de champ devient le champ.
     async renderDraw(selected) {
       const { promptElement } = this;
       this.draw = selected;
       window.MathJax?.typesetClear?.([promptElement]);
-      promptElement.innerHTML = PyWimsTemplate.renderTemplate(
-        this.definition.question_statement,
-        selected.context,
+      promptElement.innerHTML = PyWimsTemplate.renderStatement(
+        selected.statement,
+        this.tags,
         tag => this.renderWidget(tag, selected)
       );
       if (this.tagTypes.has("input_vmatrix")) {
@@ -6250,10 +6434,10 @@ window.PyWimsQuestion = (() => {
         ]);
         if (this.tagTypes.has("input_select")) PyWimsWidgets.fitSelects(this.promptElement);
         this.setState("solution");
-        // L’explication est un modèle, comme l’énoncé : ses {{variable}} prennent les valeurs du tirage.
-        const explanation = this.definition.question_solution_explanation;
+        // L’explication est un modèle Jinja, comme l’énoncé, rendu à la compilation pour chaque tirage.
+        const explanation = this.draw.explanation;
         if (explanation) {
-          const html = PyWimsTemplate.renderTemplate(explanation, this.draw.context, () => "");
+          const html = PyWimsTemplate.renderStatement(explanation, [], () => "");
           await this.showFeedback(html, "is-explanation", { html: true });
         }
       } catch (error) {

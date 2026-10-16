@@ -28,8 +28,6 @@ common = ilcm(m, q)
 n_common = n * (common // m)
 p_common = p * (common // q)
 numerator_sum = n_common + p_common
-# Dernière égalité, seulement si la fraction obtenue se simplifie.
-simplified = "" if total.q == common else " = " + latex(total)
 %
 % question_statement
 %
@@ -43,7 +41,9 @@ $\displaystyle \frac{ {{n}} }{ {{m}} } + \frac{ {{p}} }{ {{q}} } =$ {{ input_tex
 On réduit au même dénominateur ${{common}}$ :
 $\displaystyle \frac{ {{n}} }{ {{m}} } + \frac{ {{p}} }{ {{q}} }
 = \frac{ {{n_common}} }{ {{common}} } + \frac{ {{p_common}} }{ {{common}} }
-= \frac{ {{numerator_sum}} }{ {{common}} }{{simplified}}$.
+= \frac{ {{numerator_sum}} }{ {{common}} }
+{#- Dernière égalité, seulement si la fraction obtenue se simplifie. #}
+{%- if total.q != common %} = {{ total|frac }}{% endif %}$.
 %
 % question_check
 %

@@ -30,8 +30,8 @@ index = 0 if m > 0 else 1 if m < 0 else 2
 % question_statement
 %
 <p>Sur $\mathbb{R}$, la fonction $f(x) = {{function}}$ est
-{% input_select 'sense' choices=senses solution=index shuffle=0 %}, car son coefficient
-directeur, ${{m}}$, est {% input_select 'sign' choices=signs solution=index shuffle=0 %}.</p>
+{{ input_select('sense', choices=senses, solution=index, shuffle=0) }}, car son coefficient
+directeur, ${{m}}$, est {{ input_select('sign', choices=signs, solution=index, shuffle=0) }}.</p>
 %
 % question_solution_explanation
 %

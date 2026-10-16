@@ -20,17 +20,17 @@ import unicodedata
 from random import choice
 
 description, name = choice([
-    (r"la relation $BC^2 = AB^2 + AC^2$ dans un triangle rectangle en $A$", "Pythagore"),
-    ("le théorème des droites parallèles qui coupent deux sécantes", "Thalès"),
-    ("l’algorithme du PGCD par divisions successives", "Euclide"),
-    ("le triangle des coefficients du binôme", "Pascal"),
+    (r"à la relation $BC^2 = AB^2 + AC^2$ dans un triangle rectangle en $A$", "Pythagore"),
+    ("au théorème des droites parallèles qui coupent deux sécantes", "Thalès"),
+    ("à l’algorithme du PGCD par divisions successives", "Euclide"),
+    ("au triangle des coefficients du binôme", "Pascal"),
 ])
 plain = unicodedata.normalize("NFD", name).encode("ascii", "ignore").decode().lower()
 %
 % question_statement
 %
-Quel mathématicien a donné son nom à {{description}} ?
-{% input_text 'mathematician' solution=name match=loose style='width:9em' %}
+Quel mathématicien a donné son nom {{description}} ?
+{{ input_text('mathematician', solution=name, match=loose, style='width:9em') }}
 %
 % question_solution_explanation
 %

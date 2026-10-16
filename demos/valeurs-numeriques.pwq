@@ -20,35 +20,34 @@ STD
 # La virgule et le point sont acceptés partout.
 from random import choice, randint
 from sympy import Rational, gcd, sqrt
-from pywims import decimal_comma
 
 n = choice([2, 3, 5, 6, 7, 10, 11])
 root = sqrt(n)
-root_text = decimal_comma(root, 2)
 
 p, q = choice([(6, 8), (10, 4), (9, 12), (14, 21), (15, 25), (18, 12)])
 fraction = Rational(p, q)
 divisor = gcd(p, q)
 
+# big = m × 10^e, avec m de 11 à 99 : sa mantisse est m/10, son exposant e + 1.
 m = randint(11, 99)
 e = randint(3, 6)
 big = m * 10**e
-scientific_text = decimal_comma(Rational(m, 10), 1).replace(",", "{,}") + r" \times 10^{" + str(e + 1) + "}"
+mantissa = Rational(m, 10)
 %
 % question_statement
 %
 <ol>
   <li>Valeur approchée de $\sqrt{ {{n}} }$ à 0,01 près :
-    {% input_value 'approx' solution=root tolerance=0.01 form=decimal style='width:5em' %}</li>
+    {{ input_value('approx', solution=root, tolerance=0.01, form=decimal, style='width:5em') }}</li>
   <li>Forme irréductible de $\dfrac{ {{p}} }{ {{q}} }$ :
-    {% input_value 'simplified' solution=fraction form=irreducible style='width:5em' %}</li>
+    {{ input_value('simplified', solution=fraction, form=irreducible, style='width:5em') }}</li>
   <li>Écriture scientifique de ${{big}}$ :
-    {% input_value 'scientific' solution=big form=scientific style='width:7em' %}</li>
+    {{ input_value('scientific', solution=big, form=scientific, style='width:7em') }}</li>
 </ol>
 %
 % question_solution_explanation
 %
-$\sqrt{ {{n}} }$ vaut environ {{root_text}} ;
-$\dfrac{ {{p}} }{ {{q}} } = {{fraction}}$, en divisant par ${{divisor}}$ ;
-${{big}} = {{scientific_text}}$.
+$\sqrt{ {{n}} } \approx {{ root|dec(2) }}$ ;
+$\dfrac{ {{p}} }{ {{q}} } = {{ fraction|frac }}$, en divisant par ${{divisor}}$ ;
+${{big}} = {{ mantissa|dec }} \times 10^{ {{ e + 1 }} }$.
 %

@@ -30,7 +30,7 @@ product = A * B
 % question_statement
 %
 Calculez le produit $AB$, avec $A = {{A}}$ et $B = {{B}}$ :
-{% input_vmatrix 'answer' max_rows=4 max_cols=4 solution=product input_style='width:2.5em' %}
+{{ input_vmatrix('answer', max_rows=4, max_cols=4, solution=product, input_style='width:2.5em') }}
 %
 % question_solution_explanation
 %

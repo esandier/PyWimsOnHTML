@@ -27,9 +27,8 @@ d = randint(-5, 5)
 function = expand(a*x**3 + b*x**2 + c*x + d)
 derivative = diff(function, x)
 
-# Dérivée de chaque terme, pour l’explication de la solution.
-terms = sorted(Add.make_args(function), key=lambda term: -degree(term, x))
-term_derivatives = " ; ".join("$(" + latex(term) + ")' = " + latex(diff(term, x)) + "$" for term in terms)
+# Chaque terme et sa dérivée, du plus haut degré au plus bas, pour l’explication de la solution.
+terms = [(term, diff(term, x)) for term in sorted(Add.make_args(function), key=lambda term: -degree(term, x))]
 %
 % question_statement
 %
@@ -40,7 +39,10 @@ Donnez sa dérivée $f'(x)$ :
 %
 % question_solution_explanation
 %
-On dérive terme à terme avec $(x^n)' = n\,x^{n-1}$ : {{term_derivatives}}.
+On dérive terme à terme avec $(x^n)' = n\,x^{n-1}$ :
+{% for term, derivative_term in terms -%}
+$({{ term }})' = {{ derivative_term }}${% if not loop.last %} ; {% endif %}
+{%- endfor %}.
 %
 % question_check
 %

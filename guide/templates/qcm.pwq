@@ -27,7 +27,7 @@ correct = 0
 % question_statement
 %
 Quelle est la forme irréductible de $\frac{3}{6}$ ?
-{% input_radio 'answer' choices=choices solution=correct columns=4 fixed_last=1 %}
+{{ input_radio('answer', choices=choices, solution=correct, columns=4, fixed_last=1) }}
 %
 % question_solution_explanation
 %

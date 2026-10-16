@@ -22,18 +22,16 @@ STD
 # La virgule et le point sont acceptés ; la solution affichée est arrondie selon la tolérance.
 from random import randint
 from sympy import pi
-from pywims import decimal_comma
 
 r = randint(2, 9)
 area = pi * r**2
-area_text = decimal_comma(area, 1)
 %
 % question_statement
 %
 Aire d’un disque de rayon ${{r}}$ cm, à 0,1 cm² près :
-{% input_value 'answer' solution=area tolerance=0.1 form=decimal style='width:6em' %}&nbsp;cm²
+{{ input_value('answer', solution=area, tolerance=0.1, form=decimal, style='width:6em') }}&nbsp;cm²
 %
 % question_solution_explanation
 %
-$\mathcal{A} = \pi r^2 = {{r}}^2\pi$, soit environ {{area_text}} cm².
+$\mathcal{A} = \pi r^2 = {{r}}^2\pi$, soit environ ${{ area|dec(1) }}$ cm².
 %

@@ -33,7 +33,7 @@ correct = good if good else [5]
 % question_statement
 %
 Cochez les multiples de ${{k}}$ :
-{% input_checkbox 'answer' choices=choices solution=correct fixed_last=1 scoring='b=1,m=-0.5,p=0' %}
+{{ input_checkbox('answer', choices=choices, solution=correct, fixed_last=1, scoring='b=1,m=-0.5,p=0') }}
 %
 % question_solution_explanation
 %

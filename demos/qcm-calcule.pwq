@@ -40,7 +40,7 @@ choices, correct = mcq(correct=expanded, wrong=mistakes, count=4)
 % question_statement
 %
 Développez ${{product}}$ :
-{% input_radio 'answer' choices=choices solution=correct %}
+{{ input_radio('answer', choices=choices, solution=correct) }}
 %
 % question_solution_explanation
 %

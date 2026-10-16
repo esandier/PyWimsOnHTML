@@ -60,7 +60,7 @@ Ce qui doit varier dépend de la compétence visée :
   tirage impossible à reproduire : le compilateur exécute chaque graine deux
   fois et refuse la question si les deux tirages diffèrent.
 - Les outils PyWims s’importent depuis le module `pywims` :
-  `from pywims import py_wims, is_number, math_expression, decimal_comma, mcq, ANY`.
+  `from pywims import math_expression, mcq, tex, ANY`.
   - `math_expression(saisie)` analyse une expression écrite par un élève
     (`2x`, `x^2`, `sqrt(2)`, `sin x`, `ln(x)`), en n’admettant que les
     fonctions mathématiques usuelles, et renvoie une expression SymPy ou
@@ -73,15 +73,13 @@ Ce qui doit varier dépend de la compétence visée :
     Pour exiger une forme, décris-la aussi avec `math_expression`, car SymPy
     calcule la solution écrite en Python (`2*(x+1)` devient `2*x + 2`) :
     `math_expression(saisie) == math_expression('2(x+1)')`.
-  - `py_wims(saisie)` convertit une saisie simple (nombre, fraction) en objet
-    SymPy, ou renvoie `None`.
-  - `is_number(valeur)` indique si une valeur est un nombre.
-  - `decimal_comma(nombre, chiffres)` écrit un nombre arrondi à `chiffres`
-    décimales, avec une virgule et sans zéros finaux : `decimal_comma(sqrt(2), 2)`
-    donne `"1,41"`, `decimal_comma(1.5, 2)` donne `"1,5"`. Il sert à afficher
-    un nombre dans un texte ; pour une réponse numérique, préfère `input_value`.
-    Dans une formule TeX, remplace la virgule par `{,}` (voir « Énoncé et
-    champs de saisie ») : `decimal_comma(p, 2).replace(",", "{,}")`.
+  - `tex(valeur)` écrit un nombre ou une expression pour une formule TeX, comme
+    `{{ valeur }}` dans l’énoncé (voir « Énoncé ») : `tex(Rational(3, 4))` donne
+    `3/4`, `tex(p, frac=True)` `\frac{3}{4}`, `tex(Rational(9, 10), dec=True)`
+    `0{,}9`, `tex(sqrt(2), digits=2)` `1{,}41`. Sers-t’en dans `question_setup`
+    pour fabriquer un texte qui n’est pas dans l’énoncé, par exemple les choix
+    d’un QCM : `[f"${tex(v)}$" for v in values]`. N’utilise pas `latex` de SymPy
+    pour cela.
   - `mcq(correct=…, wrong=[…], count=4)` tire les choix d’un QCM : voir
     « Questions à choix ».
 - Toute chaîne Python qui contient une formule TeX s’écrit en **chaîne brute**,
@@ -132,20 +130,45 @@ Ce qui doit varier dépend de la compétence visée :
 
 ## Énoncé et champs de saisie
 
-- Dans `question_statement`, utilise `{{variable}}` pour afficher une valeur de `question_setup`.
-  Dans une commande TeX, sépare la variable des accolades de TeX par des
-  espaces : `\frac{ {{n}} }{ {{m}} }`, et non `\frac{{{n}}}{{{m}}}`.
-  Les objets SymPy s’affichent en LaTeX, à la taille du texte : pour une
-  fraction en grand dans une ligne, écris `$\displaystyle {{f}}$`. Écris les formules TeX avec `$...$`, `$$...$$`,
-  `\(...\)` ou `\[...\]`. Le HTML est autorisé.
-- Dans une formule TeX, écris la virgule décimale `{,}` : `$0{,}35$`. Une
-  virgule seule est lue comme une ponctuation, suivie d’une espace : `$0,35$`
-  s’affiche « 0, 35 ». C’est vrai aussi pour une valeur calculée affichée par
-  `{{variable}}` dans une formule.
-- Le HTML d’une valeur `{{variable}}` n’est pas interprété (sauf quelques
-  balises de mise en forme, voir « Retour à l’élève ») : un tableau s’écrit
-  dans l’énoncé, avec une `{{variable}}` par case, et ne peut pas être
-  construit par `question_setup`.
+- `question_statement` et `question_solution_explanation` sont des **modèles
+  Jinja**, rendus pour chaque tirage avec les variables et les fonctions de
+  `question_setup`. Écris dans le modèle tout le texte qui varie d’un tirage à
+  l’autre, et non dans des chaînes Python de `question_setup` :
+  ```
+  {% if kind == "exactly" %}
+  Quelle est la probabilité qu’exactement {{ k }} photons traversent ?
+  {% else %}
+  Quelle est la probabilité qu’au moins un photon traverse ?
+  {% endif %}
+  $\mathcal{B}\left({{ n }}, {{ p }}\right)$, et
+  $\mathbb{E}(X) = {% for v in values %}{{ v }}{% if not loop.last %} + {% endfor %}$.
+  ```
+  `{{ expression }}`, `{% if %}`, `{% for %}`, `{% set %}`, les macros et les
+  filtres de Jinja sont admis. Jinja n’a pas d’autres fonctions de Python que
+  les siennes (`range`, filtres `length`, `join`…) : définis ou importe dans
+  `question_setup` celles dont tu as besoin, puis appelle-les dans le modèle
+  (`{{ P(C, E) }}`). Une variable absente est une erreur de compilation.
+- Une valeur `{{ v }}` s’écrit comme le fait `tex` : un rationnel (`Rational`
+  ou `Fraction`) en ligne, `3/4` ; un objet SymPy en LaTeX ; un texte tel quel.
+  Deux filtres :
+  - `{{ v|frac }}` écrit la fraction en grand, `\frac{3}{4}` : pour une
+    formule centrée `$$…$$` ou un `$\displaystyle …$` ;
+  - `{{ v|dec }}` écrit un décimal avec la virgule de TeX, `0{,}9` (un
+    rationnel sans décimal fini reste une fraction), et `{{ v|dec(2) }}`
+    l’arrondit à deux décimales, au plus proche. N’emploie `dec` que dans une
+    formule `$…$`. N’arrondis pas toi-même avec `round` (il arrondit 2,675 à 2,67).
+- Dans une commande TeX, sépare `{{ … }}` des accolades de TeX par des
+  espaces : `x^{ {{n}} }`, `\frac{ {{a}} }{2}`. Trois accolades de suite
+  (`x^{{{n}}}`) sont refusées. Écris les formules TeX avec `$...$`, `$$...$$`,
+  `\(...\)` ou `\[...\]`. Le HTML est autorisé, y compris dans une valeur.
+- Dans une formule TeX écrite à la main, la virgule décimale est `{,}` :
+  `$0{,}35$`. Une virgule seule est lue comme une ponctuation, suivie d’une
+  espace : `$0,35$` s’affiche « 0, 35 ».
+- Un champ de réponse ne peut pas être placé dans un `{% if %}` ni dans un
+  `{% for %}` : chaque tirage a les mêmes champs. Adapte le texte autour du
+  champ. Ses attributs sont des nombres, des textes entre guillemets ou des
+  noms de variables, jamais des expressions : `solution=total`, pas
+  `solution=a + b` (calcule `total` dans `question_setup`).
 - Une figure fournie par l’enseignant s’affiche avec `<img src="figure.png"
   alt="description">`, dans l’énoncé ou l’explication. Dis à l’enseignant de
   réunir le `.pwq` et ses images dans une archive `.pwqa` (un fichier `.zip`
@@ -153,31 +176,31 @@ Ce qui doit varier dépend de la compétence visée :
   N’invente jamais une image qu’on ne t’a pas donnée.
 - Champs pris en charge ; `solution=` est obligatoire et désigne une variable
   de `question_setup` qui contient la bonne réponse :
-  - `{% input_value 'nom' solution=variable tolerance=0.01 form=decimal %}` :
+  - `{{ input_value('nom', solution=variable, tolerance=0.01, form=decimal) }}` :
     réponse numérique, voir « Valeurs numériques » ci-dessous.
-  - `{% input_text 'nom' solution=variable style='CSS facultatif' match=normal %}` :
+  - `{{ input_text('nom', solution=variable, style='CSS facultatif', match=normal) }}` :
     réponse écrite ; `match=exact` exige le texte caractère pour caractère,
     `match=loose` ignore en plus majuscules, accents et ponctuation finale
     (pour un mot ou un nom).
-  - `{% input_math 'nom' solution=variable %}` (saisie mathématique MathLive)
-  - `{% input_matrix 'nom' size=n solution=variable input_style='CSS facultatif' %}`
-    ou `{% input_matrix 'nom' rows=m cols=p solution=variable %}` ; chaque
+  - `{{ input_math('nom', solution=variable) }}` (saisie mathématique MathLive)
+  - `{{ input_matrix('nom', size=n, solution=variable, input_style='CSS facultatif') }}`
+    ou `{{ input_matrix('nom', rows=m, cols=p, solution=variable) }}` ; chaque
     dimension est un entier ou une variable entière de `question_setup`, entre 1 et 10.
-  - `{% input_vmatrix 'nom' max_rows=5 max_cols=5 solution=variable input_style='width:2em' %}` :
+  - `{{ input_vmatrix('nom', max_rows=5, max_cols=5, solution=variable, input_style='width:2em') }}` :
     matrice que l’élève redimensionne lui-même. Comme pour une matrice fixe,
     une case prend la taille de son champ (2em de large par défaut) ;
     `cell_width` et `cell_height` l’imposent si besoin.
-  - `{% input_select 'nom' choices=liste solution=indice %}` : liste
+  - `{{ input_select('nom', choices=liste, solution=indice) }}` : liste
     déroulante placée dans une phrase, pour un texte à trous (« La fonction
-    est {% input_select 'sense' choices=senses solution=correct %} sur
+    est {{ input_select('sense', choices=senses, solution=correct) }} sur
     $\mathbb{R}$. »). Les choix sont du texte simple, sans formule ni HTML ;
     `shuffle=0` garde leur ordre (« croissante », « décroissante »). La
     saisie arrive dans `question_check` comme un indice, ou `None`.
-  - `{% input_radio 'nom' choices=liste solution=indice %}` (choix unique) et
-    `{% input_checkbox 'nom' choices=liste solution=indices %}` (choix
+  - `{{ input_radio('nom', choices=liste, solution=indice) }}` (choix unique) et
+    `{{ input_checkbox('nom', choices=liste, solution=indices) }}` (choix
     multiple) : voir « Questions à choix » ci-dessous.
 - Une unité après un champ s’y attache par une espace insécable :
-  `{% input_value 'length' solution=bc %}&nbsp;cm`. Sinon, l’unité peut passer
+  `{{ input_value('length', solution=bc) }}&nbsp;cm`. Sinon, l’unité peut passer
   seule à la ligne suivante, et l’élève est tenté de l’écrire dans le champ.
 - Le nom d’un champ est aussi le nom de la variable Python qui reçoit la
   saisie dans `question_check` (une chaîne, une liste de listes de chaînes pour une
@@ -200,11 +223,13 @@ Ce qui doit varier dépend de la compétence visée :
   (`1,5×10^3`). Une valeur juste dans une autre forme est refusée, avec un
   retour qui le dit. N’impose une forme que si l’énoncé la demande.
 - La solution affichée est écrite dans la forme demandée, arrondie selon la
-  tolérance : `tolerance=0.01` affiche deux décimales.
+  tolérance, au plus proche : `tolerance=0.005` affiche deux décimales. Donne
+  donc la solution **exacte**, avec `tolerance=0.005` pour une réponse
+  arrondie au centième, sans l’arrondir dans `question_setup`.
 - **Avec `question_check`**, écrit seulement pour un retour ciblé selon
   l’erreur, le champ arrive comme sa valeur exacte, un `Rational` de SymPy
   (`0,35`, `7/20` et `14/40` donnent tous `Rational(7, 20)`), ou `None` si la
-  saisie n’est pas un nombre. N’utilise pas `py_wims` pour le relire.
+  saisie n’est pas un nombre.
   `ok_answer['nom']` est déjà rempli, tolérance et forme comprises, et le texte
   saisi est dans `answer_text['nom']`. Il ne reste qu’à reconnaître les
   erreurs prévues :
@@ -220,7 +245,8 @@ Ce qui doit varier dépend de la compétence visée :
 - `choices=` désigne une liste de `question_setup`, d’au moins deux choix, dans ton
   ordre. Un choix est un texte simple, où les formules TeX sont admises, en
   chaîne brute (`r"$\frac{1}{2}$"`), ou un objet SymPy, affiché comme une
-  formule. Le HTML n’est pas interprété dans un choix.
+  formule. Pour écrire un nombre dans un choix, emploie `tex` :
+  `f"${tex(p)}$"`. Le HTML n’est pas interprété dans un choix.
 - `solution=` désigne l’indice du bon choix (`input_radio`) ou la liste des
   indices des bons choix (`input_checkbox`), éventuellement vide. Les indices
   commencent à 0, dans l’ordre de `choices`.
@@ -272,11 +298,10 @@ Ce qui doit varier dépend de la compétence visée :
   `ANY` : elles s’affichent « ∗ ». Exemple pour une matrice triangulaire :
   `solution_matrix = Matrix(n, n, lambda i, j: 0 if i > j else ANY)`.
 - Le champ facultatif `question_solution_explanation` est affiché avec la
-  solution, pour l’éclairer. Il s’écrit comme `question_statement` : HTML,
-  formules entre `$…$`, valeurs `{{variable}}` de `question_setup` ; il ne
-  contient aucun champ de saisie. Une explication qui demande un calcul (étapes
-  d’un algorithme, dérivée de chaque terme) se prépare en texte dans
-  `question_setup`, puis s’affiche avec `{{variable}}`.
+  solution, pour l’éclairer. C’est un modèle Jinja, comme `question_statement`
+  (HTML, formules, `{{ … }}`, `{% if %}`, `{% for %}`) ; il ne contient aucun
+  champ de saisie. Une explication propre au cas tiré s’écrit avec
+  `{% if %}` ; une somme de termes avec `{% for %}`.
 - La solution doit être jugée juste : pour chaque tirage, le compilateur la
   saisit comme le ferait un élève (texte de la solution, `1` pour une valeur
   `ANY`, indices pour une question à choix), la corrige (par `question_check`, ou par
@@ -289,13 +314,13 @@ La variable `feedback` explique l’erreur sans donner la réponse : la réponse
 bouton « Correction ». Par exemple « 6 est bien un diviseur commun, mais ce n’est
 pas le plus grand » plutôt que « la réponse était 12 ».
 
-Dans `feedback`, et dans une valeur `{{variable}}`, seules ces balises de mise en
-forme sont interprétées, sans attribut : `<b>`, `<i>`, `<strong>`, `<em>`,
-`<sup>`, `<sub>`, `<br>`. Tout autre HTML s’affiche tel quel.
+Dans `feedback`, seules ces balises de mise en forme sont interprétées, sans
+attribut : `<b>`, `<i>`, `<strong>`, `<em>`, `<sup>`, `<sub>`, `<br>`. Tout
+autre HTML s’affiche tel quel.
 
 N’invente pas de mises en page, de composants, d’API d’exécution ni de
 bibliothèques Python. La seule mise en page prise en charge est `STD`.
-N’utilise pas d’autres balises ou filtres Django. Si la question demandée
+N’invente pas de filtres Jinja : seuls ceux de Jinja et `frac`, `dec` existent. Si la question demandée
 nécessite une fonctionnalité non prise en charge, signale-le séparément au lieu
 de proposer une approximation silencieuse.
 
@@ -308,7 +333,7 @@ auto-multiple-choice (AMC). Convertis chaque question en un fichier `.pwq` :
 |---|---|
 | `\begin{question}` | `input_radio` |
 | `\begin{questionmult}` | `input_checkbox` |
-| texte avant `\begin{reponses}` | `question_statement`, avant la balise |
+| texte avant `\begin{reponses}` | `question_statement`, avant le champ |
 | `\bonne{…}`, `\mauvaise{…}` | la liste `choices` et les indices de `solution` |
 | `\lastchoices` | `fixed_last` : nombre de choix qui le suivent |
 | case « Aucune de ces réponses » ajoutée par l’option `completemulti` | un dernier choix écrit explicitement, avec `fixed_last=1`, juste quand aucun autre ne l’est |
@@ -391,7 +416,7 @@ if not correct:
 % question_statement
 %
 Parmi les nombres suivants, lesquels sont <b>premiers</b> ?
-{% input_checkbox 'answer' choices=choices solution=correct columns=5 fixed_last=1 scoring='b=1,m=-0.5,p=0' %}
+{{ input_checkbox('answer', choices=choices, solution=correct, columns=5, fixed_last=1, scoring='b=1,m=-0.5,p=0') }}
 %
 % question_solution_explanation
 %
@@ -427,7 +452,7 @@ result = gcd(x, y)
 % question_statement
 %
 Quel est le plus grand diviseur commun de ${{x}}$ et ${{y}}$ ?
-{% input_value 'answer' solution=result style='width:5em' %}
+{{ input_value('answer', solution=result, style='width:5em') }}
 %
 % question_solution_explanation
 %

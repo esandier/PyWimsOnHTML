@@ -29,8 +29,8 @@ primality = 0 if isprime(n) else 1
 %
 % question_statement
 %
-<p>Le nombre ${{n}}$ est {% input_select 'parity_answer' choices=parities solution=parity shuffle=0 %} ;
-{% input_select 'primality_answer' choices=primalities solution=primality shuffle=0 %}.</p>
+<p>Le nombre ${{n}}$ est {{ input_select('parity_answer', choices=parities, solution=parity, shuffle=0) }} ;
+{{ input_select('primality_answer', choices=primalities, solution=primality, shuffle=0) }}.</p>
 %
 % question_solution_explanation
 %

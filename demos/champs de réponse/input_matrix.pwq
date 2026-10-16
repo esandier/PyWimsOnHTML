@@ -28,7 +28,7 @@ transpose = A.T
 % question_statement
 %
 Donnez la transposée de $A = {{A}}$ :
-{% input_matrix 'answer' rows=p cols=m solution=transpose input_style='width:2.5em' %}
+{{ input_matrix('answer', rows=p, cols=m, solution=transpose, input_style='width:2.5em') }}
 %
 % question_solution_explanation
 %

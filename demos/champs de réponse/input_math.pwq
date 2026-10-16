@@ -29,7 +29,7 @@ derivative = diff(function, x)
 % question_statement
 %
 Soit $f(x) = {{function}}$. Donnez $f'(x)$ :
-{% input_math 'student_derivative' solution=derivative %}
+{{ input_math('student_derivative', solution=derivative) }}
 %
 % question_solution_explanation
 %
