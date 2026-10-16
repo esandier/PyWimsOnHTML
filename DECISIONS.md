@@ -61,6 +61,18 @@ beaucoup de « simplifications » évidentes ont déjà été essayées.
   calculée par tirage (variable de `question_setup`). L’écart absolu couvre
   les exercices courants, et l’une ou l’autre s’ajoutera sans rien changer à
   l’existant.
+- **Pas de texte saisi dans `question_check`** (octobre 2026) : `answer_text`
+  a été retiré. Cinq questions relisaient le texte d’un `input_value` pour
+  commenter son écriture (« 0,55/0,9 », « 61 % ») : il n’est pas logique de
+  confier la lecture à un champ qui la valide, puis de la refaire. L’écriture
+  relève de la correction par défaut, sans retour propre à la question.
+  Retirés du même coup : `math_expression(…, numeric=True)`, qui ne servait
+  qu’à cela. L’idée de drapeaux pour `math_expression` reste à reprendre si un
+  besoin apparaît.
+- **Pourcentage** : `42 %` est un nombre (0,42), juste avec `form=any` ;
+  `form=percent` l’exige. D’abord envisagé : `%` lu seulement avec
+  `form=percent`, pour qu’une probabilité ne soit pas acceptée en pourcentage ;
+  écarté par l’utilisateur.
 
 ### 2.9 Texte à trous : `input_select`
 
