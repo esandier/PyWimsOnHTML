@@ -192,20 +192,19 @@ window.PyWimsPython = (() => {
   }
 
   // Préparation de « question_check » (SPECIFICATION.md, §§ 2.6 et 2.8) : verdicts par défaut ({ clé: booléen },
-  // « m[0][1] » pour une case), textes saisis et valeurs [n, d] (ou null) des champs input_value.
-  function prepareCheck({ verdicts = {}, texts = {}, values = {} } = {}, sessionId = "default") {
+  // « m[0][1] » pour une case), et valeurs [n, d] (ou null) des champs input_value.
+  function prepareCheck({ verdicts = {}, values = {} } = {}, sessionId = "default") {
     // Clé d’un verdict : un nom, ou « m[0][1] » pour une case de matrice.
     const isKey = key => isName(key.replace(/\[\d+\]\[\d+\]$/, ""));
     const integer = /^-?\d+$/;
     const valid = (record, check, isValidKey = isName) =>
       record && typeof record === "object" && Object.entries(record).every(([key, value]) => isValidKey(key) && check(value));
     if (!valid(verdicts, value => typeof value === "boolean", isKey) ||
-        !valid(texts, value => typeof value === "string") ||
         !valid(values, value => value === null ||
           (Array.isArray(value) && value.length === 2 && value.every(part => typeof part === "string" && integer.test(part))))) {
       throw new Error("Les données de la vérification sont invalides.");
     }
-    return call("prepareCheck", [sessionId, { verdicts, texts, values }]);
+    return call("prepareCheck", [sessionId, { verdicts, values }]);
   }
 
   function getChoiceTexts(name, sessionId = "default", plain = false) {

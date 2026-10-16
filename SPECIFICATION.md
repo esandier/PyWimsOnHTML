@@ -100,13 +100,6 @@ refusé.
   peut appeler que les fonctions admises (`sin`, `cos`, `tan`, `exp`, `log`,
   `ln`, `sqrt`) ; les autres noms sont des symboles, et `e` et `pi` les
   constantes.
-- `math_expression(saisie, numeric=True)` lit un calcul sur des nombres écrit
-  à la française : virgule décimale, `×`, `%` (`61 %` est `61/100`), espaces
-  ordinaires, fines ou insécables. Toute lettre est refusée, si bien que la
-  virgule ne peut être que décimale. Le résultat est le même que sans le
-  drapeau : une expression SymPy non calculée, ou `None`. Il sert par exemple à
-  reconnaître une opération laissée en l’état (« 0,55/0,9 ») pour demander un
-  seul nombre.
 - **`math_expression` ne calcule rien** : l’expression renvoyée est celle que
   l’élève a écrite, ce qui permet d’en vérifier la forme (fraction
   irréductible, forme factorisée…). Deux comparaisons, à ne pas confondre :
@@ -224,7 +217,7 @@ Le compilateur refuse la question, avec un message précis, si :
   incompréhensible ; le message dit d’écrire `\frac{ {{n}} }{2}` ;
 - la solution n’a pas la forme attendue par le champ (dimensions de matrice) ;
 - un nom de champ est déjà défini par `question_setup`, ou réservé (`ok_answer`,
-  `answer_text`, `feedback`, noms du module `pywims`, mots-clés Python) ;
+  `feedback`, noms du module `pywims`, mots-clés Python) ;
 - une chaîne de `question_setup` ou de `question_check` contient un caractère de contrôle autre
   que le retour à la ligne : c’est presque toujours une formule TeX écrite dans
   une chaîne ordinaire (`'\frac'` contient un saut de page, `'\times'` une
@@ -430,10 +423,14 @@ n’exigent plus un `question_check`.
 | `fraction` | fraction d’entiers (ou entier) : `6/4` | `3/2` |
 | `irreducible` | fraction irréductible (ou entier) : `3/2`, pas `6/4` | `3/2` |
 | `scientific` | `m×10^n` ou `m e n`, avec 1 ≤ \|m\| < 10 : `1,5×10^3`, `1.5e3` | `1,5×10^3` |
+| `percent` | pourcentage, entier ou décimal suivi de `%` : `42 %`, `12,5%` pour 0,42 et 0,125 | `42 %` |
 
 - **Lecture de la saisie.** La virgule et le point sont acceptés : un nombre
   seul est sans ambiguïté, contrairement à un texte (§ 2.6). Les espaces sont
-  ignorés (`1 000`), comme le signe moins typographique. Le multiplié de la
+  ignorés (`1 000`), comme le signe moins typographique. Un pourcentage est
+  un nombre : `42 %` vaut 0,42, juste avec `form=any` ; `form=percent`
+  l’exige, les autres formes le refusent comme une mauvaise forme. La
+  solution reste la valeur (0,42) ; la tolérance porte sur elle. Le multiplié de la
   notation scientifique s’écrit `×`, `*`, `x`, `·`, un point (`7,7.10^4`,
   écriture française) ou une simple espace (`7,7 10^4`).
 - **Comparaison exacte.** Saisie, solution et tolérance sont des fractions
@@ -444,7 +441,7 @@ n’exigent plus un `question_check`.
 - **Bonne valeur, mauvaise forme.** Le champ est faux, et le retour le dit :
   « La valeur est juste, mais elle doit être écrite sous forme décimale. »
   (de même « d’entier », « de fraction », « de fraction irréductible », « en
-  notation scientifique »). L’élève sait ainsi ce qui reste à corriger. Une
+  notation scientifique », « en pourcentage »). L’élève sait ainsi ce qui reste à corriger. Une
   valeur fausse reçoit le retour générique (§ 2.2).
 - **Solution affichée.** Écrite avec une virgule, dans la forme demandée.
   Quand la solution ne s’écrit pas exactement ainsi (`1/3` en décimal, `sqrt(2)`),
@@ -470,7 +467,6 @@ n’exigent plus un `question_check`.
   |---|---|---|
   | `nom` | la valeur exacte, `Rational` de SymPy (`Integer` pour un entier), ou `None` si la saisie n’est pas un nombre | `Rational(7, 20)` |
   | `ok_answer['nom']` | pré-rempli par le verdict de la correction par défaut (tolérance et forme, § 2.6) ; `question_check` peut le changer | `False` |
-  | `answer_text['nom']` | le texte saisi, pour juger l’écriture | `"14/40"` |
 
   `question_check` compare donc des nombres (`nom == pa + pb`,
   `abs(nom - solution) <= 0.01`), sans relire le texte. Si `question_check` ne

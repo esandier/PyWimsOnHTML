@@ -272,8 +272,8 @@ if importlib.util.find_spec("numpy") is not None:
     });
   },
 
-  // Prépare « question_check » avant chaque vérification : verdicts par défaut, textes et valeurs des
-  // champs input_value (voir _prepare_check). Une valeur est un Rational : SymPy est chargé s’il
+  // Prépare « question_check » avant chaque vérification : verdicts par défaut et valeurs des champs
+  // input_value (voir _prepare_check). Une valeur est un Rational : SymPy est chargé s’il
   // ne l’est pas encore, comme pour une question qui l’importe.
   async prepareCheck(sessionId, data) {
     const globals = sessionGlobals(sessionId);

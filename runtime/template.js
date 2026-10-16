@@ -33,7 +33,7 @@ window.PyWimsTemplate = (() => {
     input_text: { style: "text", solution: "variable", match: ["exact", "normal", "loose"] },
     input_value: {
       style: "text", solution: "variable", tolerance: "number",
-      form: ["any", "integer", "decimal", "fraction", "irreducible", "scientific"]
+      form: ["any", "integer", "decimal", "fraction", "irreducible", "scientific", "percent"]
     },
     input_math: { solution: "variable" },
     input_matrix: {
@@ -66,7 +66,7 @@ window.PyWimsTemplate = (() => {
   // Un champ porte le nom de la variable Python qui reçoit la saisie : il ne doit pas
   // écraser une variable du contrat de question, un outil pywims ni un mot-clé Python.
   const reservedNames = new Set([
-    "ok_answer", "answer_text", "feedback",
+    "ok_answer", "feedback",
     "math_expression", "mcq", "tex", "ANY", "pywims",
     "False", "None", "True", "and", "as", "assert", "async", "await", "break",
     "class", "continue", "def", "del", "elif", "else", "except", "finally", "for",

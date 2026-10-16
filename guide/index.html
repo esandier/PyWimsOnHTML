@@ -176,7 +176,7 @@
         <tbody>
           <tr><td><code>solution</code></td><td>obligatoire</td><td>nombre Python ou SymPy (<code>Rational(3, 2)</code>, <code>sqrt(2)</code>…)</td></tr>
           <tr><td><code>tolerance</code></td><td>facultatif</td><td>écart admis, par exemple <code>0.01</code> ; 0 par défaut (la valeur exacte). Obligatoire pour une solution comme <code>sqrt(2)</code>.</td></tr>
-          <tr><td><code>form</code></td><td>facultatif</td><td>écriture exigée : <code>any</code> (par défaut, toute écriture), <code>integer</code>, <code>decimal</code>, <code>fraction</code>, <code>irreducible</code> (fraction irréductible), <code>scientific</code> (<code>1,5×10^3</code>)</td></tr>
+          <tr><td><code>form</code></td><td>facultatif</td><td>écriture exigée : <code>any</code> (par défaut, toute écriture), <code>integer</code>, <code>decimal</code>, <code>fraction</code>, <code>irreducible</code> (fraction irréductible), <code>scientific</code> (<code>1,5×10^3</code>), <code>percent</code> (<code>42 %</code> pour 0,42)</td></tr>
           <tr><td><code>style</code></td><td>facultatif</td><td>style CSS du champ : <code>'width:5em'</code></td></tr>
         </tbody>
       </table></div>
@@ -186,7 +186,7 @@
         forme demandée, arrondie selon la tolérance.</p>
       <p>Avec <code>question_check</code>, utile seulement pour un retour selon l’erreur, le champ arrive comme sa
         valeur exacte (<code>14/40</code> donne <code>Rational(7, 20)</code>, une saisie qui n’est pas un nombre
-        donne <code>None</code>), et le texte saisi dans <code>answer_text['nom']</code> :
+        donne <code>None</code>) :
         <code>if answer == a + b: feedback = "…"</code>.</p>
     </details>
 

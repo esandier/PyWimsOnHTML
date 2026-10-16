@@ -146,16 +146,6 @@
         await expectPython(session,
           "all(math_expression(s) is None for s in ['x//2', 'x.diff(x)', '(x).diff(x)', 'x or y', 'not x', '[x]', '1,5', ''])",
           "Une saisie hors de l’écriture mathématique a été acceptée");
-        // numeric=True : un calcul sur des nombres écrit à la française, jamais calculé, sans lettre.
-        await expectPython(session,
-          "math_expression('0,55/0,9', numeric=True) == math_expression('0.55/0.9') and "
-          + "simplify(math_expression('61 %', numeric=True) - Rational(61, 100)) == 0 and "
-          + "simplify(math_expression('2 × 0,3', numeric=True) - Rational(3, 5)) == 0 and "
-          + "math_expression('1\\u00a0000', numeric=True) == 1000",
-          "Écriture française d’un nombre mal lue");
-        await expectPython(session,
-          "all(math_expression(s, numeric=True) is None for s in ['p', '2x', 'sin(1)', 'e', '1,5,2/', ''])",
-          "Une lettre a été acceptée avec numeric=True");
         // Outils retirés (SPECIFICATION.md, § 2.1) : refusés comme tout nom inconnu.
         await expectPython(session,
           "all(not hasattr(__import__('pywims'), name) for name in ['py_wims', 'decimal_comma', 'is_number'])",
@@ -185,23 +175,22 @@
 
       // Avant « question_check » (SPECIFICATION.md, §§ 2.6 et 2.8) : verdicts par défaut, textes saisis et
       // valeurs exactes des champs input_value. La question n’importe pas SymPy : le moteur le charge.
-      await test("« question_check » reçoit les verdicts par défaut, et la valeur et le texte d’un input_value", async () => {
+      await test("« question_check » reçoit les verdicts par défaut, et la valeur d’un input_value", async () => {
         const session = PyWimsPython.createSession("preparation");
         await session.initialize("a = 1");
         await session.run("a = 1\nfeedback = 'ancien'\nok_answer['vieux'] = True");
         await session.prepareCheck({
           verdicts: { r: false, "m[0][1]": true },
-          texts: { r: "14/40", e: "deux" },
           values: { r: ["7", "20"], e: null, n: ["-3", "1"] }
         });
         await expectPython(session,
           "type(r).__name__ == 'Rational' and r == __import__('sympy').Rational(7, 20) and e is None" +
           " and type(n).__name__ == 'Integer' and n == -3" +
-          " and ok_answer == {'r': False, 'm[0][1]': True} and answer_text == {'r': '14/40', 'e': 'deux'}" +
+          " and ok_answer == {'r': False, 'm[0][1]': True}" +
           " and 'feedback' not in globals()",
           "Préparation de « question_check » inattendue");
         await session.prepareCheck({});
-        await expectPython(session, "ok_answer == {} and answer_text == {}", "Les verdicts d’une vérification restent pour la suivante");
+        await expectPython(session, "ok_answer == {}", "Les verdicts d’une vérification restent pour la suivante");
         await session.dispose();
       });
 
@@ -245,9 +234,9 @@
           throw new Error(`Rendu inattendu : ${html} ${JSON.stringify(draw)}`);
         }
         await session.setChoice("choix_é", 1);
-        await session.prepareCheck({ verdicts: { "réponse": true }, texts: { "réponse": "5" }, values: { "réponse": ["5", "1"] } });
+        await session.prepareCheck({ verdicts: { "réponse": true }, values: { "réponse": ["5", "1"] } });
         await expectPython(session,
-          "réponse == 5 and choix_é == 1 and ok_answer == {'réponse': True} and answer_text == {'réponse': '5'}",
+          "réponse == 5 and choix_é == 1 and ok_answer == {'réponse': True}",
           "Les champs aux noms accentués n’arrivent pas en Python");
         await session.dispose();
       });
@@ -661,10 +650,10 @@ json.dumps({
           [await draw("s = 0.1 + 0.2", "{{ input_value('r', solution=s) }}"), { text: "0,3", value: "3/10" }],
           [await draw("from sympy import sqrt\ns = sqrt(2)", "{{ input_value('r', solution=s, tolerance=0.001) }}"), { text: "1,414", value: "141421356237309504880168872421/100000000000000000000000000000" }],
           [await draw("s = 1500", "{{ input_value('r', solution=s, form=scientific) }}"), { text: "1,5×10^3", value: "1500/1" }],
-          // Avec « question_check », le champ reçoit la valeur lue, et answer_text le texte saisi : la
+          // Avec « question_check », le champ reçoit la valeur lue : la
           // compilation saisit la solution affichée, juste par défaut.
           [await draw("from fractions import Fraction\ns = Fraction(3, 4)", "{{ input_value('r', solution=s, form=fraction) }}",
-            "assert r == s and answer_text['r'] == '3/4' and ok_answer['r'] is True"), { text: "3/4", value: "3/4" }]
+            "assert r == s and ok_answer['r'] is True"), { text: "3/4", value: "3/4" }]
         ];
         for (const [actual, expected] of cases) {
           if (JSON.stringify(actual) !== JSON.stringify(expected)) {

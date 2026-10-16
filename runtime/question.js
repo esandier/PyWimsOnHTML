@@ -649,7 +649,7 @@ window.PyWimsQuestion = (() => {
     // Transmet toutes les saisies à Python et exécute « question_check ». Renvoie les verdicts, un par champ de
     // fields(), les indications de forme de la correction par défaut, et le retour de l’auteur (null
     // s’il n’a pas défini « feedback »). ok_answer est pré-rempli par la correction par défaut, et un
-    // champ input_value arrive comme sa valeur lue, son texte dans answer_text (§§ 2.6 et 2.8).
+    // champ input_value arrive comme sa valeur lue (§§ 2.6 et 2.8).
     async pythonVerdicts(inputs) {
       const { python } = this;
       this.activatePython();
@@ -665,7 +665,6 @@ window.PyWimsQuestion = (() => {
       const { exactValue } = PyWimsCorrection;
       const { answerResults: defaults, hints } = this.defaultVerdicts(inputs);
       const verdicts = {};
-      const texts = {};
       const values = {};
       inputs.forEach((input, index) => {
         if (defaults[index] !== null) {
@@ -685,7 +684,6 @@ window.PyWimsQuestion = (() => {
           continue;
         }
         if (this.typeOf.get(input.dataset.name) === "input_value") {
-          texts[input.dataset.name] = fieldValue(input);
           values[input.dataset.name] = exactValue(fieldValue(input));
           continue;
         }
@@ -707,7 +705,7 @@ window.PyWimsQuestion = (() => {
       for (const [name, matrix] of matrices) {
         await python.setMatrix(name, matrix);
       }
-      await python.prepareCheck({ verdicts, texts, values });
+      await python.prepareCheck({ verdicts, values });
       await python.run(this.definition.question_check, { timeoutMs: checkTimeoutMs }).catch(error => {
         throw error.name === "PyWimsTimeout" ? new Error(checkTimeoutMessage) : error;
       });

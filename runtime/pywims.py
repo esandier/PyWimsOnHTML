@@ -346,10 +346,10 @@ def _collect_draw(namespace, spec):
 def _prepare_check(namespace, data):
     """Prépare « question_check » (SPECIFICATION.md, §§ 2.6 et 2.8), avant chaque vérification.
 
-    data (JSON) : {"verdicts": {clé: booléen}, "texts": {champ: texte}, "values": {champ: [n, d] ou null}}.
+    data (JSON) : {"verdicts": {clé: booléen}, "values": {champ: [n, d] ou null}}.
     Les verdicts de la correction par défaut pré-remplissent ok_answer ; chaque champ input_value
-    reçoit sa valeur exacte, lue par la page (runtime/correction.js), et son texte va dans
-    answer_text. Le feedback d’une vérification précédente est retiré.
+    reçoit sa valeur exacte, lue par la page (runtime/correction.js). Le feedback d’une vérification
+    précédente est retiré.
     """
     import json
     data = json.loads(data)
@@ -361,7 +361,6 @@ def _prepare_check(namespace, data):
             # Rational(n, 1) est un Integer : un entier saisi se compare comme un entier.
             namespace[name] = None if value is None else Rational(int(value[0]), int(value[1]))
     namespace["ok_answer"] = dict(data.get("verdicts") or {})
-    namespace["answer_text"] = dict(data.get("texts") or {})
     namespace.pop("feedback", None)
 
 
@@ -591,9 +590,6 @@ _EXPRESSION_CHARACTERS = _re.compile(r"[0-9A-Za-z+\-*/^(). \t]*")
 # Un point qui touche un nom ou une parenthèse : un accès à un attribut (x.diff(x)), pas un décimal.
 _ATTRIBUTE_DOT = _re.compile(r"[A-Za-z)]\s*\.|\.\s*[A-Za-z(]")
 _NAME = _re.compile(r"[A-Za-z][A-Za-z0-9]*")
-# Écriture d’un nombre à la française (math_expression(…, numeric=True)) : virgule décimale, × et %,
-# espaces fines ou insécables ; aucune lettre.
-_NUMERIC_CHARACTERS = _re.compile(r"[0-9+\-*/^(). \t]*")
 
 
 def _flat(func, args):
@@ -652,25 +648,17 @@ def _as_written(expr):
     return expr.func(*args, evaluate=False)
 
 
-def math_expression(value, numeric=False):
+def math_expression(value):
     """Expression SymPy écrite par un élève (« 2x », « x^2 », « sin x », « ln(x) »), ou None.
 
     La saisie n’est pas calculée (SPECIFICATION.md, § 2.2) : == la compare à une expression à
     l’ordre des termes près, simplify(a - b) == 0 compare les valeurs.
-    numeric=True : un calcul sur des nombres écrit à la française (« 0,55/0,9 », « 2 × 0,3 »,
-    « 61 % »), sans lettre ; le résultat est toujours une expression SymPy non calculée, ou None.
     """
     import keyword
     import sympy
     from sympy.core.parameters import evaluate
     from sympy.parsing.sympy_parser import (convert_xor, implicit_multiplication_application, parse_expr,
                                             standard_transformations)
-    if numeric and isinstance(value, str):
-        # La virgule n’y peut être que décimale : sans lettre, pas d’appel de fonction f(1,2).
-        for written, read in ((" ", ""), ("\u00a0", ""), ("\u202f", ""), (",", "."), ("×", "*"), ("%", "/100")):
-            value = value.replace(written, read)
-        if not _NUMERIC_CHARACTERS.fullmatch(value):
-            return None
     if (not isinstance(value, str) or len(value) > 10000 or not value.strip()
             or not _EXPRESSION_CHARACTERS.fullmatch(value) or "//" in value or _ATTRIBUTE_DOT.search(value)):
         return None

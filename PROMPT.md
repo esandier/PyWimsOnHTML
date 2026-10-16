@@ -206,7 +206,7 @@ Ce qui doit varier dépend de la compétence visée :
   saisie dans `question_check` (une chaîne, une liste de listes de chaînes pour une
   matrice, un indice ou une liste d’indices pour une question à choix, un nombre
   pour `input_value`). Il ne doit pas reprendre un nom de `question_setup`, ni `ok_answer`,
-  `answer_text`, `feedback`, un outil de `pywims` ou un mot-clé Python. Donne-lui un nom anglais
+  `feedback`, un outil de `pywims` ou un mot-clé Python. Donne-lui un nom anglais
   (`answer`, `result`, `matrix`…), comme aux variables de `question_setup`.
 
 ## Valeurs numériques
@@ -220,7 +220,8 @@ Ce qui doit varier dépend de la compétence visée :
   exacte. Un irrationnel (`sqrt(2)`) exige une tolérance.
 - `form=` impose l’écriture : `any` (par défaut), `integer`, `decimal`,
   `fraction`, `irreducible` (fraction irréductible), `scientific`
-  (`1,5×10^3`). Une valeur juste dans une autre forme est refusée, avec un
+  (`1,5×10^3`), `percent` (`42 %` pour une solution 0,42). Un pourcentage est
+  un nombre : `42 %` est juste pour 0,42 avec `any`. Une valeur juste dans une autre forme est refusée, avec un
   retour qui le dit. N’impose une forme que si l’énoncé la demande.
 - La solution affichée est écrite dans la forme demandée, arrondie selon la
   tolérance, au plus proche : `tolerance=0.005` affiche deux décimales. Donne
@@ -230,9 +231,8 @@ Ce qui doit varier dépend de la compétence visée :
   l’erreur, le champ arrive comme sa valeur exacte, un `Rational` de SymPy
   (`0,35`, `7/20` et `14/40` donnent tous `Rational(7, 20)`), ou `None` si la
   saisie n’est pas un nombre.
-  `ok_answer['nom']` est déjà rempli, tolérance et forme comprises, et le texte
-  saisi est dans `answer_text['nom']`. Il ne reste qu’à reconnaître les
-  erreurs prévues :
+  `ok_answer['nom']` est déjà rempli, tolérance et forme comprises. Il ne
+  reste qu’à reconnaître les erreurs prévues :
   ```python
   if p == pa + pb:
       feedback = r"Tu as oublié de retirer $P(A \cap B)$."

@@ -844,7 +844,7 @@ window.PyWimsPython = (() => {
 
       // Avec « question_check » (SPECIFICATION.md, § 2.8) : Python reçoit la valeur lue, le texte et le verdict par
       // défaut. Un « question_check » qui ne change rien et ne définit pas feedback garde le retour de forme.
-      await test("un input_value avec « question_check » reçoit sa valeur, son texte et son verdict par défaut", async () => {
+      await test("un input_value avec « question_check » reçoit sa valeur et son verdict par défaut", async () => {
         const question = {
           question_title: "Moitié", question_layout: "STD", question_setup: "s = 1.5",
           question_statement: "La moitié de 3 ? {{ input_value('r', solution=s, form=decimal) }}",
@@ -858,7 +858,7 @@ window.PyWimsPython = (() => {
         role("check").click();
         await waitFor(() => role("feedback").classList.contains("is-visible"), "retour de forme");
         const prepared = frameWindow.pythonLogs.q1.find(entry => entry.startsWith("prepare "));
-        if (prepared !== 'prepare {"verdicts":{"r":false},"texts":{"r":"6/4"},"values":{"r":["3","2"]}}') {
+        if (prepared !== 'prepare {"verdicts":{"r":false},"values":{"r":["3","2"]}}') {
           throw new Error(`Préparation inattendue : ${prepared}`);
         }
         if (role("feedback").textContent !== "La valeur est juste, mais elle doit être écrite sous forme décimale." ||

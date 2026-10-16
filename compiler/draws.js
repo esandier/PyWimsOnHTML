@@ -60,10 +60,9 @@
     // Une valeur ANY accepte n’importe quelle saisie : « 1 » en tient lieu.
     const typed = value => value ?? "1";
     // Python est préparé comme dans la page (runtime/question.js) : ok_answer pré-rempli par la
-    // correction par défaut, valeur et texte des champs input_value (SPECIFICATION.md, §§ 2.6 et 2.8).
+    // correction par défaut, valeur des champs input_value (SPECIFICATION.md, §§ 2.6 et 2.8).
     const { isCorrect, exactValue } = PyWimsCorrection;
     const verdicts = {};
-    const texts = {};
     const values = {};
     for (const tag of tags) {
       const { name, type, attributes } = tag;
@@ -75,9 +74,9 @@
         await session.set(name, typed(solution));
         verdicts[name] = isCorrect(type, typed(solution), solution, attributes);
       } else if (type === "input_value") {
-        texts[name] = typed(solution?.text);
-        values[name] = exactValue(texts[name]);
-        verdicts[name] = isCorrect(type, texts[name], solution, attributes);
+        const text = typed(solution?.text);
+        values[name] = exactValue(text);
+        verdicts[name] = isCorrect(type, text, solution, attributes);
       } else if (type === "input_math") {
         // MathLive transmet une expression en texte (« x^2 + 1 »), et non le LaTeX affiché par la
         // solution : on saisit donc la forme texte, la plus proche de ce que reçoit « question_check ».
@@ -89,7 +88,7 @@
         }));
       }
     }
-    await session.prepareCheck({ verdicts, texts, values });
+    await session.prepareCheck({ verdicts, values });
     try {
       await session.run(question_check, { timeoutMs });
     } catch (error) {

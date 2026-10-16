@@ -79,9 +79,16 @@ window.PyWimsCorrection = (() => {
   // multiplié de la notation scientifique s’écrit ×, *, x, ·, un point (« 7,7.10^4 », écriture
   // française) ou une simple espace (« 7,7 10^4 »). L’espace est lue avant d’effacer les autres :
   // sinon « 7,7 10^4 » devenait « 7,710^4 », illisible.
+  // Un pourcentage est un nombre (« 42 % » vaut 0,42) : juste avec form=any ou percent, de mauvaise
+  // forme sinon.
   function parseNumber(text) {
     const source = normalizedText(String(text).replace(/(\d)\s+(10\s*\^)/g, "$1×$2"));
-    let match = source.match(/^[+-]?\d+$/);
+    let match = source.match(/^([+-]?\d+(?:[.,]\d+)?)%$/);
+    if (match) {
+      const percent = decimalRational(match[1]);
+      return { value: rational(percent.n, percent.d * 100n), kind: "percent" };
+    }
+    match = source.match(/^[+-]?\d+$/);
     if (match) {
       return { value: rational(BigInt(source)), kind: "integer" };
     }
@@ -123,6 +130,7 @@ window.PyWimsCorrection = (() => {
       case "decimal": return parsed.kind === "integer" || parsed.kind === "decimal";
       case "fraction": return parsed.kind === "integer" || parsed.kind === "fraction";
       case "irreducible": return parsed.kind === "integer" || (parsed.kind === "fraction" && parsed.irreducible);
+      case "percent": return parsed.kind === "percent";
       case "scientific": {
         // Un nombre de 1 à 10 (exposant 0) et zéro s’écrivent aussi sans « ×10^0 ».
         if (parsed.kind === "scientific") return parsed.scientific;
@@ -140,7 +148,8 @@ window.PyWimsCorrection = (() => {
     decimal: "sous forme décimale",
     fraction: "sous forme de fraction",
     irreducible: "sous forme de fraction irréductible",
-    scientific: "en notation scientifique"
+    scientific: "en notation scientifique",
+    percent: "en pourcentage"
   };
   const formHint = form => `La valeur est juste, mais elle doit être écrite ${formNames[form]}.`;
 
@@ -240,6 +249,15 @@ window.PyWimsCorrection = (() => {
           }
         }
         return exponent === 0 ? text : `${text}×10^${exponent}`;
+      }
+      case "percent": {
+        // La tolérance porte sur la valeur (0,005) : sur le pourcentage, elle est multipliée par 100.
+        const percent = rational(value.n * 100n, value.d);
+        if (raw.exact && isFiniteDecimal(percent)) return `${decimalText(percent)} %`;
+        const valueTolerance = decimalRational(String(tolerance));
+        const percentDigits = decimalsFor(rational(valueTolerance.n * 100n, valueTolerance.d));
+        if (percentDigits === null) throw needTolerance(`${raw.exact ? shown : "ce nombre irrationnel"} ne s’écrit pas exactement en pourcentage décimal`);
+        return `${decimalText(percent, percentDigits)} %`;
       }
       default:
         if (raw.exact) {
