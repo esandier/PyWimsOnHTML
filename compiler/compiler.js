@@ -286,9 +286,8 @@
   }
 
   // Aperçu : la vraie page de la question, assemblée comme à la compilation, dans un cadre isolé
-  // (sandbox sans « allow-same-origin ») car l’énoncé est du HTML écrit par l’auteur. Il affiche
-  // d’abord un tirage provisoire où chaque variable porte son nom, boutons inactifs, puis les tirages
-  // réels calculés par le Python de cette page, chargé une seule fois ; la question fonctionne alors
+  // (sandbox sans « allow-same-origin ») car l’énoncé est du HTML écrit par l’auteur. Il affiche les
+  // tirages calculés par le Python de cette page, chargé une seule fois ; la question fonctionne alors
   // comme pour l’élève (SPECIFICATION.md, § 3).
   const previewDrawCache = new Map();
   let previewGeneration = 0;
@@ -380,8 +379,9 @@
     previewSessions.clear();
     previewFrameNumber += 1;
     resources.python = previewPythonBridge(previewFrameNumber);
-    previewFrame.srcdoc = assembleQuestion(fields, draws, resources).replace("<body", '<body data-preview="true"');
+    // Le cadre est affiché avant de recevoir sa page, jamais rempli caché (voir showPreview).
     previewFrame.hidden = false;
+    previewFrame.srcdoc = assembleQuestion(fields, draws, resources).replace("<body", '<body data-preview="true"');
     shownPreview = { question };
   }
 
@@ -389,17 +389,18 @@
   // suite (previewGeneration). Il n’y a pas d’aperçu sans Python : l’énoncé est rendu par Jinja
   // (SPECIFICATION.md, § 3) ; l’ancien aperçu provisoire, où chaque variable portait son nom, a été
   // retiré, et le modèle brut (les deux branches d’un {% if %}) n’apprenait rien à l’auteur.
-  // live : mise à jour de l’atelier après une pause de la frappe (§ 11.10) ; l’aperçu déjà affiché de
-  // cette question reste en place pendant le calcul.
+  // Pendant le calcul, l’aperçu précédent reste affiché, la ligne d’état disant qu’un tirage se
+  // calcule. Le cadre n’est jamais masqué pour être rempli ensuite : Edge gèle un cadre isolé masqué
+  // (display: none), et la page reçue pendant ce temps restait arrêtée dans son <head>, cadre blanc,
+  // à partir du deuxième aperçu (constaté en octobre 2026 ; ni Firefox, ni l’Edge piloté par les tests,
+  // lancé sans ce ralentissement, ne le montraient). Solution écartée : masquer le cadre pendant le
+  // calcul, pour ne pas montrer l’ancienne question.
+  // live : mise à jour de l’atelier après une pause de la frappe (§ 11.10).
   async function showPreview(question, { live = false } = {}) {
     previewGeneration += 1;
     const generation = previewGeneration;
     const { fields } = question;
     const keepShown = live && shownPreview?.question === question && !previewFrame.hidden;
-    if (!keepShown) {
-      previewFrame.hidden = true;
-      shownPreview = null;
-    }
     if (!previewDrawCache.has(question)) {
       if (!keepShown) {
         showPreviewNotice(PyWimsPython.isLoaded?.()
@@ -424,6 +425,12 @@
       editor.showPreviewError(question, null);
     } catch (error) {
       if (generation === previewGeneration) {
+        // L’aperçu d’une autre question ne doit pas rester sous ce message ; le cadre masqué ne reçoit
+        // plus rien, et renderPreviewFrame l’affiche avant de le remplir.
+        if (shownPreview?.question !== question) {
+          previewFrame.hidden = true;
+          shownPreview = null;
+        }
         showPreviewNotice(`Le tirage n’a pas pu être calculé : ${error.message}`, "error");
         // Dans l’atelier, l’erreur s’affiche aussi sous l’éditeur, avec un lien vers sa ligne.
         editor.showPreviewError(question, error.message);

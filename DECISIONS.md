@@ -153,6 +153,15 @@ beaucoup de « simplifications » évidentes ont déjà été essayées.
 - **Boutons de l’aperçu.** Une case « Afficher la solution » et un bouton
   « Nouveau tirage », au-dessus d’un aperçu aux boutons inactifs, ont précédé
   l’aperçu interactif ; les boutons de la question font la même chose.
+- **Cadre de l’aperçu jamais masqué puis rempli** (octobre 2026). Le retrait de
+  l’aperçu provisoire l’avait fait masquer pendant le calcul : dans l’Edge de
+  l’utilisateur, à partir du deuxième aperçu, la page reçue par le cadre masqué
+  restait arrêtée dans son `<head>`, cadre blanc et inerte. Edge gèle un cadre
+  isolé (autre origine) masqué. Ni Firefox, ni la page exportée, ni l’Edge piloté
+  par les tests (Playwright le lance sans ce ralentissement) ne le montraient.
+  Écartées après essai : MathJax, les polices de la charte, le cache et les
+  extensions (même défaut en fenêtre InPrivate). L’aperçu précédent reste donc
+  affiché pendant le calcul.
 
 ## 5. Comportement à l’exécution
 

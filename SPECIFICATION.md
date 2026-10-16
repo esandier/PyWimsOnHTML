@@ -678,7 +678,9 @@ fabriquer un texte (les choix d’un QCM sont des listes Python, § 10.1) :
   « Nouvel énoncé ». L’énoncé étant rendu par Jinja, il n’y a pas d’aperçu sans
   Python : l’aperçu attend le Python de la page du compilateur (quelques
   secondes, une seule fois), puis montre 5 tirages réels calculés par lui,
-  gardés en mémoire pour chaque question. L’aperçu montre toujours le premier (le cadre porte
+  gardés en mémoire pour chaque question. Pendant le calcul, l’aperçu
+  précédent reste affiché, la ligne d’état disant qu’un tirage se calcule :
+  le cadre n’est jamais masqué puis rempli (DECISIONS.md, § 3). L’aperçu montre toujours le premier (le cadre porte
   `data-preview="true"`, que lit `question.js`), pour que ses nombres ne
   changent pas à chaque mise à jour ; « Nouvel énoncé » passe aux autres.
   5 tirages coûtent environ 100 ms, Python chargé.
