@@ -5084,20 +5084,26 @@ def _ratio(value):
 
 
 def _decimal_tex(exact, digits):
-    """Écriture décimale d’un Decimal, avec la virgule « {,} » de TeX, arrondie à digits décimales
-    (None : telle quelle), au plus proche, les demis vers le haut.
+    """Écriture décimale d’un Decimal, avec la virgule « {,} » de TeX : telle quelle, sans zéro final
+    (digits None), ou arrondie à digits décimales, au plus proche, les demis vers le haut, avec
+    exactement digits décimales (0,50 : l’écriture dit la précision de l’arrondi).
 
     Arrondi comme en classe : round(2.675, 2) donne 2.67 en Python, car le flottant 2.675 vaut en
     réalité 2.67499999…, alors qu’un élève attend 2,68 ; l’arrondi porte donc sur l’écriture décimale.
     La virgule seule serait suivie d’une espace dans une formule : MathJax la traite en ponctuation.
     """
     import decimal
-    if digits is not None:
-        # La précision par défaut (28 chiffres) ferait échouer quantize sur un grand nombre (10**30).
-        with decimal.localcontext() as context:
-            context.prec = len(exact.as_tuple().digits) + digits + 10
-            exact = exact.quantize(decimal.Decimal(1).scaleb(-digits), rounding=decimal.ROUND_HALF_UP)
-    return _plain_decimal(exact).replace(".", "{,}")
+    if digits is None:
+        return _plain_decimal(exact).replace(".", "{,}")
+    # La précision par défaut (28 chiffres) ferait échouer quantize sur un grand nombre (10**30).
+    with decimal.localcontext() as context:
+        context.prec = len(exact.as_tuple().digits) + digits + 10
+        exact = exact.quantize(decimal.Decimal(1).scaleb(-digits), rounding=decimal.ROUND_HALF_UP)
+    text = format(exact, "f")
+    # Un zéro n’a pas de signe : -0,001 arrondi au centième s’écrit 0,00.
+    if exact.is_zero():
+        text = text.lstrip("-")
+    return text.replace(".", "{,}")
 
 
 def _finite_decimal(ratio):
@@ -5121,7 +5127,8 @@ def tex(value, frac=False, dec=False, digits=None):
     question_setup l’appelle pour fabriquer un texte, par exemple les choix d’un QCM.
       tex(Rational(3, 4)) → "3/4" ; frac=True → r"\frac{3}{4}" ;
       tex(Rational(9, 10), dec=True) → "0{,}9" (un rationnel sans décimal fini reste une fraction) ;
-      tex(sqrt(2), digits=2) → "1{,}41" (arrondi des demis vers le haut ; digits implique dec) ;
+      tex(sqrt(2), digits=2) → "1{,}41", tex(0.5, digits=2) → "0{,}50" (arrondi des demis vers le haut,
+      toujours digits décimales ; digits implique dec) ;
       tex(0.1 + 0.2) → "0.3" (12 chiffres significatifs, avec un point) ; un texte reste tel quel.
     Une expression SymPy est écrite par sympy.latex, fractions en ligne sauf avec frac=True.
     """

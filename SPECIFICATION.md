@@ -555,11 +555,11 @@ fabriquer un texte (les choix d’un QCM sont des listes Python, § 10.1) :
 
 | Valeur | `{{ v }}`, `tex(v)` | `{{ v\|frac }}`, `tex(v, frac=True)` | `{{ v\|dec }}`, `tex(v, dec=True)` | `{{ v\|dec(2) }}`, `tex(v, digits=2)` |
 |---|---|---|---|---|
-| `Rational(9, 10)`, `Fraction(9, 10)` | `9/10` | `\frac{9}{10}` | `0{,}9` | `0{,}9` |
+| `Rational(9, 10)`, `Fraction(9, 10)` | `9/10` | `\frac{9}{10}` | `0{,}9` | `0{,}90` |
 | `Rational(1, 3)` | `1/3` | `\frac{1}{3}` | `1/3` (pas de décimal fini) | `0{,}33` |
 | `-Rational(3, 4)` | `-3/4` | `-\frac{3}{4}` | `-0{,}75` | `-0{,}75` |
-| `3` | `3` | `3` | `3` | `3` |
-| `0.1 + 0.2` | `0.3` | `0.3` | `0{,}3` | `0{,}3` |
+| `3` | `3` | `3` | `3` | `3{,}00` |
+| `0.1 + 0.2` | `0.3` | `0.3` | `0{,}3` | `0{,}30` |
 | `sqrt(2)` | `\sqrt{2}` | `\sqrt{2}` | refusé | `1{,}41` |
 | `x**2/2 + 1` | `x^{2} / 2 + 1` | `\frac{x^{2}}{2} + 1` | refusé | refusé |
 | `Matrix(…)` | entre crochets | idem | refusé | refusé |
@@ -572,8 +572,11 @@ fabriquer un texte (les choix d’un QCM sont des listes Python, § 10.1) :
   `sympy.latex`, que `tex` appelle.
 - **Décimal à la française** : `|dec` écrit un décimal fini avec la virgule
   `{,}` de TeX (MathJax met sinon une espace après une virgule), et laisse les
-  autres nombres en fraction ; `|dec(n)` arrondit à n décimales, au plus
-  proche, demis vers le haut (`round` de Python arrondit les demis au pair).
+  autres nombres en fraction, sans zéro final ; `|dec(n)` arrondit à n
+  décimales, au plus proche, demis vers le haut (`round` de Python arrondit
+  les demis au pair), et en écrit toujours n : `≈ 0{,}50`, l’écriture disant
+  la précision de l’arrondi (le bouton « Correction » d’un `input_value`, lui,
+  n’écrit pas de zéro final, § 2.8).
   `{,}` ne vaut que dans une formule : `|dec` s’écrit entre `$`.
 - **Flottant** : 12 chiffres significatifs, avec un point (§ 2.6).
 - **Refus** : une option impossible (`|dec` sur un texte ou une expression)
