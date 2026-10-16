@@ -827,7 +827,10 @@ fabriquer un texte (les choix d’un QCM sont des listes Python, § 10.1) :
   de « Corriger ma réponse », et les animations n’utilisent que des
   transformations. Exceptions admises : l’agrandissement du retour sur
   téléphone, un champ redimensionné par l’élève, et un nouvel énoncé plus haut
-  que les précédents (la carte ne rétrécit jamais).
+  que les précédents (la carte ne rétrécit jamais). La hauteur gardée est
+  celle de l’énoncé tel qu’il s’affiche au départ, choix décochés : une
+  question à étapes, déroulée pendant la tentative, ne garde pas la hauteur
+  de toutes ses étapes.
 
 ### 5.5 Animations
 

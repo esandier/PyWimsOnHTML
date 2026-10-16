@@ -534,8 +534,14 @@ window.PyWimsQuestion = (() => {
     // Solution écartée : mesurer à la fin de chaque affichage. Au premier affichage, la mise en page
     // n’est pas définitive (polices, formules) : l’énoncé raccourcissait ensuite, et le minimum
     // laissait jusqu’à 50 px vides sous les choix sur téléphone.
+    // L’énoncé est mesuré tel qu’il s’affiche au départ : ses choix sont d’abord décochés (il va être
+    // remplacé). Une question à étapes, dont chaque étape apparaît quand la précédente a une réponse
+    // (:has), était mesurée déroulée : la tentative suivante gardait la hauteur de toutes les étapes, et
+    // les boutons passaient sous la page.
     keepPromptHeight() {
       const { promptElement } = this;
+      for (const input of promptElement.querySelectorAll("input:checked")) input.checked = false;
+      for (const select of promptElement.querySelectorAll("select")) select.value = "";
       const kept = Number.parseFloat(promptElement.style.minHeight) || 0;
       promptElement.style.minHeight = "";
       const height = promptElement.getBoundingClientRect().height;
