@@ -146,6 +146,16 @@
         await expectPython(session,
           "all(math_expression(s) is None for s in ['x//2', 'x.diff(x)', '(x).diff(x)', 'x or y', 'not x', '[x]', '1,5', ''])",
           "Une saisie hors de l’écriture mathématique a été acceptée");
+        // numeric=True : un calcul sur des nombres écrit à la française, jamais calculé, sans lettre.
+        await expectPython(session,
+          "math_expression('0,55/0,9', numeric=True) == math_expression('0.55/0.9') and "
+          + "simplify(math_expression('61 %', numeric=True) - Rational(61, 100)) == 0 and "
+          + "simplify(math_expression('2 × 0,3', numeric=True) - Rational(3, 5)) == 0 and "
+          + "math_expression('1\\u00a0000', numeric=True) == 1000",
+          "Écriture française d’un nombre mal lue");
+        await expectPython(session,
+          "all(math_expression(s, numeric=True) is None for s in ['p', '2x', 'sin(1)', 'e', '1,5,2/', ''])",
+          "Une lettre a été acceptée avec numeric=True");
         // Outils retirés (SPECIFICATION.md, § 2.1) : refusés comme tout nom inconnu.
         await expectPython(session,
           "all(not hasattr(__import__('pywims'), name) for name in ['py_wims', 'decimal_comma', 'is_number'])",

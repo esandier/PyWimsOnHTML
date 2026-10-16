@@ -100,6 +100,13 @@ refusé.
   peut appeler que les fonctions admises (`sin`, `cos`, `tan`, `exp`, `log`,
   `ln`, `sqrt`) ; les autres noms sont des symboles, et `e` et `pi` les
   constantes.
+- `math_expression(saisie, numeric=True)` lit un calcul sur des nombres écrit
+  à la française : virgule décimale, `×`, `%` (`61 %` est `61/100`), espaces
+  ordinaires, fines ou insécables. Toute lettre est refusée, si bien que la
+  virgule ne peut être que décimale. Le résultat est le même que sans le
+  drapeau : une expression SymPy non calculée, ou `None`. Il sert par exemple à
+  reconnaître une opération laissée en l’état (« 0,55/0,9 ») pour demander un
+  seul nombre.
 - **`math_expression` ne calcule rien** : l’expression renvoyée est celle que
   l’élève a écrite, ce qui permet d’en vérifier la forme (fraction
   irréductible, forme factorisée…). Deux comparaisons, à ne pas confondre :
