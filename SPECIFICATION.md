@@ -38,33 +38,27 @@ et une activité en réunit plusieurs.
 | `question_title`, `question_keywords`, `question_layout` | obligatoire | titre, mots-clés (séparés par des virgules), mise en page (`STD`) |
 | `question_setup` | obligatoire | tirage et calcul des solutions |
 | `question_statement` | obligatoire | modèle de l’énoncé |
-| `question_solution_explanation` | facultatif | explication affichée avec la solution (§ 5.2) : modèle écrit comme l’énoncé (HTML, formules, `{{variable}}`), sans champ de réponse |
+| `question_solution_explanation` | facultatif | explication affichée avec la solution (§ 5.2) : modèle Jinja écrit comme l’énoncé (§ 2.10), sans champ de réponse |
 | `question_check` | facultatif | correction ; sans lui, chaque champ est corrigé par comparaison avec sa solution (§ 2.6) |
 | `question_draws` | facultatif | nombre de tirages calculés à la compilation, entier de 1 à 200 ; 20 par défaut (§ 3) |
 
 **Noms en anglais.** Tous les noms que l’auteur écrit sont en anglais, comme
 Python et HTML : champs (préfixés par `question_`), outils de `pywims`
-(`ANY`, `decimal_comma`, `is_number`, `mcq`), attributs des balises (`scoring`), et noms des
+(`ANY`, `math_expression`, `mcq`, `tex`), attributs des champs (`scoring`), et noms des
 exemples. Les anciens noms de PyWims (`avant`, `enonce`, `apres`, `tirages`,
 `bareme`, `LIBRE`, `decimal_fr`, `is_nombre`, `explication_solution`) sont refusés comme
-tout nom inconnu.
+tout nom inconnu, ainsi que les outils retirés (`py_wims`, `decimal_comma`, `is_number`).
 
-**Explication de la solution.** Elle s’écrit comme l’énoncé (HTML, formules,
-`{{variable}}`), sans chaîne Python. Ses `{{variable}}` font partie des
-valeurs affichées du tirage (`context`, § 3). Une explication calculée (étapes
-d’un algorithme, dérivée de chaque terme) est préparée en texte dans
-`question_setup`, puis affichée par `{{variable}}`.
-
-**Valeurs affichées.** Une valeur `{{variable}}`, dans l’énoncé comme dans
-l’explication, admet les balises de mise en forme du retour (§ 2.2) : `<b>`,
-`<i>`, `<strong>`, `<em>`, `<sup>`, `<sub>`, `<br>`, sans attribut ; le reste
-est échappé (un `x < 3` s’affiche tel quel).
+**Énoncé et explication** sont des modèles Jinja (§ 2.10) : HTML, formules,
+valeurs `{{ … }}`, cas `{% if %}`, répétitions `{% for %}`. Le texte qui varie
+d’un tirage à l’autre s’écrit dans le modèle, et non dans des chaînes Python
+de `question_setup`.
 
 **Signe « < » dans une formule.** L’énoncé et l’explication sont du HTML de
 l’auteur : un `<` suivi d’une lettre y ouvre une balise. Dans une formule
-(`$…$`, `$$…$$`, `\(…\)`, `\[…\]`), le `<` est donc échappé au rendu :
-`$x_1<x_2$` s’affiche comme on l’attend, au lieu d’avaler la suite de
-l’énoncé. Hors formule, le HTML de l’auteur reste intact.
+(`$…$`, `$$…$$`, `\(…\)`, `\[…\]`) de l’énoncé rendu, valeurs comprises, le
+`<` est donc échappé : `$x_1<x_2$` s’affiche comme on l’attend, au lieu
+d’avaler la suite de l’énoncé. Hors formule, le HTML reste intact.
 
 Le retour destiné à l’élève est la variable `feedback` de `question_check` (§ 2.2).
 Les paquets Pyodide sont déduits des `import` du code. Un champ inconnu est
@@ -75,8 +69,9 @@ refusé.
 - Chaque question importe explicitement ce qu’elle utilise :
   `import sympy as sp`, `from sympy import …`, `import random`, etc.
 - Les outils PyWims viennent d’un module dédié :
-  `from pywims import py_wims, is_number, math_expression, decimal_comma, mcq`
-  (`mcq` : choix d’un QCM tirés au hasard, § 10.9).
+  `from pywims import math_expression, mcq, tex, ANY`
+  (`mcq` : choix d’un QCM tirés au hasard, § 10.9 ; `tex` : écriture d’un
+  nombre ou d’une expression dans une formule, § 2.10).
   Ses fonctions internes ne sont pas visibles par l’auteur, qui ne peut donc
   pas les perturber (par exemple en écrivant `E = 3`).
 - `question_check` partage l’espace de noms de `question_setup` et y trouve les saisies de
@@ -96,8 +91,8 @@ refusé.
   exécuter de script, même si le retour reprend la saisie de l’élève. Ses
   formules sont composées par MathJax.
 - Pour lire une saisie qui contient une expression (champ texte ou case de
-  matrice), utiliser `math_expression` plutôt que `py_wims` : elle accepte
-  l’écriture des élèves (`2x`, `x^2`, `sin x`, `ln(x)`) et renvoie `None` pour
+  matrice, champ MathLive, dont la saisie arrive en texte : `x^2+1`), utiliser
+  `math_expression` : elle accepte l’écriture des élèves (`2x`, `x^2`, `sin x`, `ln(x)`) et renvoie `None` pour
   une saisie invalide. Elle s’appuie sur l’analyseur de SymPy (`parse_expr`,
   avec produit implicite et `^` pour la puissance), précédé d’un filtre : seuls
   les chiffres, les lettres, les espaces et `+ - * / ^ ( ) .` sont admis, et
@@ -125,25 +120,42 @@ refusé.
   `math_expression` des deux côtés : `math_expression(saisie) ==
   math_expression('2(x+1)')`.
 
-### 2.3 Balises de saisie
+### 2.3 Champs de réponse
 
-Chaque balise porte obligatoirement `solution=variable`, le nom d’une variable
+Un champ s’écrit dans l’énoncé comme un appel de fonction entre `{{ }}` : son
+nom entre guillemets, puis ses attributs `nom=valeur`, séparés par des
+virgules. Il porte obligatoirement `solution=variable`, le nom d’une variable
 définie par `question_setup` :
 
 ```
-{% input_text 'result' solution=total style='width:7em' %}
-{% input_text 'word' solution=noun match=loose %}
-{% input_value 'length' solution=hypotenuse tolerance=0.01 form=decimal %}
-{% input_math 'student_derivative' solution=derivative %}
-{% input_matrix 'matrix' rows=m cols=p solution=product input_style='width:2em' %}
-{% input_vmatrix 'matrix' max_rows=5 max_cols=5 solution=product %}
-{% input_radio 'answer' choices=choices solution=correct %}
-{% input_checkbox 'answers' choices=choices solution=correct columns=2 %}
-{% input_select 'verb' choices=forms solution=correct %}
+{{ input_text('result', solution=total, style='width:7em') }}
+{{ input_text('word', solution=noun, match='loose') }}
+{{ input_value('length', solution=hypotenuse, tolerance=0.01, form='decimal') }}
+{{ input_math('student_derivative', solution=derivative) }}
+{{ input_matrix('matrix', rows=m, cols=p, solution=product, input_style='width:2em') }}
+{{ input_vmatrix('matrix', max_rows=5, max_cols=5, solution=product) }}
+{{ input_radio('answer', choices=choices, solution=correct) }}
+{{ input_checkbox('answers', choices=choices, solution=correct, columns=2) }}
+{{ input_select('verb', choices=forms, solution=correct) }}
 ```
 
-**Noms.** Un nom de champ, de variable (`solution=`, `choices=`, `rows=`…) ou
-de `{{variable}}` suit la règle des identifiants de Python : lettres, accentuées
+- **Lu sans Python.** L’écriture est celle d’un appel, mais le champ n’est pas
+  évalué : la page doit connaître ses champs sans Python (§ 1). Une valeur est
+  un nombre, un texte entre guillemets, ou un **nom** de variable
+  (`solution=total`), jamais une expression (`solution=p * 2` est refusé :
+  calculez la valeur dans `question_setup`). Les mots d’une liste
+  (`form`, `match`) s’écrivent avec ou sans guillemets.
+- **Un champ par tirage, toujours le même.** Un champ ne peut pas être placé
+  dans un `{% if %}` ni dans un `{% for %}` : correction, contrôles et
+  `question_check` supposent les mêmes champs pour tous les tirages. Le
+  compilateur le vérifie sur l’énoncé rendu de chaque tirage : chaque champ y
+  apparaît exactement une fois. Pour adapter une question au tirage, on change
+  le texte autour du champ, pas le champ.
+- **Ancienne notation.** `{% input_value 'n' solution=s %}` est refusé, avec
+  un message qui donne la nouvelle écriture.
+
+**Noms.** Un nom de champ ou de variable (`solution=`, `choices=`, `rows=`…)
+suit la règle des identifiants de Python : lettres, accentuées
 comprises (`résultat`, `Δx`), chiffres et `_`, sans chiffre en tête. Comme
 Python, la page ramène chaque nom à sa forme NFKC : un « é » écrit en deux
 caractères (e suivi de l’accent) désigne la même variable que « é ».
@@ -193,7 +205,15 @@ Les champs MathLive ont leur propre clavier virtuel et ne sont pas concernés.
 ### 2.4 Contrôles à la compilation
 
 Le compilateur refuse la question, avec un message précis, si :
-- une balise n’a pas de `solution=` ou désigne une variable absente ;
+- un champ n’a pas de `solution=` ou désigne une variable absente ;
+- un champ est écrit dans l’ancienne notation `{% input_… %}`, ou n’apparaît
+  pas exactement une fois dans l’énoncé rendu d’un tirage (§ 2.3) ;
+- le modèle Jinja de l’énoncé ou de l’explication est invalide, utilise une
+  variable que `question_setup` ne définit pas, ou lève une erreur au rendu
+  d’un tirage (le champ, la ligne du modèle et la graine sont indiqués) ;
+- l’énoncé ou l’explication contient trois accolades de suite
+  (`\frac{{{n}}}{2}`) : Jinja y lirait `{{` suivi de `{n}`, une erreur
+  incompréhensible ; le message dit d’écrire `\frac{ {{n}} }{2}` ;
 - la solution n’a pas la forme attendue par le champ (dimensions de matrice) ;
 - un nom de champ est déjà défini par `question_setup`, ou réservé (`ok_answer`,
   `answer_text`, `feedback`, noms du module `pywims`, mots-clés Python) ;
@@ -207,11 +227,6 @@ Le compilateur refuse la question, avec un message précis, si :
   par un élève, est jugée fausse par `question_check`, ou `question_check` lève une exception
   (§ 3, « Cohérence ») ;
 - une question à choix ne respecte pas les règles du § 10.6.
-
-Il **avertit** sans refuser, dans la ligne d’état de l’aperçu et après la
-compilation, si l’énoncé contient trois accolades de suite
-(`\frac{{{n}}}{{{m}}}`) : cela fonctionne, mais se relit mal ; on écrit
-`\frac{ {{n}} }{ {{m}} }`, avec le même résultat.
 
 ### 2.5 Exemple
 
@@ -245,7 +260,7 @@ derivative = diff(function, x)
 %
 Soit la fonction polynomiale $f(x) = {{ function }}$.
 Donnez sa dérivée $f'(x)$ :
-{% input_math 'student_derivative' solution=derivative %}
+{{ input_math('student_derivative', solution=derivative) }}
 %
 % question_solution_explanation
 %
@@ -321,9 +336,9 @@ sans `question_check` : la comparaison y est sans ambiguïté.
   éléments (`(1, 5)` n’est pas `(1.5)`). L’élève écrit le séparateur que montre
   la solution. Un flottant s’affiche comme Python l’écrit (`0.3`), après
   arrondi à 12 chiffres significatifs, qui efface les artefacts de calcul
-  (`0.1 + 0.2` donne `0.3`, et non `0.30000000000000004`). Pour une écriture
-  française, l’auteur donne une solution texte, par exemple avec l’outil
-  `decimal_comma(x, 2)` du module `pywims`, qui renvoie `"1,41"`.
+  (`0.1 + 0.2` donne `0.3`, et non `0.30000000000000004`). Un nombre attendu
+  en écriture française se demande avec `input_value` (§ 2.8), qui accepte la
+  virgule et le point.
 - **Plusieurs écritures justes** : pour un nombre (fraction non simplifiée,
   valeur approchée, virgule ou point), `input_value` (§ 2.8) ; pour une
   expression (ordre des termes), l’auteur écrit `question_check`. `PROMPT.md`
@@ -389,7 +404,7 @@ l’écriture française, ni une valeur approchée, ni une fraction non simplifi
 n’exigent plus un `question_check`.
 
 ```
-{% input_value 'length' solution=hypotenuse tolerance=0.01 form=decimal %}
+{{ input_value('length', solution=hypotenuse, tolerance=0.01, form='decimal') }}
 ```
 
 | Attribut | Statut | Rôle |
@@ -427,7 +442,12 @@ n’exigent plus un `question_check`.
   Quand la solution ne s’écrit pas exactement ainsi (`1/3` en décimal, `sqrt(2)`),
   elle est arrondie au nombre de décimales que permet la tolérance (la moitié
   d’une unité du dernier chiffre ne dépasse pas la tolérance) : `tolerance=0.01`
-  affiche `0,33`.
+  affiche `0,33`. L’arrondi se fait au plus proche, les demis vers le haut,
+  comme en classe. La solution s’écrit donc **exacte**, avec la tolérance de
+  l’arrondi demandé (`tolerance=0.005` pour le centième), sans l’arrondir dans
+  `question_setup` : il n’y a pas d’outil d’arrondi dans `pywims`. Seule une
+  valeur arrondie qui sert ensuite à un calcul (propagation d’un arrondi) se
+  calcule dans la question.
 - **Contrôles à la compilation** (§ 2.4), pour chaque tirage : la solution est
   un nombre réel (ni texte, ni booléen, ni matrice ; `ANY` reste admis) ; un
   irrationnel, ou un décimal infini avec `form=decimal` ou `scientific`, a une
@@ -456,11 +476,11 @@ n’exigent plus un `question_check`.
 ### 2.9 Texte à trous : `input_select`
 
 Une liste déroulante placée dans une phrase, pour un texte à trous : « La
-fonction est {% input_select 'sens' choices=senses solution=correct %} sur
+fonction est {{ input_select('sens', choices=senses, solution=correct) }} sur
 $[0 ; +\infty[$. »
 
 ```
-{% input_select 'verb' choices=forms solution=correct shuffle=0 %}
+{{ input_select('verb', choices=forms, solution=correct, shuffle=0) }}
 ```
 
 | Attribut | Statut | Rôle |
@@ -495,6 +515,69 @@ $[0 ; +\infty[$. »
   l’auteur, ou `None`. Pas de barème : une liste est un trou parmi d’autres.
 - **Correction** : le bon choix est sélectionné, en vert.
 
+### 2.10 Modèles : Jinja
+
+L’énoncé et l’explication sont des modèles **Jinja 2** (version de Pyodide,
+3.1), rendus par Python **à la compilation**, pour chaque tirage, avec
+l’espace de noms de `question_setup` : ses variables, ses fonctions et ce
+qu’il importe. La page reçoit l’énoncé rendu de chaque tirage ; elle n’exécute
+jamais Jinja et n’a pas besoin de Python pour l’afficher (§ 1).
+
+```
+{% if kind == "exactly" %}
+Quelle est la probabilité qu’exactement {{ k }} photons traversent le polariseur ?
+{% else %}
+Quelle est la probabilité qu’au moins un photon traverse le polariseur ?
+{% endif %}
+$\mathcal{B}\left({{ n }}, {{ p }}\right)$, $p \approx {{ p|dec(2) }}$.
+$$\mathbb{P}(X = k) = {{ value|frac }}$$
+```
+
+- **Tout Jinja** est admis : `{{ expression }}`, `{% if %}`, `{% for %}`,
+  `{% set %}`, macros, filtres, commentaires `{# … #}`, sauf les champs dans
+  un `{% if %}` ou un `{% for %}` (§ 2.3). Jinja ne voit pas d’autre fonction
+  de Python que les siennes (`range`, filtres `length`, `join`, `round`…) :
+  une fonction utile se définit ou s’importe dans `question_setup`.
+- **Variable absente** : erreur à la compilation (`StrictUndefined` de Jinja),
+  au lieu d’un texte vide.
+- **Valeurs insérées telles quelles**, sans échappement : une valeur, une
+  macro ou une boucle peut produire du HTML. Seul le `<` des formules est
+  échappé, sur l’énoncé rendu (§ 2.1). Le texte de l’élève n’entre jamais dans
+  un modèle : il ne paraît que dans un retour, échappé (§ 2.2).
+- **Accolades de TeX** : `{{` ouvre toujours une valeur Jinja. On écrit
+  `x^{ {{n}} }` (espaces), et non `x^{{{n}}}`, que le compilateur refuse
+  (§ 2.4). Un `{#` de TeX ouvrirait un commentaire Jinja.
+
+**Écriture d’une valeur : `tex`.** Chaque `{{ valeur }}` est écrite par
+l’outil `tex` de `pywims`, celui que `question_setup` appelle aussi pour
+fabriquer un texte (les choix d’un QCM sont des listes Python, § 10.1) :
+
+| Valeur | `{{ v }}`, `tex(v)` | `{{ v\|frac }}`, `tex(v, frac=True)` | `{{ v\|dec }}`, `tex(v, dec=True)` | `{{ v\|dec(2) }}`, `tex(v, digits=2)` |
+|---|---|---|---|---|
+| `Rational(9, 10)`, `Fraction(9, 10)` | `9/10` | `\frac{9}{10}` | `0{,}9` | `0{,}9` |
+| `Rational(1, 3)` | `1/3` | `\frac{1}{3}` | `1/3` (pas de décimal fini) | `0{,}33` |
+| `-Rational(3, 4)` | `-3/4` | `-\frac{3}{4}` | `-0{,}75` | `-0{,}75` |
+| `3` | `3` | `3` | `3` | `3` |
+| `0.1 + 0.2` | `0.3` | `0.3` | `0{,}3` | `0{,}3` |
+| `sqrt(2)` | `\sqrt{2}` | `\sqrt{2}` | refusé | `1{,}41` |
+| `x**2/2 + 1` | `x^{2} / 2 + 1` | `\frac{x^{2}}{2} + 1` | refusé | refusé |
+| `Matrix(…)` | entre crochets | idem | refusé | refusé |
+| texte | tel quel | tel quel | refusé | refusé |
+
+- **Fractions en ligne par défaut** (`a/b`), lisibles dans le texte et dans
+  une formule `$…$`. `|frac` les écrit en grand, pour une formule centrée
+  `$$…$$` ou un `$\displaystyle …$`. Une expression SymPy suit la même règle
+  (`fold_short_frac` de `latex`) ; ses autres écritures sont celles de
+  `sympy.latex`, que `tex` appelle.
+- **Décimal à la française** : `|dec` écrit un décimal fini avec la virgule
+  `{,}` de TeX (MathJax met sinon une espace après une virgule), et laisse les
+  autres nombres en fraction ; `|dec(n)` arrondit à n décimales, au plus
+  proche, demis vers le haut (`round` de Python arrondit les demis au pair).
+  `{,}` ne vaut que dans une formule : `|dec` s’écrit entre `$`.
+- **Flottant** : 12 chiffres significatifs, avec un point (§ 2.6).
+- **Refus** : une option impossible (`|dec` sur un texte ou une expression)
+  arrête la compilation, avec le nom du champ du modèle et la ligne.
+
 ## 3. Compilation
 
 - Le compilateur charge Pyodide (version **0.27.7**, la même que le fichier
@@ -518,18 +601,22 @@ $[0 ; +\infty[$. »
   quelques secondes, bien plus sur un navigateur lent) n’est pas compté : il
   est fait au chargement des paquets, avant toute exécution limitée.
 - **Reproductibilité.** Chaque graine est exécutée deux fois, dans deux espaces
-  de noms neufs ; les deux tirages (`context`, `solutions`, choix) doivent
-  être identiques. Sinon la compilation est refusée :
+  de noms neufs ; les deux tirages (énoncé et explication rendus, `context`,
+  `solutions`, choix) doivent être identiques. Sinon la compilation est refusée :
   « question_setup » utilise un hasard que la graine ne fixe pas (heure,
   `numpy.random.default_rng()`, `secrets`…), et le navigateur ne pourrait pas
   rejouer le tirage. L’erreur apparaît ainsi chez l’auteur, et non chez
   l’élève (« … diffère », § 5.1).
 - Un tirage enregistre :
   - `seed` : la graine ;
-  - `context` : la valeur affichée de chaque `{{variable}}` de l’énoncé et de
-    l’explication, et de chaque dimension de matrice, en texte ; un objet SymPy est écrit en LaTeX
-    (matrices entre crochets), sans `\displaystyle` : l’auteur choisit la
-    taille des formules (`$\displaystyle {{f}}$`, ou `$$ {{f}} $$`) ;
+  - `statement`, `explanation` : l’énoncé et l’explication rendus par Jinja
+    (§ 2.10), où chaque champ est remplacé par une marque à son nom, que la
+    page remplace par le champ ;
+  - `context` : pour le contrôle du tirage rejoué (§ 5.1), la valeur de chaque
+    variable de `question_setup` lue par les modèles (selon
+    `jinja2.meta.find_undeclared_variables`), écrite par `tex`, et de chaque
+    dimension de matrice ; les fonctions, modules et classes en sont exclus,
+    leur texte n’étant pas reproductible ;
   - `solutions` : la valeur convertie de chaque champ (§ 2.3).
 - **Cohérence.** Pour chaque tirage, dans le même espace de noms, le
   compilateur saisit la solution de chaque champ comme le ferait un élève,
@@ -550,7 +637,7 @@ $[0 ; +\infty[$. »
   - champ à choix : l’indice ou la liste des indices de la solution.
   Les tests appliquent ce contrôle aux exemples du dépôt, sur 20 tirages ou
   plus (`?draws=200`, § 8).
-- Les tirages identiques (même `context` et mêmes `solutions`) sont fusionnés.
+- Les tirages identiques (même énoncé rendu, même `context` et mêmes `solutions`) sont fusionnés.
   Une question sans aléatoire n’a donc qu’un tirage.
 - Les tirages sont intégrés au fichier généré en JSON, dans un bloc de texte
   échappé, comme les autres champs. Pas de compression, pas de minification :
@@ -584,8 +671,9 @@ $[0 ; +\infty[$. »
 - **Aperçu.** La page réelle de la question s’affiche dans un cadre isolé
   (`sandbox="allow-scripts"`), et elle fonctionne comme pour l’élève : saisir,
   « Vérifier », retour de l’auteur, « Correction » (champs remplis et explication),
-  « Nouvel énoncé ». D’abord un tirage provisoire où chaque variable porte son
-  nom, boutons inactifs ; puis 5 tirages réels calculés par le Python de la page
+  « Nouvel énoncé ». D’abord un tirage provisoire, sans Python : chaque `{{ … }}` y est
+  affiché tel qu’il est écrit, les `{% … %}` sont retirés (les deux branches
+  d’un `{% if %}` paraissent), boutons inactifs ; puis 5 tirages réels calculés par le Python de la page
   du compilateur, chargé une seule fois et gardé en mémoire pour chaque
   question. L’aperçu montre toujours le premier (le cadre porte
   `data-preview="true"`, que lit `question.js`), pour que ses nombres ne
@@ -621,11 +709,11 @@ $[0 ; +\infty[$. »
 
 ### 5.1 Ouverture
 
-1. Pour chaque question, un tirage est choisi au hasard. Son énoncé est rendu
-   tout de suite à partir de `context`.
+1. Pour chaque question, un tirage est choisi au hasard. Son énoncé, rendu à la
+   compilation (`statement`, § 3), s’affiche tout de suite.
 2. MathJax compose les formules. Il n’est chargé (≈ 600 Ko) que si la feuille
    peut en afficher : un délimiteur de formule (`$`, `\(`, `\[`) dans un
-   énoncé ou une explication, une valeur ou un choix d’un tirage, ou
+   énoncé ou une explication rendus, ou un choix d’un tirage, ou
    une question qui a un `question_check`, dont le retour peut contenir une formule.
    MathLive n’est chargé que si une question en a besoin.
 3. Seulement pour une question qui a un `question_check` (§ 2.6), et seulement au
@@ -921,11 +1009,11 @@ comparée à la solution, sans Python, sauf `question_check` (§ 10.3). Le compi
 question AMC en fichier `.pwq` est confiée à un LLM, guidé par `PROMPT.md`
 (§ 10.8).
 
-### 10.1 Balises
+### 10.1 Champs
 
 ```
-{% input_radio 'answer' choices=choices solution=correct %}
-{% input_checkbox 'answers' choices=choices solution=correct columns=2 fixed_last=1 scoring='b=1,m=-0.5' %}
+{{ input_radio('answer', choices=choices, solution=correct) }}
+{{ input_checkbox('answers', choices=choices, solution=correct, columns=2, fixed_last=1, scoring='b=1,m=-0.5') }}
 ```
 
 | Attribut | Statut | Rôle |
@@ -939,9 +1027,9 @@ question AMC en fichier `.pwq` est confiée à un LLM, guidé par `PROMPT.md`
 
 Les indices commencent à 0, dans l’ordre de la liste `choices`.
 
-Un choix est un texte (formules TeX admises), échappé comme une valeur
-`{{variable}}`, ou un objet SymPy, affiché comme une formule. L’énoncé de la
-question s’écrit dans `question_statement`, avant la balise, comme pour les autres champs.
+Un choix est un texte (formules TeX admises ; `tex` y écrit un nombre,
+§ 2.10), ou un objet SymPy, affiché comme une formule. L’énoncé de la
+question s’écrit dans `question_statement`, avant le champ, comme pour les autres champs.
 
 Aucun choix n’est ajouté automatiquement. Le concepteur qui veut un choix
 « Aucune de ces réponses » l’écrit lui-même en dernier, avec `fixed_last=1` ;
@@ -1148,7 +1236,7 @@ choices, correct = mcq(correct=a * b, wrong=[a + b, a * b + 1, a * (b - 1), a * 
   le compilateur la signale avec la graine. La réserve doit donc être plus
   large que le besoin, ou sans doublon possible.
 - Le résultat s’utilise comme une liste écrite à la main :
-  `{% input_radio 'answer' choices=choices solution=correct %}`. L’ordre étant
+  `{{ input_radio('answer', choices=choices, solution=correct) }}`. L’ordre étant
   déjà tiré au hasard, le mélange du compilateur ne change rien ; avec
   `shuffle=0`, l’ordre de `mcq` est gardé.
 
@@ -1395,8 +1483,8 @@ une question se lit d’un bloc, les variables de `question_setup` servent dans
 l’énoncé. CodeMirror 5 (cdnjs, version fixée, chargé à la première ouverture)
 colore chaque section selon son contenu : les lignes `%` et `% question_…` en
 intertitres, Python pour `question_setup` et `question_check`, HTML pour
-l’énoncé et l’explication, avec en couleur les balises `{% … %}`, les variables
-`{{ … }}` et les formules. Chaque section se replie par son intertitre.
+l’énoncé et l’explication, avec en couleur les champs `{{ input_…(…) }}`,
+le reste de Jinja (`{{ … }}`, `{% … %}`) et les formules. Chaque section se replie par son intertitre.
 Numéros de ligne, Tab (quatre espaces), retour à la ligne indenté, Ctrl+Z (chaque
 question garde son historique pendant la visite).
 
@@ -1453,10 +1541,7 @@ courante ; sinon, on pourrait croire perdues les suivantes.
 - **Glisser-déposer** (balises PyWims `input_drag` / `input_drop`). Chantier
   ultérieur.
 - **Figures interactives** avec GeoGebra et/ou JSXGraph. Chantier ultérieur.
-- **Outils SymPy pour `question_check`** (comparer une expression saisie en une ligne),
-  et une seule façon de lire les saisies : `py_wims` passe par `sympify`, sans
-  le filtre de `math_expression` ; aucune des deux n’évalue la saisie, mais
-  `py_wims` garde l’ordre des termes (`==` en dépend).
+- **Outils SymPy pour `question_check`** (comparer une expression saisie en une ligne).
 - **Tests hors du navigateur** (Node.js) et intégration continue sur GitHub,
   avant la diffusion large.
 - **Clavier choisi par l’auteur** pour une case ou un champ (pavé numérique
@@ -1466,6 +1551,3 @@ courante ; sinon, on pourrait croire perdues les suivantes.
   `array`, rendu, MathLive). Mesure d’octobre 2026 : MathJax pèse 603 Ko, et
   compose les 21 questions d’une activité en 2,5 s sur un processeur ralenti
   4 fois.
-- **`py_wims` sur l’analyseur de `math_expression`** (filtre et `parse_expr`) :
-  son comportement changerait peu, car aucune des deux n’évalue la saisie ;
-  seuls `==` (ordre des termes) et les écritures admises différeraient.

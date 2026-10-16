@@ -68,6 +68,63 @@ beaucoup de « simplifications » évidentes ont déjà été essayées.
   Elle se manie mal au doigt et au clavier, et le `<select>` natif suffit aux
   mots d’un texte à trous.
 
+### 2.10 Modèles : Jinja
+
+- **Pourquoi Jinja (octobre 2026).** Le format imitait Jinja (`{{ }}`,
+  `{% %}`) sans en avoir le sens : `{{ }}` n’admettait qu’un nom, et il n’y
+  avait ni `{% if %}` ni `{% for %}`. Tout texte qui variait avec le tirage
+  se fabriquait donc en chaînes Python dans `question_setup` (`f"…"`, accolades
+  de LaTeX doublées, `\\`), illisibles ; et les IA, qui connaissent Jinja,
+  écrivaient des `{% if %}` refusés.
+- **Rendu à la compilation, pas dans la page.** La page reste sans Python pour
+  les questions sans `question_check` (§ 1), et Jinja est déjà dans Pyodide.
+  Prix : un énoncé rendu par tirage dans le fichier, au lieu d’un modèle et de
+  valeurs ; c’est du même ordre que les chaînes fabriquées qu’il remplace.
+  Perdu : l’aperçu provisoire où chaque variable avait sa valeur nommée ; il
+  montre désormais le modèle brut, les deux branches d’un `{% if %}` comprises.
+- **Champs hors des `{% if %}` et `{% for %}`** (« version limitée »). Des
+  champs qui changent d’un tirage à l’autre obligeraient correction,
+  contrôles et `question_check` à gérer une liste de champs par tirage : un
+  vrai chantier, écarté pour l’instant. L’affichage progressif des questions à
+  étapes reste en CSS (`:has`).
+- **Notation des champs `{{ input_…(…) }}`.** Écartés :
+  - garder `{% input_… %}` et l’enseigner à Jinja par une extension :
+    l’extension serait du code à maintenir, et `{% %}` désigne pour Jinja une
+    instruction, pas un affichage ;
+  - garder `{% input_… %}`, retiré avant le rendu et remis après, sans
+    changer la notation : deux syntaxes proches pour deux sens, que les IA
+    confondraient avec les instructions de Jinja ;
+  - évaluer l’appel par Jinja : la page doit connaître les champs sans Python,
+    et `solution=` désigne une variable par son nom (la page la recharge dans
+    `question_check`), pas une valeur.
+  L’ancienne notation est refusée, sans compatibilité, comme les anciens noms
+  (§ 2.1) ; les questions ont été converties par script.
+- **Valeurs non échappées.** Avant Jinja, une valeur n’admettait que `<b>`,
+  `<i>`, `<br>`… Gardé, cet échappement aurait aussi échappé le HTML d’une
+  macro. Le texte de l’élève n’entre jamais dans un modèle : rien à protéger.
+- **Fractions en ligne par défaut, `|frac` pour les fractions en grand.**
+  Écartée : une règle automatique selon la place (`a/b` en ligne, `\frac` dans
+  `$$…$$` ou après `\displaystyle`) ; la même variable se serait écrite
+  différemment selon l’endroit, sans que le modèle le dise.
+- **Un seul outil d’écriture, `tex`**, filtre par défaut de Jinja et fonction
+  de Python (les choix d’un QCM sont fabriqués en Python). Il remplace les
+  `tex()`, `num()`, `dec()` recopiés dans les questions, et `decimal_comma`.
+  Il s’appuie sur `sympy.latex` (`fold_short_frac`), et n’ajoute que ce que
+  `latex` ne fait pas : un rationnel en décimal (`0,9` et non `9/10`),
+  l’arrondi des demis vers le haut, les `Fraction` et `float` de Python.
+  Son nom n’est pas `latex`, que `from sympy import latex` écraserait.
+- **Pas d’outil d’arrondi.** Les `hundredth`, `tenth`, `rounded` des
+  questions servaient surtout à arrondir une solution, ce que fait déjà
+  `input_value` avec sa tolérance (§ 2.8) ; l’affichage arrondi passe par
+  `|dec(n)`. Le seul autre cas (propagation d’un arrondi) reste rare et se
+  calcule dans la question, commenté.
+- **Fonctions de Python dans Jinja** (`zip`, `len`…) : non offertes pour
+  l’instant ; s’ajouteront au besoin, sans rien casser.
+- **Outils retirés : `py_wims`, `decimal_comma`, `is_number`.** `py_wims`
+  lisait la saisie par `sympify`, sans le filtre de `math_expression` ;
+  `decimal_comma` est remplacé par `tex` et `input_value` ; `is_number` ne
+  servait plus.
+
 ## 3. Compilation
 
 - **Hachage fixe** (`PYTHONHASHSEED=0`). Mesuré : `{"pomme", "poire", "kiwi",
