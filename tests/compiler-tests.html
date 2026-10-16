@@ -532,7 +532,8 @@
           ["fields", `const end = '${close("script")}>';`, "@@FIELDS@@"],
           ["pythonWorker", `const end = '${close("script")}>';`, "@@PYTHON_WORKER@@"],
           ["python", `x = '${close("script")}'`, "@@PYTHON_RUNTIME@@"],
-          ["questionCss", `/* ${close("style")}> */`, "@@CSS@@"]
+          // Dans une règle : un commentaire CSS est retiré de la page avant ce contrôle.
+          ["questionCss", `a::after { content: "${close("style")}>"; }`, "@@CSS@@"]
         ]) {
           let message = "";
           try {

@@ -522,10 +522,12 @@ def main():
                 if page.is_visible("#scoring-warning"):
                     raise AssertionError("avertissement de note affiché hors du mode « Activité unique »")
                 page.select_option("#output-mode", "activity")
+                # Message bref ; la question sans barème est nommée au survol.
                 warning = page.text_content("#scoring-warning")
-                if not page.is_visible("#scoring-warning") or "Aucune note ne sera affichée" not in warning \
-                        or "pgcd.pwq" not in warning:
-                    raise AssertionError(f"avertissement attendu pour une activité en partie notée : {warning}")
+                unscored = page.get_attribute("#scoring-warning", "title") or ""
+                if not page.is_visible("#scoring-warning") or "n’affichera pas de note" not in warning \
+                        or "pgcd.pwq" not in unscored:
+                    raise AssertionError(f"avertissement attendu pour une activité en partie notée : {warning} / {unscored}")
                 page.select_option("#output-mode", "separate")
                 page.click("#select-visible")
                 page.click("#select-visible")

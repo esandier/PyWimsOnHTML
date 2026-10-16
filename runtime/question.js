@@ -118,12 +118,13 @@ window.PyWimsQuestion = (() => {
     // onSuccess est appelé à la première vérification entièrement juste de l’élève, onScoreChange
     // à chaque changement de la note d’une question notée, onFeedback quand un retour s’affiche ou
     // s’efface (la zone de retour commune du style compact, gérée par la feuille).
-    constructor(section, index, { onSuccess, onScoreChange, onFeedback } = {}) {
+    // draws : les tirages, lus (et décompressés) par la feuille.
+    constructor(section, index, { draws, onSuccess, onScoreChange, onFeedback } = {}) {
       const dataElement = section.querySelector(".pw-question-data");
       this.definition = Object.fromEntries(
         [...dataElement.querySelectorAll("[data-field]")].map(field => [field.dataset.field, field.textContent])
       );
-      this.draws = JSON.parse(dataElement.querySelector("[data-draws]")?.textContent || "[]");
+      this.draws = draws;
       this.section = section;
       this.index = index;
       // Préfixe des identifiants des champs : deux questions peuvent nommer un champ de la même façon.

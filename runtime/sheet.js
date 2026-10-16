@@ -1,7 +1,7 @@
 // La feuille : crée une question par section, et gère ce qui les réunit (progression et sa
 // mémoire, note indicative, aide, célébration, redimensionnement). Une question seule n’a ni
 // progression ni note indicative. Script classique, après fields.js et question.js.
-(() => {
+(async () => {
   const { reduceMotion } = PyWimsFields;
   const { Question, formatScore } = PyWimsQuestion;
   const singleQuestion = document.body.dataset.sheet === "single";
@@ -176,6 +176,16 @@
   // déplacé ; la zone, et non le retour, annonce donc le contenu (aria-live), car un retour
   // composé dans l’emplacement invisible de la question n’est pas annoncé.
   // Sur écran étroit, rien n’est déplacé : le retour reste sous sa question.
+  // Tirages d’une section : JSON, ou JSON compressé (gzip) écrit en base64 par compressDraws (assemble.js).
+  async function readDraws(section) {
+    const element = section.querySelector(".pw-question-data [data-draws]");
+    if (!element) return [];
+    if (element.dataset.draws !== "gzip") return JSON.parse(element.textContent);
+    const bytes = Uint8Array.from(atob(element.textContent.trim()), character => character.charCodeAt(0));
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+    return JSON.parse(await new Response(stream).text());
+  }
+
   const compactStyle = !singleQuestion && document.body.dataset.style === "compact";
   const wideScreen = matchMedia("(min-width: 1001px)");
   const sections = [...document.querySelectorAll(".pw-question")];
@@ -250,8 +260,25 @@
     });
   }
 
+  // Tirages de chaque question : en JSON, ou compressés (SPECIFICATION.md, § 5.10). Sans DecompressionStream
+  // (navigateur antérieur à 2023), la page le dit au lieu de rester vide.
+  let drawLists;
+  try {
+    drawLists = await Promise.all(sections.map(readDraws));
+  } catch (error) {
+    for (const section of sections) {
+      const message = document.createElement("p");
+      message.textContent = typeof DecompressionStream === "undefined"
+        ? "Ce navigateur est trop ancien pour cette page (il faut Safari 16.4, Firefox 113 ou Chrome 80, ou plus " +
+          "récent). Demandez à votre enseignant la version « pour navigateur ancien »."
+        : `Les tirages de cette question sont illisibles : ${error.message}`;
+      section.append(message);
+    }
+    return;
+  }
   const questions = sections.map(
     (section, index) => new Question(section, index, {
+      draws: drawLists[index],
       // Une question seule n’a pas de progression affichée ; dans un LMS, sa réussite est transmise (100 %).
       onSuccess: singleQuestion ? (scorm ? () => saveProgress(questions) : null) : () => {
         updateProgress(questions);

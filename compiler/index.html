@@ -246,10 +246,9 @@
       display: flex;
       flex-wrap: wrap;
       align-items: baseline;
-      justify-content: space-between;
       gap: 0 0.75rem;
-      margin: 0 0 0.3rem;
     }
+    .selection-row[hidden] { display: none; }
     #selection-count { margin: 0; font-size: 0.8rem; }
     /* Action secondaire de la liste : un lien plutôt qu’un bouton plein, pour ne pas concurrencer
        « Compiler ». */
@@ -310,6 +309,7 @@
     .activity-title-field { display: flex; flex: 1 1 14rem; align-items: center; gap: 0.4rem; min-width: 0; }
     #activity-title { flex: 1 1 auto; min-width: 0; }
     .compact-style-field { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 0.3rem; white-space: nowrap; }
+    .compact-style-field[hidden] { display: none; }
 
     /* Liste d’ordre : environ six lignes visibles, puis elle défile seule et l’aperçu garde sa place. */
     .order-heading { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.5rem; margin-bottom: 0.5rem; }
@@ -605,6 +605,13 @@
            de chaque ligne. -->
       <div class="panel-top">
         <button id="back-to-list" class="back-button" type="button" title="Retour à la liste" aria-label="Retour à la liste" hidden>←</button>
+        <!-- Sélection de la liste, en tête du panneau à côté de « Coller » : sous le filtre, elle prenait une
+             ligne de la liste. Masquée dans l’éditeur. -->
+        <div class="selection-row" id="selection-row">
+          <p id="selection-count" class="muted" aria-live="polite">Aucune question sélectionnée.</p>
+          <!-- Agit sur les questions visibles, celles que la recherche laisse affichées. -->
+          <button id="select-visible" class="link-button" type="button" hidden>Tout sélectionner</button>
+        </div>
         <!-- Question écrite par une IA : coller sa réponse (§ 11.10) ; le prompt se copie depuis le bandeau.
              En tête du panneau, à droite : sur la ligne du dossier, il écrasait le nom du dossier. -->
         <div class="paste-row">
@@ -616,11 +623,6 @@
       <div class="filter-row">
         <label for="question-search" class="visually-hidden">Filtrer les questions par nom ou mot-clé</label>
         <input id="question-search" type="search" placeholder="Filtrer par nom ou mot-clé (ex. PGCD)" autocomplete="off">
-      </div>
-      <div class="selection-row">
-        <p id="selection-count" class="muted" aria-live="polite">Aucune question sélectionnée.</p>
-        <!-- Agit sur les questions visibles, celles que la recherche laisse affichées. -->
-        <button id="select-visible" class="link-button" type="button" hidden>Tout sélectionner</button>
       </div>
       <ul id="question-list" aria-label="Questions du dossier"></ul>
       <p id="list-empty" class="muted">Ouvrez un dossier pour afficher ses questions.</p>
@@ -645,6 +647,9 @@
         <!-- Style « feuille de TD » de l’activité (SPECIFICATION.md, § 5.7). -->
         <label class="compact-style-field"><input id="compact-style" type="checkbox"> Style compact</label>
       </span>
+      <!-- Tirages non compressés, pour un navigateur sans DecompressionStream (SPECIFICATION.md, § 5.10) ; pour
+           tous les modes, donc hors du titre d’activité, mais à côté du style compact. -->
+      <label class="compact-style-field" id="old-browsers-field" hidden title="Page plus lourde, lisible par un navigateur antérieur à 2023 (iPad resté en iPadOS 15, par exemple)"><input id="old-browsers" type="checkbox"> Pour navigateur ancien</label>
     </div>
 
     <div class="main-column">

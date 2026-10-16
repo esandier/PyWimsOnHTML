@@ -651,10 +651,11 @@ fabriquer un texte (les choix d’un QCM sont des listes Python, § 10.1) :
   plus (`?draws=200`, § 8).
 - Les tirages identiques (même énoncé rendu, même `context` et mêmes `solutions`) sont fusionnés.
   Une question sans aléatoire n’a donc qu’un tirage.
-- Les tirages sont intégrés au fichier généré en JSON, dans un bloc de texte
-  échappé, comme les autres champs. Pas de compression, pas de minification :
-  le Python doit garder son indentation.
-- Les scripts et styles du projet sont intégrés tels quels dans des balises
+- Les tirages sont intégrés au fichier généré compressés, ou en JSON pour un
+  export « pour navigateur ancien » et pour l’aperçu (§ 5.10).
+- Les commentaires du code du projet sont retirés de la page générée (§ 5.10) ;
+  pas d’autre minification : le Python doit garder son indentation.
+- Les scripts et styles du projet sont intégrés dans des balises
   `<script>` et `<style>`. L’assemblage refuse un fichier qui contient
   `</script` (ou `</style` pour une feuille de style) : le navigateur y
   fermerait la balise et la page serait cassée sans message. On refuse au lieu
@@ -933,6 +934,27 @@ archive `…-scorm.zip` qui contient `imsmanifest.xml` et la feuille,
   (`sheet.js`) s’en sert s’il trouve l’API SCORM du LMS dans une fenêtre
   parente ou dans celle qui l’a ouverte.
 
+### 5.10 Poids de la page
+
+- Les tirages d’une question se répètent presque mot pour mot d’un tirage à
+  l’autre : ils sont compressés (gzip, écrit en base64,
+  `<pre data-draws="gzip">`), ce qui les divise par quinze environ. La page
+  les décompresse à l’ouverture avec `DecompressionStream`, qui demande
+  Chrome ou Edge 80, Firefox 113 ou Safari 16.4 (2023) au moins. Sur iPad,
+  tous les navigateurs utilisent le moteur de Safari : ce qui compte est la
+  version d’iPadOS, et un iPad resté en iPadOS 15 ne peut pas lire la page.
+  Un navigateur trop ancien affiche, à la place de chaque question, une
+  phrase qui demande la version « pour navigateur ancien ».
+- La case « Pour navigateur ancien » de l’atelier, à côté de « Style
+  compact » (visible dès qu’une question est cochée), garde les tirages en JSON (`<pre data-draws>`), dont seuls `&` et
+  `<` sont échappés. La page est alors environ quatre fois plus lourde pour
+  une activité (21 questions de probabilités : 1,5 Mo au lieu de 380 Ko).
+- Les commentaires du code du projet (mise en page, styles, scripts, module
+  `pywims`) sont retirés de la page : ils pesaient plus d’un tiers d’une
+  question seule. En JavaScript et en Python, seules les lignes entières de
+  commentaire partent, un `//` en fin de ligne pouvant être dans une chaîne.
+  Le contenu des questions n’est jamais modifié.
+
 ## 6. Organisation du code
 
 | Fichier | Rôle |
@@ -1136,9 +1158,12 @@ directive absente d’un barème donné prend la valeur indiquée :
   (seulement sa progression), et l’aide n’en parle pas. Une question seule
   n’a jamais de note. Dans tous les cas, le barème reste vérifié à la
   compilation. Dans l’atelier, en mode « Activité unique », si une partie
-  seulement des questions choisies a un barème, un avertissement qui nomme
-  les questions sans barème s’affiche en haut du cadre de l’aperçu, sous
-  l’ordre des questions, dès le choix ; l’export reste possible.
+  seulement des questions choisies a un barème, un avertissement bref
+  (« Certaines questions n’ayant pas de barème, l’activité n’affichera pas de
+  note, uniquement la progression. ») s’affiche en haut du cadre de l’aperçu,
+  sous l’ordre des questions, dès le choix ; il nomme les questions sans barème
+  au survol, pour ne pas prendre la hauteur de l’aperçu. L’export reste
+  possible.
 
 ### 10.6 Contrôles à la compilation
 
@@ -1410,10 +1435,11 @@ Réalisées ; leur déroulement est dans `DECISIONS.md`.
   discrètes (petits boutons) : le compilateur est un environnement de travail,
   dont l’éditeur et l’aperçu sont l’essentiel. Dessous, les cadres commencent à
   la même hauteur :
-  - à gauche, en tête, « ← » (dans l’éditeur seulement) et, à droite,
+  - à gauche, en tête, « ← » (dans l’éditeur seulement) ou, dans la liste, le
+    compte de la sélection et « Tout sélectionner », puis, à droite,
     « Coller question(s) » (§ 11.10) ; la **Liste** :
-    le champ « Filtrer par nom ou mot-clé » (libellé dans le champ), compte de la sélection,
-    « Tout sélectionner », liste, et la charte utilisée en petit, en bas ;
+    le champ « Filtrer par nom ou mot-clé » (libellé dans le champ), liste, et
+    la charte utilisée en petit, en bas ;
     l’**Éditeur** : la question courante ;
   - à droite, sans titre, la liste d’ordre (§ 11.9) dans son cadre quand elle
     sert, puis l’**Aperçu** (ligne d’état et page de la question) sur la hauteur

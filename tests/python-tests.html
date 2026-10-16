@@ -902,12 +902,17 @@ json.dumps({
         }
       });
 
+      // Les questions seules ci-dessus portent leurs tirages en JSON (export « pour navigateur ancien ») ;
+      // l’activité, compressés, comme un export ordinaire (SPECIFICATION.md, § 5.10).
       await test("une activité réunit toutes les questions dans un seul document et les corrige chacune", async () => {
-        const frame = await openCompiledSheet(compiledQuestions, "Toutes les questions");
+        const compressed = await Promise.all(compiledQuestions.map(async question =>
+          ({ ...question, compressedDraws: await PyWimsCompiler.compressDraws(question.draws) })));
+        const frame = await openCompiledSheet(compressed, "Toutes les questions");
         try {
           if (frame.contentDocument.querySelectorAll(".pw-question").length !== compiledQuestions.length ||
-              frame.contentDocument.querySelector("iframe")) {
-            throw new Error("L’activité ne contient pas une section par question, sans cadre.");
+              frame.contentDocument.querySelector("iframe") ||
+              frame.contentDocument.querySelectorAll('[data-draws="gzip"]').length !== compiledQuestions.length) {
+            throw new Error("L’activité ne contient pas une section par question, aux tirages compressés, sans cadre.");
           }
           for (const [index, { fields, draws }] of compiledQuestions.entries()) {
             await solveQuestion(frame, index + 1, fields, draws[0]);

@@ -13,10 +13,43 @@
       .join("\n");
   }
 
-  // Intègre les tirages précalculés en JSON, dans un bloc de texte échappé comme les champs.
-  function renderDrawData(draws) {
-    return `<pre data-draws>${escapeHtml(JSON.stringify(draws))}</pre>`;
+  // Intègre les tirages précalculés : compressés (gzip, en base64), ou en JSON pour un export « pour
+  // navigateur ancien » et pour l’aperçu (SPECIFICATION.md, § 5.10). Le JSON n’échappe que « & » et
+  // « < », seuls signes qu’un texte d’élément doit protéger : avec les guillemets écrits « &quot; »,
+  // il pesait 30 % de plus.
+  function renderDrawData(draws, compressed = null) {
+    if (compressed !== null) {
+      return `<pre data-draws="gzip">${compressed}</pre>`;
+    }
+    return `<pre data-draws>${JSON.stringify(draws).replaceAll("&", "&amp;").replaceAll("<", "&lt;")}</pre>`;
   }
+
+  // Tirages compressés pour la page : le JSON des tirages d’une question se répète presque mot pour mot
+  // d’un tirage à l’autre, et la compression le divise par quinze environ. La page le décompresse avec
+  // DecompressionStream, qui demande Chrome 80, Firefox 113 ou Safari 16.4. Base64 : les octets compressés
+  // ne sont pas du texte, et un texte d’élément ne peut porter que du texte.
+  async function compressDraws(draws) {
+    const stream = new Blob([JSON.stringify(draws)]).stream().pipeThrough(new CompressionStream("gzip"));
+    const bytes = new Uint8Array(await new Response(stream).arrayBuffer());
+    let binary = "";
+    // Par tranches : String.fromCharCode reçoit chaque octet en argument, et leur nombre est limité.
+    for (let start = 0; start < bytes.length; start += 0x8000) {
+      binary += String.fromCharCode(...bytes.subarray(start, start + 0x8000));
+    }
+    return btoa(binary);
+  }
+
+  // Commentaires retirés du code intégré à la page : ils documentent les fichiers du projet, que personne
+  // ne lit dans la page, et pesaient plus d’un tiers d’une question seule. En JavaScript et en Python, seules
+  // les lignes entières de commentaire partent : un « // » en fin de ligne peut être dans une chaîne
+  // (« https:// »). Aucune ligne de ces fichiers ne commence par « // » ou « # » au milieu d’une chaîne.
+  // Le contenu des questions n’est jamais touché.
+  const stripComments = {
+    html: text => text.replace(/[ \t]*<!--[\s\S]*?-->[ \t]*\n?/g, ""),
+    css: text => text.replace(/[ \t]*\/\*[\s\S]*?\*\/[ \t]*\n?/g, ""),
+    js: text => text.replace(/^[ \t]*\/\/.*\n/gm, ""),
+    python: text => text.replace(/^[ \t]*#.*\n/gm, "")
+  };
 
   // Fichiers du projet intégrés au HTML généré ; les widgets facultatifs ne sont lus que s’ils servent.
   const resourcePaths = {
@@ -57,7 +90,7 @@
   }
 
   // Section d’une question : ses champs et ses tirages en texte échappé, lus par question.js.
-  function renderQuestionSection(fields, draws, index) {
+  function renderQuestionSection(fields, draws, index, compressedDraws = null) {
     if (!Array.isArray(draws) || !draws.length) {
       throw new Error(`Les tirages de « ${fields.question_title} » doivent être calculés avant l’assemblage.`);
     }
@@ -77,14 +110,16 @@
     return `<section class="pw-question" id="q${index + 1}" data-python="${python}">
 <div class="pw-question-data" hidden>
 ${renderQuestionData(fields.question_check === undefined ? withoutSetup : fields)}
-${renderDrawData(draws)}
+${renderDrawData(draws, compressedDraws)}
 </div>
 </section>`;
   }
 
   // Assemble une question seule ; c’est une feuille d’une question avec la mise en page « question seule ».
-  function assembleQuestion(fields, draws, resources) {
-    return assembleSheet({ title: fields.question_title, kind: "single", questions: [{ fields, draws }] }, resources);
+  // compressedDraws : ses tirages compressés (compressDraws), absents pour l’aperçu et un ancien navigateur.
+  function assembleQuestion(fields, draws, resources, compressedDraws = null) {
+    return assembleSheet({ title: fields.question_title, kind: "single", questions: [{ fields, draws, compressedDraws }] },
+      resources);
   }
 
   // Assemble une activité : une feuille de plusieurs questions dans un seul document.
@@ -165,7 +200,9 @@ ${renderDrawData(draws)}
   // Assemble le HTML autonome à partir des textes des fichiers du projet, sans accès au disque.
   // Pyodide, MathJax et MathLive sont chargés une seule fois, quel que soit le nombre de questions.
   function assembleSheet({ title, kind, questions, compact = false }, resources) {
-    const sections = questions.map(({ fields, draws }, index) => renderQuestionSection(fields, draws, index));
+    const sections = questions.map(({ fields, draws, compressedDraws }, index) =>
+      renderQuestionSection(fields, draws, index, compressedDraws));
+    const { html, css, js, python } = stripComments;
     const usesMathWidget = neededResources(questions.map(({ fields }) => fields)).includes("mathWidget");
     const replacements = {
       MATHJAX: needsMathJax(questions) ? mathJaxMarkup : "",
@@ -175,11 +212,11 @@ ${renderDrawData(draws)}
       SHEET_ID: kind === "activity" ? ` data-sheet-id="${sheetFingerprint(title, questions)}"` : "",
       // Le style compact ne concerne que les activités ; une question seule garde le style habituel.
       SHEET_STYLE: compact && kind === "activity" ? ' data-style="compact"' : "",
-      CSS: `${resources.brandCss}\n${resources.questionCss}`,
-      TEMPLATE: resources.template,
-      CORRECTION: resources.correction,
-      WIDGETS: [resources.textWidget, resources.mathWidget, resources.matrixWidget, resources.choiceWidget]
-        .filter(Boolean).join("\n"),
+      CSS: css(`${resources.brandCss}\n${resources.questionCss}`),
+      TEMPLATE: js(resources.template),
+      CORRECTION: js(resources.correction),
+      WIDGETS: js([resources.textWidget, resources.mathWidget, resources.matrixWidget, resources.choiceWidget]
+        .filter(Boolean).join("\n")),
       MATHLIVE_LOADER: usesMathWidget
         ? `// Charge le clavier mathématique uniquement pour les questions qui en ont besoin.
 window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
@@ -191,17 +228,19 @@ window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
 });`
         : "window.pyWimsMathLiveReady = Promise.resolve();",
       // Vide si aucune question n’a d’« question_check » : Python n’est alors jamais chargé.
-      PYWIMS: resources.pywims ?? "",
-      PYTHON_WORKER: resources.pythonWorker ?? "",
-      PYTHON_RUNTIME: resources.python,
+      PYWIMS: python(resources.pywims ?? ""),
+      PYTHON_WORKER: js(resources.pythonWorker ?? ""),
+      PYTHON_RUNTIME: js(resources.python),
       QUESTIONS: sections.join("\n"),
-      FIELDS: resources.fields,
-      QUESTION: resources.question,
+      FIELDS: js(resources.fields),
+      QUESTION: js(resources.question),
       // Vide hors paquet SCORM : la feuille garde alors sa mémoire dans le navigateur.
-      SCORM: resources.scorm ?? "",
-      SHEET: resources.sheet
+      SCORM: js(resources.scorm ?? ""),
+      SHEET: js(resources.sheet)
     };
-    return resources.layout.replace(/@@([A-Z_]+)@@/g, (_match, name) => {
+    // Les commentaires de la mise en page partent avant son remplissage : le contenu des questions, que
+    // l’auteur a écrit, n’est jamais touché.
+    return html(resources.layout).replace(/@@([A-Z_]+)@@/g, (_match, name) => {
       if (!Object.hasOwn(replacements, name)) {
         throw new Error(`Emplacement réservé inconnu dans la mise en page : ${name}`);
       }
@@ -256,6 +295,7 @@ window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
   window.PyWimsCompiler = Object.freeze({
     ...window.PyWimsCompiler,
     renderDrawData,
+    compressDraws,
     resourcePaths,
     neededResources,
     assembleQuestion,

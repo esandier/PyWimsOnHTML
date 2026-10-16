@@ -188,6 +188,27 @@ beaucoup de « simplifications » évidentes ont déjà été essayées.
 - Un tiroir montant du bas, sur téléphone, a été essayé (octobre 2026) et
   écarté au profit du retour sous la question.
 
+### 5.10 Poids de la page
+
+- **Tirages compressés** (octobre 2026) : une activité de 21 questions de
+  probabilités pesait 1,5 Mo, dont 1,3 Mo de tirages en JSON ; compressés, ils
+  font 92 Ko et la page 380 Ko. Écartés : ne garder que les parties qui varient
+  d’un tirage à l’autre (compliqué, et moins efficace qu’une compression) ;
+  une empreinte à la place de `context` pour les questions avec
+  `question_check` (le message ne pourrait plus nommer la variable qui
+  diffère, et la compression rend le gain secondaire). `context` n’est plus
+  écrit pour une question sans `question_check`, qui ne rejoue jamais son
+  tirage.
+- **Navigateur ancien** : la compression demande Safari 16.4 (2023). Une case
+  de l’atelier, et non une entrée de plus dans la liste des formats : elle vaut
+  pour tous les formats, qu’elle aurait doublés.
+- **Commentaires retirés** de la page : plus d’un tiers d’une question seule,
+  dont une copie entière de la feuille de style, placée par erreur dans un
+  commentaire de la mise en page qui citait l’emplacement `@@CSS@@`. Seules
+  les lignes entières de commentaire JavaScript et Python partent : sans vrai
+  outil de minification dans le navigateur, un `//` en fin de ligne peut être
+  dans une chaîne.
+
 ## 10. Questions à choix
 
 ### 10.5 Barème et note

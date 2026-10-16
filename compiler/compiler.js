@@ -4,7 +4,7 @@
 // page (SPECIFICATION.md, § 11.1) ; le dossier choisi par l’utilisateur ne contient que ses questions.
 (() => {
   // Fonctions des modules du compilateur (format.js, draws.js, assemble.js, zip.js).
-  const { archiveQuestionSource, assembleActivity, assembleQuestion, computeDraws, createQuestionFilename, createZip, fieldKindsLabel, isArchive, isPwqFile, isQuestionFile, neededResources, parseQuestionSource, pwqExtension, questionExtension, readZip, resourcePaths, scormPackageEntries, splitPastedQuestions, splitQuestionSource, templateWarnings } = PyWimsCompiler;
+  const { archiveQuestionSource, assembleActivity, assembleQuestion, compressDraws, computeDraws, createQuestionFilename, createZip, fieldKindsLabel, isArchive, isPwqFile, isQuestionFile, neededResources, parseQuestionSource, pwqExtension, questionExtension, readZip, resourcePaths, scormPackageEntries, splitPastedQuestions, splitQuestionSource, templateWarnings } = PyWimsCompiler;
 
   const chooseFolderButton = document.getElementById("choose-folder");
   const filePicker = document.getElementById("question-folder");
@@ -31,6 +31,8 @@
   const activityTitleInput = document.getElementById("activity-title");
   const activityTitleLabel = document.getElementById("activity-title-label");
   const compactStyleInput = document.getElementById("compact-style");
+  const oldBrowsersInput = document.getElementById("old-browsers");
+  const oldBrowsersField = document.getElementById("old-browsers-field");
   const messages = document.getElementById("messages");
   const activityOrder = document.getElementById("activity-order");
   const activityOrderList = document.getElementById("activity-order-list");
@@ -43,6 +45,7 @@
   const previewBar = document.getElementById("preview-bar");
   const previewRefreshButton = document.getElementById("preview-refresh");
   const questionsView = document.getElementById("questions-view");
+  const selectionRow = document.getElementById("selection-row");
   const editorView = document.getElementById("editor-view");
   const pasteStatus = document.getElementById("paste-status");
 
@@ -756,6 +759,7 @@
     backButton.hidden = mode !== "editor";
     previewBar.hidden = mode !== "editor";
     questionsView.hidden = mode !== "list";
+    selectionRow.hidden = mode !== "list";
     editorView.hidden = mode !== "editor";
     // En mode Éditeur, le panneau de gauche s’élargit aux trois cinquièmes.
     workspace.classList.toggle("is-editing", mode === "editor");
@@ -849,30 +853,35 @@
       ? "Aucune question sélectionnée."
       : `${selected.length} question${selected.length === 1 ? "" : "s"} sélectionnée${selected.length === 1 ? "" : "s"}.`;
     multiOutputControls.hidden = selected.length === 0;
+    oldBrowsersField.hidden = selected.length === 0;
     activityTitleInput.hidden = !activityMode;
     activityTitleLabel.hidden = !activityMode;
     compileButton.disabled = selected.length === 0 ||
       (activityMode && !activityTitleInput.value.trim());
-    const warning = activityMode ? partialScoringWarning(selected) : "";
-    scoringWarning.textContent = warning;
-    scoringWarning.hidden = !warning;
+    const warning = activityMode ? partialScoringWarning(selected) : { text: "", unscored: "" };
+    scoringWarning.textContent = warning.text;
+    scoringWarning.title = warning.unscored;
+    scoringWarning.hidden = !warning.text;
     updateRanks();
     renderActivityOrder();
   }
 
   // Activité en partie notée : la note n’y est pas affichée du tout (SPECIFICATION.md, § 10.5).
-  // L’auteur qui a écrit des barèmes doit savoir qu’ils ne servent pas, et lesquels manquent ; vide si
-  // toutes les questions, ou aucune, ont un barème.
+  // L’auteur qui a écrit des barèmes doit savoir qu’ils ne servent pas : { text, unscored }, text vide si
+  // toutes les questions, ou aucune, ont un barème. Le message reste bref ; la liste des questions sans
+  // barème, au survol : écrite dans le message, elle occupait tout le panneau et le cadre de l’aperçu
+  // n’avait plus de hauteur.
   function partialScoringWarning(questions) {
     const hasScoring = ({ fields }) => PyWimsTemplate.parseTags(fields.question_statement)
       .some(tag => Object.hasOwn(tag.attributes, "scoring"));
     const unscored = questions.filter(question => !hasScoring(question));
     if (!unscored.length || unscored.length === questions.length) {
-      return "";
+      return { text: "", unscored: "" };
     }
-    return "Aucune note ne sera affichée : la note est réservée à une activité dont toutes les questions " +
-      `ont un barème (scoring), et ${unscored.length > 1 ? "ces questions n’en ont pas" : "cette question n’en a pas"} : ` +
-      `${unscored.map(({ path }) => path).join(", ")}.`;
+    return {
+      text: "Certaines questions n’ayant pas de barème, l’activité n’affichera pas de note, uniquement la progression.",
+      unscored: `Sans barème (scoring) : ${unscored.map(({ path }) => path).join(", ")}.`
+    };
   }
 
   // Modes d’export (SPECIFICATION.md, § 5.9), selon le nombre de questions cochées. Le paquet SCORM est
@@ -1026,7 +1035,7 @@
       neededResources(questions.map(({ fields }) => fields)).map(key => [key, resources[key]]));
     if (scorm) needed.scorm = resources.scorm;
     return activityTitle === null
-      ? assembleQuestion(questions[0].fields, questions[0].draws, needed)
+      ? assembleQuestion(questions[0].fields, questions[0].draws, needed, questions[0].compressedDraws)
       : assembleActivity(activityTitle, questions, needed, options);
   }
 
@@ -1203,7 +1212,9 @@
         }).catch(error => {
           throw new Error(`${question.path} : ${error.message}`);
         });
-        compiled.push({ fields: question.fields, draws, path: question.path });
+        // Tirages compressés, sauf export « pour navigateur ancien » (SPECIFICATION.md, § 5.10).
+        const compressedDraws = oldBrowsersInput.checked ? null : await compressDraws(draws);
+        compiled.push({ fields: question.fields, draws, compressedDraws, path: question.path });
       }
       const html = content => new Blob([content], { type: "text/html;charset=utf-8" });
       // Une feuille : fichier HTML, ou paquet SCORM (archive ZIP du manifeste et de la feuille).
