@@ -27,6 +27,7 @@ solution_matrix = Matrix(size, size, lambda i, j: 0 if i > j else choice([-2,-1,
 %
 Complétez cette matrice carrée de taille ${{ size }} \times {{ size }}$ pour
 qu’elle soit triangulaire supérieure, et de rang égal à ${{ size }}$.
+<br><br>
 
 <div style="text-align:center">
   {{ input_matrix('matrix', size=size, solution=solution_matrix, input_style='width:2em') }}

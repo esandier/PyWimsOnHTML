@@ -34,8 +34,8 @@ terms = [(term, diff(term, x)) for term in sorted(Add.make_args(function), key=l
 %
 Soit la fonction polynomiale
 $f(x) = {{ function}}$.
-Donnez sa dérivée $f'(x)$ :
-{{ input_math('answer', solution=derivative) }}
+Donnez sa dérivée :<br><br>
+$f'(x) =$ {{ input_math('answer', solution=derivative) }}
 %
 % question_solution_explanation
 %

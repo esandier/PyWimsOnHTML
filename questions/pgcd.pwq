@@ -31,7 +31,7 @@ while divisor:
 % question_statement
 %
 Quel est le plus grand diviseur commun de ${{x}}$ et ${{y}}$ ?
-<br>
+<br><br>
 Réponse : {{ input_value('answer', solution=result, style='width :5em') }}
 %
 % question_solution_explanation
