@@ -106,10 +106,11 @@
     const python = fields.question_check === undefined ? "false" : "true";
     // Sans Python, « question_setup » ne servirait à rien : il ne sert qu’à rejouer un tirage. Les tirages
     // suffisent, et la page s’allège d’autant (un quart d’une activité de QCM à variantes).
-    const { question_setup, ...withoutSetup } = fields;
+    // Le modèle de l’explication ne sert jamais à la page : chaque tirage porte son explication rendue.
+    const { question_setup, question_solution_explanation, ...kept } = fields;
     return `<section class="pw-question" id="q${index + 1}" data-python="${python}">
 <div class="pw-question-data" hidden>
-${renderQuestionData(fields.question_check === undefined ? withoutSetup : fields)}
+${renderQuestionData(fields.question_check === undefined ? kept : { question_setup, ...kept })}
 ${renderDrawData(draws, compressedDraws)}
 </div>
 </section>`;

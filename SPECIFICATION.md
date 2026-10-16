@@ -714,6 +714,8 @@ fabriquer un texte (les choix d’un QCM sont des listes Python, § 10.1) :
   rejouer un tirage dans Python, et elle ne charge jamais Python. Ses tirages
   suffisent (−25 % pour une activité de QCM dont `question_setup` contient toutes les
   variantes).
+- Aucune question n’intègre le modèle de `question_solution_explanation` :
+  chaque tirage porte son explication rendue.
 - Les styles de la feuille sont dans `css/question.css` et n’utilisent que les
   variables de la charte (§ 11.4).
 - Le mode « pages séparées (ZIP) » produit une feuille à une question par
