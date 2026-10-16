@@ -15,7 +15,7 @@ STD
 %
 from random import randint, choice
 from sympy import Matrix
-from pywims import py_wims, ANY
+from pywims import math_expression, ANY
 
 # Choisit une petite dimension pour générer une nouvelle matrice à chaque essai.
 size = randint(2,4)
@@ -29,7 +29,7 @@ Complétez cette matrice carrée de taille ${{ size }} \times {{ size }}$ pour
 qu’elle soit triangulaire supérieure, et de rang égal à ${{ size }}$.
 
 <div style="text-align:center">
-  {% input_matrix 'matrix' size=size solution=solution_matrix input_style='width:2em' %}
+  {{ input_matrix('matrix', size=size, solution=solution_matrix, input_style='width:2em') }}
 </div>
 %
 % question_solution_explanation
@@ -52,7 +52,7 @@ def add_message(text):
 
 for i in range(size):
     for j in range(size):
-        value = py_wims(matrix[i][j])
+        value = math_expression(matrix[i][j])
         is_number = value is not None and value.is_number
         if i > j:
             correct = is_number and value == 0

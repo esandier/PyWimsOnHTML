@@ -1,40 +1,8 @@
-// Tirages : exécution de « question_setup » avec chaque graine, contrôles de l’auteur, cohérence de la
-// correction, ordre des choix, et tirage provisoire de l’aperçu.
+// Tirages : exécution de « question_setup » avec chaque graine, rendu de l’énoncé par Jinja, contrôles
+// de l’auteur, cohérence de la correction et ordre des choix.
 // Script classique (et non module ES), pour que le compilateur marche aussi ouvert depuis le
 // disque ; il ajoute ses fonctions à window.PyWimsCompiler, que les autres scripts complètent.
 (() => {
-  // Tirage provisoire, sans Python : chaque variable de l’énoncé est affichée sous son nom,
-  // chaque dimension de matrice nommée vaut 2, et un champ à choix montre deux choix nommés
-  // d’après leur liste (« choices[0] », « choices[1] »). Ses boutons sont inactifs : il n’a pas
-  // de solutions.
-  function previewPlaceholderDraw(fields) {
-    const dimensions = {};
-    const choices = {};
-    const orders = {};
-    for (const tag of PyWimsTemplate.parseTags(fields.question_statement)) {
-      for (const key of ["size", "rows", "cols"]) {
-        if (typeof tag.attributes[key] === "string") {
-          dimensions[tag.attributes[key]] = 2;
-        }
-      }
-      if (PyWimsTemplate.choiceTypes.has(tag.type)) {
-        choices[tag.name] = [0, 1].map(index => `${tag.attributes.choices}[${index}]`);
-        orders[tag.name] = [0, 1];
-      }
-    }
-    const context = Object.fromEntries(displayedVariables(fields).map(name => [name, name]));
-    return { seed: 0, context, dimensions, solutions: {}, choices, orders };
-  }
-
-  // Variables affichées par la question : celles de l’énoncé et de l’explication de la solution,
-  // qui s’écrit comme l’énoncé (SPECIFICATION.md, § 2.1). Leurs valeurs forment le « context » du tirage.
-  function displayedVariables(fields) {
-    return [...new Set([
-      ...PyWimsTemplate.templateVariables(fields.question_statement),
-      ...PyWimsTemplate.templateVariables(fields.question_solution_explanation ?? "")
-    ])];
-  }
-
   const drawCount = 20;
   // Durée maximale d’une exécution de « question_setup », ou de « question_check » pour le contrôle de cohérence
   // (SPECIFICATION.md, § 3) : une boucle sans fin arrête la compilation au lieu de la bloquer.
@@ -277,8 +245,19 @@
     const count = requested ?? (fields.question_draws === undefined ? drawCount : Number(fields.question_draws));
     const tags = PyWimsTemplate.parseTags(fields.question_statement);
     const choiceTags = tags.filter(tag => PyWimsTemplate.choiceTypes.has(tag.type));
+    const templateErrors = [
+      ...PyWimsTemplate.validateTemplate(fields.question_statement),
+      ...PyWimsTemplate.syntaxErrors(fields.question_solution_explanation ?? "")
+    ];
+    if (templateErrors.length) {
+      throw new Error(templateErrors.join(" ; "));
+    }
+    // Les modèles sont rendus par Python, tirage par tirage (SPECIFICATION.md, § 2.10), chaque champ
+    // remplacé par sa marque.
     const spec = {
-      variables: displayedVariables(fields),
+      statement: PyWimsTemplate.jinjaSource(fields.question_statement),
+      explanation: fields.question_solution_explanation === undefined
+        ? null : PyWimsTemplate.jinjaSource(fields.question_solution_explanation),
       dimensions: [...new Set(tags
         .filter(tag => tag.type === "input_matrix")
         .flatMap(tag => ["size", "rows", "cols"].map(key => tag.attributes[key]))
@@ -307,7 +286,8 @@
       drawSessionCounter += 1;
       const session = PyWimsPython.createSession(`compilation-${drawSessionCounter}`);
       try {
-        // Les paquets à charger sont déduits des imports de tout le code Python de la question.
+        // Les paquets à charger sont déduits des imports de tout le code Python de la question ; Jinja
+        // est chargé par collectDraw.
         await session.initialize(`${fields.question_setup}\n${fields.question_check ?? ""}`);
         try {
           await session.runSeeded(fields.question_setup, seed, { timeoutMs });
@@ -328,6 +308,8 @@
 
     // Parties du tirage que le navigateur affiche ou utilise, comparées entre les deux exécutions.
     const drawParts = {
+      statement: "l’énoncé",
+      explanation: "l’explication",
       context: "les valeurs de l’énoncé",
       dimensions: "les dimensions des matrices",
       solutions: "les solutions",
@@ -340,6 +322,13 @@
       const { session, draw } = await runDraw(seed);
       try {
         const errors = [...draw.errors, ...matrixShapeErrors(tags, draw), ...choiceErrors(tags, draw)];
+        // Un champ dans un {% if %} ou un {% for %} manque ou se répète dans l’énoncé rendu (§ 2.3).
+        for (const { name } of draw.statement === null ? [] : tags) {
+          const count = PyWimsTemplate.markCount(draw.statement, name);
+          if (count !== 1) {
+            errors.push(`Le champ « ${name} » apparaît ${count} fois dans l’énoncé de ce tirage, au lieu d’une : un champ ne peut pas être placé dans un {% if %} ni dans un {% for %}.`);
+          }
+        }
         if (errors.length) {
           throw new Error(`Graine ${seed} : ${errors.join(" ")}`);
         }
@@ -362,11 +351,13 @@
           choiceOrder(draw.choices[tag.name].length, tag.attributes.fixed_last ?? 0, seed, tag.name, tag.attributes.shuffle ?? 1)
         ]));
         // L’ordre fait partie du tirage : deux tirages qui ne diffèrent que par lui restent distincts.
-        const key = JSON.stringify([draw.context, draw.solutions, draw.choices, orders]);
+        const key = JSON.stringify([draw.statement, draw.explanation, draw.context, draw.solutions, draw.choices, orders]);
         if (!seen.has(key)) {
           seen.add(key);
           draws.push({
             seed,
+            statement: draw.statement,
+            ...(draw.explanation === null ? {} : { explanation: draw.explanation }),
             context: draw.context,
             dimensions: draw.dimensions,
             solutions: draw.solutions,
@@ -384,7 +375,6 @@
 
   window.PyWimsCompiler = Object.freeze({
     ...window.PyWimsCompiler,
-    previewPlaceholderDraw,
     choiceOrder,
     computeDraws
   });

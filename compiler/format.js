@@ -184,7 +184,7 @@
       if (!fields.question_solution_explanation.trim()) {
         delete fields.question_solution_explanation;
       } else if (PyWimsTemplate.parseTags(fields.question_solution_explanation).length) {
-        throw new Error(`${path} : le champ « question_solution_explanation » ne peut pas contenir de champ de réponse {% … %}.`);
+        throw new Error(`${path} : le champ « question_solution_explanation » ne peut pas contenir de champ de réponse {{ input_…(…) }}.`);
       }
     }
     return fields;
@@ -299,14 +299,10 @@
   }
 
   // Avertissements sur l’écriture de l’énoncé, qui n’empêchent pas la compilation (SPECIFICATION.md,
-  // § 2.4). Trois accolades de suite, comme dans \frac{{{n}}}{{{m}}}, fonctionnent (la variable est
-  // {{n}}, entourée des accolades de TeX), mais se relisent mal et se corrigent avec erreur.
+  // § 2.4). Les trois accolades de suite (\frac{{{n}}}) en faisaient partie ; avec Jinja, c’est une
+  // erreur (PyWimsTemplate.syntaxErrors).
   function templateWarnings(fields) {
     const warnings = [];
-    if (/\{\{\{|\}\}\}/.test(fields.question_statement)) {
-      warnings.push("L’énoncé contient trois accolades de suite (par exemple \\frac{{{n}}}{{{m}}}) : " +
-        "écrivez \\frac{ {{n}} }{ {{m}} }, plus lisible, avec le même résultat.");
-    }
     // Une image intégrée (data:) pèse les trois quarts de son écriture en base64.
     for (const name of ["question_statement", "question_solution_explanation"]) {
       for (const [, , , source] of (fields[name] ?? "").matchAll(imageSourcePattern)) {

@@ -36,7 +36,7 @@ simplified = "" if total.q == common else " = " + latex(total)
 Additionnez ces fractions et donnez le résultat sous forme d’une fraction
 irréductible :
 <br>
-$\displaystyle \frac{ {{n}} }{ {{m}} } + \frac{ {{p}} }{ {{q}} } =$ {% input_text 'result' solution=total style='width:5em' %}
+$\displaystyle \frac{ {{n}} }{ {{m}} } + \frac{ {{p}} }{ {{q}} } =$ {{ input_text('result', solution=total, style='width:5em') }}
 %
 % question_solution_explanation
 %

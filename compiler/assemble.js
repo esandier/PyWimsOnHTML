@@ -148,17 +148,16 @@ ${renderDrawData(draws)}
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js"></script>`;
 
   // Une feuille a besoin de MathJax (≈ 600 Ko) si elle peut afficher une formule (SPECIFICATION.md,
-  // § 5.1) : un délimiteur dans un énoncé ou une explication, une valeur ou un choix d’un tirage, ou
-  // une question qui a un « question_check », dont le retour, calculé chez l’élève, peut en contenir une.
-  // Un « $ » qui n’ouvre pas de formule fait seulement charger MathJax pour rien.
+  // § 5.1) : un délimiteur dans l’énoncé ou l’explication rendus d’un tirage, ou dans l’un de ses choix,
+  // ou une question qui a un « question_check », dont le retour, calculé chez l’élève, peut en contenir
+  // une. Un « $ » qui n’ouvre pas de formule fait seulement charger MathJax pour rien.
   function needsMathJax(questions) {
     const delimiter = /\$|\\\(|\\\[/;
     return questions.some(({ fields, draws }) =>
       fields.question_check !== undefined ||
-      delimiter.test(fields.question_statement) ||
-      delimiter.test(fields.question_solution_explanation ?? "") ||
       draws.some(draw => [
-        ...Object.values(draw.context ?? {}),
+        draw.statement ?? "",
+        draw.explanation ?? "",
         ...Object.values(draw.choices ?? {}).flat()
       ].some(text => delimiter.test(String(text)))));
   }

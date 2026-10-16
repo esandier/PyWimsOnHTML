@@ -40,7 +40,7 @@ result = matrix.rank()
 Soit $A$ la matrice $3 \times 3$ définie par :
 $$A = {{ matrix }} $$
 Quel est le rang de la matrice $A$ ?
-{% input_value 'answer' solution=result form=integer style="width:2em"%}
+{{ input_value('answer', solution=result, form=integer, style="width:2em") }}
 %
 % question_solution_explanation
 %

@@ -1,4 +1,4 @@
-"""Outils PyWims : from pywims import py_wims, is_number, math_expression, decimal_comma, mcq, ANY"""
+"""Outils PyWims : from pywims import math_expression, mcq, tex, ANY"""
 # Module installé dans Pyodide par runtime/python.js, à la compilation comme dans le fichier généré,
 # qui l’intègre tel quel : les tirages calculés et rejoués utilisent ainsi le même code
 # (SPECIFICATION.md, § 3). Les fonctions dont le nom commence par « _ » servent au compilateur et à
@@ -7,7 +7,7 @@
 import re as _re
 import sys as _sys
 
-__all__ = ["py_wims", "is_number", "math_expression", "decimal_comma", "mcq", "ANY"]
+__all__ = ["math_expression", "mcq", "tex", "ANY"]
 
 _any_value = None
 
@@ -196,21 +196,96 @@ def _is_matrix(value):
     return isinstance(value, (list, tuple))
 
 
+_jinja_environment = None
+
+
+def _jinja():
+    """Environnement Jinja des modèles (SPECIFICATION.md, § 2.10), créé une fois.
+
+    StrictUndefined : une variable absente est une erreur, au lieu d’un texte vide qu’on ne voit qu’en
+    relisant l’énoncé. Pas d’échappement : l’énoncé est le HTML de l’auteur, et une macro peut produire
+    du HTML ; le texte de l’élève n’entre jamais dans un modèle. finalize écrit chaque {{ valeur }}
+    par tex, et les filtres frac et dec en sont les options.
+    """
+    global _jinja_environment
+    if _jinja_environment is None:
+        import jinja2
+        environment = jinja2.Environment(undefined=jinja2.StrictUndefined, autoescape=False,
+                                         keep_trailing_newline=True, finalize=tex)
+        environment.filters["frac"] = lambda value: tex(value, frac=True)
+        environment.filters["dec"] = lambda value, digits=None: tex(value, dec=True, digits=digits)
+        _jinja_environment = environment
+    return _jinja_environment
+
+
+def _template_line(error):
+    """Ligne du modèle où une erreur de rendu s’est produite, ou None (pile d’appels réécrite par Jinja)."""
+    line = getattr(error, "lineno", None)
+    traceback = error.__traceback__
+    while traceback is not None:
+        if traceback.tb_frame.f_code.co_filename == "<template>":
+            line = traceback.tb_lineno
+        traceback = traceback.tb_next
+    return line
+
+
+def _render(namespace, source, field):
+    """Rend un modèle avec l’espace de noms du tirage ; renvoie (texte, noms lus), ou lève ValueError.
+
+    Les noms lus sont les variables que le modèle ne définit pas lui-même (meta de Jinja) : ce sont
+    celles de « question_setup » que la page contrôle quand elle rejoue le tirage (§ 5.1).
+    """
+    import jinja2
+    import jinja2.meta
+    environment = _jinja()
+    try:
+        names = jinja2.meta.find_undeclared_variables(environment.parse(source))
+        template = environment.from_string(source)
+    except jinja2.TemplateSyntaxError as error:
+        raise ValueError("« {} », ligne {} : {}.".format(field, error.lineno, error.message)) from None
+    try:
+        text = template.render(namespace)
+    except Exception as error:
+        line = _template_line(error)
+        where = "« {} »{}".format(field, ", ligne {}".format(line) if line else "")
+        undefined = _re.fullmatch(r"'([^']+)' is undefined", str(error))
+        if undefined:
+            raise ValueError("{} : la variable « {} » n’est pas définie par « question_setup ».".format(
+                where, undefined.group(1))) from None
+        raise ValueError("{} : {}: {}".format(where, type(error).__name__, error)) from None
+    return text, names
+
+
+def _is_plain_value(value):
+    """Valeur dont le texte est reproductible : ni fonction, ni module, ni classe (leur texte
+    contient une adresse, qui change d’une exécution à l’autre)."""
+    import types
+    return not (callable(value) or isinstance(value, types.ModuleType))
+
+
 def _collect_draw(namespace, spec):
     """Données d’un tirage pour le compilateur, avec la liste des erreurs de l’auteur.
 
-    spec (JSON) : {"variables": [...], "dimensions": [...],
+    spec (JSON) : {"statement": modèle, "explanation": modèle ou null, "dimensions": [...],
                    "fields": [{"name", "type", "solution", "choices" (champs à choix)}]}
+    Les modèles sont ceux que donne PyWimsTemplate.jinjaSource : chaque champ y est une marque.
     """
     import json
     spec = json.loads(spec)
     errors = []
-    context = {}
-    for name in spec["variables"]:
-        if name in namespace:
-            context[name] = _template_value(namespace[name])
-        else:
-            errors.append("La variable « {} » de l’énoncé ou de l’explication n’est pas définie par « question_setup ».".format(name))
+    rendered = {}
+    read = set()
+    for key, field in (("statement", "question_statement"), ("explanation", "question_solution_explanation")):
+        if spec.get(key) is None:
+            continue
+        try:
+            rendered[key], names = _render(namespace, spec[key], field)
+            read |= names
+        except ValueError as error:
+            errors.append(str(error))
+    read |= set(spec["dimensions"])
+    context = {name: _template_value(namespace[name]) for name in sorted(read)
+               if name in namespace and _is_plain_value(namespace[name])}
     dimensions = {}
     for name in spec["dimensions"]:
         value = namespace.get(name)
@@ -262,6 +337,7 @@ def _collect_draw(namespace, spec):
             except TypeError as error:
                 errors.append("La solution « {} » du champ « {} » : {}".format(variable, name, error))
     return json.dumps({
+        "statement": rendered.get("statement"), "explanation": rendered.get("explanation"),
         "context": context, "dimensions": dimensions, "solutions": solutions,
         "choices": choices, "errors": errors,
     }, ensure_ascii=False)
@@ -321,47 +397,116 @@ def _string_errors(source, field):
     return json.dumps(errors, ensure_ascii=False)
 
 
-def py_wims(value):
-    """Interprète une saisie de l’élève comme expression SymPy, ou renvoie None."""
-    import sympy
-    try:
-        return sympy.sympify(value, evaluate=False)
-    except (sympy.SympifyError, NameError, SyntaxError, IndexError, TypeError):
+def _ratio(value):
+    """Fraction exacte d’un entier, d’une Fraction ou d’un rationnel SymPy ; None pour un autre objet."""
+    import fractions
+    if isinstance(value, bool):
         return None
+    if isinstance(value, int):
+        return fractions.Fraction(value)
+    if isinstance(value, fractions.Fraction):
+        return value
+    sympy = _sys.modules.get("sympy")
+    if sympy is not None and isinstance(value, sympy.Rational):
+        return fractions.Fraction(int(value.p), int(value.q))
+    return None
 
 
-def decimal_comma(value, digits):
-    """Écriture française d’un nombre arrondi à digits décimales, sans zéros finaux.
+def _decimal_tex(exact, digits):
+    """Écriture décimale d’un Decimal, avec la virgule « {,} » de TeX, arrondie à digits décimales
+    (None : telle quelle), au plus proche, les demis vers le haut.
 
-    decimal_comma(sqrt(2), 2) → "1,41" ; decimal_comma(1.5, 2) → "1,5" ; decimal_comma(2, 2) → "2".
-    Sert de solution quand la réponse attendue s’écrit avec une virgule : la correction par défaut
-    ne confond pas la virgule et le point (SPECIFICATION.md, § 2.6).
-
-    L’arrondi se fait sur l’écriture décimale, au plus proche, les cas à mi-chemin vers le haut,
-    comme en classe : round(2.675, 2) donne 2.67 en Python, car le flottant 2.675 vaut en réalité
-    2.67499999…, alors qu’un élève attend 2,68.
+    Arrondi comme en classe : round(2.675, 2) donne 2.67 en Python, car le flottant 2.675 vaut en
+    réalité 2.67499999…, alors qu’un élève attend 2,68 ; l’arrondi porte donc sur l’écriture décimale.
+    La virgule seule serait suivie d’une espace dans une formule : MathJax la traite en ponctuation.
     """
     import decimal
-    if isinstance(digits, bool) or not isinstance(digits, int) or digits < 0:
-        raise TypeError("decimal_comma : le nombre de décimales doit être un entier positif ou nul.")
-    sympy = _sys.modules.get("sympy")
-    if isinstance(value, bool):
-        raise TypeError("decimal_comma : {!r} n’est pas un nombre.".format(value))
-    if isinstance(value, int):
-        exact = decimal.Decimal(value)
-    elif isinstance(value, float):
-        # repr donne l’écriture la plus courte qui redonne ce flottant : « 2.675 », pas 2.67499999…
-        exact = decimal.Decimal(repr(value))
-    elif sympy is not None and isinstance(value, sympy.Basic) and value.is_real:
-        # Assez de chiffres pour que l’arrondi demandé soit exact (sqrt(2), pi, 1/3…).
-        exact = decimal.Decimal(str(sympy.N(value, digits + 30)))
-    else:
-        raise TypeError("decimal_comma : {!r} n’est pas un nombre réel.".format(value))
-    # La précision par défaut (28 chiffres) ferait échouer quantize sur un grand nombre (10**30).
+    if digits is not None:
+        # La précision par défaut (28 chiffres) ferait échouer quantize sur un grand nombre (10**30).
+        with decimal.localcontext() as context:
+            context.prec = len(exact.as_tuple().digits) + digits + 10
+            exact = exact.quantize(decimal.Decimal(1).scaleb(-digits), rounding=decimal.ROUND_HALF_UP)
+    return _plain_decimal(exact).replace(".", "{,}")
+
+
+def _finite_decimal(ratio):
+    """Decimal égal à la fraction si elle s’écrit en décimal fini (dénominateur 2^a 5^b), sinon None."""
+    import decimal
+    denominator = ratio.denominator
+    for factor in (2, 5):
+        while denominator % factor == 0:
+            denominator //= factor
+    if denominator != 1:
+        return None
     with decimal.localcontext() as context:
-        context.prec = len(exact.as_tuple().digits) + digits + 10
-        rounded = exact.quantize(decimal.Decimal(1).scaleb(-digits), rounding=decimal.ROUND_HALF_UP)
-    return _plain_decimal(rounded).replace(".", ",")
+        context.prec = len(str(ratio.numerator)) + len(str(ratio.denominator)) + 10
+        return decimal.Decimal(ratio.numerator) / decimal.Decimal(ratio.denominator)
+
+
+def tex(value, frac=False, dec=False, digits=None):
+    r"""Écriture d’un nombre ou d’une expression dans une formule (SPECIFICATION.md, § 2.10).
+
+    C’est l’écriture de chaque {{ valeur }} des modèles, dont les filtres frac et dec sont les options ;
+    question_setup l’appelle pour fabriquer un texte, par exemple les choix d’un QCM.
+      tex(Rational(3, 4)) → "3/4" ; frac=True → r"\frac{3}{4}" ;
+      tex(Rational(9, 10), dec=True) → "0{,}9" (un rationnel sans décimal fini reste une fraction) ;
+      tex(sqrt(2), digits=2) → "1{,}41" (arrondi des demis vers le haut ; digits implique dec) ;
+      tex(0.1 + 0.2) → "0.3" (12 chiffres significatifs, avec un point) ; un texte reste tel quel.
+    Une expression SymPy est écrite par sympy.latex, fractions en ligne sauf avec frac=True.
+    """
+    import decimal
+    if digits is not None and (isinstance(digits, bool) or not isinstance(digits, int) or digits < 0):
+        raise TypeError("tex : le nombre de décimales doit être un entier positif ou nul, et non {!r}.".format(digits))
+    decimal_wanted = dec or digits is not None
+    sympy = _sys.modules.get("sympy")
+    ratio = _ratio(value)
+    if ratio is not None:
+        if decimal_wanted:
+            exact = _finite_decimal(ratio)
+            if digits is not None:
+                # Un décimal fini est exact, ce qui compte pour un demi (1/8 → 0,13) ; sinon assez de
+                # chiffres pour que l’arrondi soit juste (1/3).
+                return _decimal_tex(_ratio_decimal(ratio, digits) if exact is None else exact, digits)
+            if exact is not None:
+                return _decimal_tex(exact, None)
+        if ratio.denominator == 1:
+            return str(ratio.numerator)
+        if frac:
+            sign = "-" if ratio < 0 else ""
+            return r"{}\frac{{{}}}{{{}}}".format(sign, abs(ratio.numerator), ratio.denominator)
+        return "{}/{}".format(ratio.numerator, ratio.denominator)
+    is_float = isinstance(value, float) or (sympy is not None and isinstance(value, sympy.Float))
+    if is_float:
+        if digits is not None:
+            # repr donne l’écriture la plus courte qui redonne ce flottant : « 2.675 », pas 2.67499999…
+            return _decimal_tex(decimal.Decimal(repr(float(value))), digits)
+        text = _float_text(value)
+        return text.replace(".", "{,}") if dec else text
+    is_real_number = (sympy is not None and isinstance(value, sympy.Basic) and getattr(value, "is_number", False)
+                      and value.is_real)
+    if decimal_wanted:
+        if is_real_number and digits is not None:
+            # Assez de chiffres pour que l’arrondi demandé soit exact (sqrt(2), pi…).
+            return _decimal_tex(decimal.Decimal(str(sympy.N(value, digits + 30))), digits)
+        if is_real_number:
+            raise TypeError("tex : {} n’a pas d’écriture décimale exacte ; donnez le nombre de décimales, "
+                            "par exemple dec(2).".format(value))
+        raise TypeError("tex : dec ne s’applique qu’à un nombre, et non à {!r}.".format(value))
+    if sympy is not None:
+        from sympy.matrices.matrixbase import MatrixBase
+        if isinstance(value, (MatrixBase, sympy.Basic)):
+            # Matrices entre crochets, comme les champs matriciels, qui s’adaptent mieux à une matrice
+            # redimensionnable ; fold_short_frac écrit les fractions courtes en ligne (x^{2} / 2).
+            return sympy.latex(value, mat_delim="[", fold_short_frac=not frac)
+    return str(value)
+
+
+def _ratio_decimal(ratio, digits):
+    """Decimal assez précis pour arrondir exactement la fraction à digits décimales."""
+    import decimal
+    with decimal.localcontext() as context:
+        context.prec = len(str(abs(ratio.numerator) // ratio.denominator)) + digits + 30
+        return decimal.Decimal(ratio.numerator) / decimal.Decimal(ratio.denominator)
 
 
 def _choice_key(value):
@@ -421,26 +566,10 @@ def mcq(correct, wrong, count=4, correct_count=None):
     return (choices, indices) if multiple else (choices, indices[0])
 
 
-def is_number(value):
-    """Indique si la valeur est un nombre Python ou SymPy."""
-    import sympy
-    return isinstance(value, (int, float, sympy.Number, sympy.NumberSymbol))
-
-
 def _template_value(value):
-    """Texte affiché pour une variable de l’énoncé : LaTeX pour les objets SymPy.
-
-    Aucun \\displaystyle n’est ajouté : l’auteur choisit la taille des formules, en écrivant
-    $\\displaystyle {{f}}$ ou $$ {{f}} $$ ; un ajout d’office grossissait les fractions en ligne et
-    s’affichait tel quel hors d’une formule. Les matrices sont écrites entre crochets, comme les
-    champs de saisie matriciels, qui s’adaptent mieux à une matrice redimensionnable.
-    """
-    sympy = _sys.modules.get("sympy")
-    if sympy is not None:
-        from sympy.matrices.matrixbase import MatrixBase
-        if isinstance(value, (MatrixBase, sympy.Basic)):
-            return sympy.latex(value, mat_delim="[")
-    return str(value)
+    """Texte d’une valeur, celui de {{ valeur }} : la page le compare quand elle rejoue un tirage (§ 5.1),
+    et le compilateur s’en sert pour citer le retour de l’auteur."""
+    return tex(value)
 
 
 # Lecture d’une expression saisie : l’analyseur de SymPy (parse_expr), derrière un filtre. parse_expr

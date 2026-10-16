@@ -134,6 +134,7 @@ window.PyWimsQuestion = (() => {
       this.usesPython = section.dataset.python !== "false";
       this.python = this.usesPython ? PyWimsPython.createSession(section.id) : null;
       const tags = PyWimsTemplate.parseTags(this.definition.question_statement);
+      this.tags = tags;
       this.tagTypes = new Set(tags.map(tag => tag.type));
       // Type et attributs de la balise de chaque champ, d’après son nom : la correction par défaut en
       // dépend (match, tolerance, form).
@@ -560,14 +561,15 @@ window.PyWimsQuestion = (() => {
       fitWideFormulas(this.feedbackElement);
     }
 
-    // Affiche un tirage tout de suite, à partir des valeurs précalculées.
+    // Affiche un tirage tout de suite : son énoncé, rendu par Jinja à la compilation, où chaque marque
+    // de champ devient le champ.
     async renderDraw(selected) {
       const { promptElement } = this;
       this.draw = selected;
       window.MathJax?.typesetClear?.([promptElement]);
-      promptElement.innerHTML = PyWimsTemplate.renderTemplate(
-        this.definition.question_statement,
-        selected.context,
+      promptElement.innerHTML = PyWimsTemplate.renderStatement(
+        selected.statement,
+        this.tags,
         tag => this.renderWidget(tag, selected)
       );
       if (this.tagTypes.has("input_vmatrix")) {
@@ -878,10 +880,10 @@ window.PyWimsQuestion = (() => {
         ]);
         if (this.tagTypes.has("input_select")) PyWimsWidgets.fitSelects(this.promptElement);
         this.setState("solution");
-        // L’explication est un modèle, comme l’énoncé : ses {{variable}} prennent les valeurs du tirage.
-        const explanation = this.definition.question_solution_explanation;
+        // L’explication est un modèle Jinja, comme l’énoncé, rendu à la compilation pour chaque tirage.
+        const explanation = this.draw.explanation;
         if (explanation) {
-          const html = PyWimsTemplate.renderTemplate(explanation, this.draw.context, () => "");
+          const html = PyWimsTemplate.renderStatement(explanation, [], () => "");
           await this.showFeedback(html, "is-explanation", { html: true });
         }
       } catch (error) {

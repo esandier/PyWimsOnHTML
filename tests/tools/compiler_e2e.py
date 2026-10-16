@@ -178,7 +178,7 @@ area = side ** 2
 % question_statement
 %
 <img src="figure.png" alt="Un carré"> Quelle est l’aire d’un carré de côté {{side}} ?
-{% input_text 'answer' solution=area %}
+{{ input_text('answer', solution=area) }}
 %
 """
 # Image PNG d’un pixel.

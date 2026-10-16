@@ -150,7 +150,8 @@ définie par `question_setup` :
   `question_check` supposent les mêmes champs pour tous les tirages. Le
   compilateur le vérifie sur l’énoncé rendu de chaque tirage : chaque champ y
   apparaît exactement une fois. Pour adapter une question au tirage, on change
-  le texte autour du champ, pas le champ.
+  le texte autour du champ, pas le champ. Deux champs ne portent jamais le
+  même nom (la saisie arrive dans la variable de ce nom).
 - **Ancienne notation.** `{% input_value 'n' solution=s %}` est refusé, avec
   un message qui donne la nouvelle écriture.
 
@@ -671,11 +672,10 @@ fabriquer un texte (les choix d’un QCM sont des listes Python, § 10.1) :
 - **Aperçu.** La page réelle de la question s’affiche dans un cadre isolé
   (`sandbox="allow-scripts"`), et elle fonctionne comme pour l’élève : saisir,
   « Vérifier », retour de l’auteur, « Correction » (champs remplis et explication),
-  « Nouvel énoncé ». D’abord un tirage provisoire, sans Python : chaque `{{ … }}` y est
-  affiché tel qu’il est écrit, les `{% … %}` sont retirés (les deux branches
-  d’un `{% if %}` paraissent), boutons inactifs ; puis 5 tirages réels calculés par le Python de la page
-  du compilateur, chargé une seule fois et gardé en mémoire pour chaque
-  question. L’aperçu montre toujours le premier (le cadre porte
+  « Nouvel énoncé ». L’énoncé étant rendu par Jinja, il n’y a pas d’aperçu sans
+  Python : l’aperçu attend le Python de la page du compilateur (quelques
+  secondes, une seule fois), puis montre 5 tirages réels calculés par lui,
+  gardés en mémoire pour chaque question. L’aperçu montre toujours le premier (le cadre porte
   `data-preview="true"`, que lit `question.js`), pour que ses nombres ne
   changent pas à chaque mise à jour ; « Nouvel énoncé » passe aux autres.
   5 tirages coûtent environ 100 ms, Python chargé.

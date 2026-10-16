@@ -4,7 +4,7 @@
 // page (SPECIFICATION.md, § 11.1) ; le dossier choisi par l’utilisateur ne contient que ses questions.
 (() => {
   // Fonctions des modules du compilateur (format.js, draws.js, assemble.js, zip.js).
-  const { archiveQuestionSource, assembleActivity, assembleQuestion, computeDraws, createQuestionFilename, createZip, fieldKindsLabel, isArchive, isPwqFile, isQuestionFile, neededResources, parseQuestionSource, previewPlaceholderDraw, pwqExtension, questionExtension, readZip, resourcePaths, scormPackageEntries, splitPastedQuestions, splitQuestionSource, templateWarnings } = PyWimsCompiler;
+  const { archiveQuestionSource, assembleActivity, assembleQuestion, computeDraws, createQuestionFilename, createZip, fieldKindsLabel, isArchive, isPwqFile, isQuestionFile, neededResources, parseQuestionSource, pwqExtension, questionExtension, readZip, resourcePaths, scormPackageEntries, splitPastedQuestions, splitQuestionSource, templateWarnings } = PyWimsCompiler;
 
   const chooseFolderButton = document.getElementById("choose-folder");
   const filePicker = document.getElementById("question-folder");
@@ -295,11 +295,6 @@
   // Tirages réels de l’aperçu : de quoi essayer « Nouvel énoncé » ; environ 100 ms, Python chargé.
   const previewDrawCount = 5;
 
-  // Python du tirage provisoire : chaque appel reste en attente, donc rien ne se charge ni ne
-  // s’affiche en erreur ; ses boutons sont de toute façon inactifs (previewHead).
-  const previewPythonStub = `window.PyWimsPython = { createSession: () => new Proxy({}, { get: () => () => new Promise(() => {}) }) };`;
-  const previewHead = `<style>.pw-actions { pointer-events: none; opacity: 0.45; }</style>`;
-
   // Python des tirages réels : un pont vers celui de cette page, déjà chargé, à la place de
   // runtime/python.js. Chaque appel d’une session du cadre part par postMessage ; la réponse revient
   // avec le nombre de relances du Worker (epoch), que question.js compare. frame : numéro du cadre,
@@ -372,10 +367,9 @@
   // L’atelier (Chrome, Edge) : écrire dans le dossier n’est possible que là (§ 11.10).
   const canEdit = canRememberFolder;
 
-  // Assemble la page de la question et l’affiche dans le cadre : avec le tirage provisoire
-  // (draws absent), boutons inactifs, ou avec les tirages réels, Python passant par le pont.
-  // data-preview : la page montre toujours le premier tirage (question.js).
-  async function renderPreviewFrame(fields, question, draws = null) {
+  // Assemble la page de la question et l’affiche dans le cadre, avec ses tirages réels, Python passant
+  // par le pont. data-preview : la page montre toujours le premier tirage (question.js).
+  async function renderPreviewFrame(fields, question, draws) {
     const resources = await readProjectResources(neededResources([fields]));
     // Le cadre n’a pas de Python à lui : ni module pywims ni script du Worker à intégrer.
     delete resources.pywims;
@@ -385,41 +379,32 @@
     }
     previewSessions.clear();
     previewFrameNumber += 1;
-    resources.python = draws ? previewPythonBridge(previewFrameNumber) : previewPythonStub;
-    let page = assembleQuestion(fields, draws ?? [previewPlaceholderDraw(fields)], resources)
-      .replace("<body", '<body data-preview="true"');
-    if (!draws) {
-      page = page.replace("</head>", `${previewHead}</head>`);
-    }
-    previewFrame.srcdoc = page;
+    resources.python = previewPythonBridge(previewFrameNumber);
+    previewFrame.srcdoc = assembleQuestion(fields, draws, resources).replace("<body", '<body data-preview="true"');
     previewFrame.hidden = false;
     shownPreview = { question };
   }
 
-  // Affiche l’aperçu provisoire tout de suite, puis le remplace par un tirage réel. Une question
-  // choisi entre-temps annule la suite (previewGeneration).
+  // Calcule les tirages de la question, puis l’affiche. Une question choisie entre-temps annule la
+  // suite (previewGeneration). Il n’y a pas d’aperçu sans Python : l’énoncé est rendu par Jinja
+  // (SPECIFICATION.md, § 3) ; l’ancien aperçu provisoire, où chaque variable portait son nom, a été
+  // retiré, et le modèle brut (les deux branches d’un {% if %}) n’apprenait rien à l’auteur.
   // live : mise à jour de l’atelier après une pause de la frappe (§ 11.10) ; l’aperçu déjà affiché de
-  // cette question reste en place pendant le calcul, sans repasser par l’aperçu provisoire.
+  // cette question reste en place pendant le calcul.
   async function showPreview(question, { live = false } = {}) {
     previewGeneration += 1;
     const generation = previewGeneration;
     const { fields } = question;
     const keepShown = live && shownPreview?.question === question && !previewFrame.hidden;
     if (!keepShown) {
-      try {
-        await renderPreviewFrame(fields, question);
-      } catch (error) {
-        previewFrame.hidden = true;
-        showPreviewNotice(`Aperçu impossible : ${error.message}`, "error");
-        editor.showPreviewError(question, error.message);
-        return;
-      }
+      previewFrame.hidden = true;
+      shownPreview = null;
     }
     if (!previewDrawCache.has(question)) {
       if (!keepShown) {
         showPreviewNotice(PyWimsPython.isLoaded?.()
-          ? "Aperçu provisoire : les variables apparaissent sous leur nom, le temps de calculer un tirage…"
-          : "Aperçu provisoire : les variables apparaissent sous leur nom. Chargement de Python pour calculer un tirage (10 à 20 secondes la première fois)…");
+          ? "Calcul d’un tirage…"
+          : "Chargement de Python pour calculer un tirage (10 à 20 secondes la première fois)…");
       }
       const draws = readProjectResources(pythonResources)
         .then(installPythonSources)

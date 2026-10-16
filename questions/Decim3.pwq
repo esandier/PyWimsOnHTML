@@ -22,7 +22,7 @@ correct = 0
 % question_statement
 %
 Soit $x=7,937253933$. Quelle est la valeur approchée de $x$ à $10^{-1}$ près <b>au plus proche</b> ?
-{% input_radio 'answer' choices=choices solution=correct columns=4 scoring='e=-0.5,v=0,b=1,m=-0.5' %}
+{{ input_radio('answer', choices=choices, solution=correct, columns=4, scoring='e=-0.5,v=0,b=1,m=-0.5') }}
 %
 % question_solution_explanation
 %

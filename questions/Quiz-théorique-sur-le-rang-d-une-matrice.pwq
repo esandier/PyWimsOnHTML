@@ -101,7 +101,7 @@ choices, solution = mcq(correct=q["correct"], wrong=q["wrong"], count=len(q["wro
 % question_statement
 %
 {{statement}}
-{% input_radio 'answer' choices=choices solution=solution %}
+{{ input_radio('answer', choices=choices, solution=solution) }}
 %
 % question_solution_explanation
 %

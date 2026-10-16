@@ -80,25 +80,34 @@ beaucoup de « simplifications » évidentes ont déjà été essayées.
   les questions sans `question_check` (§ 1), et Jinja est déjà dans Pyodide.
   Prix : un énoncé rendu par tirage dans le fichier, au lieu d’un modèle et de
   valeurs ; c’est du même ordre que les chaînes fabriquées qu’il remplace.
-  Perdu : l’aperçu provisoire où chaque variable avait sa valeur nommée ; il
-  montre désormais le modèle brut, les deux branches d’un `{% if %}` comprises.
+  Perdu : l’aperçu provisoire, sans Python, où chaque variable s’affichait
+  sous son nom ; montrer le modèle brut (les deux branches d’un `{% if %}`)
+  a été jugé sans intérêt, et l’aperçu attend Python.
 - **Champs hors des `{% if %}` et `{% for %}`** (« version limitée »). Des
   champs qui changent d’un tirage à l’autre obligeraient correction,
   contrôles et `question_check` à gérer une liste de champs par tirage : un
   vrai chantier, écarté pour l’instant. L’affichage progressif des questions à
   étapes reste en CSS (`:has`).
-- **Notation des champs `{{ input_…(…) }}`.** Écartés :
+- **Notation des champs `{{ input_…(…) }}`.** Écartées :
   - garder `{% input_… %}` et l’enseigner à Jinja par une extension :
     l’extension serait du code à maintenir, et `{% %}` désigne pour Jinja une
     instruction, pas un affichage ;
-  - garder `{% input_… %}`, retiré avant le rendu et remis après, sans
-    changer la notation : deux syntaxes proches pour deux sens, que les IA
-    confondraient avec les instructions de Jinja ;
-  - évaluer l’appel par Jinja : la page doit connaître les champs sans Python,
-    et `solution=` désigne une variable par son nom (la page la recharge dans
-    `question_check`), pas une valeur.
+  - garder la notation `{% input_… %}` : deux syntaxes proches pour deux sens,
+    que les IA confondraient avec les instructions de Jinja.
   L’ancienne notation est refusée, sans compatibilité, comme les anciens noms
   (§ 2.1) ; les questions ont été converties par script.
+- **Mécanisme : le champ est lu, pas exécuté.** Le compilateur remplace chaque
+  champ par une marque à son nom avant le rendu, et la page remet le champ à
+  la place de la marque : son HTML dépend de la page (identifiants `q2-…`,
+  état). La page lit les attributs sans Python (affichage, correction par
+  défaut) : ce sont des nombres, des textes ou des noms de variables, pas des
+  expressions. Des expressions seraient possibles pour `solution`, `choices`,
+  `rows` et `cols`, que seul le compilateur calcule ; reporté (octobre 2026),
+  sans rien casser le jour où on le fera, un nom étant une expression.
+- **Contrôle du tirage rejoué** (questions avec `question_check`) : la page
+  compare les variables lues par le modèle, sans refaire le rendu, qui
+  chargerait Jinja chez l’élève ; c’est le hasard qui risque de différer, pas
+  Jinja. Fonctions et modules exclus : leur texte contient une adresse.
 - **Valeurs non échappées.** Avant Jinja, une valeur n’admettait que `<b>`,
   `<i>`, `<br>`… Gardé, cet échappement aurait aussi échappé le HTML d’une
   macro. Le texte de l’élève n’entre jamais dans un modèle : rien à protéger.

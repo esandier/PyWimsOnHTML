@@ -56,16 +56,17 @@ window.PyWimsEditor = (() => {
   }
 
   function defineModes(CodeMirror) {
-    // Énoncé et explication : HTML, avec en couleur les balises {% … %}, les variables {{ … }} et les
-    // formules ($…$, $$…$$, \( … \), \[ … \]). Une variable dans une formule reste une variable. Une
-    // formule peut s’étendre sur plusieurs lignes ; une balise, non.
+    // Énoncé et explication : HTML, avec en couleur les champs {{ input_…(…) }}, le reste de Jinja
+    // ({{ … }}, {% … %}, {# … #}) et les formules ($…$, $$…$$, \( … \), \[ … \]). Jinja dans une
+    // formule reste Jinja. Une formule peut s’étendre sur plusieurs lignes ; un champ ou une
+    // instruction de Jinja, non.
     const closing = { "$$": "$$", "$": "$", "\\(": "\\)", "\\[": "\\]" };
     CodeMirror.defineMode("pwq-html", config => CodeMirror.overlayMode(CodeMirror.getMode(config, "htmlmixed"), {
       startState: () => ({ math: null }),
       copyState: state => ({ math: state.math }),
       token(stream, state) {
-        if (stream.match(/^\{\{.*?\}\}/)) return "pwq-variable";
-        if (!state.math && stream.match(/^\{%.*?%\}/)) return "pwq-tag";
+        if (!state.math && stream.match(/^\{\{-?\s*input_[A-Za-z_]+\s*\(.*?\)\s*-?\}\}/)) return "pwq-tag";
+        if (stream.match(/^\{\{.*?\}\}|^\{%.*?%\}|^\{#.*?#\}/)) return "pwq-variable";
         if (state.math) {
           if (stream.match(state.math)) {
             state.math = null;
@@ -135,7 +136,8 @@ window.PyWimsEditor = (() => {
 
   // Ligne du fichier où se trouve une erreur, ou null : « pgcd.pwq:12 : … » (erreur de format),
   // « « question_setup », ligne 5 » (erreur Python, ligne comptée dans le champ), ou la ligne qui
-  // contient la balise {% … %} citée (erreur de balise, qui ne donne pas de ligne).
+  // contient le champ {{ input_…(…) }} ou l’ancienne balise {% … %} citée (erreur de champ, qui ne donne
+  // pas de ligne).
   function errorLine(message, text) {
     const fileLine = message.match(/\.pwq:(\d+) :/);
     if (fileLine) return Number(fileLine[1]);
@@ -145,9 +147,13 @@ window.PyWimsEditor = (() => {
       const header = lines.findIndex(line => fieldHeader(line) === fieldLine[1]);
       return header < 0 ? null : header + 2 + Number(fieldLine[2]);
     }
-    const tag = message.match(/\{%.*?%\}/);
-    const index = tag ? lines.findIndex(line => line.includes(tag[0])) : -1;
-    return index < 0 ? null : index + 1;
+    // Le message d’une ancienne balise cite aussi sa nouvelle écriture, absente du texte : on garde
+    // le premier champ cité qui figure dans le texte.
+    for (const [tag] of message.matchAll(/\{\{-?\s*input_.*?\)\s*-?\}\}|\{%.*?%\}/g)) {
+      const index = lines.findIndex(line => line.includes(tag));
+      if (index >= 0) return index + 1;
+    }
+    return null;
   }
 
   // L’éditeur de la question courante (§ 11.10). Un seul éditeur, et un document par question ouverte

@@ -35,7 +35,7 @@
       results.append(item);
     }
     // Petite question source partagée par les tests du format et des champs facultatifs.
-    const source = `%\n% question_title\n%\nEssai\n%\n% question_keywords\n%\nmathématiques, PGCD\n%\n% question_layout\n%\nSTD\n%\n% question_setup\n%\nx = 3\n%\n% question_statement\n%\nBonjour {{x}} {% input_text 'reponse' solution=x style='width:5em' %}\n%\n% question_check\n%\nok_answer['reponse'] = reponse == '3'\nfeedback = 'Fini'\n%`;
+    const source = `%\n% question_title\n%\nEssai\n%\n% question_keywords\n%\nmathématiques, PGCD\n%\n% question_layout\n%\nSTD\n%\n% question_setup\n%\nx = 3\n%\n% question_statement\n%\nBonjour {{x}} {{ input_text('reponse', solution=x, style='width:5em') }}\n%\n% question_check\n%\nok_answer['reponse'] = reponse == '3'\nfeedback = 'Fini'\n%`;
     test("l’éditeur découpe un .pwq en champs, même invalide, et le réécrit à l’identique", () => {
       const file = "%\n% question_title\n%\nPGCD\n%\n% enonce\n%\nAncien nom\n\n%\n% question_setup\n%\nx = 1\n    y = 2\n";
       const split = PyWimsCompiler.splitQuestionSource(file);
@@ -112,83 +112,83 @@
     };
     test("chaque balise de saisie exige un attribut solution et un nom non réservé", () => {
       for (const source of [
-        "input_text 'resultat' solution=somme style='width:7em'",
-        "input_math 'derivee' solution=derivee",
-        "input_matrix 'matrice' rows=m cols=p solution=produit",
-        "input_vmatrix 'matrice' max_rows=5 solution=produit"
+        "input_text('resultat', solution=somme, style='width:7em')",
+        "input_math('derivee', solution=derivee)",
+        "input_matrix('matrice', rows=m, cols=p, solution=produit)",
+        "input_vmatrix('matrice', max_rows=5, solution=produit)"
       ]) {
         const tag = PyWimsTemplate.parseTag(source);
         if (!tag.attributes.solution || !/^(somme|derivee|produit)$/.test(tag.attributes.solution)) {
           throw new Error(`Solution non reconnue dans : ${source}`);
         }
       }
-      expectTagError("input_text 'x' solution='12'", "doit être un nom de variable");
-      expectTagError("input_math 'derivee'", "Le champ « derivee » doit indiquer sa solution");
-      expectTagError("input_text 'feedback' solution=s", "Le nom de champ « feedback » est réservé");
-      expectTagError("input_value 'answer_text' solution=s", "Le nom de champ « answer_text » est réservé");
-      expectTagError("input_text 'lambda' solution=s", "Le nom de champ « lambda » est réservé");
+      expectTagError("input_text('x', solution='12')", "doit être un nom de variable");
+      expectTagError("input_math('derivee')", "Le champ « derivee » doit indiquer sa solution");
+      expectTagError("input_text('feedback', solution=s)", "Le nom de champ « feedback » est réservé");
+      expectTagError("input_value('answer_text', solution=s)", "Le nom de champ « answer_text » est réservé");
+      expectTagError("input_text('lambda', solution=s)", "Le nom de champ « lambda » est réservé");
     });
     // Règle des identifiants de Python : lettres accentuées admises, chiffre en tête refusé.
     test("un nom de champ ou de variable peut être accentué", () => {
-      const tag = PyWimsTemplate.parseTag("input_matrix 'matrice_é' rows=nb_lignes cols=p solution=résultat");
+      const tag = PyWimsTemplate.parseTag("input_matrix('matrice_é', rows=nb_lignes, cols=p, solution=résultat)");
       if (tag.name !== "matrice_é" || tag.attributes.solution !== "résultat" || tag.attributes.rows !== "nb_lignes") {
         throw new Error(`Balise mal lue : ${JSON.stringify(tag)}`);
       }
       // « é » écrit en deux caractères (e + accent) : le nom est ramené à la forme de Python.
-      if (PyWimsTemplate.parseTag("input_text 'réponse' solution=s").name !== "réponse") {
+      if (PyWimsTemplate.parseTag("input_text('réponse', solution=s)").name !== "réponse") {
         throw new Error("Le nom n’est pas normalisé comme en Python (NFKC).");
       }
-      expectTagError("input_text '2x' solution=s", "Balise de modèle non prise en charge");
-      expectTagError("input_text 'x' solution=2é", "doit être un nom de variable");
+      expectTagError("input_text('2x', solution=s)", "Champ de réponse non pris en charge");
+      expectTagError("input_text('x', solution=2é)", "pas une expression");
       if (!PyWimsTemplate.isName("Δx") || PyWimsTemplate.isName("2x") || PyWimsTemplate.isName("a-b")) {
         throw new Error("La règle des noms diffère de celle de Python.");
       }
     });
     test("les balises invalides produisent un message précis", () => {
-      expectTagError("input_drag 'choix'", "Balise de modèle non prise en charge");
-      expectTagError("input_text 'x' couleur='rouge'", "Attribut « couleur » inconnu pour input_text");
-      expectTagError("input_vmatrix 'm' max_rows=n", "doit être un entier");
-      expectTagError("input_text 'x' style='a' style='b'", "Attribut « style » répété");
-      expectTagError("input_text 'x' style=", "Syntaxe d’attribut invalide");
+      expectTagError("input_drag('choix')", "Champ de réponse non pris en charge");
+      expectTagError("input_text('x', couleur='rouge')", "Attribut « couleur » inconnu pour input_text");
+      expectTagError("input_vmatrix('m', max_rows=n)", "doit être un entier");
+      expectTagError("input_text('x', style='a', style='b')", "Attribut « style » répété");
+      expectTagError("input_text('x', style=)", "Attribut invalide");
       const errors = PyWimsTemplate.validateTemplate(
-        "{% input_text 'ok' solution=s %} {% input_drag 'a' %} {% input_math 'b' taille=2 %}"
+        "{{ input_text('ok', solution=s) }} {{ input_drag('a') }} {{ input_math('b', taille=2) }}"
       );
       if (errors.length !== 2) {
         throw new Error(`Toutes les balises invalides doivent être signalées : ${errors.join(" ; ")}`);
       }
     });
     test("les champs à choix exigent leurs choix et vérifient colonnes et barème", () => {
-      const radio = PyWimsTemplate.parseTag("input_radio 'r' choices=choix solution=bonne columns=2 fixed_last=1 scoring='b=2, m=-0.5'");
+      const radio = PyWimsTemplate.parseTag("input_radio('r', choices=choix, solution=bonne, columns=2, fixed_last=1, scoring='b=2, m=-0.5')");
       if (radio.attributes.choices !== "choix" || radio.attributes.columns !== 2 || radio.attributes.fixed_last !== 1 ||
           !PyWimsTemplate.choiceTypes.has("input_checkbox")) {
         throw new Error(`Attributs mal lus : ${JSON.stringify(radio.attributes)}`);
       }
-      expectTagError("input_checkbox 'r' solution=bonnes", "doit indiquer ses choix");
-      expectTagError("input_radio 'r' choices=c solution=s columns=7", "« columns » doit être compris entre 1 et 6");
-      expectTagError("input_radio 'r' choices=c solution=s shuffle=2", "« shuffle » doit valoir 0 ou 1");
-      expectTagError("input_radio 'r' choices=c solution=s shuffle=0 fixed_last=1", "fixed_last est sans effet avec shuffle=0");
-      if (PyWimsTemplate.parseTag("input_checkbox 'r' choices=c solution=s shuffle=0").attributes.shuffle !== 0) {
+      expectTagError("input_checkbox('r', solution=bonnes)", "doit indiquer ses choix");
+      expectTagError("input_radio('r', choices=c, solution=s, columns=7)", "« columns » doit être compris entre 1 et 6");
+      expectTagError("input_radio('r', choices=c, solution=s, shuffle=2)", "« shuffle » doit valoir 0 ou 1");
+      expectTagError("input_radio('r', choices=c, solution=s, shuffle=0, fixed_last=1)", "fixed_last est sans effet avec shuffle=0");
+      if (PyWimsTemplate.parseTag("input_checkbox('r', choices=c, solution=s, shuffle=0)").attributes.shuffle !== 0) {
         throw new Error("shuffle=0 mal lu.");
       }
-      expectTagError("input_radio 'r' choices=c solution=s scoring='b=1,formula=NBC'", "« formula » d’AMC n’est pas prise en charge");
-      expectTagError("input_radio 'r' choices=c solution=s scoring='set.X=1'", "« set.X » d’AMC n’est pas prise en charge");
-      expectTagError("input_radio 'r' choices=c solution=s scoring='z=1'", "Directive de barème inconnue « z »");
-      expectTagError("input_radio 'r' choices=c solution=s scoring='b=un'", "« b » doit être un nombre");
-      expectTagError("input_radio 'r' choices=c solution=s scoring='-2'", "barème propre à une réponse");
-      expectTagError("input_radio 'r' choices=c solution=s scoring='b=1,b=2'", "« b » répétée");
+      expectTagError("input_radio('r', choices=c, solution=s, scoring='b=1,formula=NBC')", "« formula » d’AMC n’est pas prise en charge");
+      expectTagError("input_radio('r', choices=c, solution=s, scoring='set.X=1')", "« set.X » d’AMC n’est pas prise en charge");
+      expectTagError("input_radio('r', choices=c, solution=s, scoring='z=1')", "Directive de barème inconnue « z »");
+      expectTagError("input_radio('r', choices=c, solution=s, scoring='b=un')", "« b » doit être un nombre");
+      expectTagError("input_radio('r', choices=c, solution=s, scoring='-2')", "barème propre à une réponse");
+      expectTagError("input_radio('r', choices=c, solution=s, scoring='b=1,b=2')", "« b » répétée");
     });
     test("input_value lit sa tolérance et sa forme, input_text son degré de conformité", () => {
-      const value = PyWimsTemplate.parseTag("input_value 'r' solution=s tolerance=0.01 form=decimal style='width:5em'");
-      const quoted = PyWimsTemplate.parseTag("input_value 'r' solution=s tolerance=.5 form='scientific'");
-      const text = PyWimsTemplate.parseTag("input_text 'r' solution=s match=loose");
+      const value = PyWimsTemplate.parseTag("input_value('r', solution=s, tolerance=0.01, form=decimal, style='width:5em')");
+      const quoted = PyWimsTemplate.parseTag("input_value('r', solution=s, tolerance=.5, form='scientific')");
+      const text = PyWimsTemplate.parseTag("input_text('r', solution=s, match=loose)");
       if (value.attributes.tolerance !== "0.01" || value.attributes.form !== "decimal" ||
           quoted.attributes.tolerance !== ".5" || quoted.attributes.form !== "scientific" || text.attributes.match !== "loose") {
         throw new Error(`Attributs mal lus : ${JSON.stringify([value.attributes, quoted.attributes, text.attributes])}`);
       }
-      expectTagError("input_value 'r' solution=s form=decimale", "« form » doit être l’une des valeurs any, integer, decimal");
-      expectTagError("input_value 'r' solution=s tolerance=tol", "« tolerance » doit être un nombre positif");
-      expectTagError("input_text 'r' solution=s match=strict", "« match » doit être l’une des valeurs exact, normal, loose");
-      expectTagError("input_matrix 'm' size=2.5 solution=s", "« size » doit être un entier ou un nom de variable");
+      expectTagError("input_value('r', solution=s, form=decimale)", "« form » doit être l’une des valeurs any, integer, decimal");
+      expectTagError("input_value('r', solution=s, tolerance=tol)", "« tolerance » doit être un nombre positif");
+      expectTagError("input_text('r', solution=s, match=strict)", "« match » doit être l’une des valeurs exact, normal, loose");
+      expectTagError("input_matrix('m', size=2.5, solution=s)", "« size » doit être un entier ou un nom de variable");
     });
     test("une valeur numérique se compare exactement, à la tolérance près, et dans la forme demandée", () => {
       const { valueVerdict } = PyWimsCorrection;
@@ -272,18 +272,18 @@
           !select.options[0].disabled) {
         throw new Error(`Rendu inattendu : ${html}`);
       }
-      expectTagError("input_select 's' choices=c solution=s columns=2", "Attribut « columns » inconnu pour input_select");
-      expectTagError("input_select 's' choices=c solution=s scoring='b=1'", "Attribut « scoring » inconnu pour input_select");
-      expectTagError("input_select 's' solution=s", "doit indiquer ses choix");
+      expectTagError("input_select('s', choices=c, solution=s, columns=2)", "Attribut « columns » inconnu pour input_select");
+      expectTagError("input_select('s', choices=c, solution=s, scoring='b=1')", "Attribut « scoring » inconnu pour input_select");
+      expectTagError("input_select('s', solution=s)", "doit indiquer ses choix");
     });
     test("le barème suit la syntaxe d’AMC et n’est admis que pour un champ seul", () => {
       const scoring = PyWimsTemplate.parseScoring("b=2,m=-0.5, v=0,e=-1,mz=3,haut=4,MAX=5,p=0,P=6,d=.5");
       if (JSON.stringify(scoring) !== JSON.stringify({ b: 2, m: -0.5, v: 0, e: -1, mz: 3, haut: 4, MAX: 5, p: 0, P: 6, d: 0.5 })) {
         throw new Error(`Barème mal lu : ${JSON.stringify(scoring)}`);
       }
-      const alone = PyWimsTemplate.validateTemplate("{% input_checkbox 'r' choices=c solution=s scoring='mz=1' %}");
+      const alone = PyWimsTemplate.validateTemplate("{{ input_checkbox('r', choices=c, solution=s, scoring='mz=1') }}");
       const shared = PyWimsTemplate.validateTemplate(
-        "{% input_checkbox 'r' choices=c solution=s scoring='mz=1' %} {% input_text 't' solution=a %}"
+        "{{ input_checkbox('r', choices=c, solution=s, scoring='mz=1') }} {{ input_text('t', solution=a) }}"
       );
       if (alone.length || shared.length !== 1 || !shared[0].includes("seul champ de la question")) {
         throw new Error(`Règle du champ seul mal appliquée : ${JSON.stringify([alone, shared])}`);
@@ -330,16 +330,37 @@
         throw new Error("shuffle=0 doit garder l’ordre de l’auteur.");
       }
     });
-    test("l’aperçu provisoire d’un champ à choix nomme ses choix d’après leur liste", () => {
-      const draw = PyWimsCompiler.previewPlaceholderDraw({ question_statement: "{% input_radio 'r' choices=choix solution=s %}" });
-      if (draw.choices.r.join() !== "choix[0],choix[1]" || draw.orders.r.join() !== "0,1") {
-        throw new Error(`Tirage provisoire inattendu : ${JSON.stringify(draw)}`);
+    // Modèle donné à Jinja (SPECIFICATION.md, § 2.10) : chaque champ devient une marque à son nom, et
+    // les lignes du modèle sont gardées pour les messages de Jinja.
+    test("le modèle donné à Jinja remplace chaque champ par sa marque, lignes comprises", () => {
+      const template = "{% if a %}A{% endif %} {{ x|frac }}\n{{ input_value('r',\n  solution=s) }} fin {{ input_text('t', solution=u) }}";
+      const source = PyWimsTemplate.jinjaSource(template);
+      const expected = "{% if a %}A{% endif %} {{ x|frac }}\n\u0001r\u0001\n fin \u0001t\u0001";
+      if (source !== expected || PyWimsTemplate.markCount(source, "r") !== 1 ||
+          PyWimsTemplate.markCount("\u0001r\u0001\u0001r\u0001", "r") !== 2 || PyWimsTemplate.markCount("", "r") !== 0 ||
+          PyWimsTemplate.parseTags(template).map(tag => tag.name).join() !== "r,t") {
+        throw new Error(`Modèle inattendu : ${JSON.stringify(source)}`);
       }
     });
-    test("un champ à choix affiche ses choix dans l’ordre du tirage, échappés et à l’abri du modèle", () => {
-      const html = PyWimsTemplate.renderTemplate(
-        "{{ a }} {% input_checkbox 'r' choices=c solution=s %}",
-        { a: "A" },
+    test("l’ancienne notation, les triples accolades et deux champs de même nom sont refusés", () => {
+      const errors = PyWimsTemplate.validateTemplate(
+        "{% input_value 'n' solution=s tolerance=0.01 style='width:5em' %} $\\frac{{{n}}}{2}$ " +
+        "{{ input_text('a', solution=s) }} {{ input_text('a', solution=t) }}");
+      const expected = [
+        "écrivez {{ input_value('n', solution=s, tolerance=0.01, style='width:5em') }} au lieu de {% input_value 'n' solution=s tolerance=0.01 style='width:5em' %}",
+        "Trois accolades de suite",
+        "Deux champs portent le nom « a »"
+      ];
+      if (errors.length !== 3 || expected.some((fragment, index) => !errors[index].includes(fragment))) {
+        throw new Error(`Erreurs inattendues : ${JSON.stringify(errors)}`);
+      }
+      expectTagError("input_value('r', solution=p*2)", "pas une expression");
+      expectTagError("input_value('r', solution=s tolerance=0.01)", "séparés par des virgules");
+    });
+    test("un champ à choix affiche ses choix dans l’ordre du tirage, échappés et à l’abri de l’énoncé", () => {
+      const html = PyWimsTemplate.renderStatement(
+        PyWimsTemplate.jinjaSource("A {{ input_checkbox('r', choices=c, solution=s) }}"),
+        PyWimsTemplate.parseTags("{{ input_checkbox('r', choices=c, solution=s) }}"),
         tag => PyWimsWidgets.inputChoice(tag.name, {
           multiple: true, texts: ["<b>", "{{ a }}", "$x^{2}$"], order: [2, 0, 1], columns: 2, idPrefix: "q3-"
         })
@@ -374,30 +395,29 @@
         if (!rejected) throw new Error(`Choix invalides acceptés : ${JSON.stringify(options)}`);
       }
     });
-    // Une valeur admet les balises de mise en forme (SPECIFICATION.md, § 2.1) ; le reste est échappé.
-    test("le rendu du modèle remplace balises et variables en échappant les valeurs", () => {
-      const html = PyWimsTemplate.renderTemplate(
-        "Calcul {{ x }} : {% input_text 'r' solution=s style='width:3em' %}",
-        { x: "<b>&</b> <script>x < 3</scr" + "ipt>" },
-        tag => `[${tag.type}:${tag.name}:${tag.attributes.style}]`
-      );
-      if (html !== "Calcul <b>&amp;</b> &lt;script&gt;x &lt; 3&lt;/scr" + "ipt&gt; : [input_text:r:width:3em]" ||
+    // L’énoncé rendu par Jinja est inséré tel quel (SPECIFICATION.md, § 2.10) ; seules les marques
+    // deviennent des champs.
+    test("l’affichage de l’énoncé rendu remplace chaque marque par son champ", () => {
+      const tags = PyWimsTemplate.parseTags("{{ input_text('r', solution=s, style='width:3em') }}");
+      const html = PyWimsTemplate.renderStatement("Calcul <b>&amp;</b> : \u0001r\u0001", tags,
+        tag => `[${tag.type}:${tag.name}:${tag.attributes.style}]`);
+      if (html !== "Calcul <b>&amp;</b> : [input_text:r:width:3em]" ||
           PyWimsTemplate.escapeHtml(`"'`) !== "&quot;&#39;") {
         throw new Error(`Rendu inattendu : ${html}`);
       }
       let rejected = false;
       try {
-        PyWimsTemplate.renderTemplate("{{ inconnue }}", {}, () => "");
+        PyWimsTemplate.renderStatement("\u0001inconnu\u0001", tags, () => "");
       } catch (error) {
-        rejected = error.message.includes("Variable de question inconnue : inconnue");
+        rejected = error.message.includes("Champ de question inconnu : inconnu");
       }
-      if (!rejected) throw new Error("Une variable absente du contexte a été acceptée.");
+      if (!rejected) throw new Error("Une marque sans champ a été acceptée.");
     });
     // Un « < » de formule n’ouvre pas de balise ; le HTML de l’auteur hors formule reste intact.
-    test("le rendu du modèle échappe le signe « < » des formules seulement", () => {
-      const html = PyWimsTemplate.renderTemplate(
-        "<b>Soit</b> $x_1<x_2$, $${{ a }}<y$$, \\(u<v\\), 3 \\$ < {% input_text 'r' solution=s %} $p<q$",
-        { a: "z" },
+    test("l’affichage de l’énoncé rendu échappe le signe « < » des formules seulement", () => {
+      const html = PyWimsTemplate.renderStatement(
+        "<b>Soit</b> $x_1<x_2$, $$z<y$$, \\(u<v\\), 3 \\$ < \u0001r\u0001 $p<q$",
+        PyWimsTemplate.parseTags("{{ input_text('r', solution=s) }}"),
         tag => `[${tag.type}]`
       );
       const expected = "<b>Soit</b> $x_1&lt;x_2$, $$z&lt;y$$, \\(u&lt;v\\), 3 \\$ < [input_text] $p&lt;q$";
@@ -418,13 +438,13 @@
     });
     const sheetQuestion = (title, question_statement) => ({
       fields: { question_title: title, question_keywords: "", question_layout: "STD", question_setup: "a = 1", question_statement, question_check: "ok_answer['r'] = True" },
-      draws: [{ seed: 0, context: {}, dimensions: {}, solutions: { r: "1" } }]
+      draws: [{ seed: 0, statement: PyWimsTemplate.jinjaSource(question_statement), context: {}, dimensions: {}, solutions: { r: "1" } }]
     });
     function testSheetAssembly(layout) {
       test("une activité est un seul document avec une section par question", () => {
         const html = PyWimsCompiler.assembleActivity("Activité & révision", [
-          sheetQuestion("Question <1>", "Un {% input_text 'r' solution=a %}"),
-          sheetQuestion("Question 2", "Deux {% input_text 'r' solution=a %}")
+          sheetQuestion("Question <1>", "Un {{ input_text('r', solution=a) }}"),
+          sheetQuestion("Question 2", "Deux {{ input_text('r', solution=a) }}")
         ], sheetResources(layout));
         const page = new DOMParser().parseFromString(html, "text/html");
         const sections = [...page.querySelectorAll("main .pw-question")];
@@ -433,7 +453,7 @@
             page.querySelector("iframe") ||
             sections.map(section => section.id).join() !== "q1,q2" ||
             field(sections[0], "question_title") !== "Question <1>" ||
-            field(sections[1], "question_statement") !== "Deux {% input_text 'r' solution=a %}" ||
+            field(sections[1], "question_statement") !== "Deux {{ input_text('r', solution=a) }}" ||
             JSON.parse(sections[0].querySelector("pre[data-draws]").textContent)[0].solutions.r !== "1" ||
             !page.getElementById("pw-question-template")) {
           throw new Error("L’activité n’assemble pas ses questions dans un seul document.");
@@ -466,10 +486,10 @@
         }
       });
       test("seule une question qui a un « question_check » est marquée comme ayant besoin de Python", () => {
-        const withoutCheck = sheetQuestion("Sans", "Un {% input_text 'r' solution=a %}");
+        const withoutCheck = sheetQuestion("Sans", "Un {{ input_text('r', solution=a) }}");
         delete withoutCheck.fields.question_check;
         const page = new DOMParser().parseFromString(PyWimsCompiler.assembleActivity("Mixte", [
-          sheetQuestion("Avec", "Un {% input_text 'r' solution=a %}"), withoutCheck
+          sheetQuestion("Avec", "Un {{ input_text('r', solution=a) }}"), withoutCheck
         ], sheetResources(layout)), "text/html");
         const marks = [...page.querySelectorAll(".pw-question")].map(section => section.dataset.python);
         if (marks.join() !== "true,false" ||
@@ -484,18 +504,18 @@
         }
       });
       test("MathJax n’est intégré qu’à une feuille qui peut afficher une formule", () => {
-        const question = ({ question_statement = "Un {% input_text 'r' solution=a %}", question_check = false, explanation, draw = {} }) => {
+        const question = ({ question_statement = "Un {{ input_text('r', solution=a) }}", question_check = false, explanation, draw = {} }) => {
           const built = sheetQuestion("Q", question_statement);
           if (!question_check) delete built.fields.question_check;
           if (explanation) built.fields.question_solution_explanation = explanation;
-          built.draws = [{ ...built.draws[0], ...draw }];
+          built.draws = [{ ...built.draws[0], ...(explanation ? { explanation } : {}), ...draw }];
           return built;
         };
         const hasMathJax = built => /mathjax@/.test(PyWimsCompiler.assembleQuestion(built.fields, built.draws, sheetResources(layout)));
         const cases = [
           ["sans formule ni « question_check »", question({}), false],
-          ["formule dans l’énoncé", question({ question_statement: "Calculer $x^2$ : {% input_text 'r' solution=a %}" }), true],
-          ["formule \\( \\) dans une valeur", question({ draw: { context: { f: "\\(x\\)" } } }), true],
+          ["formule dans l’énoncé", question({ question_statement: "Calculer $x^2$ : {{ input_text('r', solution=a) }}" }), true],
+          ["formule \\( \\) dans l’énoncé rendu d’un tirage", question({ draw: { statement: "Soit \\(x\\) \u0001r\u0001" } }), true],
           ["formule dans un choix", question({ draw: { choices: { c: ["$1$", "deux"] } } }), true],
           ["formule dans l’explication", question({ explanation: "Car $2+2=4$." }), true],
           ["« question_check » sans formule", question({ question_check: true }), true]
@@ -585,7 +605,7 @@
     }
 
     // Archive de question (SPECIFICATION.md, § 2.7) : un .pwq et ses images.
-    const imageQuestion = (statement, explanation = "") => `%\n% question_title\n%\nFigure\n%\n% question_keywords\n%\nimage\n%\n% question_layout\n%\nSTD\n%\n% question_setup\n%\nx = 1\n%\n% question_statement\n%\n${statement} {% input_text 'r' solution=x %}\n%${explanation ? `\n% question_solution_explanation\n%\n${explanation}\n%` : ""}`;
+    const imageQuestion = (statement, explanation = "") => `%\n% question_title\n%\nFigure\n%\n% question_keywords\n%\nimage\n%\n% question_layout\n%\nSTD\n%\n% question_setup\n%\nx = 1\n%\n% question_statement\n%\n${statement} {{ input_text('r', solution=x) }}\n%${explanation ? `\n% question_solution_explanation\n%\n${explanation}\n%` : ""}`;
     const pixel = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 1, 2, 3]);
     const readArchive = async (entries, path = "figure.pwqa") => PyWimsCompiler.archiveQuestionSource(
       await PyWimsCompiler.readZip(await PyWimsCompiler.createZip(entries).arrayBuffer()), path);
@@ -854,7 +874,7 @@
               fields.question_keywords !== "fractions, addition, dénominateur commun, fraction irréductible" ||
               fields.question_layout !== "STD" ||
               PyWimsTemplate.validateTemplate(fields.question_statement).length ||
-              !fields.question_statement.includes("{% input_text 'result' solution=total") ||
+              !fields.question_statement.includes("{{ input_text('result', solution=total") ||
               !fields.question_solution_explanation.includes("{{common}}") ||
               !fields.question_check.includes("irréductible") ||
               !fields.question_check.includes("math_expression(result)")) {
@@ -881,7 +901,7 @@
               PyWimsTemplate.validateTemplate(fields.question_statement).length ||
               !fields.question_setup.includes("ANY") ||
               !fields.question_solution_explanation.trim() ||
-              !fields.question_statement.includes("{% input_matrix 'matrix' size=size solution=solution_matrix") ||
+              !fields.question_statement.includes("{{ input_matrix('matrix', size=size, solution=solution_matrix") ||
               !fields.question_check.includes('ok_answer[f"matrix[{i}][{j}]"]')) {
             throw new Error("Les champs de la question matricielle sont inattendus.");
           }
@@ -997,17 +1017,19 @@
         }
       }
     });
-    test("trois accolades de suite donnent un avertissement, pas une erreur", () => {
-      const warned = PyWimsCompiler.templateWarnings({ question_statement: "$\\frac{{{n}}}{{{m}}}$" });
-      const clean = PyWimsCompiler.templateWarnings({ question_statement: "$\\frac{ {{n}} }{ {{m}} }$ et {{x}}" });
-      if (warned.length !== 1 || !warned[0].includes("\\frac{ {{n}} }{ {{m}} }") || clean.length) {
-        throw new Error(`Avertissements inattendus : ${JSON.stringify([warned, clean])}`);
+    // Avec Jinja, « {{{ » est une erreur, au message incompréhensible : le compilateur le dit avant.
+    test("trois accolades de suite sont refusées, avec l’écriture à employer", () => {
+      const refused = PyWimsTemplate.syntaxErrors("$\\frac{{{n}}}{{{m}}}$");
+      const clean = PyWimsTemplate.syntaxErrors("$\\frac{ {{n}} }{ {{m}} }$ et {{x}}");
+      const warnings = PyWimsCompiler.templateWarnings({ question_statement: "$\\frac{{{n}}}{2}$" });
+      if (refused.length !== 1 || !refused[0].includes("\\frac{ {{n}} }{2}") || clean.length || warnings.length) {
+        throw new Error(`Messages inattendus : ${JSON.stringify([refused, clean, warnings])}`);
       }
     });
     test("la liste des questions nomme les types de champs de réponse, dans l’ordre, sans répétition", () => {
       const label = PyWimsCompiler.fieldKindsLabel(
-        "{% input_radio 'a' choices=c solution=s %} {% input_text 'b' solution=s %} " +
-        "{% input_radio 'c' choices=c solution=s %} {% input_vmatrix 'd' solution=s %}");
+        "{{ input_radio('a', choices=c, solution=s) }} {{ input_text('b', solution=s) }} " +
+        "{{ input_radio('c', choices=c, solution=s) }} {{ input_vmatrix('d', solution=s) }}");
       if (label !== "choix unique · texte · matrice redimensionnable" ||
           PyWimsCompiler.fieldKindsLabel("Pas de champ.") !== "aucun champ de réponse") {
         throw new Error(`Libellé inattendu : ${label}`);
@@ -1066,16 +1088,11 @@
               throw new Error("Les messages ne sont pas dans l’en-tête ou la page défile au lieu des panneaux.");
             }
           });
-          test("l’aperçu est isolé et son tirage provisoire affiche chaque variable sous son nom", () => {
+          test("l’aperçu est isolé dans un cadre", () => {
             const frame = new DOMParser().parseFromString(compilerPage, "text/html").getElementById("preview-frame");
-            const draw = PyWimsCompiler.previewPlaceholderDraw({
-              question_statement: "Soit {{ f }} et {% input_matrix 'm' rows=n cols=2 solution=s %} {% input_text 'r' solution=s %}"
-            });
             // Sans « allow-same-origin », le HTML de l’énoncé ne peut pas agir sur le compilateur.
-            if (frame?.getAttribute("sandbox") !== "allow-scripts" ||
-                JSON.stringify(draw.context) !== JSON.stringify({ f: "f", n: "n" }) ||
-                draw.dimensions.n !== 2 || JSON.stringify(draw.solutions) !== "{}") {
-              throw new Error(`Cadre ou tirage provisoire inattendu : ${JSON.stringify(draw)}`);
+            if (frame?.getAttribute("sandbox") !== "allow-scripts") {
+              throw new Error("Le cadre de l’aperçu n’est pas isolé.");
             }
           });
           test("les messages transitoires s’effacent en fondu", () => {
@@ -1121,7 +1138,7 @@
               !fields.question_setup.includes("A = Matrix(m, n") ||
               !fields.question_setup.includes("B = Matrix(n, p") ||
               !fields.question_setup.includes("product = A * B") ||
-              !fields.question_statement.includes("input_vmatrix 'matrix' max_rows=5 max_cols=5") ||
+              !fields.question_statement.includes("input_vmatrix('matrix', max_rows=5, max_cols=5,") ||
               !fields.question_statement.includes("solution=product") ||
               !fields.question_check.includes("row_count != m") ||
               !fields.question_check.includes("column_count != p") ||
@@ -1131,7 +1148,7 @@
     });
     test("le compilateur et le runtime reconnaissent input_vmatrix", () => {
             const tag = PyWimsTemplate.parseTag(
-              "input_vmatrix 'matrice' max_rows=5 max_cols=4 cell_width='4em' input_style='width:2em' solution=p"
+              "input_vmatrix('matrice', max_rows=5, max_cols=4, cell_width='4em', input_style='width:2em', solution=p)"
             );
             if (tag.type !== "input_vmatrix" ||
                 tag.name !== "matrice" ||
@@ -1139,7 +1156,7 @@
                 tag.attributes.max_cols !== 4 ||
                 tag.attributes.cell_width !== "4em" ||
                 tag.attributes.input_style !== "width:2em" ||
-                !PyWimsTemplate.tagTypes("Saisie : {% input_vmatrix 'm' solution=s %}").has("input_vmatrix") ||
+                !PyWimsTemplate.tagTypes("Saisie : {{ input_vmatrix('m', solution=s) }}").has("input_vmatrix") ||
                 !matrixWidget.includes("function inputVMatrix") ||
                 !matrixWidget.includes("data-vmatrix-name") ||
                 !matrixWidget.includes("function enableVariableMatrixResize") ||
@@ -1280,21 +1297,17 @@
             }
           });
           test("le runtime gère les dimensions matricielles carrées et rectangulaires", () => {
-            const square = PyWimsTemplate.parseTag("input_matrix 'a' size=3 solution=s");
-            const rectangular = PyWimsTemplate.parseTag("input_matrix 'b' rows=m cols=2 input_style='width:2em' solution=s");
-            const variables = PyWimsTemplate.templateVariables(
-              "{{ A }} {% input_matrix 'a' size=n solution=s %} {% input_matrix 'b' rows=m cols=p solution=s %} {% input_matrix 'c' size=2 solution=s %}"
-            );
+            const square = PyWimsTemplate.parseTag("input_matrix('a', size=3, solution=s)");
+            const rectangular = PyWimsTemplate.parseTag("input_matrix('b', rows=m, cols=2, input_style='width:2em', solution=s)");
             if (square.attributes.size !== 3 ||
                 rectangular.attributes.rows !== "m" ||
-                rectangular.attributes.cols !== 2 ||
-                [...variables].sort().join(",") !== "A,m,n,p") {
+                rectangular.attributes.cols !== 2) {
               throw new Error("Les dimensions littérales ou nommées des matrices sont mal analysées.");
             }
             for (const invalid of [
-              "input_matrix 'a' solution=s",
-              "input_matrix 'a' rows=2 solution=s",
-              "input_matrix 'a' size=2 rows=2 cols=2 solution=s"
+              "input_matrix('a', solution=s)",
+              "input_matrix('a', rows=2, solution=s)",
+              "input_matrix('a', size=2, rows=2, cols=2, solution=s)"
             ]) {
               let rejected = false;
               try {

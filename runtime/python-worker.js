@@ -196,9 +196,12 @@ if importlib.util.find_spec("numpy") is not None:
     });
   },
 
-  // Rassemble les données d’un tirage (valeurs affichées, solutions, explication) et les erreurs
-  // de l’auteur.
-  collectDraw(sessionId, spec) {
+  // Rassemble les données d’un tirage (énoncé et explication rendus par Jinja, valeurs contrôlées,
+  // solutions) et les erreurs de l’auteur. Jinja ne sert qu’à la compilation : il est chargé ici, et
+  // la page de l’élève, qui n’appelle jamais collectDraw, ne le télécharge pas.
+  async collectDraw(sessionId, spec) {
+    sessionGlobals(sessionId);
+    await ensurePackages("import jinja2");
     const globals = sessionGlobals(sessionId);
     return enqueuePythonOperation(() => {
       const collect = pyodide.runPython('__import__("pywims")._collect_draw');

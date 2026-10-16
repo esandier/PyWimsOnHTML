@@ -36,7 +36,7 @@ term_derivatives = " ; ".join("$(" + latex(term) + ")' = " + latex(diff(term, x)
 Soit la fonction polynomiale
 $f(x) = {{ function}}$.
 Donnez sa dérivée $f'(x)$ :
-{% input_math 'answer' solution=derivative %}
+{{ input_math('answer', solution=derivative) }}
 %
 % question_solution_explanation
 %
