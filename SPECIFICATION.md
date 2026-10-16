@@ -620,7 +620,8 @@ fabriquer un texte (les choix d’un QCM sont des listes Python, § 10.1) :
     variable de `question_setup` lue par les modèles (selon
     `jinja2.meta.find_undeclared_variables`), écrite par `tex`, et de chaque
     dimension de matrice ; les fonctions, modules et classes en sont exclus,
-    leur texte n’étant pas reproductible ;
+    leur texte n’étant pas reproductible. Seule une question qui a un
+    `question_check` le garde : sans Python, rien ne rejoue le tirage ;
   - `solutions` : la valeur convertie de chaque champ (§ 2.3).
 - **Cohérence.** Pour chaque tirage, dans le même espace de noms, le
   compilateur saisit la solution de chaque champ comme le ferait un élève,

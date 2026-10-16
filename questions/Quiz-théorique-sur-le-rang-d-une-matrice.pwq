@@ -95,12 +95,11 @@ questions_pool = [
 ]
 
 q = choice(questions_pool)
-statement = q["statement"]
-choices, solution = mcq(correct=q["correct"], wrong=q["wrong"], count=len(q["wrong"]) + 1)
+choices, solution = mcq(q["correct"], q["wrong"])
 %
 % question_statement
 %
-{{statement}}
+{{ q.statement }}
 {{ input_radio('answer', choices=choices, solution=solution) }}
 %
 % question_solution_explanation

@@ -350,15 +350,18 @@
           tag.name,
           choiceOrder(draw.choices[tag.name].length, tag.attributes.fixed_last ?? 0, seed, tag.name, tag.attributes.shuffle ?? 1)
         ]));
+        // Les valeurs de l’énoncé ne servent qu’à contrôler que Python rejoue ce tirage, donc qu’à une
+        // question qui a un « question_check » : ailleurs, elles pesaient près d’un quart des tirages.
+        const context = fields.question_check === undefined ? undefined : draw.context;
         // L’ordre fait partie du tirage : deux tirages qui ne diffèrent que par lui restent distincts.
-        const key = JSON.stringify([draw.statement, draw.explanation, draw.context, draw.solutions, draw.choices, orders]);
+        const key = JSON.stringify([draw.statement, draw.explanation, context, draw.solutions, draw.choices, orders]);
         if (!seen.has(key)) {
           seen.add(key);
           draws.push({
             seed,
             statement: draw.statement,
             ...(draw.explanation === null ? {} : { explanation: draw.explanation }),
-            context: draw.context,
+            ...(context === undefined ? {} : { context }),
             dimensions: draw.dimensions,
             solutions: draw.solutions,
             choices: draw.choices,
