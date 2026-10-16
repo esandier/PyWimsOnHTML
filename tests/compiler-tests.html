@@ -531,6 +531,21 @@
         const wrong = cases.filter(([, built, expected]) => hasMathJax(built) !== expected).map(([name]) => name);
         if (wrong.length) throw new Error(`MathJax mal décidé : ${wrong.join(", ")}`);
       });
+      // SPECIFICATION.md, § 5.10 : lignes entières de commentaire retirées, aux fins de ligne LF ou CRLF ;
+      // un « // » en fin de ligne (« https:// ») reste.
+      test("l’assemblage retire les commentaires du code intégré, fins de ligne Windows comprises", () => {
+        for (const eol of ["\n", "\r\n"]) {
+          const sheet = ["// ligne_retiree_1", "  // ligne_retiree_2", "const url = 'https://exemple.fr'; // fin de ligne", "go();", ""].join(eol);
+          const pywims = ["# ligne_retiree_3", "x = 1  # fin", ""].join(eol);
+          const html = PyWimsCompiler.assembleQuestion(sheetQuestion("A", "x {{ input_text('r', solution=a) }}").fields,
+            sheetQuestion("A", "x {{ input_text('r', solution=a) }}").draws,
+            { ...sheetResources(layout), sheet, pywims, questionCss: "/* ligne_retiree_4 */ a { color: red; }" });
+          if (/ligne_retiree/.test(html) || !html.includes("https://exemple.fr'; // fin de ligne") ||
+              !html.includes("go();") || !html.includes("x = 1  # fin") || !html.includes("a { color: red; }")) {
+            throw new Error(`Commentaires mal retirés (${JSON.stringify(eol)}).`);
+          }
+        }
+      });
       test("l’assemblage refuse un script ou un style qui fermerait sa balise", () => {
         // Les chaînes sont coupées : écrites d’un seul tenant, elles fermeraient le script de cette page.
         const close = element => "</" + element;

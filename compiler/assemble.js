@@ -47,8 +47,10 @@
   const stripComments = {
     html: text => text.replace(/[ \t]*<!--[\s\S]*?-->[ \t]*\n?/g, ""),
     css: text => text.replace(/[ \t]*\/\*[\s\S]*?\*\/[ \t]*\n?/g, ""),
-    js: text => text.replace(/^[ \t]*\/\/.*\n/gm, ""),
-    python: text => text.replace(/^[ \t]*#.*\n/gm, "")
+    // [^\n]* et non .* : le point d’une expression régulière ne lit pas « \r », et un fichier aux fins de
+    // ligne Windows (CRLF, selon la configuration de git) gardait tous ses commentaires.
+    js: text => text.replace(/^[ \t]*\/\/[^\n]*\n/gm, ""),
+    python: text => text.replace(/^[ \t]*#[^\n]*\n/gm, "")
   };
 
   // Fichiers du projet intégrés au HTML généré ; les widgets facultatifs ne sont lus que s’ils servent.
