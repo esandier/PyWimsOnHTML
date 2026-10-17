@@ -199,6 +199,10 @@ Ce qui doit varier dépend de la compétence visée :
     sur $\mathbb{R}$. »). Les choix sont du texte simple, sans formule ni HTML ;
     `shuffle=false` garde leur ordre (« croissante », « décroissante »). La
     saisie arrive dans `question_check` comme un indice, ou `None`.
+  - `inline=true` fond aussi un champ `input_value` ou `input_text` dans la
+    phrase d’un texte à trous (« de coefficient directeur
+    {{ input_value('slope', solution=m, style='width:3em', inline=true) }} »).
+    Pas pour `input_math`.
   - `{{ input_radio('nom', choices=liste, solution=indice) }}` (choix unique) et
     `{{ input_checkbox('nom', choices=liste, solution=indices) }}` (choix
     multiple) : voir « Questions à choix » ci-dessous.

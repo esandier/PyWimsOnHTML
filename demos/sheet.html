@@ -1137,6 +1137,48 @@ body:not([data-scored]) .pw-help-score {
 }
 
 
+.pw-input-wrapper.is-inline .pw-input {
+  border: 1px dashed var(--pw-input-border);
+  border-radius: 4px;
+  padding: 0 0.3em;
+  background: transparent;
+  font: inherit;
+  line-height: 1.35;
+}
+
+
+.pw-input-wrapper.is-inline .pw-input:focus,
+.is-inline .pw-select:focus-visible {
+  margin: -1px 0;
+  border-width: 2px;
+  outline: none;
+}
+
+.pw-input-wrapper.is-inline .pw-input:focus {
+  padding: 0 calc(0.3em - 1px);
+}
+
+.is-inline .pw-select:focus-visible {
+  padding: 0 calc(1.1em - 1px) 0 calc(0.3em - 1px);
+}
+
+
+.pw-input-wrapper.is-inline .pw-input.is-correct,
+.pw-input-wrapper.is-inline .pw-input.is-incorrect {
+  border-color: transparent;
+}
+
+.pw-input-wrapper.is-inline .pw-input.is-correct {
+  color: var(--pw-correct-text);
+  background: var(--pw-correct-background);
+}
+
+.pw-input-wrapper.is-inline .pw-input.is-incorrect {
+  color: var(--pw-incorrect-text);
+  background: var(--pw-incorrect-background);
+}
+
+
 .pw-input.is-free {
   border-style: dashed;
   color: var(--pw-brand-tertiary);
@@ -2193,9 +2235,9 @@ else:
   const mathPattern = /\$\$[\s\S]*?\$\$|(?<!\\)\$(?:\\[\s\S]|[^$\\])+\$|\\\([\s\S]*?\\\)|\\\[[\s\S]*?\\\]/g;
 
   const tagSchemas = {
-    input_text: { style: "text", solution: "variable", match: ["exact", "normal", "loose"] },
+    input_text: { style: "text", solution: "variable", match: ["exact", "normal", "loose"], inline: "boolean" },
     input_value: {
-      style: "text", solution: "variable", tolerance: "number",
+      style: "text", solution: "variable", tolerance: "number", inline: "boolean",
       form: ["any", "integer", "decimal", "fraction", "irreducible", "scientific", "percent"]
     },
     input_math: { solution: "variable" },
@@ -2771,7 +2813,7 @@ else:
 
     const idPrefix = PyWimsTemplate.checkIdPrefix(options.idPrefix);
     const style = options.style ? ` style="${escapeHtml(options.style)}"` : "";
-    return `<span class="pw-input-wrapper"><input class="input pw-input absolute" type="text" ${PyWimsTemplate.rawInputAttributes} id="${idPrefix}form_txt_${name}" data-name="${name}"${style} aria-label="${escapeHtml(name)}"><input class="input pw-input phantom" type="text" disabled aria-hidden="true" tabindex="-1"${style}></span>`;
+    return `<span class="pw-input-wrapper${options.inline ? " is-inline" : ""}"><input class="input pw-input absolute" type="text" ${PyWimsTemplate.rawInputAttributes} id="${idPrefix}form_txt_${name}" data-name="${name}"${style} aria-label="${escapeHtml(name)}"><input class="input pw-input phantom" type="text" disabled aria-hidden="true" tabindex="-1"${style}></span>`;
   }
 
   return Object.freeze({ ...existing, inputText });
@@ -4488,7 +4530,7 @@ self.onmessage = async ({ data: { id, op, args } }) => {
       switch (tag.type) {
         case "input_text":
         case "input_value":
-          return PyWimsWidgets.inputText(tag.name, { style: attributes.style || "", idPrefix });
+          return PyWimsWidgets.inputText(tag.name, { style: attributes.style || "", idPrefix, inline: attributes.inline ?? false });
         case "input_math":
           return PyWimsWidgets.inputMath(tag.name, { idPrefix });
         case "input_matrix":

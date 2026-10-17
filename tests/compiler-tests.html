@@ -1030,6 +1030,19 @@
       }
       if (!rejected) throw new Error("Un préfixe d’identifiant invalide a été accepté.");
     });
+    test("inline=true fond un champ texte ou numérique dans la phrase, pas une formule", () => {
+      if (PyWimsWidgets.inputText("r").includes("is-inline") ||
+          !PyWimsWidgets.inputText("r", { inline: true }).startsWith('<span class="pw-input-wrapper is-inline">')) {
+        throw new Error("L’enveloppe doit porter is-inline seulement avec inline=true.");
+      }
+      for (const type of ["input_text", "input_value"]) {
+        if (PyWimsTemplate.parseTag(`${type}('r', solution=s, inline=true)`).attributes.inline !== true) {
+          throw new Error(`inline=true mal lu pour ${type}.`);
+        }
+      }
+      expectTagError("input_value('r', solution=s, inline=1)", "« inline » doit être true ou false");
+      expectTagError("input_math('r', solution=s, inline=true)", "Attribut « inline » inconnu pour input_math");
+    });
     test("un champ texte ou une case de matrice reçoit la saisie telle quelle, avec le clavier complet", () => {
       const host = document.createElement("div");
       host.innerHTML = PyWimsWidgets.inputText("r") + PyWimsWidgets.inputMatrix("m", 1, 1) + PyWimsWidgets.inputVMatrix("v", 1, 1);

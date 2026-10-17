@@ -1151,6 +1151,59 @@ body:not([data-scored]) .pw-help-score {
   background: var(--pw-incorrect-background);
 }
 
+/* inline=true sur un champ texte (input_text, input_value, SPECIFICATION.md, § 2.3) : l’aspect de la
+   liste inline (.is-inline .pw-select), pour qu’un texte à trous mêle listes et champs sans disparate.
+   La règle vise aussi le fantôme, qui garde ainsi les dimensions du champ. La largeur reste fixe
+   (8em ou style de l’auteur) : un champ qui suivrait sa saisie ferait bouger la phrase à chaque
+   caractère. */
+.pw-input-wrapper.is-inline .pw-input {
+  border: 1px dashed var(--pw-input-border);
+  border-radius: 4px;
+  padding: 0 0.3em;
+  background: transparent;
+  font: inherit;
+  line-height: 1.35;
+}
+
+/* Focus d’un champ ou d’une liste inline : le pointillé passe en gras (2 px), sans que rien ne bouge.
+   En border-box, la largeur est fixe : les marges intérieures rendent le pixel pris de chaque côté,
+   et le texte reste en place ; la hauteur, elle, suit le contenu : la marge de -1 px en haut et en
+   bas rend les deux pixels gagnés. Écartés : le contour du navigateur, noir et épais, qui effaçait
+   le pointillé, puis un contour plein écarté du cadre, qui faisait un second cadre autour du
+   premier (Edge, octobre 2026). */
+.pw-input-wrapper.is-inline .pw-input:focus,
+.is-inline .pw-select:focus-visible {
+  margin: -1px 0;
+  border-width: 2px;
+  outline: none;
+}
+
+.pw-input-wrapper.is-inline .pw-input:focus {
+  padding: 0 calc(0.3em - 1px);
+}
+
+.is-inline .pw-select:focus-visible {
+  padding: 0 calc(1.1em - 1px) 0 calc(0.3em - 1px);
+}
+
+/* Après vérification, le cadre disparaît (transparent : rien ne bouge) ; restent le fond et la
+   couleur du texte du verdict, comme pour la liste. Le fond transparent ci-dessus, plus précis que
+   .pw-input.is-correct, masquerait celui du verdict sans ces règles. */
+.pw-input-wrapper.is-inline .pw-input.is-correct,
+.pw-input-wrapper.is-inline .pw-input.is-incorrect {
+  border-color: transparent;
+}
+
+.pw-input-wrapper.is-inline .pw-input.is-correct {
+  color: var(--pw-correct-text);
+  background: var(--pw-correct-background);
+}
+
+.pw-input-wrapper.is-inline .pw-input.is-incorrect {
+  color: var(--pw-incorrect-text);
+  background: var(--pw-incorrect-background);
+}
+
 /* Valeur libre de la solution (« ∗ ») : aucune couleur de correction. */
 .pw-input.is-free {
   border-style: dashed;

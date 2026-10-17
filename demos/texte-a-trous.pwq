@@ -13,9 +13,9 @@ STD
 %
 % question_setup
 %
-# Démonstration : input_select avec inline=true, une liste déroulante qui se fond dans la phrase.
-# Les choix sont du texte simple ; shuffle=false les garde dans l’ordre de la liste. Sur téléphone,
-# le sélecteur du système s’ouvre.
+# Démonstration : inline=true, des champs qui se fondent dans la phrase : une valeur (input_value)
+# et deux listes déroulantes (input_select). Les choix sont du texte simple ; shuffle=false les garde
+# dans l’ordre de la liste. Sur téléphone, le sélecteur du système s’ouvre.
 from random import choice, randint
 from sympy import symbols
 
@@ -29,9 +29,10 @@ index = 0 if m > 0 else 1 if m < 0 else 2
 %
 % question_statement
 %
-<p>Sur $\mathbb{R}$, la fonction $f(x) = {{function}}$ est
-{{ input_select('sense', choices=senses, solution=index, shuffle=false, inline=true) }}, car son coefficient
-directeur, ${{m}}$, est {{ input_select('sign', choices=signs, solution=index, shuffle=false, inline=true) }}.</p>
+<p>Sur $\mathbb{R}$, la fonction $f(x) = {{function}}$ a pour coefficient directeur
+{{ input_value('slope', solution=m, style='width:3em', inline=true) }} ; ce coefficient est
+{{ input_select('sign', choices=signs, solution=index, shuffle=false, inline=true) }}, donc $f$ est
+{{ input_select('sense', choices=senses, solution=index, shuffle=false, inline=true) }}.</p>
 %
 % question_solution_explanation
 %

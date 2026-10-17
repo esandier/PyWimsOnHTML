@@ -130,6 +130,7 @@ définie par `question_setup` :
 ```
 {{ input_text('result', solution=total, style='width:7em') }}
 {{ input_text('word', solution=noun, match='loose') }}
+{{ input_text('verb', solution=form, inline=true) }}
 {{ input_value('length', solution=hypotenuse, tolerance=0.01, form='decimal') }}
 {{ input_math('student_derivative', solution=derivative) }}
 {{ input_matrix('matrix', rows=m, cols=p, solution=product, input_style='width:2em') }}
@@ -207,6 +208,19 @@ reçoivent ce que l’élève tape, tel quel :
   fraction, ni lettre.
 
 Les champs MathLive ont leur propre clavier virtuel et ne sont pas concernés.
+
+**Dans une phrase : `inline=true`.** Un champ `input_text` ou `input_value`
+placé au milieu d’une phrase (texte à trous) prend, avec `inline=true`,
+l’aspect de la liste `inline=true` (§ 2.9) : cadre fin en pointillé, de la
+hauteur de la ligne, aux coins à peine arrondis, fond transparent ; la saisie
+s’écrit dans la couleur, la police et la taille du texte, sans italique.
+Après vérification, le cadre devient transparent (rien ne bouge) et il ne
+reste que le fond du verdict, sous la saisie de la couleur du verdict. La largeur ne suit pas la saisie, contrairement
+à la liste : un champ qui s’élargit à chaque caractère ferait bouger la fin
+de la phrase pendant la frappe ; elle reste celle d’un champ (8 em, ou
+`style='width:…'`). Par défaut (`inline=false`), le champ garde son cadre
+plein. `input_math` n’a pas cet attribut : ses boutons de clavier et de menu
+l’élargissent trop pour une phrase.
 
 ### 2.4 Contrôles à la compilation
 
@@ -419,6 +433,7 @@ n’exigent plus un `question_check`.
 | `tolerance` | facultatif | écart absolu admis, nombre décimal positif ; 0 par défaut : la valeur exacte |
 | `form` | facultatif | écriture exigée (ci-dessous) ; `any` par défaut |
 | `style` | facultatif | CSS du champ, comme pour `input_text` |
+| `inline` | facultatif | `inline=true` : aspect fondu dans la phrase (§ 2.3), comme pour `input_text` |
 
 | `form` | Écriture acceptée | Solution affichée |
 |---|---|---|

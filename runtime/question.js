@@ -281,7 +281,7 @@ window.PyWimsQuestion = (() => {
         // sont permis, ce que le pavé numérique des téléphones ne permet pas (SPECIFICATION.md, § 2.3).
         case "input_text":
         case "input_value":
-          return PyWimsWidgets.inputText(tag.name, { style: attributes.style || "", idPrefix });
+          return PyWimsWidgets.inputText(tag.name, { style: attributes.style || "", idPrefix, inline: attributes.inline ?? false });
         case "input_math":
           return PyWimsWidgets.inputMath(tag.name, { idPrefix });
         case "input_matrix":

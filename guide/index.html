@@ -179,6 +179,7 @@
           <tr><td><code>tolerance</code></td><td>facultatif</td><td>écart admis, par exemple <code>0.01</code> ; 0 par défaut (la valeur exacte). Obligatoire pour une solution comme <code>sqrt(2)</code>.</td></tr>
           <tr><td><code>form</code></td><td>facultatif</td><td>écriture exigée : <code>any</code> (par défaut, toute écriture), <code>integer</code>, <code>decimal</code>, <code>fraction</code>, <code>irreducible</code> (fraction irréductible), <code>scientific</code> (<code>1,5×10^3</code>), <code>percent</code> (<code>42 %</code> pour 0,42)</td></tr>
           <tr><td><code>style</code></td><td>facultatif</td><td>style CSS du champ : <code>'width:5em'</code></td></tr>
+          <tr><td><code>inline</code></td><td>facultatif</td><td><code>inline=true</code> : le champ se fond dans la phrase (cadre fin en pointillé), pour un texte à trous</td></tr>
         </tbody>
       </table></div>
       <p>La valeur est comparée exactement, sans Python : <code>1,5</code>, <code>1.5</code> et <code>3/2</code> sont
@@ -200,6 +201,7 @@
           <tr><td><code>solution</code></td><td>obligatoire</td><td>nombre, expression SymPy ou texte ; affiché comme un élève l’écrirait (<code>19/12</code>, <code>x^2 + 1</code>). Pour un nombre, préférez <code>input_value</code>.</td></tr>
           <tr><td><code>match</code></td><td>facultatif</td><td>conformité exigée : <code>normal</code> (par défaut, les espaces ne comptent pas), <code>exact</code> (caractère pour caractère), <code>loose</code> (ni majuscules, ni accents, ni ponctuation finale : pour un mot ou un nom)</td></tr>
           <tr><td><code>style</code></td><td>facultatif</td><td>style CSS du champ, le plus souvent sa largeur : <code>'width:4em'</code></td></tr>
+          <tr><td><code>inline</code></td><td>facultatif</td><td><code>inline=true</code> : le champ se fond dans la phrase, comme <code>input_value</code></td></tr>
         </tbody>
       </table></div>
       <p>Dans <code>question_check</code>, la saisie arrive comme un texte.</p>

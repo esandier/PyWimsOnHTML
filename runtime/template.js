@@ -30,9 +30,10 @@ window.PyWimsTemplate = (() => {
   // de variable Python, dimension (entier ou variable), texte entre guillemets, ou liste de mots
   // admis, écrits avec ou sans guillemets (form=decimal ou form='decimal').
   const tagSchemas = {
-    input_text: { style: "text", solution: "variable", match: ["exact", "normal", "loose"] },
+    // inline=true : champ fondu dans la phrase d’un texte à trous (SPECIFICATION.md, § 2.3).
+    input_text: { style: "text", solution: "variable", match: ["exact", "normal", "loose"], inline: "boolean" },
     input_value: {
-      style: "text", solution: "variable", tolerance: "number",
+      style: "text", solution: "variable", tolerance: "number", inline: "boolean",
       form: ["any", "integer", "decimal", "fraction", "irreducible", "scientific", "percent"]
     },
     input_math: { solution: "variable" },
