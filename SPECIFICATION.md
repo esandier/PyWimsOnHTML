@@ -141,10 +141,14 @@ définie par `question_setup` :
 
 - **Lu sans Python.** L’écriture est celle d’un appel, mais le champ n’est pas
   évalué : la page doit connaître ses champs sans Python (§ 1). Une valeur est
-  un nombre, un texte entre guillemets, ou un **nom** de variable
+  un nombre, un texte entre guillemets, un booléen, ou un **nom** de variable
   (`solution=total`), jamais une expression (`solution=p * 2` est refusé :
   calculez la valeur dans `question_setup`). Les mots d’une liste
   (`form`, `match`) s’écrivent avec ou sans guillemets.
+- **Booléens.** Un attribut oui ou non (`shuffle`, `inline`) vaut `true` ou
+  `false`, écrits aussi `True` et `False`, comme en Jinja ; toute autre valeur
+  est refusée, avec un message qui le dit. Un attribut booléen s’écrit toujours
+  avec sa valeur : `inline=true`, jamais `inline` seul.
 - **Un champ par tirage, toujours le même.** Un champ ne peut pas être placé
   dans un `{% if %}` ni dans un `{% for %}` : correction, contrôles et
   `question_check` supposent les mêmes champs pour tous les tirages. Le
@@ -153,7 +157,8 @@ définie par `question_setup` :
   le texte autour du champ, pas le champ. Deux champs ne portent jamais le
   même nom (la saisie arrive dans la variable de ce nom).
 - **Ancienne notation.** `{% input_value 'n' solution=s %}` est refusé, avec
-  un message qui donne la nouvelle écriture.
+  un message qui donne la nouvelle écriture ; de même `shuffle=0` et
+  `shuffle=1` (« `shuffle=0` s’écrit maintenant `shuffle=false` »).
 
 **Noms.** Un nom de champ ou de variable (`solution=`, `choices=`, `rows=`…)
 suit la règle des identifiants de Python : lettres, accentuées
@@ -477,33 +482,45 @@ n’exigent plus un `question_check`.
   (`runtime/correction.js`), sert ainsi à l’élève, au compilateur (§ 3,
   « Cohérence ») et à `question_check`.
 
-### 2.9 Texte à trous : `input_select`
+### 2.9 Liste déroulante : `input_select`
 
-Une liste déroulante placée dans une phrase, pour un texte à trous : « La
-fonction est {{ input_select('sens', choices=senses, solution=correct) }} sur
-$[0 ; +\infty[$. »
+Une liste déroulante, à côté d’autres champs (« $X$ suit une loi
+{{ input_select('law', choices=laws, solution=k) }} ») ou dans une phrase,
+pour un texte à trous (« La fonction est
+{{ input_select('sense', choices=senses, solution=correct, inline=true) }} sur
+$[0 ; +\infty[$. »).
 
 ```
-{{ input_select('verb', choices=forms, solution=correct, shuffle=0) }}
+{{ input_select('verb', choices=forms, solution=correct, shuffle=false) }}
 ```
 
 | Attribut | Statut | Rôle |
 |---|---|---|
 | `choices` | obligatoire | liste de `question_setup` : au moins deux choix, en texte simple |
 | `solution` | obligatoire | indice du bon choix |
-| `shuffle` | facultatif | `shuffle=0` garde l’ordre de l’auteur (§ 10.2) |
+| `inline` | facultatif | `inline=true` : aspect fondu dans la phrase ; par défaut `false`, aspect d’un champ |
+| `shuffle` | facultatif | `shuffle=false` garde l’ordre de l’auteur (§ 10.2) |
 | `fixed_last` | facultatif | nombre de derniers choix non mélangés (§ 10.2) |
 
-- **Aspect : le champ se fond dans le texte.** Avant tout choix, le trou est
-  un espace vide souligné en pointillé, de la couleur de la charte : ni cadre,
-  ni fond, ni flèche. Une fois rempli, le choix s’écrit dans la police et la
-  taille du texte, et le champ prend la largeur de son contenu : la suite de
-  la phrase se décale, ce qu’on accepte pour que le texte rempli se lise
-  comme une phrase ordinaire. Après vérification, le texte et le soulignement
-  prennent la couleur du verdict, sur un fond léger.
-- **Largeur.** Un `<select>` natif a toujours la largeur de son plus long
-  choix ; le script mesure donc le texte choisi et règle la largeur à chaque
-  changement, y compris quand « Correction » remplit le champ.
+- **Aspect par défaut : un champ.** La liste a l’aspect d’un champ
+  `input_value` : même cadre, même police, mêmes couleurs de verdict ; une
+  petite flèche « ▾ », dans le cadre à droite, la distingue d’un champ où l’on
+  tape. Vide, elle montre « *choisir* », en gris et en italique. Sa largeur
+  est celle du plus long texte (choix ou « choisir »), comme un `<select>`
+  ordinaire : la phrase ne bouge pas quand on choisit.
+- **Aspect `inline=true` : dans la phrase.** Un cadre fin en pointillé, de la
+  hauteur de la ligne, aux coins à peine arrondis, avec la flèche « ▾ »
+  discrète après le texte. Vide, il montre « *choisir* », en gris et en
+  italique. Rempli, le choix s’écrit dans la couleur, la police et la taille du
+  texte, et le champ prend la largeur du choix : la suite de la phrase se
+  décale, ce qu’on accepte pour que le texte rempli se lise comme une phrase
+  ordinaire. Après vérification, le cadre et la flèche disparaissent (le cadre
+  devient transparent : rien ne bouge) ; il ne reste que le fond du verdict,
+  sous le texte de la couleur du verdict.
+- **Largeur (`inline=true`).** Un `<select>` natif a toujours la largeur de
+  son plus long choix ; le script mesure donc le texte affiché (« choisir » ou
+  le choix) et règle la largeur à chaque changement, y compris quand
+  « Correction » remplit le champ.
 - **Saisie.** C’est un `<select>` natif : sur téléphone, le sélecteur du
   système s’ouvre, plus facile au doigt qu’une liste dessinée par la page ; au
   clavier, il se manie comme tout champ. Le champ compte comme rempli dès
@@ -512,7 +529,7 @@ $[0 ; +\infty[$. »
   un choix qui contient `$` ou `\(` est refusé à la compilation ; un objet
   SymPy s’écrit comme dans un champ texte (`x^2 + 1`).
 - **Mélange et tirages** : comme pour les questions à choix (§ 10.2), y
-  compris `shuffle=0` et le refus de deux choix de même texte (§ 10.6).
+  compris `shuffle=false` et le refus de deux choix de même texte (§ 10.6).
   `mcq` (§ 10.9) peut tirer les choix.
 - **Correction** : sans Python, le choix est juste s’il est celui de la
   solution ; `question_check` reçoit l’indice choisi dans l’ordre de
@@ -781,7 +798,7 @@ fabriquer un texte (les choix d’un QCM sont des listes Python, § 10.1) :
 - **Nouvel énoncé** : un autre tirage (différent du tirage courant si possible)
   remplace l’énoncé instantanément ; la session Python correspondante est
   recalculée en arrière-plan. Une question qui n’a qu’un tirage (sans
-  aléatoire, et `shuffle=0` s’il y a des choix) affiche le même bouton sous le
+  aléatoire, et `shuffle=false` s’il y a des choix) affiche le même bouton sous le
   nom **Recommencer** : il remet la question vierge. C’est le seul moyen de
   refaire la question après « Correction ».
 
@@ -1057,7 +1074,7 @@ question AMC en fichier `.pwq` est confiée à un LLM, guidé par `PROMPT.md`
 | `choices` | obligatoire | variable de `question_setup` : liste des choix, dans l’ordre de l’auteur |
 | `solution` | obligatoire | `input_radio` : indice du bon choix ; `input_checkbox` : liste des indices des bons choix, vide si aucun choix n’est bon |
 | `columns` | facultatif | grille de n colonnes de même largeur sur grand écran, de 1 à 6 ; sans lui, les choix ont tous la taille du plus grand, sur autant de colonnes que possible (§ 10.7) |
-| `shuffle` | facultatif | `shuffle=0` garde l’ordre de l’auteur ; par défaut 1, les choix sont mélangés |
+| `shuffle` | facultatif | `shuffle=false` garde l’ordre de l’auteur ; par défaut `true`, les choix sont mélangés |
 | `fixed_last` | facultatif | nombre de derniers choix qui restent à la fin, non mélangés (par défaut 0) |
 | `scoring` | facultatif | barème à la manière d’AMC (§ 10.5) |
 
@@ -1077,7 +1094,7 @@ c’est un choix comme les autres, qui n’exclut pas les autres cases.
   ordre d’affichage. L’ordre est mélangé avec la graine du tirage, sans
   utiliser le `random` de l’auteur ; les `fixed_last` derniers choix restent à
   la fin, dans leur ordre.
-- Avec `shuffle=0`, l’ordre d’affichage est celui de la liste `choices`, pour
+- Avec `shuffle=false`, l’ordre d’affichage est celui de la liste `choices`, pour
   tous les tirages : des choix ordonnés (« 1 », « 2 », « 3 », « plus de 3 »),
   ou dont l’ordre porte un sens (« vrai », « faux »), ne sont pas mélangés.
   `fixed_last` n’y a pas de sens, et il est refusé.
@@ -1086,7 +1103,7 @@ c’est un choix comme les autres, qui n’exclut pas les autres cases.
   un `question_check`.
 - Deux tirages qui ne diffèrent que par l’ordre des choix restent distincts :
   « Nouvel énoncé » mélange alors les choix d’une question sans aléatoire.
-  Avec `shuffle=0`, une telle question n’a qu’un tirage (§ 5.2, « Recommencer »).
+  Avec `shuffle=false`, une telle question n’a qu’un tirage (§ 5.2, « Recommencer »).
 
 ### 10.3 Correction
 
@@ -1177,7 +1194,8 @@ En plus du § 2.4, le compilateur refuse la question si, pour l’un des tirages
   l’erreur ordinaire d’une liste de choix calculés (deux formules d’erreur qui
   donnent la même valeur pour un tirage) ; la graine en cause est indiquée ;
 - `fixed_last` est supérieur ou égal au nombre de choix, ou donné avec
-  `shuffle=0`, `columns` sort de 1 à 6, ou `shuffle` ne vaut pas 0 ou 1 ;
+  `shuffle=false`, `columns` sort de 1 à 6, ou `shuffle` n’est pas un
+  booléen (§ 2 ; `shuffle=0` est refusé avec la nouvelle écriture) ;
 - le barème contient une directive inconnue ou refusée, ou une valeur non
   numérique, ou la question contient d’autres champs.
 
@@ -1277,7 +1295,7 @@ choices, correct = mcq(correct=a * b, wrong=[a + b, a * b + 1, a * (b - 1), a * 
 - Le résultat s’utilise comme une liste écrite à la main :
   `{{ input_radio('answer', choices=choices, solution=correct) }}`. L’ordre étant
   déjà tiré au hasard, le mélange du compilateur ne change rien ; avec
-  `shuffle=0`, l’ordre de `mcq` est gardé.
+  `shuffle=false`, l’ordre de `mcq` est gardé.
 
 ## 11. Site du projet : compilateur hébergé, accueil, mode d’emploi
 

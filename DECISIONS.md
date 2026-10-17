@@ -74,11 +74,30 @@ beaucoup de « simplifications » évidentes ont déjà été essayées.
   `form=percent`, pour qu’une probabilité ne soit pas acceptée en pourcentage ;
   écarté par l’utilisateur.
 
-### 2.9 Texte à trous : `input_select`
+### 2.9 Liste déroulante : `input_select`
 
 - Écartée : une liste dessinée par la page (pour y afficher des formules).
   Elle se manie mal au doigt et au clavier, et le `<select>` natif suffit aux
   mots d’un texte à trous.
+- **Deux aspects (octobre 2026).** Le seul aspect d’alors (trou souligné en
+  pointillé, sans cadre ni flèche) jurait à côté d’un `input_value` encadré
+  (question de probabilités « $X$ suit une loi … , et P(A) = … »), et ne
+  disait pas qu’il fallait choisir. L’aspect d’un champ devient celui par
+  défaut : c’est le cas le plus courant, et un auteur ou une IA qui ignore
+  l’attribut obtient l’aspect attendu ; le texte à trous le demande par
+  `inline=true`. Choisi sur une page d’essai (Edge, Firefox, 375 px) parmi :
+  sans décor avec flèche, pastille, trait continu, surligneur, cadre en
+  pointillé, crochets (confondus avec un intervalle), choix affichés dans la
+  phrase (un autre champ, à reprendre peut-être pour deux ou trois choix
+  courts). Texte à vide : « choisir » plutôt que « ? » (confondu avec la
+  ponctuation) ou des étoiles (« ∗ » montre déjà une valeur libre, `ANY`).
+- **`inline=true` plutôt que `inline` seul**, ou un nom `look=…` : un champ
+  s’écrit comme un appel Python ou Jinja, où un argument seul après des
+  arguments nommés est une erreur ; un drapeau seul aurait demandé un nom
+  négatif pour `shuffle` (`no_shuffle`). `true` et `True` sont acceptés,
+  comme en Jinja : ce n’est pas un alias de notre cru. `shuffle` passe aux
+  booléens dans le même temps ; `shuffle=0` est refusé avec la nouvelle
+  écriture (une seule écriture, comme pour les noms), plutôt qu’accepté.
 
 ### 2.10 Modèles : Jinja
 

@@ -206,10 +206,10 @@
   // (mulberry32), initialisé par la graine et le nom du champ. Le « random » de l’auteur n’est pas
   // touché, donc le tirage rejoué par le navigateur reste identique ; deux champs d’une même question
   // ne sont pas mélangés de la même façon. Les fixedLast derniers choix restent à la fin, dans l’ordre.
-  // shuffle=0 garde l’ordre de l’auteur (§ 10.2) : l’ordre ne varie plus d’un tirage à l’autre, et
+  // shuffle=false garde l’ordre de l’auteur (§ 10.2) : l’ordre ne varie plus d’un tirage à l’autre, et
   // les tirages identiques sont fusionnés.
-  function choiceOrder(count, fixedLast, seed, name, shuffle = 1) {
-    if (shuffle === 0) {
+  function choiceOrder(count, fixedLast, seed, name, shuffle = true) {
+    if (!shuffle) {
       return Array.from({ length: count }, (_, index) => index);
     }
     let state = seed >>> 0;
@@ -347,7 +347,7 @@
         }
         const orders = Object.fromEntries(choiceTags.map(tag => [
           tag.name,
-          choiceOrder(draw.choices[tag.name].length, tag.attributes.fixed_last ?? 0, seed, tag.name, tag.attributes.shuffle ?? 1)
+          choiceOrder(draw.choices[tag.name].length, tag.attributes.fixed_last ?? 0, seed, tag.name, tag.attributes.shuffle ?? true)
         ]));
         // Les valeurs de l’énoncé ne servent qu’à contrôler que Python rejoue ce tirage, donc qu’à une
         // question qui a un « question_check » : ailleurs, elles pesaient près d’un quart des tirages.

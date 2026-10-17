@@ -47,13 +47,13 @@ window.PyWimsTemplate = (() => {
     },
     input_radio: {
       choices: "variable", solution: "variable",
-      columns: "integer", shuffle: "integer", fixed_last: "integer", scoring: "text"
+      columns: "integer", shuffle: "boolean", fixed_last: "integer", scoring: "text"
     },
     // Liste déroulante d’un texte à trous (SPECIFICATION.md, § 2.9) : ni colonnes ni barème.
-    input_select: { choices: "variable", solution: "variable", shuffle: "integer", fixed_last: "integer" },
+    input_select: { choices: "variable", solution: "variable", shuffle: "boolean", fixed_last: "integer" },
     input_checkbox: {
       choices: "variable", solution: "variable",
-      columns: "integer", shuffle: "integer", fixed_last: "integer", scoring: "text"
+      columns: "integer", shuffle: "boolean", fixed_last: "integer", scoring: "text"
     }
   };
   // Champs à choix : leurs choix viennent d’une liste de « question_setup » et peuvent porter un barème.
@@ -78,8 +78,13 @@ window.PyWimsTemplate = (() => {
     number: "un nombre positif, par exemple 0.01",
     variable: "un nom de variable",
     dimension: "un entier ou un nom de variable",
-    text: "un texte entre guillemets"
+    text: "un texte entre guillemets",
+    boolean: "true ou false"
   };
+  // Booléens d’un attribut (SPECIFICATION.md, § 2) : les écritures de Jinja, minuscule ou majuscule.
+  // Ce n’est pas un alias de notre cru : un auteur ou une IA qui écrit du Jinja ou du Python ne se
+  // fait pas refuser l’une des deux. Écarté : 0 et 1 (l’ancienne écriture de shuffle), moins parlants.
+  const booleanWords = new Map([["true", true], ["True", true], ["false", false], ["False", false]]);
 
   // Attributs d’un champ texte ou d’une case de matrice : le champ reçoit exactement ce que l’élève
   // tape (SPECIFICATION.md, § 2.3). Sans eux, un iPhone met une majuscule au premier caractère
@@ -183,7 +188,7 @@ window.PyWimsTemplate = (() => {
   // Analyse un champ, écrit {{ input_value('n', solution=s) }} ou sans accolades
   // (« input_value('n', solution=s) »), et renvoie sa description, ou lève une erreur explicite.
   // L’appel est lu, jamais exécuté : la page connaît ainsi ses champs sans Python (SPECIFICATION.md,
-  // § 2.3). Une valeur est donc un nombre, un texte entre guillemets ou un nom de variable.
+  // § 2.3). Une valeur est donc un nombre, un texte entre guillemets, un booléen ou un nom de variable.
   function parseTag(source) {
     const shown = source.trim().startsWith("{{") ? source.trim() : `{{ ${source.trim()} }}`;
     const call = shown.replace(/^\{\{-?\s*/, "").replace(/\s*-?\}\}$/, "");
@@ -218,11 +223,16 @@ window.PyWimsTemplate = (() => {
         throw new Error(`Attribut « ${key} » répété dans ${shown}`);
       }
       const expected = schema[key];
+      // Ancienne écriture de shuffle (0 ou 1) : refusée avec la nouvelle, comme l’ancienne notation.
+      if (expected === "boolean" && (integer === "0" || integer === "1")) {
+        throw new Error(`« ${key}=${integer} » s’écrit maintenant « ${key}=${integer === "0" ? "false" : "true"} » dans ${shown}`);
+      }
       const word = variable ?? text;
       const value =
         Array.isArray(expected) ? (expected.includes(word) ? word : undefined)
         : expected === "number" && number !== undefined ? number
         : expected === "integer" && integer !== undefined ? Number(integer)
+        : expected === "boolean" && booleanWords.has(rawVariable) ? booleanWords.get(rawVariable)
           : expected === "variable" && variable !== undefined ? variable
             : expected === "dimension" && integer !== undefined ? Number(integer)
               : expected === "dimension" && variable !== undefined ? variable
@@ -261,13 +271,10 @@ window.PyWimsTemplate = (() => {
       if (Object.hasOwn(attributes, "columns") && !(attributes.columns >= 1 && attributes.columns <= 6)) {
         throw new Error(`L’attribut « columns » doit être compris entre 1 et 6 dans ${shown}`);
       }
-      if (Object.hasOwn(attributes, "shuffle") && ![0, 1].includes(attributes.shuffle)) {
-        throw new Error(`L’attribut « shuffle » doit valoir 0 ou 1 dans ${shown}`);
-      }
       // Sans mélange, tous les choix restent à leur place : fixed_last ne dirait rien, et sa présence
       // trahit presque toujours une confusion de l’auteur.
-      if (attributes.shuffle === 0 && Object.hasOwn(attributes, "fixed_last")) {
-        throw new Error(`fixed_last est sans effet avec shuffle=0, qui garde déjà tous les choix à leur place, dans ${shown}`);
+      if (attributes.shuffle === false && Object.hasOwn(attributes, "fixed_last")) {
+        throw new Error(`fixed_last est sans effet avec shuffle=false, qui garde déjà tous les choix à leur place, dans ${shown}`);
       }
       if (Object.hasOwn(attributes, "scoring")) {
         try {

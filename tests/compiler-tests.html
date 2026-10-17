@@ -164,10 +164,17 @@
       }
       expectTagError("input_checkbox('r', solution=bonnes)", "doit indiquer ses choix");
       expectTagError("input_radio('r', choices=c, solution=s, columns=7)", "« columns » doit être compris entre 1 et 6");
-      expectTagError("input_radio('r', choices=c, solution=s, shuffle=2)", "« shuffle » doit valoir 0 ou 1");
-      expectTagError("input_radio('r', choices=c, solution=s, shuffle=0, fixed_last=1)", "fixed_last est sans effet avec shuffle=0");
-      if (PyWimsTemplate.parseTag("input_checkbox('r', choices=c, solution=s, shuffle=0)").attributes.shuffle !== 0) {
-        throw new Error("shuffle=0 mal lu.");
+      // Booléens à la manière de Jinja : true, false, avec ou sans majuscule ; 0 et 1 refusés avec la nouvelle écriture.
+      expectTagError("input_radio('r', choices=c, solution=s, shuffle=2)", "« shuffle » doit être true ou false");
+      expectTagError("input_radio('r', choices=c, solution=s, shuffle=oui)", "« shuffle » doit être true ou false");
+      expectTagError("input_radio('r', choices=c, solution=s, shuffle='false')", "« shuffle » doit être true ou false");
+      expectTagError("input_radio('r', choices=c, solution=s, shuffle=0)", "« shuffle=0 » s’écrit maintenant « shuffle=false »");
+      expectTagError("input_select('r', choices=c, solution=s, shuffle=1)", "« shuffle=1 » s’écrit maintenant « shuffle=true »");
+      expectTagError("input_radio('r', choices=c, solution=s, shuffle=false, fixed_last=1)", "fixed_last est sans effet avec shuffle=false");
+      for (const [word, value] of [["false", false], ["False", false], ["true", true], ["True", true]]) {
+        if (PyWimsTemplate.parseTag(`input_checkbox('r', choices=c, solution=s, shuffle=${word})`).attributes.shuffle !== value) {
+          throw new Error(`shuffle=${word} mal lu.`);
+        }
       }
       expectTagError("input_radio('r', choices=c, solution=s, scoring='b=1,formula=NBC')", "« formula » d’AMC n’est pas prise en charge");
       expectTagError("input_radio('r', choices=c, solution=s, scoring='set.X=1')", "« set.X » d’AMC n’est pas prise en charge");
@@ -334,8 +341,8 @@
           PyWimsCompiler.choiceOrder(6, 0, 7, "reponse").join() === PyWimsCompiler.choiceOrder(6, 0, 7, "autre").join()) {
         throw new Error(`Ordre inattendu : ${first} (${orders.size} ordres distincts sur 20 graines)`);
       }
-      if (PyWimsCompiler.choiceOrder(5, 0, 7, "reponse", 0).join() !== "0,1,2,3,4") {
-        throw new Error("shuffle=0 doit garder l’ordre de l’auteur.");
+      if (PyWimsCompiler.choiceOrder(5, 0, 7, "reponse", false).join() !== "0,1,2,3,4") {
+        throw new Error("shuffle=false doit garder l’ordre de l’auteur.");
       }
     });
     // Modèle donné à Jinja (SPECIFICATION.md, § 2.10) : chaque champ devient une marque à son nom, et

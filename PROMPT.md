@@ -194,7 +194,7 @@ Ce qui doit varier dépend de la compétence visée :
     déroulante placée dans une phrase, pour un texte à trous (« La fonction
     est {{ input_select('sense', choices=senses, solution=correct) }} sur
     $\mathbb{R}$. »). Les choix sont du texte simple, sans formule ni HTML ;
-    `shuffle=0` garde leur ordre (« croissante », « décroissante »). La
+    `shuffle=false` garde leur ordre (« croissante », « décroissante »). La
     saisie arrive dans `question_check` comme un indice, ou `None`.
   - `{{ input_radio('nom', choices=liste, solution=indice) }}` (choix unique) et
     `{{ input_checkbox('nom', choices=liste, solution=indices) }}` (choix
@@ -260,7 +260,7 @@ Ce qui doit varier dépend de la compétence visée :
   compilation échoue pour le tirage en cause).
 - Ne mélange pas les choix toi-même : le compilateur les mélange à chaque
   tirage. `fixed_last=n` garde les n derniers choix à la fin, dans ton ordre
-  (pour « Aucune de ces réponses », par exemple). `shuffle=0` garde tous les
+  (pour « Aucune de ces réponses », par exemple). `shuffle=false` garde tous les
   choix dans ton ordre, quand cet ordre a un sens (« 1 », « 2 », « 3 »,
   « plus de 3 ») ; il ne se combine pas avec `fixed_last`.
 - Deux choix ne doivent jamais avoir le même texte, pour aucun tirage : avec

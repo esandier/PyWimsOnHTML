@@ -596,13 +596,13 @@ json.dumps({
           question_check: "ok_answer['r'] = r == bonne"
         }, { count: 1 });
         if (radio.solutions.r !== 1) throw new Error(`Solution d’un choix unique inattendue : ${JSON.stringify(radio)}`);
-        // shuffle=0 : l’ordre de l’auteur pour chaque tirage, donc un seul tirage sans hasard.
+        // shuffle=false : l’ordre de l’auteur pour chaque tirage, donc un seul tirage sans hasard.
         const fixed = await PyWimsCompiler.computeDraws({
           question_setup: "choix = ['1', '2', '3', 'plus de 3']\nbonne = 1",
-          question_statement: "{{ input_radio('r', choices=choix, solution=bonne, shuffle=0) }}"
+          question_statement: "{{ input_radio('r', choices=choix, solution=bonne, shuffle=false) }}"
         }, { count: 5 });
         if (fixed.length !== 1 || fixed[0].orders.r.join() !== "0,1,2,3") {
-          throw new Error(`shuffle=0 : ${fixed.length} tirages, ordre ${fixed[0].orders.r}`);
+          throw new Error(`shuffle=false : ${fixed.length} tirages, ordre ${fixed[0].orders.r}`);
         }
       });
 
@@ -634,7 +634,7 @@ json.dumps({
       await test("une liste déroulante enregistre des choix en texte simple", async () => {
         const [draw] = await PyWimsCompiler.computeDraws({
           question_setup: "from sympy import symbols\nx = symbols('x')\nforms = ['croissante', x**2 + 1, 0.5]\ncorrect = 0",
-          question_statement: "La fonction est {{ input_select('sense', choices=forms, solution=correct, shuffle=0) }}."
+          question_statement: "La fonction est {{ input_select('sense', choices=forms, solution=correct, shuffle=false) }}."
         }, { count: 1 });
         if (JSON.stringify(draw.choices.sense) !== JSON.stringify(["croissante", "x^2 + 1", "0.5"]) || draw.solutions.sense !== 0) {
           throw new Error(`Tirage inattendu : ${JSON.stringify(draw)}`);

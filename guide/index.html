@@ -261,7 +261,7 @@
           <tr><td><code>choices</code></td><td>obligatoire</td><td>liste de <code>question_setup</code> : au moins deux choix, dans votre ordre (textes avec formules, ou expressions SymPy)</td></tr>
           <tr><td><code>solution</code></td><td>obligatoire</td><td><code>input_radio</code> : le numéro du bon choix ; <code>input_checkbox</code> : la liste des numéros des bons choix, éventuellement vide. Les numéros commencent à <strong>0</strong>.</td></tr>
           <tr><td><code>columns</code></td><td>facultatif</td><td>nombre de colonnes sur grand écran, de 1 à 6 ; réservé aux choix courts. Sur téléphone, les colonnes se réduisent d’elles-mêmes. Sans lui, les choix ont tous la taille du plus grand, sur autant de colonnes que la largeur le permet.</td></tr>
-          <tr><td><code>shuffle</code></td><td>facultatif</td><td><code>shuffle=0</code> garde vos choix dans votre ordre, quand il a un sens (« 1 », « 2 », « plus de 2 ») ; par défaut, ils sont mélangés.</td></tr>
+          <tr><td><code>shuffle</code></td><td>facultatif</td><td><code>shuffle=false</code> garde vos choix dans votre ordre, quand il a un sens (« 1 », « 2 », « plus de 2 ») ; par défaut, ils sont mélangés.</td></tr>
           <tr><td><code>fixed_last</code></td><td>facultatif</td><td>nombre de derniers choix laissés à la fin, non mélangés (0 par défaut) : pour « Aucune de ces réponses ».</td></tr>
           <tr><td><code>scoring</code></td><td>facultatif</td><td>note indicative, dans la syntaxe d’AMC (voir « Le barème »)</td></tr>
         </tbody>
@@ -276,7 +276,7 @@
 
     <details class="field-item">
       <summary><code>input_select</code> : texte à trous</summary>
-<pre><code>La fonction est {{ input_select('sense', choices=senses, solution=correct, shuffle=0) }} sur cet intervalle.</code></pre>
+<pre><code>La fonction est {{ input_select('sense', choices=senses, solution=correct, shuffle=false) }} sur cet intervalle.</code></pre>
       <div class="table-wrap"><table>
         <thead><tr><th>Paramètre</th><th>Statut</th><th>Rôle</th></tr></thead>
         <tbody>
