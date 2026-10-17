@@ -729,8 +729,15 @@ body:not([data-scored]) .pw-help-score {
   z-index: 10;
 }
 
+/* Le vrai champ est en position absolue au-dessus de son fantôme (.absolute, .phantom) : son cadre
+   doit être positionné, comme .pw-matrix-cell. Sans cela, le champ se plaçait par rapport à la carte
+   de la question : dans une zone qui défile de l'énoncé (tableau de la loi d'une variable, octobre
+   2026), il n'était plus contenu par elle, faisait défiler la page en largeur sur téléphone et
+   restait immobile quand on faisait défiler le tableau. Écarté : demander à l'auteur de positionner
+   sa zone, un piège qu'il ne peut pas deviner. */
 .pw-input-wrapper {
   display: inline-block;
+  position: relative;
 }
 
 /* Champ texte (input_text, input_value) : 8em suffisent à une réponse courte. Sans largeur, le
