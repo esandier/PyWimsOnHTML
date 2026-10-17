@@ -53,8 +53,10 @@ window.PyWimsFields = (() => {
     }
   }
 
-  // Réduit le champ, applique le changement (couleur, valeur), puis le réagrandit avec un léger
-  // rebond. Seules des transformations sont animées : rien ne bouge autour du champ.
+  // Réduit le champ, applique le changement (couleur, valeur), puis le réagrandit jusqu’à sa taille.
+  // Seules des transformations sont animées : rien ne bouge autour du champ. Écarté (octobre 2026) :
+  // un rebond à 108 % de la largeur, qui faisait un instant déborder la page sur téléphone et que
+  // l’auteur ne voulait pas.
   async function animateField(input, change, delay = 0) {
     if (reduceMotion) {
       change();
@@ -68,11 +70,7 @@ window.PyWimsFields = (() => {
     await collapse.finished;
     change();
     const expand = input.animate(
-      [
-        { transform: "scaleX(0)", opacity: 0 },
-        { transform: "scaleX(1.08)", opacity: 1, offset: 0.7 },
-        { transform: "scaleX(1)", opacity: 1 }
-      ],
+      [{ transform: "scaleX(0)", opacity: 0 }, { transform: "scaleX(1)", opacity: 1 }],
       { duration: answerToggleDurationMs * 0.7, easing: "ease-out", fill: "forwards" }
     );
     await expand.finished;

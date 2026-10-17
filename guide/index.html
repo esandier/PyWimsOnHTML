@@ -154,7 +154,7 @@
 
     <h2 id="fields">4. Les champs de réponse</h2>
     <p>Un champ s’écrit dans <code>question_statement</code>, à l’endroit où il doit apparaître :</p>
-<pre><code>{% type 'nom' paramètre=valeur paramètre=valeur … %}</code></pre>
+<pre><code>{{ type('nom', paramètre=valeur, paramètre=valeur, …) }}</code></pre>
     <ul>
       <li><code>'nom'</code> : un nom de variable Python (lettres, accentuées comprises, chiffres, <code>_</code>), différent des
         variables de <code>question_setup</code> ; dans <code>question_check</code>, la saisie arrive dans cette variable.</li>

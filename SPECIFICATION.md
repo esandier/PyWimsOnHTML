@@ -855,7 +855,8 @@ fabriquer un texte (les choix d’un QCM sont des listes Python, § 10.1) :
 ### 5.5 Animations
 
 - Champ corrigé ou rempli par la solution : il se replie, change de couleur et
-  se redéplie avec un léger rebond ; les cases d’une matrice se suivent.
+  se redéplie jusqu’à sa taille, sans la dépasser ; les cases d’une matrice se
+  suivent.
 - Retour : apparition `growIn` existante.
 - Question réussie : le numéro devient ✓ avec un effet de rebond.
 - Progression : barre et pourcentage animés ; confettis à 100 %.

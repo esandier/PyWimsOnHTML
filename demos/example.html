@@ -3622,11 +3622,7 @@ self.onmessage = async ({ data: { id, op, args } }) => {
     await collapse.finished;
     change();
     const expand = input.animate(
-      [
-        { transform: "scaleX(0)", opacity: 0 },
-        { transform: "scaleX(1.08)", opacity: 1, offset: 0.7 },
-        { transform: "scaleX(1)", opacity: 1 }
-      ],
+      [{ transform: "scaleX(0)", opacity: 0 }, { transform: "scaleX(1)", opacity: 1 }],
       { duration: answerToggleDurationMs * 0.7, easing: "ease-out", fill: "forwards" }
     );
     await expand.finished;
