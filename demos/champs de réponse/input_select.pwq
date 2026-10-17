@@ -13,11 +13,12 @@ STD
 %
 % question_setup
 %
-# Champ input_select : une liste déroulante placée dans une phrase, pour un texte à trous.
-#   choices=     liste des choix, en texte simple (ni formule, ni HTML)
-#   solution=    indice du bon choix
+# Champ input_select : une liste déroulante, qui a l’aspect d’un champ.
+#   choices=      liste des choix, en texte simple (ni formule, ni HTML)
+#   solution=     indice du bon choix
 #   shuffle=false garde l’ordre de la liste ; fixed_last=n comme pour input_radio
-# Vide, le trou est souligné en pointillé ; rempli, il prend la largeur du choix.
+#   inline=true   la fond dans la phrase, pour un texte à trous (voir texte-a-trous.pwq)
+# Vide, elle affiche « choisir » ; une flèche la distingue d’un champ où l’on tape.
 from random import randint
 from sympy import isprime
 

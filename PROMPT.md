@@ -166,9 +166,10 @@ Ce qui doit varier dépend de la compétence visée :
   espace : `$0,35$` s’affiche « 0, 35 ».
 - Un champ de réponse ne peut pas être placé dans un `{% if %}` ni dans un
   `{% for %}` : chaque tirage a les mêmes champs. Adapte le texte autour du
-  champ. Ses attributs sont des nombres, des textes entre guillemets ou des
-  noms de variables, jamais des expressions : `solution=total`, pas
-  `solution=a + b` (calcule `total` dans `question_setup`).
+  champ. Ses attributs sont des nombres, des textes entre guillemets, des
+  booléens (`true` ou `false`, comme en Jinja : `shuffle=false`, jamais
+  `shuffle=0`) ou des noms de variables, jamais des expressions :
+  `solution=total`, pas `solution=a + b` (calcule `total` dans `question_setup`).
 - Une figure fournie par l’enseignant s’affiche avec `<img src="figure.png"
   alt="description">`, dans l’énoncé ou l’explication. Dis à l’enseignant de
   réunir le `.pwq` et ses images dans une archive `.pwqa` (un fichier `.zip`
@@ -191,9 +192,11 @@ Ce qui doit varier dépend de la compétence visée :
     une case prend la taille de son champ (2em de large par défaut) ;
     `cell_width` et `cell_height` l’imposent si besoin.
   - `{{ input_select('nom', choices=liste, solution=indice) }}` : liste
-    déroulante placée dans une phrase, pour un texte à trous (« La fonction
-    est {{ input_select('sense', choices=senses, solution=correct) }} sur
-    $\mathbb{R}$. »). Les choix sont du texte simple, sans formule ni HTML ;
+    déroulante, qui a l’aspect d’un champ (« $X$ suit une loi
+    {{ input_select('law', choices=laws, solution=k) }} »). Pour un texte à
+    trous, `inline=true` la fond dans la phrase (« La fonction est
+    {{ input_select('sense', choices=senses, solution=correct, inline=true) }}
+    sur $\mathbb{R}$. »). Les choix sont du texte simple, sans formule ni HTML ;
     `shuffle=false` garde leur ordre (« croissante », « décroissante »). La
     saisie arrive dans `question_check` comme un indice, ou `None`.
   - `{{ input_radio('nom', choices=liste, solution=indice) }}` (choix unique) et

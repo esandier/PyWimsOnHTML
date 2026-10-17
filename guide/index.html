@@ -160,7 +160,8 @@
         variables de <code>question_setup</code> ; dans <code>question_check</code>, la saisie arrive dans cette variable.</li>
       <li>Une valeur est un nom de variable de <code>question_setup</code> (<code>solution=product</code>), un
         nombre (<code>columns=4</code>, <code>tolerance=0.01</code>), un mot parmi ceux que le champ admet
-        (<code>form=decimal</code>) ou un texte entre apostrophes (<code>style='width:4em'</code>).</li>
+        (<code>form=decimal</code>), <code>true</code> ou <code>false</code> (<code>shuffle=false</code>)
+        ou un texte entre apostrophes (<code>style='width:4em'</code>).</li>
       <li><code>solution=</code> est obligatoire pour tous les champs : la variable qui contient la bonne
         réponse.</li>
       <li>Une unité s’attache au champ par une espace insécable : <code>{{ input_value('length', solution=bc) }}&amp;nbsp;cm</code>.
@@ -275,18 +276,21 @@
     </details>
 
     <details class="field-item">
-      <summary><code>input_select</code> : texte à trous</summary>
-<pre><code>La fonction est {{ input_select('sense', choices=senses, solution=correct, shuffle=false) }} sur cet intervalle.</code></pre>
+      <summary><code>input_select</code> : liste déroulante, texte à trous</summary>
+<pre><code>$X$ suit une loi {{ input_select('law', choices=laws, solution=k, shuffle=false) }}.
+La fonction est {{ input_select('sense', choices=senses, solution=correct, inline=true) }} sur cet intervalle.</code></pre>
       <div class="table-wrap"><table>
         <thead><tr><th>Paramètre</th><th>Statut</th><th>Rôle</th></tr></thead>
         <tbody>
           <tr><td><code>choices</code></td><td>obligatoire</td><td>liste de <code>question_setup</code> : au moins deux choix, en texte simple (ni formule, ni HTML)</td></tr>
           <tr><td><code>solution</code></td><td>obligatoire</td><td>le numéro du bon choix, à partir de <strong>0</strong></td></tr>
+          <tr><td><code>inline</code></td><td>facultatif</td><td><code>inline=true</code> : la liste se fond dans la phrase, pour un texte à trous</td></tr>
           <tr><td><code>shuffle</code>, <code>fixed_last</code></td><td>facultatifs</td><td>comme pour <code>input_radio</code></td></tr>
         </tbody>
       </table></div>
-      <p>Une liste déroulante qui se fond dans la phrase : ni cadre ni fond, un simple soulignement en
-        pointillé. Sur téléphone, le sélecteur du système s’ouvre.</p>
+      <p>Par défaut, la liste a l’aspect d’un champ, comme <code>input_value</code> à côté d’elle. Avec
+        <code>inline=true</code>, un cadre fin en pointillé, dans la phrase, qui disparaît après vérification.
+        Vide, elle affiche « choisir ». Sur téléphone, le sélecteur du système s’ouvre.</p>
     </details>
 
     <details class="field-item">

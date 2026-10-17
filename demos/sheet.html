@@ -1001,21 +1001,48 @@ body:not([data-scored]) .pw-help-score {
 }
 
 
-.pw-select {
+.pw-select-wrapper {
+  position: relative;
   display: inline-block;
-  width: 4em;
-  margin: 0 0.1em;
-  padding: 0 0.15em;
-  border: 0;
-  border-bottom: 2px dotted var(--pw-brand-navy);
-  border-radius: 0;
-  color: var(--pw-brand-navy);
-  background: transparent;
-  font: inherit;
-  line-height: inherit;
+}
+
+.pw-select {
+  margin: 0;
+  border: 2px solid var(--pw-input-border);
+  border-radius: 8px;
+  padding: 1px 1.5em 1px 0.4em;
+  color: var(--pw-text-color);
+  background: #fff;
+
+  font-size: 12pt;
+  font-style: italic;
+  min-height: 1.5em;
   vertical-align: baseline;
   appearance: none;
   cursor: pointer;
+
+  width: calc(var(--pw-select-text-width, 6em) + 1.9em + 8px);
+}
+
+
+.pw-select option {
+  color: var(--pw-text-color);
+  font-style: normal;
+}
+
+.pw-select.is-empty {
+  color: color-mix(in srgb, var(--pw-text-color) 55%, #fff);
+}
+
+.pw-select-arrow {
+  position: absolute;
+  top: 50%;
+  right: 0.5em;
+  transform: translateY(-50%);
+  color: color-mix(in srgb, var(--pw-text-color) 50%, #fff);
+  font-size: 0.8em;
+  font-style: normal;
+  pointer-events: none;
 }
 
 .pw-select:focus-visible {
@@ -1029,16 +1056,62 @@ body:not([data-scored]) .pw-help-score {
   cursor: default;
 }
 
+.pw-select.is-correct + .pw-select-arrow,
+.pw-select.is-incorrect + .pw-select-arrow {
+  display: none;
+}
+
 .pw-select.is-correct {
-  border-bottom: 2px solid var(--pw-correct-text);
+  border-color: var(--pw-correct-text);
   color: var(--pw-correct-text);
-  background-color: var(--pw-correct-background);
+  background: var(--pw-correct-background);
 }
 
 .pw-select.is-incorrect {
-  border-bottom: 2px solid var(--pw-incorrect-text);
+  border-color: var(--pw-incorrect-text);
   color: var(--pw-incorrect-text);
-  background-color: var(--pw-incorrect-background);
+  background: var(--pw-incorrect-background);
+}
+
+
+.pw-select-wrapper.is-inline {
+  vertical-align: baseline;
+}
+
+.is-inline .pw-select {
+  width: calc(var(--pw-select-text-width, 4em) + 1.4em + 6px);
+  border: 1px dashed var(--pw-input-border);
+  border-radius: 4px;
+  padding: 0 1.1em 0 0.3em;
+  min-height: 0;
+  background: transparent;
+  font: inherit;
+  line-height: 1.35;
+}
+
+.is-inline .pw-select.is-empty {
+  font-style: italic;
+}
+
+.is-inline .pw-select-arrow {
+  right: 0.35em;
+}
+
+
+.is-inline .pw-select.is-correct,
+.is-inline .pw-select.is-incorrect {
+  width: calc(var(--pw-select-text-width, 4em) + 0.6em + 6px);
+  border-color: transparent;
+  padding-right: 0.3em;
+}
+
+
+.is-inline .pw-select.is-correct {
+  background: var(--pw-correct-background);
+}
+
+.is-inline .pw-select.is-incorrect {
+  background: var(--pw-incorrect-background);
 }
 
 
@@ -1296,7 +1369,8 @@ body:not([data-scored]) .pw-help-score {
 }
 
 
-[data-style="compact"] .input {
+[data-style="compact"] .input,
+[data-style="compact"] .pw-select-wrapper:not(.is-inline) .pw-select {
   border-width: 1px;
   border-radius: 4px;
 }
@@ -2136,12 +2210,12 @@ else:
     },
     input_radio: {
       choices: "variable", solution: "variable",
-      columns: "integer", shuffle: "integer", fixed_last: "integer", scoring: "text"
+      columns: "integer", shuffle: "boolean", fixed_last: "integer", scoring: "text"
     },
-    input_select: { choices: "variable", solution: "variable", shuffle: "integer", fixed_last: "integer" },
+    input_select: { choices: "variable", solution: "variable", shuffle: "boolean", fixed_last: "integer", inline: "boolean" },
     input_checkbox: {
       choices: "variable", solution: "variable",
-      columns: "integer", shuffle: "integer", fixed_last: "integer", scoring: "text"
+      columns: "integer", shuffle: "boolean", fixed_last: "integer", scoring: "text"
     }
   };
   const choiceTypes = new Set(["input_radio", "input_checkbox", "input_select"]);
@@ -2160,8 +2234,10 @@ else:
     number: "un nombre positif, par exemple 0.01",
     variable: "un nom de variable",
     dimension: "un entier ou un nom de variable",
-    text: "un texte entre guillemets"
+    text: "un texte entre guillemets",
+    boolean: "true ou false"
   };
+  const booleanWords = new Map([["true", true], ["True", true], ["false", false], ["False", false]]);
 
   const rawInputAttributes =
     'inputmode="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"';
@@ -2277,11 +2353,15 @@ else:
         throw new Error(`Attribut « ${key} » répété dans ${shown}`);
       }
       const expected = schema[key];
+      if (key === "shuffle" && (integer === "0" || integer === "1")) {
+        throw new Error(`« ${key}=${integer} » s’écrit maintenant « ${key}=${integer === "0" ? "false" : "true"} » dans ${shown}`);
+      }
       const word = variable ?? text;
       const value =
         Array.isArray(expected) ? (expected.includes(word) ? word : undefined)
         : expected === "number" && number !== undefined ? number
         : expected === "integer" && integer !== undefined ? Number(integer)
+        : expected === "boolean" && booleanWords.has(rawVariable) ? booleanWords.get(rawVariable)
           : expected === "variable" && variable !== undefined ? variable
             : expected === "dimension" && integer !== undefined ? Number(integer)
               : expected === "dimension" && variable !== undefined ? variable
@@ -2317,11 +2397,8 @@ else:
       if (Object.hasOwn(attributes, "columns") && !(attributes.columns >= 1 && attributes.columns <= 6)) {
         throw new Error(`L’attribut « columns » doit être compris entre 1 et 6 dans ${shown}`);
       }
-      if (Object.hasOwn(attributes, "shuffle") && ![0, 1].includes(attributes.shuffle)) {
-        throw new Error(`L’attribut « shuffle » doit valoir 0 ou 1 dans ${shown}`);
-      }
-      if (attributes.shuffle === 0 && Object.hasOwn(attributes, "fixed_last")) {
-        throw new Error(`fixed_last est sans effet avec shuffle=0, qui garde déjà tous les choix à leur place, dans ${shown}`);
+      if (attributes.shuffle === false && Object.hasOwn(attributes, "fixed_last")) {
+        throw new Error(`fixed_last est sans effet avec shuffle=false, qui garde déjà tous les choix à leur place, dans ${shown}`);
       }
       if (Object.hasOwn(attributes, "scoring")) {
         try {
@@ -2916,7 +2993,7 @@ window.PyWimsWidgets = (() => {
     return `<fieldset class="pw-choices${compact ? " is-compact" : ""}" data-name="${name}" data-multiple="${multiple}" data-columns="${columns}" style="--pw-choice-columns:${columns}"><legend class="pw-sr-only">${legend}</legend>${items}</fieldset>`;
   }
 
-  function inputSelect(name, { texts, order, idPrefix = "" } = {}) {
+  function inputSelect(name, { texts, order, idPrefix = "", inline = false } = {}) {
     if (!PyWimsTemplate.isName(name)) {
       throw new Error(`Nom invalide pour une liste déroulante : ${name}`);
     }
@@ -2927,27 +3004,28 @@ window.PyWimsWidgets = (() => {
     }
     const options = order.map(index =>
       `<option value="${index}">${escapeHtml(texts[index]).replaceAll("{", "&#123;").replaceAll("}", "&#125;")}</option>`).join("");
-    return `<select class="pw-select" id="${idPrefix}form_select_${name}" data-name="${name}" aria-label="${escapeHtml(name)}"><option value="" selected disabled hidden></option>${options}</select>`;
+    return `<span class="pw-select-wrapper${inline ? " is-inline" : ""}"><select class="pw-select is-empty" id="${idPrefix}form_select_${name}" data-name="${name}" aria-label="${escapeHtml(name)}"><option value="" selected disabled hidden>choisir</option>${options}</select><span class="pw-select-arrow" aria-hidden="true">▾</span></span>`;
   }
 
   function fitSelects(root) {
     for (const select of root.querySelectorAll("select.pw-select")) {
       const option = select.selectedOptions[0];
-      if (!option || option.value === "") {
-        select.style.width = "";
-        continue;
-      }
+      select.classList.toggle("is-empty", !option || option.value === "");
+      const inline = select.parentElement.classList.contains("is-inline");
+      const texts = inline ? [option?.textContent ?? ""] : [...select.options].map(item => item.textContent);
       const style = getComputedStyle(select);
       const probe = document.createElement("span");
       probe.style.cssText = "position:absolute;visibility:hidden;white-space:pre";
       for (const property of ["fontStyle", "fontWeight", "fontSize", "fontFamily", "letterSpacing"]) {
         probe.style[property] = style[property];
       }
-      probe.textContent = option.textContent;
       document.body.append(probe);
-      const width = probe.getBoundingClientRect().width;
+      const width = Math.max(...texts.map(text => {
+        probe.textContent = text;
+        return probe.getBoundingClientRect().width;
+      }));
       probe.remove();
-      select.style.width = `calc(${width}px + ${style.paddingLeft} + ${style.paddingRight} + 4px)`;
+      select.style.setProperty("--pw-select-text-width", `${width}px`);
     }
   }
 
@@ -4440,7 +4518,8 @@ self.onmessage = async ({ data: { id, op, args } }) => {
           return PyWimsWidgets.inputSelect(tag.name, {
             texts: draw.choices?.[tag.name],
             order: draw.orders?.[tag.name],
-            idPrefix
+            idPrefix,
+            inline: attributes.inline ?? false
           });
         case "input_radio":
         case "input_checkbox":
@@ -4684,6 +4763,7 @@ self.onmessage = async ({ data: { id, op, args } }) => {
         this.reportError(error);
       }
       PyWimsWidgets.fitChoiceColumns?.(promptElement);
+      if (this.tagTypes.has("input_select")) PyWimsWidgets.fitSelects(promptElement);
     }
 
     defaultVerdicts(inputs) {
