@@ -906,6 +906,9 @@ charte (couleurs, polices, logo).
 - **Numéro** : « 3. » en gras au début de l’énoncé ; le titre de la question
   n’est pas affiché (il reste lu par les lecteurs d’écran). Une question
   réussie a un ✓ vert dans la marge, devant son numéro, qui reste visible.
+  Le numéro est sur la première ligne de l’énoncé, même écrit dans un `<p>` :
+  la marge du haut du premier élément et celle du bas du dernier sont
+  retirées.
 - **Boutons** : les trois icônes, sans libellé, en petit et en gris, au bout de
   la première ligne de l’énoncé ; une infobulle donne leur nom. « Vérifier »
   prend la couleur de la charte quand il est actif. La note de la question

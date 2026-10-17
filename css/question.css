@@ -1448,6 +1448,17 @@ body:not([data-scored]) .pw-help-score {
   min-height: 0;
 }
 
+/* Un énoncé écrit dans un <p> (le cas d’un texte à trous) commençait 16 px sous le numéro, qui
+   restait seul sur sa ligne ; la marge du bas ajoutait un blanc avant le filet. Le style habituel
+   le cachait : le titre est au-dessus de l’énoncé. */
+[data-style="compact"] .form-statement > :first-child {
+  margin-top: 0;
+}
+
+[data-style="compact"] .form-statement > :last-child {
+  margin-bottom: 0;
+}
+
 /* Champs : traits fins. */
 [data-style="compact"] .input,
 [data-style="compact"] .pw-select-wrapper:not(.is-inline) .pw-select {
