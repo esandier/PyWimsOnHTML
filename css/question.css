@@ -1002,26 +1002,58 @@ body:not([data-scored]) .pw-help-score {
   content: "✗";
 }
 
-/* Liste déroulante d’un texte à trous (SPECIFICATION.md, § 2.9) : elle se fond dans le texte.
-   Vide, c’est un trou de 4em souligné en pointillé, sans cadre, ni fond, ni flèche ; remplie, elle
-   prend la largeur du choix (réglée par fitSelects, widgets/input-choice.js), dans la police et la
-   taille du texte. Solution écartée : l’aspect des autres champs (cadre arrondi), qui coupe la
-   phrase en morceaux. */
-.pw-select {
+/* Liste déroulante (SPECIFICATION.md, § 2.9), deux aspects choisis sur une page d’essai (Edge,
+   Firefox, 375 px, octobre 2026). Par défaut, celui d’un champ input_value (.input) : la liste se
+   reconnaît à côté des autres champs. Avec inline=true (.is-inline), un cadre fin en pointillé de la
+   hauteur de la ligne, pour un texte à trous. Dans les deux, « choisir » en gris et en italique tant
+   que rien n’est choisi, et une flèche « ▾ » (élément frère, posé sur la marge droite du <select>)
+   qui disparaît après vérification. L’aspect précédent (trou de 4em souligné en pointillé, sans
+   flèche) jurait à côté d’un champ encadré et ne disait pas qu’il fallait choisir. Écartés sur la
+   page d’essai : pastille, trait continu, surligneur, crochets (confondus avec un intervalle). */
+.pw-select-wrapper {
+  position: relative;
   display: inline-block;
-  width: 4em;
-  margin: 0 0.1em;
-  padding: 0 0.15em;
-  border: 0;
-  border-bottom: 2px dotted var(--pw-brand-navy);
-  border-radius: 0;
-  color: var(--pw-brand-navy);
-  background: transparent;
-  font: inherit;
-  line-height: inherit;
+}
+
+.pw-select {
+  margin: 0;
+  border: 2px solid var(--pw-input-border);
+  border-radius: 8px;
+  padding: 1px 1.5em 1px 0.4em;
+  color: var(--pw-text-color);
+  background: #fff;
+  /* Police par défaut du navigateur, comme le champ texte (.input), qui n’hérite pas de celle de la
+     page : avec celle du texte, la liste était plus haute de 2 à 3 px. Alignée, comme lui, sur la
+     ligne de base. min-height : sous Edge, la liste restait 1 px plus basse (23 px contre 24). */
+  font-size: 12pt;
+  font-style: italic;
+  min-height: 1.5em;
   vertical-align: baseline;
   appearance: none;
   cursor: pointer;
+  /* Plus long texte (fitSelects), marges, bordures, et 4px pour l’arrondi du <select>. */
+  width: calc(var(--pw-select-text-width, 6em) + 1.9em + 8px);
+}
+
+/* Les options d’une liste ouverte gardent l’aspect ordinaire, pas le gris de « choisir ». */
+.pw-select option {
+  color: var(--pw-text-color);
+  font-style: normal;
+}
+
+.pw-select.is-empty {
+  color: color-mix(in srgb, var(--pw-text-color) 55%, #fff);
+}
+
+.pw-select-arrow {
+  position: absolute;
+  top: 50%;
+  right: 0.5em;
+  transform: translateY(-50%);
+  color: color-mix(in srgb, var(--pw-text-color) 50%, #fff);
+  font-size: 0.8em;
+  font-style: normal;
+  pointer-events: none;
 }
 
 .pw-select:focus-visible {
@@ -1029,22 +1061,72 @@ body:not([data-scored]) .pw-help-score {
   outline-offset: 2px;
 }
 
-/* Figée après vérification : la couleur du verdict, sans le gris d’un champ inactif. */
+/* Figée après vérification : la couleur du verdict, sans le gris d’un champ inactif ; plus de
+   flèche, puisqu’on ne peut plus choisir. */
 .pw-select:disabled {
   opacity: 1;
   cursor: default;
 }
 
+.pw-select.is-correct + .pw-select-arrow,
+.pw-select.is-incorrect + .pw-select-arrow {
+  display: none;
+}
+
 .pw-select.is-correct {
-  border-bottom: 2px solid var(--pw-correct-text);
+  border-color: var(--pw-correct-text);
   color: var(--pw-correct-text);
-  background-color: var(--pw-correct-background);
+  background: var(--pw-correct-background);
 }
 
 .pw-select.is-incorrect {
-  border-bottom: 2px solid var(--pw-incorrect-text);
+  border-color: var(--pw-incorrect-text);
   color: var(--pw-incorrect-text);
-  background-color: var(--pw-incorrect-background);
+  background: var(--pw-incorrect-background);
+}
+
+/* inline=true : dans la phrase, police, taille et couleur du texte. La largeur suit le texte
+   affiché (--pw-select-text-width, mesurée par fitSelects, widgets/input-choice.js), plus les marges
+   de l’état courant : après vérification, la place de la flèche est rendue, pour que le mot ne
+   garde pas un blanc à droite. Les 4px couvrent l’arrondi du <select>, autre que celui du texte. */
+.pw-select-wrapper.is-inline {
+  vertical-align: baseline;
+}
+
+.is-inline .pw-select {
+  width: calc(var(--pw-select-text-width, 4em) + 1.4em + 6px);
+  border: 1px dashed var(--pw-input-border);
+  border-radius: 4px;
+  padding: 0 1.1em 0 0.3em;
+  min-height: 0;
+  background: transparent;
+  font: inherit;
+  line-height: 1.35;
+}
+
+.is-inline .pw-select.is-empty {
+  font-style: italic;
+}
+
+.is-inline .pw-select-arrow {
+  right: 0.35em;
+}
+
+/* Après vérification, le cadre disparaît (transparent : rien ne bouge) ; reste le fond du verdict. */
+.is-inline .pw-select.is-correct,
+.is-inline .pw-select.is-incorrect {
+  width: calc(var(--pw-select-text-width, 4em) + 0.6em + 6px);
+  border-color: transparent;
+  padding-right: 0.3em;
+}
+
+/* Le fond transparent de .is-inline .pw-select, plus précis, l’emporterait sur celui du verdict. */
+.is-inline .pw-select.is-correct {
+  background: var(--pw-correct-background);
+}
+
+.is-inline .pw-select.is-incorrect {
+  background: var(--pw-incorrect-background);
 }
 
 /* Champ fantôme qui conserve les dimensions du champ texte pendant l’animation. */
@@ -1314,7 +1396,8 @@ body:not([data-scored]) .pw-help-score {
 }
 
 /* Champs : traits fins. */
-[data-style="compact"] .input {
+[data-style="compact"] .input,
+[data-style="compact"] .pw-select-wrapper:not(.is-inline) .pw-select {
   border-width: 1px;
   border-radius: 4px;
 }

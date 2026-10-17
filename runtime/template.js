@@ -50,7 +50,8 @@ window.PyWimsTemplate = (() => {
       columns: "integer", shuffle: "boolean", fixed_last: "integer", scoring: "text"
     },
     // Liste déroulante d’un texte à trous (SPECIFICATION.md, § 2.9) : ni colonnes ni barème.
-    input_select: { choices: "variable", solution: "variable", shuffle: "boolean", fixed_last: "integer" },
+    // inline=true : aspect fondu dans la phrase ; par défaut, celui d’un champ.
+    input_select: { choices: "variable", solution: "variable", shuffle: "boolean", fixed_last: "integer", inline: "boolean" },
     input_checkbox: {
       choices: "variable", solution: "variable",
       columns: "integer", shuffle: "boolean", fixed_last: "integer", scoring: "text"
@@ -224,7 +225,7 @@ window.PyWimsTemplate = (() => {
       }
       const expected = schema[key];
       // Ancienne écriture de shuffle (0 ou 1) : refusée avec la nouvelle, comme l’ancienne notation.
-      if (expected === "boolean" && (integer === "0" || integer === "1")) {
+      if (key === "shuffle" && (integer === "0" || integer === "1")) {
         throw new Error(`« ${key}=${integer} » s’écrit maintenant « ${key}=${integer === "0" ? "false" : "true"} » dans ${shown}`);
       }
       const word = variable ?? text;

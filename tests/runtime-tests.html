@@ -896,12 +896,20 @@ window.PyWimsPython = (() => {
         const { $, role, frame } = await openQuestion(question, draws, {});
         await waitFor(() => $("#q1-form_select_sense"), "affichage de la liste");
         const select = $("#q1-form_select_sense");
+        const arrow = select.nextElementSibling;
         if (!role("check").disabled) throw new Error("« Vérifier » doit attendre un choix.");
+        // Vide : « choisir » en gris (is-empty) et la flèche ; après vérification, plus de flèche.
+        if (!select.classList.contains("is-empty") || select.selectedOptions[0].textContent !== "choisir" ||
+            getComputedStyle(arrow).display === "none") {
+          throw new Error("Une liste vide doit montrer « choisir » et sa flèche.");
+        }
         select.value = "0";
         select.dispatchEvent(new Event("input", { bubbles: true }));
+        if (select.classList.contains("is-empty")) throw new Error("Une liste remplie n’est plus marquée vide.");
         role("check").click();
         await waitFor(() => role("feedback").classList.contains("is-visible"), "retour faux");
-        if (role("feedback").textContent !== "Réponse incorrecte." || !select.classList.contains("is-incorrect") || !select.disabled) {
+        if (role("feedback").textContent !== "Réponse incorrecte." || !select.classList.contains("is-incorrect") || !select.disabled ||
+            getComputedStyle(arrow).display !== "none") {
           throw new Error(`Vérification inattendue : ${role("feedback").textContent}`);
         }
         role("solution").click();

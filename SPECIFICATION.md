@@ -506,8 +506,11 @@ $[0 ; +\infty[$. »).
   `input_value` : même cadre, même police, mêmes couleurs de verdict ; une
   petite flèche « ▾ », dans le cadre à droite, la distingue d’un champ où l’on
   tape. Vide, elle montre « *choisir* », en gris et en italique. Sa largeur
-  est celle du plus long texte (choix ou « choisir »), comme un `<select>`
-  ordinaire : la phrase ne bouge pas quand on choisit.
+  est celle du plus long texte (choix ou « choisir »), mesurée par le script
+  (la largeur naturelle d’un `<select>` laissait, sous Firefox, un choix en
+  italique toucher la flèche) : la phrase ne bouge pas quand on choisit. Sa
+  police est celle du navigateur, comme pour un champ texte, et elle a sa
+  hauteur. Après vérification, la flèche disparaît : on ne peut plus choisir.
 - **Aspect `inline=true` : dans la phrase.** Un cadre fin en pointillé, de la
   hauteur de la ligne, aux coins à peine arrondis, avec la flèche « ▾ »
   discrète après le texte. Vide, il montre « *choisir* », en gris et en

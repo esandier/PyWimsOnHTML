@@ -307,7 +307,8 @@ window.PyWimsQuestion = (() => {
           return PyWimsWidgets.inputSelect(tag.name, {
             texts: draw.choices?.[tag.name],
             order: draw.orders?.[tag.name],
-            idPrefix
+            idPrefix,
+            inline: attributes.inline ?? false
           });
         case "input_radio":
         case "input_checkbox":
@@ -600,6 +601,8 @@ window.PyWimsQuestion = (() => {
       // Les largeurs des choix ne sont connues qu’une fois les formules composées. Le widget de
       // choix n’est intégré qu’à une feuille qui a une question à choix.
       PyWimsWidgets.fitChoiceColumns?.(promptElement);
+      // Une liste inline vide prend la largeur de « choisir » (SPECIFICATION.md, § 2.9).
+      if (this.tagTypes.has("input_select")) PyWimsWidgets.fitSelects(promptElement);
     }
 
     // Verdicts de la correction par défaut (SPECIFICATION.md, § 2.6), un par champ de fields() :

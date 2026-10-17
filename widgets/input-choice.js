@@ -36,11 +36,14 @@ window.PyWimsWidgets = (() => {
     return `<fieldset class="pw-choices${compact ? " is-compact" : ""}" data-name="${name}" data-multiple="${multiple}" data-columns="${columns}" style="--pw-choice-columns:${columns}"><legend class="pw-sr-only">${legend}</legend>${items}</fieldset>`;
   }
 
-  // Liste déroulante d’un texte à trous (SPECIFICATION.md, § 2.9) : un <select> natif, dont le
-  // sélecteur du système s’ouvre sur téléphone. La première option, vide, montre le trou avant tout
-  // choix ; masquée et inactive, elle ne peut pas être choisie de nouveau. Chaque option porte
-  // l’indice du choix dans la liste de l’auteur, que reçoit « question_check ».
-  function inputSelect(name, { texts, order, idPrefix = "" } = {}) {
+  // Liste déroulante (SPECIFICATION.md, § 2.9) : un <select> natif, dont le sélecteur du système
+  // s’ouvre sur téléphone. La première option, de valeur vide, affiche « choisir » avant tout choix ;
+  // masquée et inactive, elle ne peut pas être choisie de nouveau. Chaque option porte l’indice du
+  // choix dans la liste de l’auteur, que reçoit « question_check ».
+  // La flèche est un élément frère, dans une enveloppe : un <select> ne peut pas porter de ::after,
+  // et la flèche disparaît après vérification par « .is-correct + », sans :has (Firefox 121).
+  // inline : aspect fondu dans la phrase (texte à trous) ; sinon, l’aspect d’un champ input_value.
+  function inputSelect(name, { texts, order, idPrefix = "", inline = false } = {}) {
     if (!PyWimsTemplate.isName(name)) {
       throw new Error(`Nom invalide pour une liste déroulante : ${name}`);
     }
@@ -52,33 +55,38 @@ window.PyWimsWidgets = (() => {
     // Accolades échappées, comme pour les choix : le modèle ne doit pas toucher au texte d’une option.
     const options = order.map(index =>
       `<option value="${index}">${escapeHtml(texts[index]).replaceAll("{", "&#123;").replaceAll("}", "&#125;")}</option>`).join("");
-    return `<select class="pw-select" id="${idPrefix}form_select_${name}" data-name="${name}" aria-label="${escapeHtml(name)}"><option value="" selected disabled hidden></option>${options}</select>`;
+    return `<span class="pw-select-wrapper${inline ? " is-inline" : ""}"><select class="pw-select is-empty" id="${idPrefix}form_select_${name}" data-name="${name}" aria-label="${escapeHtml(name)}"><option value="" selected disabled hidden>choisir</option>${options}</select><span class="pw-select-arrow" aria-hidden="true">▾</span></span>`;
   }
 
-  // Règle la largeur de chaque liste déroulante sur le texte choisi (§ 2.9) : un <select> natif a
-  // toujours la largeur de sa plus longue option, alors qu’un trou rempli doit se lire comme une
-  // phrase. Le texte est mesuré dans un élément invisible de même police ; une liste vide reprend la
-  // largeur du trou (4em, question.css). Solution écartée : « field-sizing: content », que seuls
-  // Chrome et Edge connaissent. Appelée par la question à chaque saisie et après « Correction ».
+  // Marque chaque liste vide (« choisir » en gris, question.css) et règle sa largeur (§ 2.9) par
+  // --pw-select-text-width, à laquelle question.css ajoute les marges de l’état courant (elles
+  // changent après vérification, quand la place de la flèche est rendue) :
+  // - inline : la largeur du texte affiché, car un trou rempli doit se lire comme une phrase ;
+  // - champ : celle du plus long texte, pour que la phrase ne bouge pas quand on choisit. La largeur
+  //   naturelle d’un <select> ne suffit pas : sous Firefox, un choix en italique touchait la flèche.
+  // Les textes sont mesurés dans un élément invisible de même police. La marque passe par une classe
+  // plutôt que par « :has(option:checked) », réservé aux navigateurs récents. Solution écartée :
+  // « field-sizing: content », que seuls Chrome et Edge connaissent.
+  // Appelée par la question au rendu, à chaque saisie et après « Correction ».
   function fitSelects(root) {
     for (const select of root.querySelectorAll("select.pw-select")) {
       const option = select.selectedOptions[0];
-      if (!option || option.value === "") {
-        select.style.width = "";
-        continue;
-      }
+      select.classList.toggle("is-empty", !option || option.value === "");
+      const inline = select.parentElement.classList.contains("is-inline");
+      const texts = inline ? [option?.textContent ?? ""] : [...select.options].map(item => item.textContent);
       const style = getComputedStyle(select);
       const probe = document.createElement("span");
       probe.style.cssText = "position:absolute;visibility:hidden;white-space:pre";
       for (const property of ["fontStyle", "fontWeight", "fontSize", "fontFamily", "letterSpacing"]) {
         probe.style[property] = style[property];
       }
-      probe.textContent = option.textContent;
       document.body.append(probe);
-      const width = probe.getBoundingClientRect().width;
+      const width = Math.max(...texts.map(text => {
+        probe.textContent = text;
+        return probe.getBoundingClientRect().width;
+      }));
       probe.remove();
-      // Quelques pixels de marge : le rendu du <select> arrondit autrement que celui du texte.
-      select.style.width = `calc(${width}px + ${style.paddingLeft} + ${style.paddingRight} + 4px)`;
+      select.style.setProperty("--pw-select-text-width", `${width}px`);
     }
   }
 

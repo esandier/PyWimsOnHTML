@@ -276,17 +276,27 @@
         if (sameText(input, solution, match) !== expected) throw new Error(`« ${input} » / « ${solution} » (${match}) : ${!expected}`);
       }
     });
-    test("une liste déroulante est vide, puis montre ses choix dans l’ordre du tirage, échappés", () => {
+    test("une liste déroulante affiche « choisir », puis ses choix dans l’ordre du tirage, échappés", () => {
       const html = PyWimsWidgets.inputSelect("verb", { texts: ["<b>", "{{ a }}", "est"], order: [2, 0, 1], idPrefix: "q2-" });
       const host = document.createElement("div");
       host.innerHTML = html;
       const select = host.querySelector("select.pw-select");
       const options = [...select.options].map(option => [option.value, option.textContent]);
       if (select.id !== "q2-form_select_verb" || select.dataset.name !== "verb" || select.value !== "" ||
-          JSON.stringify(options) !== JSON.stringify([["", ""], ["2", "est"], ["0", "<b>"], ["1", "{{ a }}"]]) ||
-          !select.options[0].disabled) {
+          JSON.stringify(options) !== JSON.stringify([["", "choisir"], ["2", "est"], ["0", "<b>"], ["1", "{{ a }}"]]) ||
+          !select.options[0].disabled || !select.classList.contains("is-empty") ||
+          host.querySelector(".pw-select-wrapper").classList.contains("is-inline") ||
+          select.nextElementSibling?.className !== "pw-select-arrow") {
         throw new Error(`Rendu inattendu : ${html}`);
       }
+      // inline=true : l’aspect dans la phrase ; l’attribut est un booléen.
+      const inline = PyWimsWidgets.inputSelect("verb", { texts: ["a", "b"], order: [0, 1], inline: true });
+      if (!inline.includes('class="pw-select-wrapper is-inline"')) throw new Error(`Rendu inline inattendu : ${inline}`);
+      if (PyWimsTemplate.parseTag("input_select('s', choices=c, solution=s, inline=True)").attributes.inline !== true) {
+        throw new Error("inline=True mal lu.");
+      }
+      expectTagError("input_select('s', choices=c, solution=s, inline=1)", "« inline » doit être true ou false");
+      expectTagError("input_radio('s', choices=c, solution=s, inline=true)", "Attribut « inline » inconnu pour input_radio");
       expectTagError("input_select('s', choices=c, solution=s, columns=2)", "Attribut « columns » inconnu pour input_select");
       expectTagError("input_select('s', choices=c, solution=s, scoring='b=1')", "Attribut « scoring » inconnu pour input_select");
       expectTagError("input_select('s', solution=s)", "doit indiquer ses choix");
