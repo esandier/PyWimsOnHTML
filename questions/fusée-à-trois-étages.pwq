@@ -1,0 +1,185 @@
+%
+% question_title
+%
+La fusée à trois étages : probabilités composées
+%
+% question_keywords
+%
+probabilités, probabilité conditionnelle, probabilités composées, intersection, modélisation, L2
+%
+% question_layout
+%
+STD
+%
+% question_draws
+%
+60
+%
+% question_setup
+%
+from random import choice, randrange
+from sympy import Rational
+
+
+# Écriture TeX des probabilités, pour les choix (des textes Python) et l’explication.
+def P(event, given=None):
+    return r"\mathbb{P}" + ("_{" + given + "}" if given else "") + "(" + event + ")"
+
+
+def frac(numerator, denominator):
+    return r"\dfrac{" + numerator + "}{" + denominator + "}"
+
+
+def times(*factors):
+    return r"\,".join(factors)
+
+
+E12, E123 = r"E_1\cap E_2", r"E_1\cap E_2\cap E_3"
+PE1, PE2, PE3 = P("E_1"), P("E_2"), P("E_3")
+PE2_1, PE3_12, PE12, PE123 = P("E_2", "E_1"), P("E_3", E12), P(E12), P(E123)
+
+# Trois cas : prévoir la mise en orbite (une fois sur deux), fixer la fiabilité du troisième étage au
+# cahier des charges, tirer celle du deuxième des lancements passés. Fiabilités vers 80 % : le produit
+# tombe vers 0,5, et l’on voit ce que coûte chaque étage.
+# Chaque choix avec son retour ; le bon est le premier (les choix sont mélangés à l’affichage).
+case = choice(["orbit", "orbit", "requirement", "statistics"])
+if case == "orbit":
+    p1, p2, p3 = (Rational(randrange(70, 95, 5), 100) for _ in range(3))
+    solution = p1 * p2 * p3
+    weakest = min(p1, p2, p3)
+    # E3 ⊂ E1 ∩ E2 : P(E3) serait juste aussi ; la réunion le remplace parmi les choix.
+    asked = [
+        (PE123, None),
+        (PE3_12, "c’est la fiabilité du troisième étage ; la mise en orbite demande que les trois étages fonctionnent."),
+        (P(E12, "E_3"), "une probabilité sachant $E_3$ suppose déjà que le troisième étage a fonctionné."),
+        (P(r"E_1\cup E_2\cup E_3"), "la réunion signifie « au moins un étage fonctionne » ; la mise en orbite "
+                                    "demande que les trois fonctionnent."),
+    ]
+    formulas = [
+        (times(PE1, PE2_1, PE3_12), None),
+        (times(PE1, PE2, PE3), "ce produit serait juste pour des événements indépendants, ce que les étages ne "
+                               f"sont pas ; et les fiabilités sont ${PE2_1}$ et ${PE3_12}$, pas ${PE2}$ et ${PE3}$."),
+        (" + ".join([PE1, PE2_1, PE3_12]), "« et » ne se traduit pas par une somme : cette somme dépasse même 1."),
+        (PE3_12, "c’est la fiabilité du troisième étage seul ; il faut aussi que les deux premiers fonctionnent."),
+    ]
+elif case == "requirement":
+    # Exigence multiple de 5 %, telle que la fiabilité imposée au troisième étage reste entre 0,6 et 0,95.
+    while True:
+        p1, p2 = (Rational(randrange(75, 95, 5), 100) for _ in range(2))
+        goals = [Rational(g, 100) for g in range(40, 95, 5) if Rational(6, 10) <= Rational(g, 100) / (p1 * p2) <= Rational(95, 100)]
+        if goals:
+            break
+    goal = choice(goals)
+    solution = goal / (p1 * p2)
+    asked = [
+        (PE3_12, None),
+        (PE3, "la fiabilité est une probabilité conditionnelle : relisez sa définition dans l’énoncé."),
+        (PE123, "c’est la probabilité de mise en orbite, que l’agence fixe ; on cherche la fiabilité du troisième étage."),
+        (P(E12, "E_3"), "la condition est inversée : la fiabilité du troisième étage suppose que les deux premiers "
+                        "ont fonctionné."),
+    ]
+    formulas = [
+        (frac(PE123, times(PE1, PE2_1)), None),
+        (frac(times(PE1, PE2_1), PE123), "ce quotient est renversé : il dépasse 1."),
+        (times(PE1, PE2_1, PE123), "écrivez la formule des probabilités composées pour la mise en orbite, puis "
+                                   "isolez le facteur inconnu."),
+        (PE123, "c’est l’exigence de l’agence pour la mise en orbite, pas la fiabilité du troisième étage."),
+    ]
+else:
+    # Part des lancements ayant passé les deux premiers étages, multiple de 5 %, telle que la fiabilité
+    # du deuxième étage reste entre 0,6 et 0,95.
+    p1 = Rational(randrange(75, 95, 5), 100)
+    both = choice([Rational(g, 100) for g in range(40, 95, 5) if Rational(6, 10) <= Rational(g, 100) / p1 <= Rational(95, 100)])
+    solution = both / p1
+    asked = [
+        (PE2_1, None),
+        (PE2, "la fiabilité est une probabilité conditionnelle : relisez sa définition dans l’énoncé."),
+        (PE12, "c’est la part des lancements où les deux premiers étages ont fonctionné, que l’énoncé donne ; la "
+               "fiabilité est une probabilité conditionnelle."),
+        (P("E_1", "E_2"), "la condition est inversée : la fiabilité du deuxième étage suppose que le premier a "
+                          "fonctionné."),
+    ]
+    formulas = [
+        (frac(PE12, PE1), None),
+        (frac(PE1, PE12), "ce quotient est renversé : il dépasse 1."),
+        (times(PE1, PE12), "revenez à la définition d’une probabilité conditionnelle."),
+        (PE12, "c’est la part des deux étages réussis parmi <i>tous</i> les lancements ; la fiabilité ne compte que "
+               "les lancements où le premier étage a fonctionné."),
+    ]
+
+first = 0
+asked_choices = ["$" + text + "$" for text, _ in asked]
+formula_choices = ["$" + text + "$" for text, _ in formulas]
+%
+% question_check
+%
+# Seule la première étape fausse est commentée : la suivante en dépend.
+if asked_answer not in (None, first):
+    feedback = "<b>Étape 1</b> : " + asked[asked_answer][1]
+elif formula_answer not in (None, first):
+    feedback = "<b>Étape 2</b> : " + formulas[formula_answer][1]
+%
+% question_statement
+%
+<style>
+  /* Affichage progressif (:has, sans script) : chaque étape apparaît quand la précédente a une réponse. */
+  .fusee > p:first-child { margin-top: 0; }
+  .fusee .etape-2, .fusee .etape-3 { display: none; }
+  .fusee:has(fieldset[data-name="asked_answer"] input:checked) .etape-2 { display: block; }
+  .fusee:has(fieldset[data-name="formula_answer"] input:checked) .etape-3 { display: block; }
+</style>
+<div class="fusee">
+<p>Une fusée a trois étages, qui s’allument l’un après l’autre ; un étage ne peut s’allumer que si les
+précédents ont fonctionné, et la fusée est mise en orbite si les trois ont fonctionné. On note $E_i$
+l’événement « l’étage $i$ s'est allumé ». La <i>fiabilité</i> d’un étage est la probabilité qu’il s'allume,
+sachant que les étages précédents se sont allumés.</p>
+<p>
+{%- if case == "orbit" -%}
+Le premier étage s’allume avec la probabilité ${{ p1|dec }}$ ; le deuxième a une fiabilité de ${{ p2|dec }}$
+et le troisième de ${{ p3|dec }}$.<br>
+<i>Quelle est la probabilité que la fusée soit mise en orbite ?</i>
+{%- elif case == "requirement" -%}
+Le premier étage s’allume avec la probabilité ${{ p1|dec }}$, et le deuxième a une fiabilité de ${{ p2|dec }}$.
+L’agence spatiale exige que la mise en orbite réussisse dans {{ goal * 100 }} % des lancements.<br>
+<i>On cherche à déterminer la fiabilité qu'il faut exiger du troisième étage.</i>
+{%- else -%}
+Sur les lancements passés, le premier étage s’est allumé dans {{ p1 * 100 }} % des cas, et les deux premiers
+étages se sont allumés dans {{ both * 100 }} % des cas.<br>
+<i>On cherche à déterminer la fiabilité du deuxième étage.</i>
+{%- endif %}</p>
+<h4>Quelle probabilité cherche-t-on ?</h4>
+{{ input_radio('asked_answer', choices=asked_choices, solution=first) }}
+<div class="etape-2">
+<h4>À laquelle de ces expressions la probabilité recherchée est-elle égale ?</h4>
+{{ input_radio('formula_answer', choices=formula_choices, solution=first) }}
+</div>
+<div class="etape-3">
+<h4>Calculez-la (fraction, ou valeur arrondie au centième).</h4>
+{{ input_value('value_answer', solution=solution, tolerance=0.005) }}
+</div>
+</div>
+%
+% question_solution_explanation
+%
+{% if case == "orbit" -%}
+<b>1.</b> La mise en orbite, c’est que les trois étages s'allument : ${{PE123}}$. Les fiabilités données
+sont des probabilités conditionnelles : ${{PE2_1}}$ et ${{PE3_12}}$.
+<br><b>2.</b> Formule des probabilités composées : ${{PE123}} = {{PE1}}\,{{PE2_1}}\,{{PE3_12}}$. Elle vaut
+sans hypothèse d’indépendance ; ici les étages ne sont justement pas indépendants, puisqu’un étage ne peut
+s’allumer que si les précédents ont fonctionné.
+<br><b>3.</b> ${{PE123}} = {{ p1|dec }} \times {{ p2|dec }} \times {{ p3|dec }} \approx {{ solution|dec(2) }}$.
+Chaque étage, pris seul, est fiable au moins à {{ weakest * 100 }} % ; pourtant la fusée n’atteint l’orbite
+qu’environ {{ (solution * 100)|dec(0) }} fois sur 100.
+{%- elif case == "requirement" -%}
+<b>1.</b> Par définition, la fiabilité du troisième étage est ${{PE3_12}}$, une probabilité conditionnelle ; l’exigence de l’agence porte sur la mise en orbite, ${{PE123}}$.
+<br><b>2.</b> La formule des probabilités composées relie les deux : ${{PE123}} = {{PE1}}\,{{PE2_1}}\,{{PE3_12}}$,
+où seul le dernier facteur est inconnu. On l’isole : ${{PE3_12}} = \dfrac{ {{PE123}} }{ {{PE1}}\,{{PE2_1}} }$.
+<br><b>3.</b> ${{PE3_12}} = \dfrac{ {{ goal|dec }} }{ {{ p1|dec }} \times {{ p2|dec }} } \approx {{ solution|dec(2) }}$.
+{%- else -%}
+<b>1.</b> Par définition, la fiabilité du deuxième étage est ${{PE2_1}}$ ; les statistiques donnent ${{PE1}}$
+et ${{PE12}}$.
+<br><b>2.</b> C’est la définition de la probabilité conditionnelle : ${{PE2_1}} = \dfrac{ {{PE12}} }{ {{PE1}} }$.
+Parmi les lancements où le premier étage a fonctionné, on compte la part de ceux où le deuxième s'est allumé.
+<br><b>3.</b> ${{PE2_1}} = \dfrac{ {{ both|dec }} }{ {{ p1|dec }} } \approx {{ solution|dec(2) }}$.
+{%- endif %}
+%

@@ -1,0 +1,88 @@
+%
+% question_title
+%
+Déterminer une loi à partir de conditions, puis son espérance
+%
+% question_keywords
+%
+probabilités, variable aléatoire discrète, loi, espérance, inégalités, L2
+%
+% question_layout
+%
+STD
+%
+% question_draws
+%
+40
+%
+% question_setup
+%
+from random import choice, randint, sample
+from sympy import Rational
+
+
+# X prend quatre valeurs v1 < v2 < v3 < v4, de probabilités p1, p2, p3, p4. Les conditions donnent
+# p1 + p2 (« X < v3 » ou « X ≤ v2 »), p4 (« X > v3 » ou « X ≥ v4 ») et le rapport p2 = r p1
+# (« X ≤ v1 » ou « X < v2 » pour p1) ; p3 s’en déduit, car la somme vaut 1.
+values = sorted(sample(range(-2, 9), 4))
+v1, v2, v3, v4 = values
+N = choice([6, 8, 10, 12])
+r = choice([1, 1, 2])
+# p1 = k/N, p2 = r k/N, p4 = m/N, p3 = le reste, tous strictement positifs.
+while True:
+    k, m = randint(1, N // 3), randint(1, N // 2)
+    rest = N - (1 + r) * k - m
+    if rest >= 1:
+        break
+p1, p2, p4 = Rational(k, N), Rational(r * k, N), Rational(m, N)
+p3 = 1 - p1 - p2 - p4
+probabilities = [p1, p2, p3, p4]
+expectation = sum(v * p for v, p in zip(values, probabilities))
+answer_1, answer_2, answer_3, answer_4 = probabilities
+
+low = choice([f"X < {v3}", r"X \leq " + str(v2)])
+high = choice([f"X > {v3}", r"X \geq " + str(v4)])
+first = choice([r"X \leq " + str(v1), f"X < {v2}"])
+# Valeurs et probabilités, pour le calcul de l’espérance dans l’explication.
+law = list(zip(values, probabilities))
+%
+% question_statement
+%
+<style>
+  /* Sur un écran étroit, seul le tableau défile en largeur, jamais la page. */
+  .loi-defile { max-width: 100%; overflow-x: auto; }
+  .loi-tableau { border-collapse: collapse; margin: 0.6em 0; }
+  .loi-tableau th, .loi-tableau td { border: 1px solid #c8ccd1; padding: 0.25em 0.3em; text-align: center; }
+</style>
+Soit $X$ une variable aléatoire sur $(\Omega, \mathbb{P})$ telle que $X(\Omega) = \{ {{ values|join(", ") }} \}$.
+Déterminez la loi de $X$ et son espérance, sachant que
+$$\mathbb{P}({{ low }}) = {{ (p1 + p2)|frac }}, \quad  \mathbb{P}({{ high }}) = {{ p4|frac }}, \quad
+{%- if r == 1 %} \mathbb{P}({{ first }}) = \mathbb{P}(X = {{ v2 }})
+{%- else %} \mathbb{P}(X = {{ v2 }}) = {{ r }}\,\mathbb{P}({{ first }})
+{%- endif %}.$$
+Saisissez vos réponses sous forme de fractions.
+<h4>Loi de $X$ </h4>
+<div class="loi-defile">
+<table class="loi-tableau">
+<tr><th>$k$</th><td>${{v1}}$</td><td>${{v2}}$</td><td>${{v3}}$</td><td>${{v4}}$</td></tr>
+<tr><th>$\mathbb{P}(X = k)$</th>
+<td>{{ input_value('law_1', solution=answer_1, form=fraction, style='width:3em') }}</td>
+<td>{{ input_value('law_2', solution=answer_2, form=fraction, style='width:3em') }}</td>
+<td>{{ input_value('law_3', solution=answer_3, form=fraction, style='width:3em') }}</td>
+<td>{{ input_value('law_4', solution=answer_4, form=fraction, style='width:3em') }}</td></tr>
+</table>
+</div>
+<h4>Espérance de X</h4>
+$\mathbb{E}(X) =$ {{ input_value('mean', solution=expectation, form=fraction) }}
+%
+% question_solution_explanation
+%
+$\{ {{ low }} \} = \{X = {{ v1 }}\} \cup \{X = {{ v2 }}\}$, donc $p_1 + p_2 = {{ p1 + p2 }}$ ;
+$\{ {{ high }} \} = \{X = {{ v4 }}\}$, donc $p_4 = {{ p4 }}$ ; et $\{ {{ first }} \} = \{X = {{ v1 }}\}$, donc
+{% if r == 1 %}$p_1 = p_2${% else %}$p_2 = {{ r }}\,p_1${% endif %}. D’où $p_1 = {{ p1 }}$ et $p_2 = {{ p2 }}$.
+La somme des probabilités vaut 1 : $p_3 = 1 - p_1 - p_2 - p_4 = {{ p3 }}$.<br>
+{#- Une valeur négative s’écrit entre parenthèses. #}
+Espérance : $\mathbb{E}(X) =
+{%- for v, p in law %} {% if v < 0 %}({{ v }}){% else %}{{ v }}{% endif %} \times {{ p }}{% if not loop.last %} +{% endif %}{% endfor %}
+= {{ expectation }}$.
+%
