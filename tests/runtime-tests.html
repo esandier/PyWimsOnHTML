@@ -127,6 +127,10 @@ window.PyWimsPython = (() => {
         resources[key] = await (await fetch(`../${PyWimsCompiler.resourcePaths[key]}`)).text();
       }
       resources.python = fakePython(options);
+      // options.brand : charte d’établissement (chemin d’un brand.css du projet) au lieu de la charte neutre.
+      if (options?.brand) {
+        resources.brandCss = await (await fetch(`../${options.brand}`)).text();
+      }
       // options.scorm : feuille d’un paquet SCORM, avec sa liaison au LMS (§ 5.9).
       if (options?.scorm) {
         resources.scorm = await (await fetch(`../${PyWimsCompiler.resourcePaths.scorm}`)).text();
@@ -534,6 +538,33 @@ window.PyWimsPython = (() => {
         }
         short.frame.remove();
         long.frame.remove();
+      });
+
+      // La copie MathML d’une formule (lecteurs d’écran), invisible, comptait dans la largeur du
+      // contenu mesurée par le widget (scrollWidth) : dans Edge, avec la charte UPEC, « [−16 ; 4] » la
+      // dépassait de 6 px, et le choix, ajusté à la formule visible, défilait (question.css,
+      // mjx-assistive-mml). La charte compte : la copie est composée dans la police mathématique du
+      // système, à taille fixe, et la formule visible à l’échelle de la police du texte (Source Sans).
+      await test("sans columns, un choix à nombre négatif ne défile pas", async () => {
+        const texts = ["$[-16\\,;\\,4]$", "$\\{-16\\,;\\,4\\}$", "$[4\\,;\\,16]$", "$\\{4\\,;\\,16\\}$"];
+        const question = { ...choiceQuestion, question_statement: choiceQuestion.question_statement.replace(", columns=2", "") };
+        // Activité en style compact, comme celle où le défaut a été vu : le texte y est plus petit, et la
+        // formule visible avec lui, mais pas la copie MathML.
+        const sheet = { fields: question, draws: [{ ...choiceDraws[0], choices: { r: texts } }] };
+        const optionsOf = { ...choiceOptions, choices: { 0: { choix: texts } } };
+        const { $, frame } = await openSheet([sheet, sheet],
+          { compact: true, width: 1280, brand: "css/brands/upec.css", questions: { q1: optionsOf, q2: optionsOf } }, "Compacte");
+        await waitFor(() => $("#q1 .pw-choices").querySelectorAll("mjx-container").length === 4 &&
+          $("#q1 .pw-choices").style.gridTemplateColumns.startsWith("repeat("), "composition des choix", 20000);
+        // Police de la copie MathML éventuellement chargée après la composition : on laisse le temps.
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const overflowing = [...$("#q1 .pw-choices").querySelectorAll(".pw-choice-text")]
+          .filter(text => text.scrollWidth > text.clientWidth + 1 || text.classList.contains("is-wide"))
+          .map(text => `${text.textContent.trim().slice(0, 12)} ${text.scrollWidth}/${text.clientWidth}`);
+        if (overflowing.length) {
+          throw new Error(`Choix débordants : ${overflowing.join(", ")}`);
+        }
+        frame.remove();
       });
 
       // La note est réservée à une activité dont toutes les questions ont un barème (§ 10.5).

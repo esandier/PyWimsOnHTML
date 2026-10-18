@@ -948,6 +948,24 @@ body:not([data-scored]) .pw-help-score {
   overflow-wrap: normal;
 }
 
+/* Copie MathML d’une formule, que MathJax ajoute pour les lecteurs d’écran : découpée pour ne rien
+   montrer, hors du flux (position absolue), mais sa boîte garde la largeur de la formule composée par
+   le navigateur, et Edge et Chrome la comptent dans la largeur du contenu (scrollWidth). Or cette
+   largeur décide des colonnes des choix et de leur défilement (widget de choix, au-delà de 1 px) :
+   la copie est composée dans la police mathématique du système à taille fixe, et la formule visible à
+   l’échelle du texte ; en style compact avec la charte UPEC, « [−16 ; 4] » visible mesurait 64 px et sa
+   copie 70 px, et le choix défilait sans rien cacher (mesuré en octobre 2026 ; Firefox ne la compte
+   pas). Réduite à 1 px de large, elle reste lue (son texte est toujours dans la page) et ne compte
+   plus : la mesure porte sur ce que l’élève voit. Le sélecteur est plus précis que celui de MathJax,
+   dont la règle impose « width: auto !important ».
+   Ce n’est pas un dépassement d’une fraction de pixel, que la tolérance de 1 px absorbe (voir
+   ci-dessus), mais une erreur de mesure de plusieurs pixels, qu’aucune tolérance ne couvre.
+   Solutions écartées : désactiver cette copie (enableAssistiveMml: false), au prix de l’accessibilité ;
+   mesurer soi-même le bord droit des éléments visibles, à refaire dans chaque mesure du projet. */
+mjx-container > mjx-assistive-mml {
+  width: 1px !important;
+}
+
 /* Choix trop large : défilement horizontal seulement. Une formule dépasse sa ligne de quelques pixels
    en haut et en bas (métriques de MathJax et de la police, 3 à 6 px mesurés) : la marge intérieure
    les contient, comme celle des zones de retour, et « overflow-y: hidden » ne rogne donc rien de

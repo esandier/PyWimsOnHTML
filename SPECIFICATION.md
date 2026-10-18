@@ -1258,7 +1258,11 @@ En plus du § 2.4, le compilateur refuse la question si, pour l’un des tirages
 - **Défilement.** Le texte d’un choix ne défile pas. Seul un choix qui
   déborde encore de plus de 1 px quand il ne reste qu’une colonne défile en
   largeur, en dernier recours ; la même mesure décide des colonnes et du
-  défilement. Le test `tests/tools/scrollbars.py`
+  défilement. Cette mesure porte sur ce que l’élève voit : la copie MathML
+  invisible que MathJax ajoute à chaque formule pour les lecteurs d’écran est
+  réduite à 1 px de large, sinon Edge et Chrome la comptaient (une copie plus
+  large que la formule dessinée, de 6 px pour « [−16 ; 4] » en style compact,
+  faisait défiler le choix). Le test `tests/tools/scrollbars.py`
   vérifie, sur des activités exportées dans les deux styles, à plusieurs
   zooms et largeurs, qu’aucune barre n’apparaît sans débordement réel.
 
