@@ -317,10 +317,12 @@
 
     const draws = [];
     const seen = new Set();
+    const warnings = new Set();
     for (let seed = 0; seed < count; seed += 1) {
       const { session, draw } = await runDraw(seed);
       try {
         const errors = [...draw.errors, ...matrixShapeErrors(tags, draw), ...choiceErrors(tags, draw)];
+        draw.warnings.forEach(warning => warnings.add(warning));
         // Un champ dans un {% if %} ou un {% for %} manque ou se répète dans l’énoncé rendu (§ 2.3).
         for (const { name } of draw.statement === null ? [] : tags) {
           const count = PyWimsTemplate.markCount(draw.statement, name);
@@ -372,6 +374,9 @@
       }
       onProgress?.(seed + 1, count);
     }
+    // Avertissements de Python (nom de variable qui masque une fonction de Jinja) : portés par le
+    // tableau, pour que l’aperçu les retrouve dans son cache ; JSON.stringify les ignore.
+    draws.warnings = [...warnings];
     return draws;
   }
 

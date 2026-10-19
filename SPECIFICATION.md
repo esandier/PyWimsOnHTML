@@ -579,6 +579,11 @@ $$\mathbb{P}(X = k) = {{ value|frac }}$$
   une fonction utile se définit ou s’importe dans `question_setup`.
 - **Variable absente** : erreur à la compilation (`StrictUndefined` de Jinja),
   au lieu d’un texte vide.
+- **Noms réservés** : une variable de `question_setup` nommée `none`, `true`
+  ou `false` est une erreur, car Jinja lit ces mots comme `None`, `True`,
+  `False` sans rien signaler. Une variable qui porte le nom d’une fonction de
+  Jinja (`range`, `dict`, `namespace`, `lipsum`, `cycler`, `joiner`) la masque
+  dans les modèles : **avertissement**, dans l’aperçu et après l’export.
 - **Valeurs insérées telles quelles**, sans échappement : une valeur, une
   macro ou une boucle peut produire du HTML. Seul le `<` des formules est
   échappé, sur l’énoncé rendu (§ 2.1). Le texte de l’élève n’entre jamais dans

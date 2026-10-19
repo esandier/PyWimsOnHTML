@@ -423,7 +423,7 @@
       }
       await renderPreviewFrame(fields, question, draws);
       // Aperçu prêt : la ligne d’état ne garde que les avertissements sur l’écriture de l’énoncé.
-      const warnings = templateWarnings(fields);
+      const warnings = [...templateWarnings(fields), ...draws.warnings];
       showPreviewNotice(warnings.join(" "), warnings.length ? "warning" : "muted");
       editor.showPreviewError(question, null);
     } catch (error) {
@@ -1241,7 +1241,8 @@
         downloadBlob(createZip(archiveEntries), `${compiled.length}-questions.zip`);
       }
       // Les avertissements ne bloquent pas la compilation ; ils restent affichés pour être lus.
-      const warnings = compiled.flatMap(({ fields, path }) => templateWarnings(fields).map(text => `${path} : ${text}`));
+      const warnings = compiled.flatMap(({ fields, draws, path }) =>
+        [...templateWarnings(fields), ...draws.warnings].map(text => `${path} : ${text}`));
       if (warnings.length) {
         showMessage(messages, `L’export a été téléchargé. Avertissement : ${warnings.join(" ")}`, "warning");
       } else {

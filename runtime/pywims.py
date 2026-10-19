@@ -273,6 +273,20 @@ def _collect_draw(namespace, spec):
     import json
     spec = json.loads(spec)
     errors = []
+    # Pour Jinja, none, true et false sont des littéraux : {{ none }} affiche « None » sans lire la
+    # variable. Une erreur plutôt qu’un avertissement : l’énoncé serait faux à chaque tirage.
+    # « from sympy import * » apporte true et false, les booléens de SymPy : ce ne sont pas des
+    # variables de l’auteur, et le modèle ne les lisait pas.
+    sympy = _sys.modules.get("sympy")
+    for name in ("none", "true", "false"):
+        if name in namespace and not (sympy and namespace[name] is getattr(sympy, name, None)):
+            errors.append("La variable « {} » de « question_setup » est un mot réservé de Jinja "
+                          "(la valeur {}) : renommez-la.".format(name, name.capitalize()))
+    # Une variable qui porte le nom d’une fonction de Jinja (range, dict…) la masque dans les modèles :
+    # sans effet si le modèle ne s’en sert pas, d’où un avertissement seulement.
+    warnings = ["La variable « {} » de « question_setup » masque la fonction « {} » de Jinja dans "
+                "l’énoncé : renommez-la.".format(name, name)
+                for name in sorted(_jinja().globals) if name in namespace]
     rendered = {}
     read = set()
     for key, field in (("statement", "question_statement"), ("explanation", "question_solution_explanation")):
@@ -339,7 +353,7 @@ def _collect_draw(namespace, spec):
     return json.dumps({
         "statement": rendered.get("statement"), "explanation": rendered.get("explanation"),
         "context": context, "dimensions": dimensions, "solutions": solutions,
-        "choices": choices, "errors": errors,
+        "choices": choices, "errors": errors, "warnings": warnings,
     }, ensure_ascii=False)
 
 

@@ -676,6 +676,9 @@ json.dumps({
             ["doit être une valeur simple, pas une matrice"]],
           [{ question_setup: "n = 1.5\nM = [[1]]", question_statement: "{{ input_matrix('m', size=n, solution=M) }}" },
             ["La dimension « n » doit être un entier"]],
+          // Pour Jinja, none est un littéral : {{ none }} afficherait « None » sans lire la variable.
+          [{ question_setup: "a = 1\nnone = 'aucun'", question_statement: "{{ none }} {{ input_text('r', solution=a) }}" },
+            ["La variable « none » de « question_setup » est un mot réservé de Jinja (la valeur None)"]],
           [{ question_setup: "a = 1", question_statement: "{{ inconnue }} {{ input_text('r', solution=a) }}" },
             ["« question_statement », ligne 1 : la variable « inconnue » n’est pas définie par « question_setup »"]],
           [{ question_setup: "a = 1", question_statement: "{{ input_text('r', solution=a) }}",
@@ -750,6 +753,14 @@ json.dumps({
           if (missing.length) {
             throw new Error(`Pour ${JSON.stringify(fields.question_setup)}, message « ${message} » sans : ${missing.join(" / ")}`);
           }
+        }
+        // Une variable qui masque une fonction de Jinja donne un avertissement, pas une erreur.
+        const masked = await PyWimsCompiler.computeDraws({
+          question_setup: "a = 1\nrange = 3", question_statement: "{{ input_text('r', solution=a) }}",
+          question_check: "ok_answer['r'] = True"
+        }, { count: 1 });
+        if (masked.warnings.length !== 1 || !masked.warnings[0].includes("masque la fonction « range » de Jinja")) {
+          throw new Error(`Avertissements inattendus : ${JSON.stringify(masked.warnings)}`);
         }
         // Les mêmes formules en chaînes brutes, et un retour à la ligne, sont acceptés.
         await PyWimsCompiler.computeDraws({
