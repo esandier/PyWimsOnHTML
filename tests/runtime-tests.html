@@ -1205,6 +1205,24 @@ window.PyWimsPython = (() => {
         frame.remove();
       });
 
+      // § 5.8 : un peu d’air autour d’une formule en ligne, du seul côté où le texte a une espace.
+      await test("une formule en ligne prend de l’air du côté d’une espace, pas devant la ponctuation", async () => {
+        const fields = {
+          question_title: "Air", question_layout: "STD", question_setup: "s = 0",
+          question_statement: "Soit $a$ et $b$, puis ($c$) et <i>$d$</i> : fin {{ input_text('r', solution=s) }}"
+        };
+        const draws = [{ seed: 0, context: {}, dimensions: {}, solutions: { r: "0" } }];
+        const { role, frame } = await openQuestion(fields, draws, {});
+        await waitFor(() => role("prompt").querySelectorAll("mjx-container").length === 4, "composition des formules", 20000);
+        const sides = [...role("prompt").querySelectorAll("mjx-container")].map(formula =>
+          `${+formula.classList.contains("pw-space-before")}${+formula.classList.contains("pw-space-after")}`);
+        const margin = getComputedStyle(role("prompt").querySelector("mjx-container")).marginLeft;
+        if (JSON.stringify(sides) !== JSON.stringify(["11", "10", "00", "11"]) || margin === "0px") {
+          throw new Error(`Air inattendu : ${JSON.stringify(sides)}, marge ${margin}`);
+        }
+        frame.remove();
+      });
+
       // § 5.4 : la carte ne rétrécit jamais d’un énoncé à l’autre ; mais au premier affichage, aucune
       // hauteur minimale n’est fixée (mesurée trop tôt, elle laissait un espace vide sous les choix).
       await test("l’énoncé n’a pas de minimum au premier affichage, et ne rétrécit pas au nouvel énoncé", async () => {

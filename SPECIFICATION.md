@@ -951,6 +951,12 @@ Après une formule, Edge et Chrome coupent quand même entre la formule et
 l’espace insécable : la formule et la ponctuation qui la suit sont alors
 réunies dans un `span` insécable.
 
+Une formule en ligne reçoit aussi 0,1 em de marge du côté où le texte voisin a
+une espace (rien devant une virgule, après une parenthèse ouvrante, ni dans
+`$n$-ième`) : l’espace de certaines polices est étroite (0,20 em en Source
+Sans 3, contre 0,33 em dans TeX), et la formule paraissait collée au mot voisin.
+Inutile donc d’écrire `\,` au bord d’une formule.
+
 ### 5.9 Paquet SCORM
 
 L’atelier peut exporter une question seule ou une activité unique en **paquet

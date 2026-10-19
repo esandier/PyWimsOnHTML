@@ -42,7 +42,36 @@ window.PyWimsQuestion = (() => {
       await window.MathJax.typesetPromise([element]);
     }
     frenchSpacing(element);
+    formulaSpacing(element);
     fitWideFormulas(element);
+  }
+
+  // Un peu d’air autour d’une formule en ligne (SPECIFICATION.md, § 5.8), du seul côté où le texte a
+  // une espace : rien devant une virgule, après une parenthèse ou dans « $n$-ième ». L’espace de
+  // certaines polices est étroite (0,20 em en Source Sans 3, contre 0,33 em dans TeX), et la formule,
+  // plus large et plus foncée, paraissait collée au mot voisin.
+  // Solution écartée : écrire \, dans chaque formule des .pwq, à ne jamais oublier, et trop large
+  // avec une police dont l’espace l’est déjà.
+  function formulaSpacing(element) {
+    // Caractère du texte voisin de la formule, d’un côté ; vide au bord d’un bloc ou d’un <br>.
+    const neighbor = (formula, before) => {
+      const sibling = before ? "previousSibling" : "nextSibling";
+      let node = formula;
+      while (!node[sibling]) {
+        node = node.parentElement;
+        if (!node || node === element || getComputedStyle(node).display !== "inline") return "";
+      }
+      node = node[sibling];
+      if (node.nodeType === Node.ELEMENT_NODE &&
+          (node.localName === "br" || getComputedStyle(node).display !== "inline")) return "";
+      const text = node.textContent;
+      return before ? text.slice(-1) : text.charAt(0);
+    };
+    for (const formula of element.querySelectorAll("mjx-container")) {
+      if (formula.getAttribute("display") === "true") continue;
+      formula.classList.toggle("pw-space-before", /\s/.test(neighbor(formula, true)));
+      formula.classList.toggle("pw-space-after", /\s/.test(neighbor(formula, false)));
+    }
   }
 
   // Marque « is-wide » chaque formule plus large que sa zone (énoncé, retour) : elle seule défile en

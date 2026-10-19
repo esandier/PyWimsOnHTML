@@ -18,6 +18,15 @@ body {
   white-space: nowrap;
 }
 
+/* Air autour d’une formule en ligne, du côté où le texte a une espace (formulaSpacing, § 5.8). */
+.pw-space-before {
+  margin-left: 0.1em;
+}
+
+.pw-space-after {
+  margin-right: 0.1em;
+}
+
 /* Texte lu par les lecteurs d’écran, sans affichage. */
 .pw-sr-only {
   position: absolute;
