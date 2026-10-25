@@ -25,6 +25,15 @@ PROJECT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 LOADS = 3
 SCALES = (1, 1.25, 1.5)
 WIDTHS = (1280, 375)
+# Téléphones émulés (écran tactile, densité 2) : sans barre de défilement réservée, comme sur un vrai
+# téléphone. En mode bureau, Edge en réserve une de 15 px et rogne ce qui la dépasse, ce qui cachait
+# un champ de formule plus large que sa colonne à 320 px (octobre 2026).
+PHONE_WIDTHS = (320, 375)
+SCREENS = [(f"{width} px, {scale:g}", {"viewport": {"width": width, "height": 900}, "device_scale_factor": scale})
+           for scale in SCALES for width in WIDTHS]
+SCREENS += [(f"téléphone {width} px", {"viewport": {"width": width, "height": 900}, "device_scale_factor": 2,
+                                        "is_mobile": True, "has_touch": True})
+            for width in PHONE_WIDTHS]
 
 # Une barre réelle se voit à l’écart entre la boîte (offset, bordures comprises) et la zone de
 # contenu (client) ; elle n’est admise que pour un débordement de plus de 1 px dans son axe.
@@ -103,20 +112,18 @@ def main():
             browser = launch_edge(playwright)
             files = export_activities(browser, url, folder, output)
             for style, file in files.items():
-                for scale in SCALES:
-                    for width in WIDTHS:
-                        for _ in range(LOADS):
-                            page = browser.new_page(viewport={"width": width, "height": 900},
-                                                    device_scale_factor=scale)
-                            page.goto(page_address(file), wait_until="load")
-                            # Formules composées, puis colonnes des choix réglées (fitChoiceColumns).
-                            page.wait_for_function("document.querySelectorAll('mjx-container').length > 0",
-                                                   timeout=60_000)
-                            page.wait_for_timeout(1500)
-                            for problem in page.evaluate(CHECK):
-                                problems.append(f"{style}, {width} px, {scale:g} : {problem}")
-                            page.close()
-                print(f"style {style} : {len(SCALES) * len(WIDTHS) * LOADS} chargements vérifiés")
+                for screen, options in SCREENS:
+                    for _ in range(LOADS):
+                        page = browser.new_page(**options)
+                        page.goto(page_address(file), wait_until="load")
+                        # Formules composées, puis colonnes des choix réglées (fitChoiceColumns).
+                        page.wait_for_function("document.querySelectorAll('mjx-container').length > 0",
+                                               timeout=60_000)
+                        page.wait_for_timeout(1500)
+                        for problem in page.evaluate(CHECK):
+                            problems.append(f"{style}, {screen} : {problem}")
+                        page.close()
+                print(f"style {style} : {len(SCREENS) * LOADS} chargements vérifiés")
             browser.close()
     finally:
         shutil.rmtree(folder, ignore_errors=True)

@@ -787,10 +787,19 @@ body:not([data-scored]) .pw-help-score {
   padding-bottom: 0;
 }
 
-/* Zone de saisie de 12em au moins, sans compter les boutons : la largeur minimale portait sur tout
-   le champ (14rem), boutons compris. Le champ s’élargit ensuite avec la formule. */
+/* Champ de 17em au moins (zone de saisie d’environ 12em, plus les boutons), mais jamais plus large que
+   sa colonne : dans une activité, la colonne des numéros laisse 233 px à l’énoncé sur un écran de
+   320 px, et le minimum de 12em sur la zone de saisie seule (273 px avec les boutons) faisait défiler
+   la page en largeur (mesuré dans Edge en émulation de téléphone, octobre 2026). La zone de saisie
+   remplit le champ, et le champ s’élargit ensuite avec la formule. Solutions écartées : 12em sur la
+   zone de saisie, qui ne peut pas se rapporter à la colonne ; un seuil @media, qui dépendrait de la
+   colonne des numéros et de la police de la charte. */
+.pw-math-input {
+  min-width: min(100%, 17em);
+}
+
 .pw-math-input::part(content) {
-  min-width: 12em;
+  min-width: 0;
 }
 
 /* Délimiteurs et disposition tabulaire des matrices. */
