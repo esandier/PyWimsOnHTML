@@ -26,9 +26,9 @@
   </header>
 
   <main>
-    <p class="lead"><strong>PWOH</strong> (PyWimsOnHTML) prend en entrée un fichier descriptif simple, à
-      base de code Python pour la logique de la question, et de HTML pour son aspect visuel, et produit un
-      fichier HTML autonome qui peut être déposé tel quel sur Moodle, ou distribué par courriel…</p>
+    <p class="lead"><strong>PWOH</strong> (PyWimsOnHTML) prend en entrée un fichier descriptif à
+      base de code Python pour la logique de la question et de HTML pour son aspect visuel, et produit un
+      fichier HTML autonome qui peut être déposé tel quel sur Moodle, ou distribué par courriel… Il peut également créer un paquet SCORM, qui permet sur Moodle de suivre l'activité des étudiants sur le(s) exercices interactifs.</p>
 
     <h2>Exemple : une activité de deux questions</h2>
     <!-- La vraie page compilée (demos/example.html, produite par tests/tools/demos.py). -->
@@ -39,25 +39,24 @@
 
     <div class="columns">
       <section class="panel">
-        <h2>Pour l’élève ou l’étudiant</h2>
+        <h2>Pour l'utilisateur (élève ou étudiant) : un outil d'entraînement.</h2>
         <ul>
-          <li>Sa progression dans l’activité est gardée, s’il la reprend après avoir fermé le navigateur.</li>
-          <li>Les données restent dans son navigateur.</li>
-          <li>Ses scores et son activité restent connus de lui seul.</li>
+          <li>Chaque question affiche à la demande les erreurs dans les réponses et/ou la réponse correcte.</li>
+          <li>La question est considérée faite à la première réponse correcte, mais possibilité de recommencer à volonté. </li>
+          <li>La progression est enregistrée d'une session à l'autre.</li>
           <li>Bonne ergonomie sur un téléphone.</li>
-          <li>Chaque question contient sa solution.</li>
         </ul>
       </section>
       <section class="panel">
         <h2>Pour l’enseignant</h2>
         <ul>
-          <li>Une charte graphique en <code>.css</code> peut accompagner les questions, pour un visuel
-            cohérent entre elles.</li>
-          <li>Les codes sources des questions, des activités et de la charte graphique restent sur son
-            ordinateur.</li>
+          <li>Les codes sources des questions et la charte graphique sont sur son
+            ordinateur. Aucune donnée n'est conservée.</li>
           <li>Pas besoin de compte ni d’inscription. Aucun programme à télécharger.</li>
-          <li>L’activité de l’élève ou de l’étudiant et ses scores restent connus de lui seul.</li>
-          <li>Chaque question doit contenir sa solution. C’est un outil pour l’entraînement uniquement.</li>
+          <li>Une charte graphique en <code>.css</code> peut accompagner les questions, pour un visuel
+            cohérent entre elles propre à l'établissement, par exemple.</li>
+          <li>Dans le cas d'un export sous forme de paquet SCORM, possibilité de suivre l’activité des élèves ou étudiants.</li>
+          <li>Outil pour l’entraînement uniquement : un utilisateur motivé peut en principe retrouver les solutions dans le fichier.</li>
         </ul>
       </section>
     </div>
@@ -68,9 +67,8 @@
       <li>Créez une question, <a href="guide/#with-ai">à l’aide d’une IA de votre choix</a> ou
         <a href="guide/#without-ai">à partir d’un modèle</a>.</li>
       <li>Ouvrez votre dossier de questions dans l’<a href="compiler/">atelier</a>.</li>
-      <li>Choisissez la ou les questions à exporter, cliquez sur « Exporter la sélection » : la page HTML correspondante
-        est téléchargée (ou des messages d’erreur sont affichés).</li>
-      <li>Déposez votre page sur Moodle, ou partagez-la.</li>
+      <li>Choisissez la ou les questions à exporter, cliquez sur « Exporter la sélection » : la page HTML ou le paquet SCORM est téléchargé, ou des messages d’erreur sont affichés.</li>
+      <li>Déposez sur Moodle, ou partagez.</li>
     </ol>
   </main>
 

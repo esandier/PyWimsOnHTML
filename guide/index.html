@@ -27,9 +27,8 @@
 
   <main>
     <h1>Créer une question</h1>
-    <p class="lead">Une question est un petit fichier texte, d’extension <code>.pwq</code>. On l’écrit avec
-      l’aide d’une IA, ou à la main à partir d’un modèle, puis l’atelier en fait une page HTML à
-      donner aux élèves.</p>
+    <p class="lead">Une question est un fichier texte, d’extension <code>.pwq</code> (si des fichiers images sont utilisés, le tout est empaqueté dans une archive zip avec l'extension <code>.pwqa</code>). On l’écrit avec
+      l’aide d’une IA, ou à la main à partir d’un modèle, puis l’atelier en fait une page HTML ou un paquet SCORM.</p>
 
     <ol class="toc">
       <li><a href="#with-ai">Avec une IA</a></li>
@@ -92,8 +91,8 @@
       <table>
         <thead><tr><th>Champ</th><th>Statut</th><th>Contenu</th></tr></thead>
         <tbody>
-          <tr><td><code>question_title</code></td><td>obligatoire</td><td>titre de la question, affiché aux élèves</td></tr>
-          <tr><td><code>question_keywords</code></td><td>obligatoire</td><td>mots-clés séparés par des virgules (recherche dans l’atelier)</td></tr>
+          <tr><td><code>question_title</code></td><td>obligatoire</td><td>titre de la question, affiché aux élèves et dans la liste des questions de l'<a href="../compiler/">Atelier</a></td></tr>
+          <tr><td><code>question_keywords</code></td><td>obligatoire</td><td>mots-clés séparés par des virgules</td></tr>
           <tr><td><code>question_layout</code></td><td>obligatoire</td><td>toujours <code>STD</code></td></tr>
           <tr><td><code>question_setup</code></td><td>obligatoire</td><td>code Python : tirage des valeurs et calcul des solutions</td></tr>
           <tr><td><code>question_statement</code></td><td>obligatoire</td><td>énoncé en HTML, avec formules, modèle Jinja : HTML, formules, valeurs <code>{{ … }}</code>, cas <code>{% if %}</code> et champs de réponse</td></tr>
@@ -151,6 +150,7 @@
       là où il juge autrement, et peut définir la variable <code>feedback</code>, un retour qui explique
       l’erreur sans donner la réponse. Il est nécessaire pour une formule (<code>input_math</code>), ou
       lorsque plusieurs réponses sont justes, par exemple.</p>
+    <p>Une réponse saisie dans un champ <code>input_math</code> est transformée en expression Sympy pour être vérifiée en utilisant la fonction <code>math_expression(réponse)</code>, où <code>réponse</code> est le nom du champ de réponse. La fonction <code>math_expression</code> ne simplifie ni n'évalue l'expression, mais elle peut changer l'ordre des termes d'une somme ou d'un produit.</p>
 
     <h2 id="fields">4. Les champs de réponse</h2>
     <p>Un champ s’écrit dans <code>question_statement</code>, à l’endroit où il doit apparaître :</p>
@@ -325,45 +325,37 @@ La fonction est {{ input_select('sense', choices=senses, solution=correct, inlin
     <h2 id="publish">5. Exporter et publier</h2>
     <ol>
       <li>Ouvrez l’<a href="../compiler/">atelier</a> et choisissez votre dossier de questions (ses
-        sous-dossiers sont lus aussi). Sur Chrome et Edge, il est mémorisé pour la visite suivante.</li>
+        sous-dossiers sont lus aussi). Le dossier n'est mémorisé que sur Chrome et Edge, sur Firefox ou Safari, il doit être sélectionné à chaque visite.</li>
       <li>Cliquez sur une question pour la voir (les flèches ↑ ↓ passent à la suivante) : l’aperçu
         fonctionne comme pour l’élève (saisie, <strong>Vérifier</strong>, <strong>Correction</strong>,
         <strong>Nouvel énoncé</strong>). Dans Edge ou Chrome, <strong>Éditeur</strong>, au bout de la ligne
         (ou Entrée), ouvre la question : le fichier à gauche, l’aperçu à droite, que <strong>Actualiser l’aperçu</strong>
-        (ou Ctrl+Entrée) met à jour ; chaque modification est enregistrée dans le dossier, et <strong>←</strong> ramène à la
-        liste. <strong>Supprimer</strong> efface le fichier du dossier, après confirmation. Firefox et Safari montrent l’aperçu seulement.
-        Cochez celles à exporter, puis <strong>Exporter la sélection</strong> : une
+        (ou Ctrl+Entrée) met à jour ; chaque modification est enregistrée automatiquement dans le dossier, et <strong>←</strong> ramène à la
+        liste. <strong>Supprimer</strong> efface le fichier du dossier, après confirmation. On ne peut éditer un fichier que sur Chrome et Edge, sur Firefox et Safari seul l’aperçu est disponible.</li>
+      <li>Cochez les questions à exporter, puis <strong>Exporter la sélection</strong> : une
         question donne un fichier HTML ; plusieurs, une <strong>activité</strong> (une seule page, dans
         l’ordre où vous les avez cochés, que les flèches ↑ ↓ de « Ordre des questions » changent) ou des
-        pages séparées (archive ZIP).</li>
+        pages séparées (archive ZIP). On peut également exporter sous forme de paquet SCORM, qui permet un suivi de l'activité des élèves ou étudiants dans Moodle. Pour les activités, on peut choisir un format compact, qui ressemble à une feuille d'exercices.</li>
       <li>Sur Moodle, ajoutez une ressource <strong>Fichier</strong> et déposez-y le fichier HTML : les élèves
         l’ouvrent dans leur navigateur, sur ordinateur ou téléphone. Vous pouvez aussi l’envoyer par
-        courriel.</li>
-      <li>Pour suivre la progression des élèves dans Moodle, choisissez le format <strong>Paquet SCORM</strong>
-        (une question) ou <strong>Activité unique (SCORM)</strong> avant d’exporter, puis déposez l’archive <code>…-scorm.zip</code> dans une
-        activité <strong>SCORM</strong>. Moodle reçoit la part des questions réussies, comme une note sur 100
-        qui ne baisse jamais, et garde les réussites de chaque élève d’une séance à l’autre.</li>
+        courriel. Pour suivre la progression des élèves, choisissez le format <strong>SCORM</strong> avant d’exporter, puis déposez l’archive <code>…-scorm.zip</code> dans une activité <strong>SCORM</strong>. Moodle reçoit la part des questions réussies, comme une note sur 100 qui ne baisse jamais, et mémorise la progression de chaque élève d’une séance à l’autre.</li>
     </ol>
     <p><strong>Votre charte</strong> : les feuilles ont une apparence neutre. Pour les couleurs et le logo
       de votre établissement, placez un fichier <code>brand.css</code> à la racine de votre dossier
       de questions ; <a href="../css/brands/upec.css">celui de l’UPEC</a> sert d’exemple.</p>
 
     <h2 id="good-to-know">6. Bon à savoir</h2>
-    <div class="callout">
-      <p><strong>Pour l’entraînement, pas pour l’évaluation.</strong> La solution est toujours visible. La
-        note (pour les QCM, si un barème est défini) n’est qu’une indication fournie à l’élève ; elle n’est
-        transmise ni à Moodle ni à l’enseignant.</p>
-    </div>
     <ul>
+      <li><strong>Pour l’entraînement, pas pour l’évaluation.</strong> L'élève/étudiant est toujours libre d'afficher la solution.</li>
+      <li>Il est possible de préciser un barème pour les QCM. Dans ce cas l'élève voit une note indicative calculée à partir des barèmes de chaque question, qui peut être utile pour son entraînement, mais qui n'est pas transmise à Moodle ou à l’enseignant.</li>
       <li>Une question sans champ <code>question_check</code> se corrige sans Python : la page reste légère. Une
         question avec <code>question_check</code> doit charger Python dans le navigateur de l’élève (environ
         10 Mo).</li>
       <li><strong>Images.</strong> Pour une figure, écrivez <code>&lt;img src="figure.png" alt="…"&gt;</code> dans
-        l’énoncé, puis réunissez le <code>.pwq</code> et ses images dans une archive <code>.zip</code>, que vous
-        pouvez renommer en <code>.pwqa</code>. L’atelier la liste comme une question et intègre les images
-        à la page, qui reste un fichier unique.</li>
+        l’énoncé, puis réunissez le fichier <code>.pwq</code> et les fichiers images dans une archive <code>.zip</code>, que vous
+        pouvez renommer en <code>.pwqa</code> pour plus de clarté. Dans les deux cas, l’atelier l'affiche dans la liste des questions. Le fichier exporté (page <code>.html</code> ou paquet SCORM <code>.zip</code>) reste un fichier unique.</li>
       <li>La référence complète du format est le <a href="../PROMPT.md">prompt</a> : il s’adresse à une IA,
-        mais se lit aussi très bien.</li>
+        mais est lisible par un humain.</li>
     </ul>
   </main>
 
