@@ -17,8 +17,10 @@
   <script src="../compiler/compiler.js"></script>
   <script>
     const results = document.getElementById("results");
+    // La durée de chaque test (data-seconds) permet au lanceur de signaler les plus lents.
     async function test(name, callback) {
       const item = document.createElement("li");
+      const start = performance.now();
       try {
         await callback();
         item.textContent = `RÉUSSI : ${name}`;
@@ -26,6 +28,7 @@
         item.textContent = `ÉCHEC : ${name} — ${error.message}`;
         item.style.color = "red";
       }
+      item.dataset.seconds = ((performance.now() - start) / 1000).toFixed(1);
       results.append(item);
     }
 

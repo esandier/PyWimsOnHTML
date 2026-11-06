@@ -1045,9 +1045,10 @@ un sous-projet distinct, traité plus tard.
 - `tests/runtime-tests.html` : cycle de vie des questions, progression, mémoire,
   délais, avec un Python simulé ; quelques secondes.
 - `tests/python-tests.html` : vrai Pyodide (module `pywims`, isolement des
-  questions, calcul sans fin, chaque question compilée puis corrigée, seule et
-  dans une activité) et balayage des tirages ; « chaque question » : celles de la
-  racine de `questions/` et les modèles du mode d’emploi (`guide/templates/`).
+  questions, calcul sans fin, chaque question compilée puis corrigée dans une
+  activité qui les réunit toutes, la page d’une question seule avec deux QCM) et
+  balayage des tirages ; « chaque question » : celles de la racine de
+  `questions/` et les modèles du mode d’emploi (`guide/templates/`).
 - `tests/tools/compiler_e2e.py` : l’interface du compilateur, de bout en
   bout (ouverture d’un dossier de questions, liste, « Tout sélectionner »,
   aperçu réel, compilation, fichier téléchargé, dossier mémorisé, « Relire »,
@@ -1055,7 +1056,12 @@ un sous-projet distinct, traité plus tard.
   `showDirectoryPicker`), sans erreur JavaScript. Le
   dossier ouvert est une copie des seules questions de la racine de `questions/` :
   comme les autres tests, il ne dépend pas du contenu des sous-dossiers.
-- `tests/tools/run-tests.ps1` lance le tout dans Edge sans interface.
+- `tests/tools/scrollbars.py` : barres de défilement parasites et page plus
+  large que l’écran, sur une activité exportée, aux deux styles, aux zooms 1 et
+  1,5 sur ordinateur et sur deux téléphones émulés, un chargement par écran.
+- `tests/tools/run-tests.ps1` lance le tout dans Edge sans interface (3 min
+  environ) ; `-Rapide` sans le balayage Python ni les barres de défilement
+  (1 min 30).
 - Le pilotage d’Edge passe par Playwright pour Python (`pip install
   playwright`), avec l’Edge installé (`channel="msedge"`) : aucun autre
   navigateur à télécharger. Il ouvre les pages, donne le dossier au sélecteur,

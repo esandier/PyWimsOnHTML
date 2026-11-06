@@ -191,7 +191,8 @@ area = side ** 2
 PIXEL = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==")
 
 
-def archive_question(browser, url):
+# Dans la page déjà ouverte, où Python est chargé : une nouvelle page le rechargeait (8 s mesurées).
+def archive_question(page):
     folder = tempfile.mkdtemp(prefix="pywims-archive-")
     try:
         with zipfile.ZipFile(os.path.join(folder, "carré.pwqa"), "w", zipfile.ZIP_DEFLATED) as archive:
@@ -199,10 +200,9 @@ def archive_question(browser, url):
             archive.writestr("carré/figure.png", PIXEL)
         with zipfile.ZipFile(os.path.join(folder, "divers.zip"), "w", zipfile.ZIP_DEFLATED) as archive:
             archive.writestr("notes.txt", "pas une question")
-        page = browser.new_page(accept_downloads=True)
-        page.goto(url)
-        page.wait_for_function("!!window.PyWimsCompiler")
+        page.fill("#question-search", "")
         page.set_input_files("#question-folder", folder)
+        page.wait_for_function("[...document.querySelectorAll('.question-title')].map(t => t.textContent).join() === 'Aire d’un carré'")
         page.wait_for_function("document.querySelectorAll('#question-list li:not(.question-group)').length > 0")
         titles = page.eval_on_selector_all("#question-list li:not(.question-group)", TITLES)
         if titles != ["Aire d’un carré"]:
@@ -220,7 +220,7 @@ def archive_question(browser, url):
         # L’énoncé est intégré en texte échappé (src=&quot;data:…) : on cherche l’image elle-même.
         if f"data:image/png;base64,{base64.b64encode(PIXEL).decode()}" not in html:
             raise AssertionError("Le fichier compilé ne contient pas l’image de l’archive.")
-        page.close()
+        page.click(".question-selection >> nth=0")
         print("archive .pwqa : listée, image affichée et intégrée ; .zip sans .pwq ignoré")
     finally:
         shutil.rmtree(folder, ignore_errors=True)
@@ -378,7 +378,8 @@ def editor_and_paste(browser, url, pgcd):
     page.wait_for_function("[...document.querySelectorAll('.question-title')].some(item => item.textContent === 'PGCD CRLF')")
     page.click("#question-list li:has(.question-title:text-is('PGCD CRLF')) .question-edit")
     page.wait_for_function(f"{editor}.getValue().includes('PGCD CRLF')")
-    page.wait_for_timeout(2000)
+    # Une réécriture viendrait après la pause de la frappe (600 ms, editor.js) : on attend un peu plus.
+    page.wait_for_timeout(1000)
     if page.evaluate(READ_OPFS, "questions-edition/crlf.pwq") != crlf:
         raise AssertionError("Un fichier CRLF seulement ouvert dans l’éditeur a été réécrit.")
     page.close()
@@ -464,15 +465,8 @@ def main():
                     "!document.getElementById('preview-notice').classList.contains('error')",
                     timeout=180_000)
                 print("aperçu : tirage réel affiché")
-
-                # L’aperçu fonctionne comme pour l’élève : « Correction », puis « Nouvel énoncé ».
-                preview = page.frame_locator("#preview-frame")
-                preview.locator("#q1[data-state='open']").wait_for(timeout=30_000)
-                preview.locator("#q1 [data-role=solution]").click()
-                preview.locator("#q1[data-state='solution']").wait_for(timeout=30_000)
-                preview.locator("#q1 [data-role=new-draw]").click()
-                preview.locator("#q1[data-state='open']").wait_for(timeout=30_000)
-                print("aperçu : « Correction » et « Nouvel énoncé » fonctionnent")
+                # « Correction » et « Nouvel énoncé » de l’aperçu : ceux de la page compilée, que
+                # runtime-tests.html vérifie déjà.
 
                 # Compilation de cette question : un fichier HTML autonome est téléchargé.
                 page.click(".question-selection >> nth=0")
@@ -568,12 +562,11 @@ def main():
                         raise AssertionError(f"paquet SCORM inattendu : {package.suggested_filename}, {names}")
                     return package.suggested_filename
 
+                # Un seul paquet exporté, celui d’une activité : le paquet d’une question seule n’en
+                # diffère que par le titre (scormPackageEntries, testé dans compiler-tests.html).
                 page.click(f".question-selection >> nth={titles.index('Arithmétique : PGCD de deux entiers')}")
                 if page.evaluate(modes) != ["page", "page-scorm"]:
                     raise AssertionError(f"modes d’une question seule : {page.evaluate(modes)}")
-                single = export_scorm("page-scorm")
-                # Le mode choisi est retenu : on revient à la page HTML pour la suite du test.
-                page.select_option("#output-mode", "page")
                 page.click(f".question-selection >> nth={titles.index('Arithmétique : reconnaître des nombres premiers')}")
                 if page.evaluate(modes) != ["separate", "activity", "activity-scorm"]:
                     raise AssertionError(f"modes de plusieurs questions : {page.evaluate(modes)}")
@@ -585,7 +578,7 @@ def main():
                 page.select_option("#output-mode", "separate")
                 page.click("#select-visible")
                 page.click("#select-visible")
-                print(f"paquet SCORM : {single} et {activity} (manifeste et feuille)")
+                print(f"paquet SCORM : {activity} (manifeste et feuille)")
 
                 # Une question sans « question_check » : la compilation lit le module pywims et le script du
                 # Worker pour ses tirages, mais le fichier n’en contient aucun (il ne charge pas Python).
@@ -599,7 +592,7 @@ def main():
                     raise AssertionError("Une question sans « question_check » intègre le module ou le script du Worker.")
                 print(f"question sans « question_check » : ni module ni Worker intégrés ({len(without_python) // 1024} Ko)")
 
-                archive_question(browser, url)
+                archive_question(page)
                 remembered_folder(page, {name: open(os.path.join(folder, name), encoding="utf-8").read()
                                         for name in ("L1 - Mathématiques - Calculus - Valeur approchée à 0.1 près.pwq", "L1 - Mathématiques - Algèbre et arithmétique - PGCD de deux entiers.pwq")})
                 # Erreurs JavaScript de la page principale seulement : la page sans mémoire a les siennes.

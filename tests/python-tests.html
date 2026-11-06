@@ -843,17 +843,14 @@ json.dumps({
         }
       }
 
+      // Tirage de chaque question, résolue plus bas dans l’activité qui les réunit toutes. Solution écartée :
+      // une page compilée par question, résolue à part (4,5 à 5,5 s chacune, 52 s pour onze questions) ;
+      // l’activité refait la même résolution, et les QCM ci-dessous couvrent la page d’une question seule.
       const compiledQuestions = [];
       for (const [file, fields] of Object.entries(questionFields)) {
-        await test(`la question compilée ${file} affiche un tirage et accepte sa solution`, async () => {
+        await test(`la question ${file} donne un tirage à compiler`, async () => {
           const draws = (await PyWimsCompiler.computeDraws(fields, { count: 4 })).slice(-1);
-          compiledQuestions.push({ fields, draws });
-          const frame = await openCompiledSheet([{ fields, draws }]);
-          try {
-            await solveQuestion(frame, 1, fields, draws[0]);
-          } finally {
-            frame.remove();
-          }
+          compiledQuestions.push({ fields, draws, file });
         });
       }
 
@@ -914,8 +911,11 @@ json.dumps({
               frame.contentDocument.querySelectorAll('[data-draws="gzip"]').length !== compiledQuestions.length) {
             throw new Error("L’activité ne contient pas une section par question, aux tirages compressés, sans cadre.");
           }
-          for (const [index, { fields, draws }] of compiledQuestions.entries()) {
-            await solveQuestion(frame, index + 1, fields, draws[0]);
+          for (const [index, { fields, draws, file }] of compiledQuestions.entries()) {
+            // Le nom du fichier dans l’erreur : l’activité réunit toutes les questions.
+            await solveQuestion(frame, index + 1, fields, draws[0]).catch(error => {
+              throw new Error(`${file ?? fields.question_title} : ${error.message}`);
+            });
           }
         } finally {
           frame.remove();

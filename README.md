@@ -231,8 +231,10 @@ sans interface, profil vierge), puis `tests/tools/compiler_e2e.py`, qui
 essaie l’interface du compilateur de bout en bout : ouverture du dossier, liste,
 aperçu, compilation et fichier téléchargé. Prérequis : Python avec le paquet
 `playwright` (`pip install playwright`), qui pilote l’Edge installé, sans autre
-navigateur à télécharger. L’option `-SkipPyodide` saute les tests du vrai Pyodide, les
-plus longs ; `-Draws 200` demande un balayage complet.
+navigateur à télécharger. La suite complète prend environ 3 min ; `-Rapide`
+(1 min 30) saute le balayage Python et les barres de défilement, à garder pour
+avant de pousser ou après une retouche des styles. `-SkipPyodide` saute tout ce
+qui demande le vrai Pyodide ; `-Draws 200` demande un balayage complet.
 
 Pour vérifier un rendu, `python tests/tools/capture.py URL image.png --phone`
 capture une page comme sur un téléphone (375 px de large) ; sans `--phone`,

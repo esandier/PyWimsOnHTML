@@ -6,7 +6,7 @@
 # Pourquoi : des flèches de défilement apparaissaient sous les formules des choix, pour un dépassement
 # d’une fraction de pixel ; trois correctifs locaux n’y ont pas suffi, et leurs vérifications ne
 # voyaient pas les barres (Edge sans interface les masquait, voir edge.py). Les tirages changent à
-# chaque chargement : chaque page est chargée plusieurs fois.
+# chaque chargement.
 # Prérequis : Python avec playwright (voir edge.py) ; le compilateur calcule les tirages avec Pyodide.
 # Usage : python tests/tools/scrollbars.py URL_DU_COMPILATEUR
 import os
@@ -22,8 +22,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from edge import launch_edge, page_address  # noqa: E402
 
 PROJECT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-LOADS = 3
-SCALES = (1, 1.25, 1.5)
+# Un chargement par écran : une activité de toutes les questions tire déjà de nombreux énoncés. Trois
+# chargements et un zoom de 1,25 en plus triplaient la durée (174 s mesurées, novembre 2026) sans
+# avoir jamais trouvé ce que les autres réglages ne trouvaient pas.
+LOADS = 1
+SCALES = (1, 1.5)
 WIDTHS = (1280, 375)
 # Téléphones émulés (écran tactile, densité 2) : sans barre de défilement réservée, comme sur un vrai
 # téléphone. En mode bureau, Edge en réserve une de 15 px et rogne ce qui la dépasse, ce qui cachait
@@ -34,6 +37,17 @@ SCREENS = [(f"{width} px, {scale:g}", {"viewport": {"width": width, "height": 90
 SCREENS += [(f"téléphone {width} px", {"viewport": {"width": width, "height": 900}, "device_scale_factor": 2,
                                         "is_mobile": True, "has_touch": True})
             for width in PHONE_WIDTHS]
+
+# Mise en page terminée : polices chargées, puis nombre de formules inchangé pendant 300 ms.
+SETTLED = """async () => {
+  await document.fonts.ready;
+  for (let last = -1; ;) {
+    const count = document.querySelectorAll('mjx-container').length;
+    if (count === last) return;
+    last = count;
+    await new Promise(resolve => setTimeout(resolve, 300));
+  }
+}"""
 
 # Une barre réelle se voit à l’écart entre la boîte (offset, bordures comprises) et la zone de
 # contenu (client) ; elle n’est admise que pour un débordement de plus de 1 px dans son axe.
@@ -116,10 +130,12 @@ def main():
                     for _ in range(LOADS):
                         page = browser.new_page(**options)
                         page.goto(page_address(file), wait_until="load")
-                        # Formules composées, puis colonnes des choix réglées (fitChoiceColumns).
+                        # Formules composées, puis colonnes des choix réglées (fitChoiceColumns, juste
+                        # après la composition) : polices chargées et nombre de formules stable.
+                        # Solution écartée : une attente fixe de 1,5 s par chargement.
                         page.wait_for_function("document.querySelectorAll('mjx-container').length > 0",
                                                timeout=60_000)
-                        page.wait_for_timeout(1500)
+                        page.evaluate(SETTLED)
                         for problem in page.evaluate(CHECK):
                             problems.append(f"{style}, {screen} : {problem}")
                         page.close()
