@@ -535,8 +535,10 @@ window.PyWimsQuestion = (() => {
             throw new Error(`Le tirage n’a pas pu être reproduit (« ${name} » diffère) : la vérification est indisponible.`);
           }
         }
-        // Les textes des choix sont affichés : ils sont contrôlés comme les valeurs de l’énoncé.
-        for (const tag of this.choiceTags) {
+        // Les textes des choix sont affichés : ils sont contrôlés comme les valeurs de l’énoncé. Ceux
+        // d’un bloc des choix sont écrits par l’énoncé, rendu à la compilation : les valeurs qu’il lit
+        // sont déjà contrôlées avec le context.
+        for (const tag of this.choiceTags.filter(tag => !tag.block)) {
           const texts = await python.getChoiceTexts(tag.attributes.choices, tag.type === "input_select");
           if (JSON.stringify(texts) !== JSON.stringify(selected.choices?.[tag.name])) {
             throw new Error(`Le tirage n’a pas pu être reproduit (« ${tag.attributes.choices} » diffère) : la vérification est indisponible.`);
@@ -712,13 +714,16 @@ window.PyWimsQuestion = (() => {
       const matrices = new Map();
       for (const input of inputs) {
         const { matrixName, matrixRow, matrixColumn, vmatrixName } = input.dataset;
+        // Bloc des choix avec count : Python reçoit le rang dans le bloc (SPECIFICATION.md, § 10.3).
+        const ranks = this.draw.ranks?.[input.dataset.name];
         if (isChoiceGroup(input)) {
           const indices = checkedIndices(input);
-          await python.setChoice(input.dataset.name, input.dataset.multiple === "true" ? indices : indices[0] ?? null);
+          await python.setChoice(input.dataset.name,
+            PyWimsTemplate.blockRank(input.dataset.multiple === "true" ? indices : indices[0] ?? null, ranks));
           continue;
         }
         if (input.matches("select")) {
-          await python.setChoice(input.dataset.name, input.value === "" ? null : Number(input.value));
+          await python.setChoice(input.dataset.name, PyWimsTemplate.blockRank(input.value === "" ? null : Number(input.value), ranks));
           continue;
         }
         if (this.typeOf.get(input.dataset.name) === "input_value") {

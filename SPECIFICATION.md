@@ -625,6 +625,39 @@ fabriquer un texte (les choix d’un QCM sont des listes Python, § 10.1) :
 - **Refus** : une option impossible (`|dec` sur un texte ou une expression)
   arrête la compilation, avec le nom du champ du modèle et la ligne.
 
+**L’écriture d’abord.** `question_setup` produit des données (nombres, listes,
+expressions qui servent à calculer ou à vérifier) ; l’énoncé, l’explication et
+les choix écrivent tout ce que l’élève voit. Du TeX fabriqué dans
+`question_setup` reste possible, en dernier ressort, avec un commentaire qui
+dit pourquoi. Pourquoi : le format était pensé autour du calcul, et
+l’écriture, qui est le contenu d’une question de mathématiques (forme non
+simplifiée, ordre des termes, calcul laissé visible), migrait vers Python en
+chaînes `rf"…"` illisibles. Solutions écartées : `with evaluate(False)` de
+SymPy (son affichage réordonne les termes et garde les coefficients 1) ; une
+fonction de substitution dans `question_setup` (deux mécanismes d’insertion au
+lieu d’un).
+
+**Filtres d’écriture**, pour les signes et les coefficients d’un nombre tiré
+(fractions écrites en `\frac`) :
+
+| Filtre | Rôle | 3 | 1 | −1 | 0 | −3 |
+|---|---|---|---|---|---|---|
+| `{{ a\|coef }}` | coefficient en tête d’un terme | `3` | (rien) | `-` | `0` | `-3` |
+| `{{ b\|term('x') }}` | terme suivant, avec son signe ; rien s’il est nul | `+3x` | `+x` | `-x` | (rien) | `-3x` |
+| `{{ c\|term }}` | constante suivante | `+3` | `+1` | `-1` | (rien) | `-3` |
+| `{{ b\|signed }}` | nombre avec son signe | `+3` | `+1` | `-1` | `+0` | `-3` |
+| `{{ n\|paren }}` | négatif entre parenthèses | `3` | `1` | `(-1)` | `0` | `(-3)` |
+
+`$f(x) = {{ a|coef }}x^2 {{ b|term('x') }} {{ c|term }}$` donne $x^2-3x+2$
+pour 1, −3, 2. Un filtre ne calcule rien : il écrit un nombre déjà calculé, et
+refuse ce qui n’est pas un nombre réel.
+
+**Définitions partagées.** Ce que l’énoncé définit par `{% set %}` à son
+premier niveau (hors bloc, boucle ou condition) est visible dans
+l’explication : un fragment qui sert aux deux s’écrit une fois, en tête de
+l’énoncé. Si une variable de `question_setup` porte le même nom, c’est la
+définition de l’énoncé qui vaut dans l’explication.
+
 ## 3. Compilation
 
 - Le compilateur charge Pyodide (version **0.27.7**, la même que le fichier
@@ -1127,6 +1160,41 @@ Aucun choix n’est ajouté automatiquement. Le concepteur qui veut un choix
 « Aucune de ces réponses » l’écrit lui-même en dernier, avec `fixed_last=1` ;
 c’est un choix comme les autres, qui n’exclut pas les autres cases.
 
+**Choix écrits dans l’énoncé (bloc des choix).** Les choix peuvent aussi
+s’écrire dans l’énoncé, là où ils s’affichent, comme `\bonne` et `\mauvaise`
+dans AMC :
+
+```
+{% call input_radio('answer', columns=2) %}
+[x] $1-\Phi\left({{ ratio }}\right)$
+[ ] $\Phi\left({{ ratio }}\right)$
+[ ] Aucune de ces réponses
+{% endcall %}
+```
+
+- `[x]` marque un bon choix, `[ ]` un mauvais. Un choix va de sa marque, en
+  début de ligne, à la marque suivante : il peut tenir sur plusieurs lignes.
+  Rien d’autre que des espaces avant la première marque.
+- Le contenu du bloc est un modèle comme le reste de l’énoncé (`{{ … }}`,
+  filtres, `{% if %}`), rendu pour chaque tirage.
+- Même bloc pour `input_checkbox` (plusieurs `[x]`, ou aucun) et `input_select`
+  (choix en texte simple, § 2.9). `input_radio` et `input_select` ont
+  exactement un `[x]`.
+- Attributs : ni `choices` ni `solution`, qui viennent du bloc ; `columns`,
+  `shuffle`, `fixed_last`, `scoring`, `inline` comme ci-dessus, et `count=n`,
+  propre au bloc : n choix affichés, les bons choix et des mauvais tirés parmi
+  ceux du bloc, comme le fait `mcq` (§ 10.9). Avec `count`, un mauvais choix
+  dont le texte rendu est celui d’un choix déjà gardé est écarté ; sans
+  `count`, deux choix de même texte arrêtent la compilation (§ 10.6).
+- `question_check` reçoit le rang du choix dans le bloc, à partir de 0, dans
+  l’ordre où l’auteur l’a écrit, même quand `count` en écarte (§ 10.3).
+- Pourquoi : les choix sont l’essentiel d’un QCM ; fabriqués dans
+  `question_setup`, ils devenaient des chaînes Python de TeX
+  (`rf"\frac{{ {a} }}{{ {b} }}"`), illisibles, loin de l’endroit où ils
+  s’affichent. Le bloc applique la règle du § 2.10 : `question_setup` produit
+  des données, l’énoncé écrit tout. L’écriture avec `choices=` et `solution=`
+  reste admise.
+
 ### 10.2 Tirages
 
 - Pour chaque tirage, le compilateur enregistre les textes des choix et leur
@@ -1148,7 +1216,10 @@ c’est un choix comme les autres, qui n’exclut pas les autres cases.
 
 - `question_check` reçoit sous le nom du champ l’indice choisi (`input_radio`) ou la
   liste croissante des indices cochés (`input_checkbox`, `[]` si rien n’est
-  coché), dans l’ordre de l’auteur : le mélange est invisible pour lui.
+  coché), dans l’ordre de l’auteur : le mélange est invisible pour lui. Pour
+  un bloc des choix (§ 10.1), l’indice est le rang dans le bloc, y compris
+  avec `count` : le tirage garde, pour chaque choix affiché, son rang dans le
+  bloc (`ranks`), et la page traduit l’indice avant de le donner à Python.
 - `question_check` décide de la réussite par `ok_answer['nom']`, comme pour les autres
   champs. Un choix multiple est juste en tout ou rien.
 - `question_check` est facultatif (§ 2.6) : sans lui, la saisie est comparée à la

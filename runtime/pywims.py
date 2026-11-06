@@ -214,8 +214,59 @@ def _jinja():
                                          keep_trailing_newline=True, finalize=tex)
         environment.filters["frac"] = lambda value: tex(value, frac=True)
         environment.filters["dec"] = lambda value, digits=None: tex(value, dec=True, digits=digits)
+        environment.filters["coef"] = _coef
+        environment.filters["term"] = _term
+        environment.filters["signed"] = _signed
+        environment.filters["paren"] = _paren
         _jinja_environment = environment
     return _jinja_environment
+
+
+# Filtres d’écriture (SPECIFICATION.md, § 2.10) : ils écrivent un nombre déjà calculé, avec son
+# signe ou sans coefficient 1, là où chaque question réécrivait sa fonction (signed, linear,
+# written…). Fractions en \frac : ces nombres sont des coefficients, dans une formule.
+def _real(value, name):
+    """Nombre réel écrit par un filtre, ou TypeError : un filtre ne calcule rien."""
+    if isinstance(value, bool) or isinstance(value, str):
+        raise TypeError("le filtre {} écrit un nombre, et non {!r}.".format(name, value))
+    try:
+        return value < 0, value == 0
+    except TypeError:
+        raise TypeError("le filtre {} écrit un nombre réel, et non {!r}.".format(name, value)) from None
+
+
+def _signed(value):
+    """+3, -3 : un nombre précédé de son signe."""
+    negative, _ = _real(value, "signed")
+    return tex(value, frac=True) if negative else "+" + tex(value, frac=True)
+
+
+def _paren(value):
+    """(-3) pour un négatif, dans un produit ou une puissance ; 3 sinon."""
+    negative, _ = _real(value, "paren")
+    return "(" + tex(value, frac=True) + ")" if negative else tex(value, frac=True)
+
+
+def _coef(value):
+    """Coefficient en tête d’un terme : 1 ne s’écrit pas, -1 s’écrit « - »."""
+    _real(value, "coef")
+    if value == 1:
+        return ""
+    if value == -1:
+        return "-"
+    return tex(value, frac=True)
+
+
+def _term(value, variable=""):
+    """Terme suivant d’une somme, avec son signe : +3x, -x ; rien pour un coefficient nul."""
+    negative, zero = _real(value, "term")
+    if zero:
+        return ""
+    sign = "-" if negative else "+"
+    size = -value if negative else value
+    if variable and size == 1:
+        return sign + variable
+    return sign + tex(size, frac=True) + variable
 
 
 def _template_line(error):
@@ -229,11 +280,15 @@ def _template_line(error):
     return line
 
 
-def _render(namespace, source, field):
-    """Rend un modèle avec l’espace de noms du tirage ; renvoie (texte, noms lus), ou lève ValueError.
+def _render(namespace, source, field, blocks=None, shared=None):
+    """Rend un modèle avec l’espace de noms du tirage ; renvoie (texte, noms lus, définitions), ou lève
+    ValueError.
 
     Les noms lus sont les variables que le modèle ne définit pas lui-même (meta de Jinja) : ce sont
     celles de « question_setup » que la page contrôle quand elle rejoue le tirage (§ 5.1).
+    blocks : dictionnaire où ranger le contenu rendu de chaque bloc des choix (§ 10.1).
+    shared : définitions {% set %} de l’énoncé, visibles dans l’explication (§ 2.10) ; les définitions
+    renvoyées sont celles de premier niveau de ce modèle.
     """
     import jinja2
     import jinja2.meta
@@ -243,8 +298,27 @@ def _render(namespace, source, field):
         template = environment.from_string(source)
     except jinja2.TemplateSyntaxError as error:
         raise ValueError("« {} », ligne {} : {}.".format(field, error.lineno, error.message)) from None
+    values = dict(namespace)
+    values.update(shared or {})
+
+    def choices_block(name, caller):
+        # Le bloc est remplacé par la marque du champ ; son contenu rendu sera découpé en choix.
+        blocks[name] = caller()
+        return "\u0001{}\u0001".format(name)
+
+    blocks = {} if blocks is None else blocks
+    values["_pywims_choices"] = choices_block
+    names = names - {"_pywims_choices"}
     try:
-        text = template.render(namespace)
+        # make_module rend le modèle et garde ses définitions de premier niveau ({% set %}). Contrairement
+        # à render, il ne ramène pas la pile d’appels aux lignes du modèle : handle_exception le fait,
+        # sans quoi une erreur citerait une ligne du code Python que Jinja engendre.
+        try:
+            module = template.make_module(values)
+        except Exception:
+            environment.handle_exception()
+        text = str(module)
+        definitions = {key: value for key, value in vars(module).items() if not key.startswith("_")}
     except Exception as error:
         line = _template_line(error)
         where = "« {} »{}".format(field, ", ligne {}".format(line) if line else "")
@@ -253,7 +327,53 @@ def _render(namespace, source, field):
             raise ValueError("{} : la variable « {} » n’est pas définie par « question_setup ».".format(
                 where, undefined.group(1))) from None
         raise ValueError("{} : {}: {}".format(where, type(error).__name__, error)) from None
-    return text, names
+    return text, names - set(shared or {}), definitions
+
+
+# Marque d’un choix dans un bloc des choix (§ 10.1) : [x] bon, [ ] mauvais, en début de ligne.
+_CHOICE_MARK = _re.compile(r"^[ \t]*\[([ xX])\][ \t]?", _re.M)
+
+
+def _block_choices(text):
+    """Choix d’un bloc rendu : (textes, rangs des bons choix), ou TypeError."""
+    marks = list(_CHOICE_MARK.finditer(text))
+    if not marks:
+        raise TypeError("aucun choix : chaque choix commence, en début de ligne, par [x] (bon) ou [ ] (mauvais).")
+    if text[:marks[0].start()].strip():
+        raise TypeError("du texte précède le premier choix : « {} ».".format(text[:marks[0].start()].strip()[:60]))
+    texts, good = [], []
+    for rank, mark in enumerate(marks):
+        end = marks[rank + 1].start() if rank + 1 < len(marks) else len(text)
+        body = text[mark.end():end].strip()
+        if not body:
+            raise TypeError("le choix {} est vide.".format(rank))
+        texts.append(body)
+        if mark.group(1) in "xX":
+            good.append(rank)
+    return texts, good
+
+
+def _block_ranks(texts, good, count):
+    """Rangs des choix affichés avec count (§ 10.1) : les bons, et des mauvais tirés parmi ceux dont le
+    texte n’est pas déjà gardé, comme mcq. Le tirage dépend des textes rendus, et non du random de
+    l’auteur : le navigateur rejoue « question_setup » sans rendre les modèles."""
+    import random
+    import zlib
+    if count is None:
+        return list(range(len(texts)))
+    normalized = lambda text: " ".join(text.split())
+    seen = {normalized(texts[rank]) for rank in good}
+    wrong = []
+    for rank, text in enumerate(texts):
+        if rank not in good and normalized(text) not in seen:
+            seen.add(normalized(text))
+            wrong.append(rank)
+    needed = count - len(good)
+    if needed < 1 or needed > len(wrong):
+        raise TypeError("count={} demande {} mauvais choix, et le bloc en a {} de textes différents.".format(
+            count, needed, len(wrong)))
+    picker = random.Random(zlib.crc32("\u0002".join(texts).encode("utf-8")))
+    return sorted(good + picker.sample(wrong, needed))
 
 
 def _is_plain_value(value):
@@ -267,7 +387,8 @@ def _collect_draw(namespace, spec):
     """Données d’un tirage pour le compilateur, avec la liste des erreurs de l’auteur.
 
     spec (JSON) : {"statement": modèle, "explanation": modèle ou null, "dimensions": [...],
-                   "fields": [{"name", "type", "solution", "choices" (champs à choix)}]}
+                   "fields": [{"name", "type", "solution", "choices" (champs à choix),
+                               "block", "count" (bloc des choix, § 10.1)}]}
     Les modèles sont ceux que donne PyWimsTemplate.jinjaSource : chaque champ y est une marque.
     """
     import json
@@ -289,12 +410,20 @@ def _collect_draw(namespace, spec):
                 for name in sorted(_jinja().globals) if name in namespace]
     rendered = {}
     read = set()
+    # Contenu rendu des blocs des choix (§ 10.1), et définitions {% set %} de l’énoncé, visibles dans
+    # l’explication (§ 2.10).
+    blocks = {}
+    shared = {}
     for key, field in (("statement", "question_statement"), ("explanation", "question_solution_explanation")):
         if spec.get(key) is None:
             continue
         try:
-            rendered[key], names = _render(namespace, spec[key], field)
+            rendered[key], names, definitions = _render(
+                namespace, spec[key], field,
+                blocks=blocks if key == "statement" else None, shared=shared if key == "explanation" else None)
             read |= names
+            if key == "statement":
+                shared = definitions
         except ValueError as error:
             errors.append(str(error))
     read |= set(spec["dimensions"])
@@ -311,10 +440,32 @@ def _collect_draw(namespace, spec):
             errors.append("La dimension « {} » doit être un entier défini par « question_setup ».".format(name))
     solutions = {}
     choices = {}
+    ranks = {}
     for field in spec["fields"]:
-        name, kind, variable = field["name"], field["type"], field["solution"]
+        name, kind, variable = field["name"], field["type"], field.get("solution")
         if name in namespace:
             errors.append("Le champ « {} » porte le nom d’une variable de « question_setup » : renommez l’un des deux.".format(name))
+        # Bloc des choix (§ 10.1) : choix et solution viennent du bloc rendu. S’il n’a pas été rendu
+        # (dans un {% if %}), le contrôle des marques le signale.
+        if field.get("block"):
+            if name not in blocks:
+                continue
+            try:
+                texts, good = _block_choices(blocks[name])
+                if kind != "input_checkbox" and len(good) != 1:
+                    raise TypeError("il faut exactement un bon choix [x], et il y en a {}.".format(len(good)))
+                shown = _block_ranks(texts, good, field.get("count"))
+                if len(shown) < 2:
+                    raise TypeError("il faut au moins deux choix.")
+                choices[name] = _choice_texts([texts[rank] for rank in shown], plain=kind == "input_select")
+                positions = [shown.index(rank) for rank in good]
+                solutions[name] = positions if kind == "input_checkbox" else positions[0]
+                # Rang dans le bloc de chaque choix affiché, pour « question_check » (§ 10.3).
+                if field.get("count") is not None:
+                    ranks[name] = shown
+            except TypeError as error:
+                errors.append("Le bloc des choix du champ « {} » : {}".format(name, error))
+            continue
         if variable not in namespace:
             errors.append("La solution « {} » du champ « {} » n’est pas définie par « question_setup ».".format(variable, name))
             continue
@@ -353,7 +504,7 @@ def _collect_draw(namespace, spec):
     return json.dumps({
         "statement": rendered.get("statement"), "explanation": rendered.get("explanation"),
         "context": context, "dimensions": dimensions, "solutions": solutions,
-        "choices": choices, "errors": errors, "warnings": warnings,
+        "choices": choices, "ranks": ranks, "errors": errors, "warnings": warnings,
     }, ensure_ascii=False)
 
 

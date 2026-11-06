@@ -68,7 +68,8 @@
       const { name, type, attributes } = tag;
       const solution = draw.solutions[name];
       if (PyWimsTemplate.choiceTypes.has(type)) {
-        await session.setChoice(name, solution);
+        // Python reçoit le rang dans le bloc des choix (§ 10.3), comme dans la page.
+        await session.setChoice(name, PyWimsTemplate.blockRank(solution, draw.ranks?.[name]));
         verdicts[name] = isCorrect(type, solution, solution);
       } else if (type === "input_text") {
         await session.set(name, typed(solution));
@@ -262,7 +263,8 @@
         .flatMap(tag => ["size", "rows", "cols"].map(key => tag.attributes[key]))
         .filter(value => typeof value === "string"))],
       fields: tags.map(tag => ({
-        name: tag.name, type: tag.type, solution: tag.attributes.solution, choices: tag.attributes.choices
+        name: tag.name, type: tag.type, solution: tag.attributes.solution, choices: tag.attributes.choices,
+        ...(tag.block ? { block: true, count: tag.attributes.count ?? null } : {})
       }))
     };
     // Une formule TeX dans une chaîne ordinaire passe sans erreur Python mais s’affiche abîmée :
@@ -312,7 +314,8 @@
       context: "les valeurs de l’énoncé",
       dimensions: "les dimensions des matrices",
       solutions: "les solutions",
-      choices: "les choix"
+      choices: "les choix",
+      ranks: "les choix gardés d’un bloc"
     };
 
     const draws = [];
@@ -355,7 +358,8 @@
         // question qui a un « question_check » : ailleurs, elles pesaient près d’un quart des tirages.
         const context = fields.question_check === undefined ? undefined : draw.context;
         // L’ordre fait partie du tirage : deux tirages qui ne diffèrent que par lui restent distincts.
-        const key = JSON.stringify([draw.statement, draw.explanation, context, draw.solutions, draw.choices, orders]);
+        const ranks = Object.keys(draw.ranks ?? {}).length ? draw.ranks : undefined;
+        const key = JSON.stringify([draw.statement, draw.explanation, context, draw.solutions, draw.choices, orders, ranks]);
         if (!seen.has(key)) {
           seen.add(key);
           draws.push({
@@ -366,7 +370,8 @@
             dimensions: draw.dimensions,
             solutions: draw.solutions,
             choices: draw.choices,
-            orders
+            orders,
+            ...(ranks === undefined ? {} : { ranks })
           });
         }
       } finally {

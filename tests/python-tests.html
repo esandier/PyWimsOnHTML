@@ -899,6 +899,52 @@ json.dumps({
         }
       });
 
+      // Bloc des choix (SPECIFICATION.md, § 10.1) : choix écrits dans l’énoncé, count, doublon écarté, et
+      // « question_check » qui reçoit le rang dans le bloc. Le bon choix est écrit en dernier : son rang (4)
+      // diffère de sa place parmi les choix affichés (2), et la page doit traduire l’un en l’autre.
+      await test("un bloc des choix compilé tire count choix, écarte un doublon et donne à question_check le rang dans le bloc", async () => {
+        const fields = {
+          question_title: "Bloc des choix",
+          question_layout: "STD",
+          question_setup: "a, b = 2, 3",
+          question_statement: "Combien font ${{ a }}+{{ b }}$ ?\n{% call input_radio('answer', count=3) %}\n" +
+            "[ ] ${{ a * b }}$\n[ ] ${{ a - b }}$\n[ ] ${{ a + b }}$\n[ ] ${{ b - a }}$\n[x] ${{ a + b }}$\n{% endcall %}",
+          question_check: "ok_answer['answer'] = answer == 4\nfeedback = 'rang ' + str(answer)"
+        };
+        const draws = await PyWimsCompiler.computeDraws(fields, { count: 3 });
+        for (const draw of draws) {
+          const texts = draw.choices.answer;
+          if (texts.length !== 3 || texts.filter(text => text === "$5$").length !== 1 ||
+              draw.ranks?.answer?.at(-1) !== 4 || texts[draw.solutions.answer] !== "$5$") {
+            throw new Error(`Tirage inattendu : ${JSON.stringify({ texts, ranks: draw.ranks, solution: draw.solutions })}`);
+          }
+        }
+        compiledQuestions.push({ fields, draws: draws.slice(-1) });
+        const frame = await openCompiledSheet([{ fields, draws: draws.slice(-1) }]);
+        try {
+          await solveQuestion(frame, 1, fields, draws.at(-1));
+        } finally {
+          frame.remove();
+        }
+      });
+
+      await test("les filtres d’écriture et les {% set %} de l’énoncé, visibles dans l’explication", async () => {
+        const fields = {
+          question_title: "Filtres",
+          question_layout: "STD",
+          question_setup: "from sympy import Rational\na, b, c, d, e = 1, -3, 0, -2, Rational(1, 2)",
+          question_statement: "{% set f %}{{ a|coef }}x^2 {{ b|term('x') }} {{ c|term('x') }} {{ d|term }}{% endset %}" +
+            "$f(x) = {{ f }}$ {{ input_value('v', solution=a) }}",
+          question_solution_explanation: "${{ f }}$ ; ${{ d|paren }}$ ; ${{ b|signed }}$ ; ${{ e|term('x') }}$ ; ${{ (-1)|coef }}x$"
+        };
+        const [draw] = await PyWimsCompiler.computeDraws(fields, { count: 1 });
+        const squeeze = text => text.replace(/\s+/g, " ");
+        if (!squeeze(draw.statement).includes("$f(x) = x^2 -3x -2$") ||
+            squeeze(draw.explanation) !== "$x^2 -3x -2$ ; $(-2)$ ; $-3$ ; $+\\frac{1}{2}x$ ; $-x$") {
+          throw new Error(`Rendu inattendu : ${JSON.stringify([draw.statement, draw.explanation])}`);
+        }
+      });
+
       // Les questions seules ci-dessus portent leurs tirages en JSON (export « pour navigateur ancien ») ;
       // l’activité, compressés, comme un export ordinaire (SPECIFICATION.md, § 5.10).
       await test("une activité réunit toutes les questions dans un seul document et les corrige chacune", async () => {

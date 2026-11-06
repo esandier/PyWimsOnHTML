@@ -6,6 +6,9 @@ window.PyWimsTemplate = (() => {
   // Champ de réponse : {{ input_value('n', solution=s, tolerance=0.01) }}. Un texte entre guillemets
   // peut contenir une parenthèse (style='width:calc(…)') ; il est sauté d’un bloc.
   const fieldPattern = /\{\{-?\s*(input_[A-Za-z_]+)\s*\(((?:[^()'"]|'[^']*'|"[^"]*")*)\)\s*-?\}\}/g;
+  // Bloc des choix (SPECIFICATION.md, § 10.1) : {% call input_radio('answer') %} [x] … [ ] … {% endcall %}.
+  // Les choix sont écrits dans l’énoncé ; Jinja rend le bloc, Python le découpe aux marques.
+  const blockPattern = /\{%-?\s*call\s+(input_(?:radio|checkbox|select))\s*\(((?:[^()'"]|'[^']*'|"[^"]*")*)\)\s*-?%\}([\s\S]*?)\{%-?\s*endcall\s*-?%\}/g;
   // Ancienne notation, refusée avec un message qui donne la nouvelle (SPECIFICATION.md, § 2.3).
   const legacyFieldPattern = /\{%\s*(input_[A-Za-z_]+)\b([\s\S]*?)%\}/g;
   // Marque d’un champ dans le modèle donné à Jinja (« \u0001nom\u0001 ») : Jinja la laisse telle quelle,
@@ -46,16 +49,17 @@ window.PyWimsTemplate = (() => {
       cell_width: "text", cell_height: "text", input_style: "text",
       solution: "variable"
     },
+    // count : propre au bloc des choix (nombre de choix affichés, § 10.1).
     input_radio: {
       choices: "variable", solution: "variable",
-      columns: "integer", shuffle: "boolean", fixed_last: "integer", scoring: "text"
+      columns: "integer", shuffle: "boolean", fixed_last: "integer", scoring: "text", count: "integer"
     },
     // Liste déroulante d’un texte à trous (SPECIFICATION.md, § 2.9) : ni colonnes ni barème.
     // inline=true : aspect fondu dans la phrase ; par défaut, celui d’un champ.
-    input_select: { choices: "variable", solution: "variable", shuffle: "boolean", fixed_last: "integer", inline: "boolean" },
+    input_select: { choices: "variable", solution: "variable", shuffle: "boolean", fixed_last: "integer", inline: "boolean", count: "integer" },
     input_checkbox: {
       choices: "variable", solution: "variable",
-      columns: "integer", shuffle: "boolean", fixed_last: "integer", scoring: "text"
+      columns: "integer", shuffle: "boolean", fixed_last: "integer", scoring: "text", count: "integer"
     }
   };
   // Champs à choix : leurs choix viennent d’une liste de « question_setup » et peuvent porter un barème.
@@ -191,9 +195,12 @@ window.PyWimsTemplate = (() => {
   // (« input_value('n', solution=s) »), et renvoie sa description, ou lève une erreur explicite.
   // L’appel est lu, jamais exécuté : la page connaît ainsi ses champs sans Python (SPECIFICATION.md,
   // § 2.3). Une valeur est donc un nombre, un texte entre guillemets, un booléen ou un nom de variable.
-  function parseTag(source) {
-    const shown = source.trim().startsWith("{{") ? source.trim() : `{{ ${source.trim()} }}`;
-    const call = shown.replace(/^\{\{-?\s*/, "").replace(/\s*-?\}\}$/, "");
+  // block : le champ est l’en-tête d’un bloc des choix ; ses choix et sa solution viennent du bloc.
+  function parseTag(source, { block = false } = {}) {
+    const written = source.trim().startsWith("{{") ? source.trim() : `{{ ${source.trim()} }}`;
+    const call = written.replace(/^\{\{-?\s*/, "").replace(/\s*-?\}\}$/, "");
+    // Les messages citent le champ tel que l’auteur l’a écrit.
+    const shown = block ? `{% call ${call} %}` : written;
     const head = call.match(new RegExp(String.raw`^(${nameSource})\s*\(\s*(['"])(${nameSource})\2`, "u"));
     if (!head || !Object.hasOwn(tagSchemas, head[1]) || !call.endsWith(")")) {
       throw new Error(`Champ de réponse non pris en charge : ${shown}`);
@@ -250,8 +257,22 @@ window.PyWimsTemplate = (() => {
       rest = rest.slice(match[0].length);
     }
 
+    // Un bloc des choix tire ses choix et sa solution de son contenu ; count n’a de sens que là.
+    if (block) {
+      for (const key of ["choices", "solution"]) {
+        if (Object.hasOwn(attributes, key)) {
+          throw new Error(`L’attribut « ${key} » est inutile dans un bloc des choix : les choix sont écrits dans le bloc, marqués [x] (bon) ou [ ] (mauvais), dans ${shown}`);
+        }
+      }
+      if (Object.hasOwn(attributes, "count") && attributes.count < 2) {
+        throw new Error(`L’attribut « count » doit être au moins 2 dans ${shown}`);
+      }
+    } else if (Object.hasOwn(attributes, "count")) {
+      throw new Error(`L’attribut « count » n’existe que dans un bloc des choix ({% call ${type}(…) %} … {% endcall %}) ; avec une liste, tirez les choix avec mcq, dans ${shown}`);
+    }
+
     // Chaque champ désigne la variable de « question_setup » qui contient sa solution.
-    if (!Object.hasOwn(attributes, "solution")) {
+    if (!block && !Object.hasOwn(attributes, "solution")) {
       throw new Error(`Le champ « ${name} » doit indiquer sa solution, par exemple solution=variable, dans ${shown}`);
     }
 
@@ -267,7 +288,7 @@ window.PyWimsTemplate = (() => {
 
     // Un champ à choix désigne la liste de ses choix ; colonnes et barème se vérifient sans Python.
     if (choiceTypes.has(type)) {
-      if (!Object.hasOwn(attributes, "choices")) {
+      if (!block && !Object.hasOwn(attributes, "choices")) {
         throw new Error(`Le champ « ${name} » doit indiquer ses choix, par exemple choices=variable, dans ${shown}`);
       }
       if (Object.hasOwn(attributes, "columns") && !(attributes.columns >= 1 && attributes.columns <= 6)) {
@@ -286,15 +307,27 @@ window.PyWimsTemplate = (() => {
         }
       }
     }
-    return Object.freeze({ type, name, attributes: Object.freeze(attributes) });
+    return Object.freeze({ type, name, attributes: Object.freeze(attributes), ...(block ? { block: true } : {}) });
+  }
+
+  // Champs d’un modèle, dans l’ordre du texte : champs simples et en-têtes de blocs des choix.
+  // Un champ simple écrit dans un bloc n’en est pas un : il est ignoré ici, et Jinja le signale.
+  function fieldSources(template) {
+    const blocks = [...template.matchAll(blockPattern)].map(match =>
+      ({ index: match.index, end: match.index + match[0].length, source: `${match[1]}(${match[2]})`, block: true }));
+    const inBlock = index => blocks.some(block => index > block.index && index < block.end);
+    const fields = [...template.matchAll(fieldPattern)]
+      .filter(match => !inBlock(match.index))
+      .map(match => ({ index: match.index, source: match[0], block: false }));
+    return [...blocks, ...fields].sort((left, right) => left.index - right.index);
   }
 
   // Analyse tous les champs d’un modèle, dans l’ordre ; les champs invalides sont ignorés.
   function parseTags(template) {
     const tags = [];
-    for (const [source] of template.matchAll(fieldPattern)) {
+    for (const { source, block } of fieldSources(template)) {
       try {
-        tags.push(parseTag(source));
+        tags.push(parseTag(source, { block }));
       } catch {
         // validateTemplate signale ces champs ; les autres fonctions les ignorent.
       }
@@ -328,9 +361,9 @@ window.PyWimsTemplate = (() => {
   function validateTemplate(template) {
     const errors = syntaxErrors(template);
     const tags = [];
-    for (const [source] of template.matchAll(fieldPattern)) {
+    for (const { source, block } of fieldSources(template)) {
       try {
-        tags.push(parseTag(source));
+        tags.push(parseTag(source, { block }));
       } catch (error) {
         errors.push(error.message);
       }
@@ -358,8 +391,16 @@ window.PyWimsTemplate = (() => {
   // Le code de Jinja ({{ … }}, {% … %}) est ramené à la forme NFKC, comme Python le fait pour ses
   // noms : sans cela, un « é » tapé en deux caractères ne désignerait pas la variable « é » de
   // « question_setup » (Jinja ne normalise pas). Le texte hors des délimiteurs reste tel quel.
+  // Un bloc des choix devient un appel de _pywims_choices (runtime/pywims.py), qui garde le contenu
+  // rendu du bloc et renvoie la marque du champ ; les retours à la ligne de l’en-tête sont gardés.
   function jinjaSource(template) {
     return template
+      .replace(blockPattern, (source, type, rest, content) => {
+        const tag = parseTag(`${type}(${rest})`, { block: true });
+        const opening = source.slice(0, source.indexOf("%}") + 2);
+        return `{% call _pywims_choices(${JSON.stringify(tag.name)}) %}` + "\n".repeat((opening.match(/\n/g) ?? []).length) +
+          content + "{% endcall %}";
+      })
       .replace(fieldPattern, source => {
         const tag = parseTag(source);
         return fieldMark(tag.name) + "\n".repeat((source.match(/\n/g) ?? []).length);
@@ -388,6 +429,14 @@ window.PyWimsTemplate = (() => {
       });
   }
 
+  // Saisie d’un champ à choix telle que « question_check » la reçoit (SPECIFICATION.md, § 10.3) : avec
+  // count, un bloc des choix n’affiche qu’une partie de ses choix, et ranks donne le rang dans le bloc
+  // de chaque choix affiché. Un indice, une liste d’indices ou null ; sans ranks, la saisie telle quelle.
+  function blockRank(value, ranks) {
+    if (!ranks || value === null || value === undefined) return value;
+    return Array.isArray(value) ? value.map(index => ranks[index]).sort((a, b) => a - b) : ranks[value];
+  }
+
   // Nombre d’apparitions de la marque d’un champ dans un énoncé rendu : 1 pour chaque champ, sinon le
   // champ est dans un {% if %} ou un {% for %} (SPECIFICATION.md, § 2.3).
   function markCount(rendered, name) {
@@ -408,6 +457,7 @@ window.PyWimsTemplate = (() => {
     checkIdPrefix,
     parseTag,
     parseTags,
+    blockRank,
     syntaxErrors,
     validateTemplate,
     tagTypes,
