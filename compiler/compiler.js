@@ -549,6 +549,10 @@
     const focused = document.activeElement;
     const focusedQuestion = questionList.contains(focused) ? focused.closest("li")?.question : null;
     const focusedRole = focusedQuestion && focused.className;
+    // La position de défilement est remise après la reconstruction, et le focus rendu sans défilement :
+    // le focus, rendu dans une liste encore à moitié remplie, ramenait la liste en arrière, et la ligne
+    // cliquée sautait au bas de la vue.
+    const scrolled = questionList.scrollTop;
     questionList.replaceChildren();
     rankBadges.clear();
 
@@ -648,9 +652,10 @@
       }
       questionList.append(item);
       if (question === focusedQuestion) {
-        [...item.querySelectorAll("input, button")].find(element => element.className === focusedRole)?.focus();
+        [...item.querySelectorAll("input, button")].find(element => element.className === focusedRole)?.focus({ preventScroll: true });
       }
     }
+    questionList.scrollTop = scrolled;
 
     visibleQuestions = matches.filter(question => !question.error);
     updateRanks();
@@ -840,7 +845,10 @@
     const target = buttons[Math.min(buttons.length - 1, Math.max(0, index + step))];
     if (!target || (index >= 0 && buttons[index] === target)) return;
     target.click();
-    questionList.querySelector('[aria-current="true"]')?.focus();
+    const current = questionList.querySelector('[aria-current="true"]');
+    current?.focus({ preventScroll: true });
+    // La liste ne défile que si la nouvelle question sort de la vue, d’une ligne à la fois.
+    current?.closest("li").scrollIntoView({ block: "nearest" });
   }
 
   // Adapte les options de compilation au nombre et au mode des questions choisies.
