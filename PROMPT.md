@@ -222,9 +222,16 @@ dit pourquoi.
     bornes) ; `up` : sens de chaque intervalle (`True` : croissant).
     `signs=['-', '+']` ajoute la ligne de f′ (0 aux abscisses intérieures),
     `forbidden=[0]` une double barre où la fonction n’est pas définie. Les
-    infinis s’écrivent `oo` et `-oo` (SymPy) ou `float('inf')`.
+    infinis s’écrivent `oo` et `-oo` (SymPy) ou `float('inf')`. Utilise-le
+    pour tout tableau de variations, même s’il ne dépend pas du tirage.
   - `{{ interval(a, b, left_closed, right_closed) }}` : intervalle à la
-    française, `[a\,;\,b]` ou `]a\,;\,b[`, dans une formule `$…$`.
+    française, `[a\,;\,b]` ou `]a\,;\,b[`, dans une formule `$…$`. Ne
+    l’utilise que si l’ouverture d’un crochet dépend du tirage : sans lui, il
+    faudrait construire le TeX dans `question_setup`. Sinon, écris
+    l’intervalle en TeX, avec le point-virgule : `[{{ a }}\,;\,{{ b }}]`,
+    `]{ {{ a }} }\,;\,{{ b }}[`, `]{-\infty}\,;\,{{ b }}]`. Après un `]`
+    ouvrant, mets la borne entre accolades si elle peut être négative : TeX
+    lit `]` comme un crochet fermant, et `]-3` s’afficherait `] − 3`.
 
   Un élément ne contient jamais de champ de réponse : pour un tableau à
   compléter, écris le tableau en HTML dans l’énoncé et place les champs dans
@@ -353,9 +360,12 @@ dit pourquoi.
   [ ] ${{ (a + 1) * b }}$
   {% endcall %}
   ```
-- Ancienne écriture, encore admise : `{{ input_radio('nom', choices=liste,
+- Le bloc des choix est nécessaire dès que le texte des choix dépend du
+  tirage : il évite de construire des chaînes TeX dans `question_setup`.
+  Quand les choix sont des données déjà en liste (variantes fixes tirées avec
+  `choice`), garde l’écriture `{{ input_radio('nom', choices=liste,
   solution=indice) }}`, avec une liste de `question_setup` (et `mcq` pour la
-  tirer). Ne l’emploie que si les choix sont des données déjà en liste.
+  tirer).
 - Ne mélange pas les choix toi-même : le compilateur les mélange à chaque
   tirage. `fixed_last=n` garde les n derniers choix à la fin, dans ton ordre
   (pour « Aucune de ces réponses », par exemple). `shuffle=false` garde tous les

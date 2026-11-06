@@ -141,7 +141,7 @@
       <li>Deux éléments écrivent ce qui a une structure : <code>{{ variation_table(xs, values, up) }}</code>,
         un tableau de variations (abscisses, valeurs, sens de chaque intervalle ; <code>signs=…</code>
         ajoute la ligne de f′), et <code>${{ interval(a, b, True, False) }}$</code>, un intervalle
-        <code>[a ; b[</code>.</li>
+        <code>[a ; b[</code>. Ils évitent de fabriquer ce texte en Python, ce qui rend le code illisible.</li>
       <li>Un fragment défini en tête de l’énoncé par <code>{% set nom %}…{% endset %}</code> sert aussi dans
         l’explication.</li>
       <li>Les champs de réponse s’écrivent <code>{{ input_value('answer', solution=s) }}</code>, et les choix
@@ -306,7 +306,8 @@
         ces réponses », écrivez-le en dernier, avec <code>fixed_last=1</code>. Dans <code>question_check</code>, la
         saisie arrive comme le rang du choix dans le bloc, à partir de <strong>0</strong>, dans l’ordre où vous l’avez
         écrit (choix unique), ou la liste croissante des rangs cochés : <code>if answer == 1: feedback = "…"</code>.</p>
-      <p>Ancienne écriture, encore admise : <code>{{ input_radio('answer', choices=choices, solution=correct) }}</code>,
+      <p>Le bloc évite de fabriquer les formules des choix en Python, ce qui rend le code illisible.
+        Les choix peuvent aussi venir d’une liste : <code>{{ input_radio('answer', choices=choices, solution=correct) }}</code>,
         avec une liste <code>choices</code> de <code>question_setup</code> et le numéro <code>correct</code> du bon
         choix (l’outil <code>mcq</code> de <code>pywims</code> tire une telle liste).</p>
     </details>
