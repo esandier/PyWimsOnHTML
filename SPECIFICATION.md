@@ -627,7 +627,12 @@ fabriquer un texte (les choix d’un QCM sont des listes Python, § 10.1) :
 
 **L’écriture d’abord.** `question_setup` produit des données (nombres, listes,
 expressions qui servent à calculer ou à vérifier) ; l’énoncé, l’explication et
-les choix écrivent tout ce que l’élève voit. Du TeX fabriqué dans
+les choix écrivent tout ce qui dépend du tirage. La règle porte sur le TeX et
+le HTML **construits avec des variables** (chaînes formatées, concaténations,
+fonctions d’écriture) ; un texte littéral (liste de situations, variantes
+fixes tirées au hasard) est une donnée, à sa place dans `question_setup`, en
+chaîne brute : le réécrire en `{% if %}` successifs serait plus lourd sans être
+plus clair (avis de l’auteur, novembre 2026). Du texte construit dans
 `question_setup` reste possible, en dernier ressort, avec un commentaire qui
 dit pourquoi. Pourquoi : le format était pensé autour du calcul, et
 l’écriture, qui est le contenu d’une question de mathématiques (forme non

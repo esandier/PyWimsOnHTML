@@ -5,7 +5,7 @@ Modèle : QCM
 %
 % question_keywords
 %
-modèle, QCM, fractions
+modèle, fractions
 %
 % question_layout
 %
@@ -16,18 +16,20 @@ STD
 # Modèle de QCM. Copiez ce fichier dans votre dossier de questions, puis remplacez le titre, les
 # mots-clés, l’énoncé, les choix et l’explication. Les lignes qui commencent par # sont des
 # commentaires : elles n’apparaissent pas aux élèves.
-
-# Les choix, dans votre ordre : le compilateur les mélange à chaque tirage. Une formule s’écrit
-# entre $…$ ; mettez alors r devant les guillemets, à cause des barres obliques de \frac.
-choices = [r"$\frac{1}{2}$", r"$\frac{2}{3}$", r"$\frac{3}{4}$", "Aucune de ces réponses"]
-
-# Le numéro du bon choix, en comptant à partir de 0 : ici le premier, 1/2.
-correct = 0
+# Un QCM sans valeurs tirées au hasard n’a besoin d’aucun Python : ce champ ne contient que ces
+# commentaires. Les choix s’écrivent dans l’énoncé, ci-dessous.
 %
 % question_statement
 %
 Quelle est la forme irréductible de $\frac{3}{6}$ ?
-{{ input_radio('answer', choices=choices, solution=correct, columns=4, fixed_last=1) }}
+{#- Un choix par ligne : [x] pour un bon choix, [ ] pour un mauvais. Le compilateur les mélange à
+    chaque tirage ; fixed_last=1 garde le dernier à la fin. -#}
+{% call input_radio('answer', columns=4, fixed_last=1) %}
+[x] $\frac{1}{2}$
+[ ] $\frac{2}{3}$
+[ ] $\frac{3}{4}$
+[ ] Aucune de ces réponses
+{% endcall %}
 %
 % question_solution_explanation
 %

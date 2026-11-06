@@ -94,7 +94,7 @@
           <tr><td><code>question_title</code></td><td>obligatoire</td><td>titre de la question, affiché aux élèves et dans la liste des questions de l'<a href="../compiler/">Atelier</a></td></tr>
           <tr><td><code>question_keywords</code></td><td>obligatoire</td><td>mots-clés séparés par des virgules</td></tr>
           <tr><td><code>question_layout</code></td><td>obligatoire</td><td>toujours <code>STD</code></td></tr>
-          <tr><td><code>question_setup</code></td><td>obligatoire</td><td>code Python : tirage des valeurs et calcul des solutions</td></tr>
+          <tr><td><code>question_setup</code></td><td>obligatoire</td><td>code Python : tirage des valeurs et calcul des solutions ; des commentaires seulement pour une question sans hasard</td></tr>
           <tr><td><code>question_statement</code></td><td>obligatoire</td><td>énoncé en HTML, avec formules, modèle Jinja : HTML, formules, valeurs <code>{{ … }}</code>, cas <code>{% if %}</code> et champs de réponse</td></tr>
           <tr><td><code>question_solution_explanation</code></td><td>facultatif</td><td>explication affichée avec la solution, écrite comme l’énoncé, sans champ de réponse</td></tr>
           <tr><td><code>question_check</code></td><td>facultatif</td><td>code Python de correction, pour accepter plusieurs écritures ou donner un retour ciblé</td></tr>
@@ -108,11 +108,16 @@
       <li>C’est du Python. Importez ce dont vous avez besoin (<code>from random import randint</code>,
         <code>from sympy import *</code>…). Utilisez le module <code>random</code> pour des données
         aléatoires.</li>
-      <li>Une chaîne qui contient une formule (un choix, un retour) s’écrit avec <code>r</code> devant les
-        guillemets : <code>r"$\frac{1}{2}$"</code>. C’est indispensable dès qu’elle contient une barre
-        oblique inverse <code>\</code>, que Python interpréterait sinon.</li>
-      <li>Tous les noms sont en anglais, comme ceux de Python : <code>choices</code>, <code>correct</code>,
-        <code>answer</code>…</li>
+      <li><strong>Il produit des données, l’énoncé écrit.</strong> On y tire des nombres et on y calcule
+        les solutions ; les formules et le HTML qui dépendent du tirage s’écrivent dans l’énoncé, et non en
+        assemblant du texte en Python (<code>f"…{a}…"</code>). Un texte fixe, par exemple une liste de
+        situations ou de variantes tirées avec <code>choice</code>, a sa place ici.</li>
+      <li>Une chaîne qui contient une formule s’écrit avec <code>r</code> devant les guillemets :
+        <code>r"$\frac{1}{2}$"</code>. C’est indispensable dès qu’elle contient une barre oblique inverse
+        <code>\</code>, que Python interpréterait sinon.</li>
+      <li>Les noms sont en anglais, comme ceux de Python : <code>total</code>, <code>answer</code>… Une
+        grandeur que les mathématiques notent par une lettre grecque peut porter ce nom : <code>μ</code>,
+        <code>σ</code>, <code>λ</code>.</li>
     </ol>
 
     <h3>Le champ <code>question_statement</code></h3>
@@ -128,8 +133,20 @@
         <code>x^{ {{n}} }</code>.</li>
       <li>Le texte qui change d’un tirage à l’autre s’écrit dans l’énoncé, avec
         <code>{% if cas == 'a' %}…{% else %}…{% endif %}</code> ou <code>{% for … %}…{% endfor %}</code>.</li>
-      <li>Les champs de réponse s’écrivent <code>{{ input_value('answer', solution=s) }}</code>, détaillés
-        ci-dessous ; chacun contient sa solution. Un champ ne peut pas être dans un <code>{% if %}</code>.</li>
+      <li>Quatre filtres écrivent le signe et le coefficient d’un nombre tiré :
+        <code>$f(x) = {{ a|coef }}x^2 {{ b|term('x') }} {{ c|term }}$</code> donne $x^2-3x+2$ pour
+        1, −3, 2 (un coefficient 1 ne s’écrit pas, un terme nul disparaît) ;
+        <code>{{ b|signed }}</code> écrit <code>+3</code> ou <code>-3</code>, <code>{{ n|paren }}</code>
+        met un négatif entre parenthèses, <code>(-3)</code>.</li>
+      <li>Deux éléments écrivent ce qui a une structure : <code>{{ variation_table(xs, values, up) }}</code>,
+        un tableau de variations (abscisses, valeurs, sens de chaque intervalle ; <code>signs=…</code>
+        ajoute la ligne de f′), et <code>${{ interval(a, b, True, False) }}$</code>, un intervalle
+        <code>[a ; b[</code>.</li>
+      <li>Un fragment défini en tête de l’énoncé par <code>{% set nom %}…{% endset %}</code> sert aussi dans
+        l’explication.</li>
+      <li>Les champs de réponse s’écrivent <code>{{ input_value('answer', solution=s) }}</code>, et les choix
+        d’un QCM dans un bloc <code>{% call input_radio('answer') %}…{% endcall %}</code>, détaillés
+        ci-dessous. Un champ ne peut pas être dans un <code>{% if %}</code>.</li>
     </ol>
 
     <h3>Le champ <code>question_solution_explanation</code></h3>
@@ -162,8 +179,8 @@
         nombre (<code>columns=4</code>, <code>tolerance=0.01</code>), un mot parmi ceux que le champ admet
         (<code>form=decimal</code>), <code>true</code> ou <code>false</code> (<code>shuffle=false</code>)
         ou un texte entre apostrophes (<code>style='width:4em'</code>).</li>
-      <li><code>solution=</code> est obligatoire pour tous les champs : la variable qui contient la bonne
-        réponse.</li>
+      <li><code>solution=</code> est obligatoire, sauf dans un bloc des choix : la variable qui contient la
+        bonne réponse.</li>
       <li>Une unité s’attache au champ par une espace insécable : <code>{{ input_value('length', solution=bc) }}&amp;nbsp;cm</code>.
         Sinon, « cm » peut passer seul à la ligne, et l’élève est tenté de l’écrire dans le champ.</li>
     </ul>
@@ -256,25 +273,42 @@
 
     <details class="field-item">
       <summary><code>input_radio</code> et <code>input_checkbox</code> : choix unique, choix multiple</summary>
-<pre><code>{{ input_radio('answer', choices=choices, solution=correct, columns=4, fixed_last=1) }}
-{{ input_checkbox('answers', choices=choices, solution=correct, scoring='b=1,m=-0.5') }}</code></pre>
+      <p>Les choix s’écrivent dans l’énoncé, dans un bloc, comme <code>\bonne</code> et <code>\mauvaise</code>
+        dans AMC : <code>[x]</code> marque un bon choix, <code>[ ]</code> un mauvais, en début de ligne.</p>
+<pre><code>{% call input_radio('answer', columns=4, fixed_last=1) %}
+[x] $\frac{1}{2}$
+[ ] $\frac{2}{3}$
+[ ] Aucune de ces réponses
+{% endcall %}</code></pre>
+      <p>Le contenu du bloc s’écrit comme l’énoncé : valeurs tirées (<code>[x] ${{ a * b }}$</code>), filtres,
+        <code>{% if %}</code>, <code>{% for %}</code>. <code>input_radio</code> a exactement un <code>[x]</code> ;
+        <code>input_checkbox</code> en a autant que de bons choix, ou aucun.</p>
       <div class="table-wrap"><table>
         <thead><tr><th>Paramètre</th><th>Statut</th><th>Rôle</th></tr></thead>
         <tbody>
-          <tr><td><code>choices</code></td><td>obligatoire</td><td>liste de <code>question_setup</code> : au moins deux choix, dans votre ordre (textes avec formules, ou expressions SymPy)</td></tr>
-          <tr><td><code>solution</code></td><td>obligatoire</td><td><code>input_radio</code> : le numéro du bon choix ; <code>input_checkbox</code> : la liste des numéros des bons choix, éventuellement vide. Les numéros commencent à <strong>0</strong>.</td></tr>
+          <tr><td><code>count</code></td><td>facultatif</td><td>nombre de choix affichés : les bons, et des mauvais tirés parmi ceux du bloc, en écartant ceux dont le texte est déjà présent. Pour une réserve d’erreurs types calculées.</td></tr>
           <tr><td><code>columns</code></td><td>facultatif</td><td>nombre de colonnes sur grand écran, de 1 à 6 ; réservé aux choix courts. Sur téléphone, les colonnes se réduisent d’elles-mêmes. Sans lui, les choix ont tous la taille du plus grand, sur autant de colonnes que la largeur le permet.</td></tr>
           <tr><td><code>shuffle</code></td><td>facultatif</td><td><code>shuffle=false</code> garde vos choix dans votre ordre, quand il a un sens (« 1 », « 2 », « plus de 2 ») ; par défaut, ils sont mélangés.</td></tr>
           <tr><td><code>fixed_last</code></td><td>facultatif</td><td>nombre de derniers choix laissés à la fin, non mélangés (0 par défaut) : pour « Aucune de ces réponses ».</td></tr>
           <tr><td><code>scoring</code></td><td>facultatif</td><td>note indicative, dans la syntaxe d’AMC (voir « Le barème »)</td></tr>
         </tbody>
       </table></div>
-      <p>Pour des choix qui changent avec les valeurs tirées, l’outil <code>mcq</code> du module
-        <code>pywims</code> tire la bonne réponse et des erreurs types dans une réserve, sans doublon :</p>
-<pre><code>choices, correct = mcq(correct=a * b, wrong=[a + b, a * b + 1, a * (b - 1), (a + 1) * b], count=4)</code></pre>
+      <p>Pour des choix qui changent avec les valeurs tirées, écrivez une réserve d’erreurs types et
+        <code>count</code> :</p>
+<pre><code>{% call input_radio('answer', count=4) %}
+[x] ${{ a * b }}$
+[ ] ${{ a + b }}$
+[ ] ${{ a * b + 1 }}$
+[ ] ${{ a * (b - 1) }}$
+[ ] ${{ (a + 1) * b }}$
+{% endcall %}</code></pre>
       <p>Les choix sont mélangés à chaque tirage, et deux choix de même texte sont refusés. Aucun choix n’est ajouté automatiquement : pour « Aucune de
         ces réponses », écrivez-le en dernier, avec <code>fixed_last=1</code>. Dans <code>question_check</code>, la
-        saisie arrive comme le numéro choisi (choix unique) ou la liste croissante des numéros cochés.</p>
+        saisie arrive comme le rang du choix dans le bloc, à partir de <strong>0</strong>, dans l’ordre où vous l’avez
+        écrit (choix unique), ou la liste croissante des rangs cochés : <code>if answer == 1: feedback = "…"</code>.</p>
+      <p>Ancienne écriture, encore admise : <code>{{ input_radio('answer', choices=choices, solution=correct) }}</code>,
+        avec une liste <code>choices</code> de <code>question_setup</code> et le numéro <code>correct</code> du bon
+        choix (l’outil <code>mcq</code> de <code>pywims</code> tire une telle liste).</p>
     </details>
 
     <details class="field-item">
@@ -290,6 +324,11 @@ La fonction est {{ input_select('sense', choices=senses, solution=correct, inlin
           <tr><td><code>shuffle</code>, <code>fixed_last</code></td><td>facultatifs</td><td>comme pour <code>input_radio</code></td></tr>
         </tbody>
       </table></div>
+      <p>Les choix peuvent aussi s’écrire dans un bloc, comme pour <code>input_radio</code> :</p>
+<pre><code>La fonction est {% call input_select('sense', inline=true, shuffle=false) %}
+[x] croissante
+[ ] décroissante
+{% endcall %} sur cet intervalle.</code></pre>
       <p>Par défaut, la liste a l’aspect d’un champ, comme <code>input_value</code> à côté d’elle. Avec
         <code>inline=true</code>, un cadre fin en pointillé, dans la phrase, qui disparaît après vérification.
         Vide, elle affiche « choisir ». Sur téléphone, le sélecteur du système s’ouvre.</p>
@@ -348,6 +387,11 @@ La fonction est {{ input_select('sense', choices=senses, solution=correct, inlin
     <ul>
       <li><strong>Pour l’entraînement, pas pour l’évaluation.</strong> L'élève/étudiant est toujours libre d'afficher la solution.</li>
       <li>Il est possible de préciser un barème pour les QCM. Dans ce cas l'élève voit une note indicative calculée à partir des barèmes de chaque question, qui peut être utile pour son entraînement, mais qui n'est pas transmise à Moodle ou à l’enseignant.</li>
+      <li><strong>Nom des fichiers.</strong> Nommez une question <code>niveau - discipline - cours - résumé.pwq</code>,
+        par exemple <code>L2 - Mathématiques - Probabilités - Loi normale et table.pwq</code> : l’atelier regroupe la
+        liste par niveau, discipline et cours. Pour les mathématiques, la liste des cours est dans le
+        <a href="../PROMPT.md">prompt</a>. Un autre nom reste accepté, sous « Autres fichiers ». Les questions
+        collées depuis une IA passent par une fenêtre qui propose ce nom.</li>
       <li>Une question sans champ <code>question_check</code> se corrige sans Python : la page reste légère. Une
         question avec <code>question_check</code> doit charger Python dans le navigateur de l’élève (environ
         10 Mo).</li>

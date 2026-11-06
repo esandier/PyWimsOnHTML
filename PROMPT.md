@@ -81,12 +81,15 @@ Ce qui doit varier dépend de la compétence visée :
 
 `question_setup` produit des **données** : nombres, listes, expressions SymPy
 qui servent à calculer ou à vérifier. L’énoncé, l’explication et les choix d’un
-QCM **écrivent** tout ce que l’élève voit, avec `{{ … }}`, les filtres et le
-bloc des choix (voir plus bas). N’écris donc pas de TeX dans `question_setup` :
-pas de `rf"\frac{{ {a} }}{{ {b} }}"`, pas de fonction qui fabrique une formule
-en texte. En dernier ressort seulement, quand ni l’énoncé, ni un filtre, ni le
-bloc des choix ne le permettent, écris-le dans `question_setup` avec un
-commentaire qui dit pourquoi.
+QCM **écrivent** tout ce qui dépend du tirage, avec `{{ … }}`, les filtres et le
+bloc des choix (voir plus bas). N’écris donc pas dans `question_setup` de TeX
+ni de HTML construit avec des variables : pas de `rf"\frac{{ {a} }}{{ {b} }}"`,
+pas de concaténation, pas de fonction qui fabrique une formule en texte. Un
+texte **littéral** y a sa place, en chaîne brute `r"…"` : une liste de
+situations ou de variantes fixes tirées avec `choice`. En dernier ressort
+seulement, quand ni l’énoncé, ni un filtre, ni le bloc des choix ne le
+permettent, construis le texte dans `question_setup`, avec un commentaire qui
+dit pourquoi.
 
 ## Python
 

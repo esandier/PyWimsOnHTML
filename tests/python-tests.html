@@ -334,8 +334,10 @@ json.dumps({
               : `${converter}(${variable})`;
             return `__import__("json").dumps(__import__("pywims").${call})`;
           };
-          // Chaque champ désigne une variable de « question_setup » que le module sait convertir.
-          for (const tag of PyWimsTemplate.parseTags(fields.question_statement)) {
+          // Chaque champ désigne une variable de « question_setup » que le module sait convertir. Un bloc
+          // des choix n’en désigne pas : ses choix et sa solution viennent du bloc rendu, que le balayage
+          // des tirages vérifie.
+          for (const tag of PyWimsTemplate.parseTags(fields.question_statement).filter(tag => !tag.block)) {
             const variable = tag.attributes.solution;
             const converted = await session.run(solutionJson(tag));
             if (!converted || converted === "null") {
