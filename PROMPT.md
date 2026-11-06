@@ -50,6 +50,9 @@ Ils sont obligatoires et non vides, sauf `question_solution_explanation` (voir
 `question_draws`, fixe le nombre de tirages calculés (entier de 1 à 200, 20 par
 défaut) : n’en mets un que si on te le demande. Les noms des champs, des
 variables et des outils sont en anglais ; tout autre nom de champ est refusé.
+Une grandeur que les mathématiques notent par une lettre grecque peut porter
+ce nom : `μ`, `σ`, `λ`, `Δ` (`\frac{x - {{ μ }}}{ {{ σ }} }` se lit comme la
+formule du cours).
 N’insère pas de ligne contenant uniquement `%` dans le contenu d’un champ.
 
 Tout le contenu destiné à l’élève doit être en français, y compris le titre,
@@ -73,6 +76,17 @@ Ce qui doit varier dépend de la compétence visée :
   différents), tirée avec `choice`. Fais revenir un même contexte avec des
   questions différentes, pour que ce soit la question posée, et non le
   contexte, qui décide de la réponse.
+
+## Données d’un côté, écriture de l’autre
+
+`question_setup` produit des **données** : nombres, listes, expressions SymPy
+qui servent à calculer ou à vérifier. L’énoncé, l’explication et les choix d’un
+QCM **écrivent** tout ce que l’élève voit, avec `{{ … }}`, les filtres et le
+bloc des choix (voir plus bas). N’écris donc pas de TeX dans `question_setup` :
+pas de `rf"\frac{{ {a} }}{{ {b} }}"`, pas de fonction qui fabrique une formule
+en texte. En dernier ressort seulement, quand ni l’énoncé, ni un filtre, ni le
+bloc des choix ne le permettent, écris-le dans `question_setup` avec un
+commentaire qui dit pourquoi.
 
 ## Python
 
@@ -104,11 +118,11 @@ Ce qui doit varier dépend de la compétence visée :
   - `tex(valeur)` écrit un nombre ou une expression pour une formule TeX, comme
     `{{ valeur }}` dans l’énoncé (voir « Énoncé ») : `tex(Rational(3, 4))` donne
     `3/4`, `tex(p, frac=True)` `\frac{3}{4}`, `tex(Rational(9, 10), dec=True)`
-    `0{,}9`, `tex(sqrt(2), digits=2)` `1{,}41`. Sers-t’en dans `question_setup`
-    pour fabriquer un texte qui n’est pas dans l’énoncé, par exemple les choix
-    d’un QCM : `[f"${tex(v)}$" for v in values]`. N’utilise pas `latex` de SymPy
-    pour cela.
-  - `mcq(correct=…, wrong=[…], count=4)` tire les choix d’un QCM : voir
+    `0{,}9`, `tex(sqrt(2), digits=2)` `1{,}41`. Dans l’énoncé, écris `{{ v }}` ;
+    `tex` ne sert dans `question_setup` qu’en dernier ressort (voir « Données
+    d’un côté, écriture de l’autre »). N’utilise pas `latex` de SymPy.
+  - `mcq(correct=…, wrong=[…], count=4)` tire les choix d’un QCM écrits en liste
+    Python ; le bloc des choix, avec `count`, fait de même dans l’énoncé : voir
     « Questions à choix ».
 - Toute chaîne Python qui contient une formule TeX s’écrit en **chaîne brute**,
   préfixée par `r` : `feedback = r'Simplifiez $\frac{6}{8}$ par $2$.'`, et non
@@ -185,6 +199,24 @@ Ce qui doit varier dépend de la compétence visée :
     rationnel sans décimal fini reste une fraction), et `{{ v|dec(2) }}`
     l’arrondit à deux décimales, au plus proche. N’emploie `dec` que dans une
     formule `$…$`. N’arrondis pas toi-même avec `round` (il arrondit 2,675 à 2,67).
+- Quatre filtres écrivent le signe et le coefficient d’un nombre tiré, sans
+  rien calculer (fractions en `\frac`) :
+  - `{{ a|coef }}` : coefficient en tête d’un terme ; 1 ne s’écrit pas, −1
+    s’écrit `-` ;
+  - `{{ b|term('x') }}` : terme suivant avec son signe, `+3x`, `-x`, et rien
+    si `b` est nul ; `{{ c|term }}` pour une constante, `+3`, `-1` ;
+  - `{{ b|signed }}` : nombre avec son signe, `+3`, `-3` ;
+  - `{{ n|paren }}` : négatif entre parenthèses, `(-3)`, dans un produit ou une
+    puissance.
+
+  `$f(x) = {{ a|coef }}x^2 {{ b|term('x') }} {{ c|term }}$` donne $x^2-3x+2$
+  pour `a, b, c = 1, -3, 2`.
+- Ce que l’énoncé définit par `{% set %}`, à son premier niveau (hors condition
+  ou boucle), est aussi visible dans l’explication : un fragment qui sert aux
+  deux s’écrit une fois, en tête de l’énoncé.
+  ```
+  {% set event %}{% if at_least %}X \geq {{ k }}{% else %}X < {{ k }}{% endif %}{% endset -%}
+  ```
 - Dans une commande TeX, sépare `{{ … }}` des accolades de TeX par des
   espaces : `x^{ {{n}} }`, `\frac{ {{a}} }{2}`. Trois accolades de suite
   (`x^{{{n}}}`) sont refusées. Écris les formules TeX avec `$...$`, `$$...$$`,
@@ -231,9 +263,8 @@ Ce qui doit varier dépend de la compétence visée :
     phrase d’un texte à trous (« de coefficient directeur
     {{ input_value('slope', solution=m, style='width:3em', inline=true) }} »).
     Pas pour `input_math`.
-  - `{{ input_radio('nom', choices=liste, solution=indice) }}` (choix unique) et
-    `{{ input_checkbox('nom', choices=liste, solution=indices) }}` (choix
-    multiple) : voir « Questions à choix » ci-dessous.
+  - `input_radio` (choix unique) et `input_checkbox` (choix multiple), écrits
+    en bloc des choix : voir « Questions à choix » ci-dessous.
 - Une unité après un champ s’y attache par une espace insécable :
   `{{ input_value('length', solution=bc) }}&nbsp;cm`. Sinon, l’unité peut passer
   seule à la ligne suivante, et l’élève est tenté de l’écrire dans le champ.
@@ -277,22 +308,36 @@ Ce qui doit varier dépend de la compétence visée :
 
 ## Questions à choix
 
-- `choices=` désigne une liste de `question_setup`, d’au moins deux choix, dans ton
-  ordre. Un choix est un texte simple, où les formules TeX sont admises, en
-  chaîne brute (`r"$\frac{1}{2}$"`), ou un objet SymPy, affiché comme une
-  formule. Pour écrire un nombre dans un choix, emploie `tex` :
-  `f"${tex(p)}$"`. Le HTML n’est pas interprété dans un choix.
-- `solution=` désigne l’indice du bon choix (`input_radio`) ou la liste des
-  indices des bons choix (`input_checkbox`), éventuellement vide. Les indices
-  commencent à 0, dans l’ordre de `choices`.
-- **Choix calculés** : quand la bonne réponse dépend des valeurs tirées, écris
-  une réserve d’erreurs types et laisse `mcq` choisir :
-  `choices, correct = mcq(correct=a * b, wrong=[a + b, a * b + 1, a * (b - 1), (a + 1) * b], count=4)`
-  renvoie 4 choix mélangés et l’indice du bon. Pour un choix multiple,
-  `mcq(correct=[…], wrong=[…], count=5, correct_count=2)` renvoie la liste des
-  indices des bons. `mcq` retire les doublons et les mauvaises réponses égales
-  à une bonne ; prévois donc une réserve plus large que nécessaire (sinon la
-  compilation échoue pour le tirage en cause).
+- Écris les choix **dans l’énoncé**, avec le bloc des choix, comme `\bonne` et
+  `\mauvaise` dans AMC :
+  ```
+  {% call input_radio('answer') %}
+  [x] ${{ a * b }}$
+  [ ] ${{ a + b }}$
+  [ ] ${{ a * b + 1 }}$
+  {% endcall %}
+  ```
+  `[x]` marque un bon choix, `[ ]` un mauvais, en début de ligne ; un choix va
+  jusqu’à la marque suivante. Le contenu est un modèle comme le reste de
+  l’énoncé (`{{ … }}`, filtres, `{% if %}`, `{% for %}`). `input_radio` a
+  exactement un `[x]` ; `input_checkbox` en a autant que de bons choix, ou
+  aucun. Le HTML n’est pas interprété dans un choix.
+- **Choix calculés** : écris une réserve d’erreurs types et `count=n` : le
+  bloc affiche n choix, les bons et des mauvais tirés dans la réserve, en
+  écartant ceux dont le texte est déjà présent (deux erreurs qui donnent la
+  même valeur). Prévois une réserve plus large que nécessaire.
+  ```
+  {% call input_radio('answer', count=4) %}
+  [x] ${{ a * b }}$
+  [ ] ${{ a + b }}$
+  [ ] ${{ a * b + 1 }}$
+  [ ] ${{ a * (b - 1) }}$
+  [ ] ${{ (a + 1) * b }}$
+  {% endcall %}
+  ```
+- Ancienne écriture, encore admise : `{{ input_radio('nom', choices=liste,
+  solution=indice) }}`, avec une liste de `question_setup` (et `mcq` pour la
+  tirer). Ne l’emploie que si les choix sont des données déjà en liste.
 - Ne mélange pas les choix toi-même : le compilateur les mélange à chaque
   tirage. `fixed_last=n` garde les n derniers choix à la fin, dans ton ordre
   (pour « Aucune de ces réponses », par exemple). `shuffle=false` garde tous les
@@ -312,12 +357,13 @@ Ce qui doit varier dépend de la compétence visée :
 - Sans `question_check`, la question est juste si les choix cochés sont exactement ceux
   de la solution. N’écris `question_check` que pour un retour ciblé selon les choix
   cochés.
-- Dans `question_check`, le champ contient l’indice choisi (`input_radio`) ou la liste
-  croissante des indices cochés (`input_checkbox`, `[]` si rien n’est coché),
-  dans l’ordre de `choices`. Un choix multiple se corrige en tout ou rien :
-  `ok_answer['nom'] = nom == sorted(correct)` (la saisie est triée ; `sorted`
-  est inutile si `correct` l’est déjà). Le `feedback` peut expliquer l’erreur
-  selon les choix cochés, sans donner la réponse.
+- Dans `question_check`, le champ contient le rang du choix coché dans le bloc
+  (`input_radio`, à partir de 0, dans l’ordre où tu l’as écrit, même avec
+  `count`), ou la liste croissante des rangs cochés (`input_checkbox`, `[]` si
+  rien n’est coché). Écris donc les erreurs types dans un ordre connu, et
+  reconnais-les à leur rang : `if answer == 1: feedback = "…"`. Le `feedback`
+  explique l’erreur sans donner la réponse. `ok_answer` est déjà rempli : un
+  choix multiple se corrige en tout ou rien.
 - `scoring='…'` (facultatif) donne une note indicative selon la syntaxe d’AMC,
   par exemple `scoring='b=1,m=-0.5,p=0'` ou `scoring='mz=1'`. Directives admises :
   `b`, `m`, `v`, `e`, `d`, `p`, `P`, `mz`, `haut`, `MAX`. Un barème n’est admis
@@ -355,7 +401,7 @@ autre HTML s’affiche tel quel.
 
 N’invente pas de mises en page, de composants, d’API d’exécution ni de
 bibliothèques Python. La seule mise en page prise en charge est `STD`.
-N’invente pas de filtres Jinja : seuls ceux de Jinja et `frac`, `dec` existent. Si la question demandée
+N’invente pas de filtres Jinja : seuls ceux de Jinja et `frac`, `dec`, `coef`, `term`, `signed`, `paren` existent. Si la question demandée
 nécessite une fonctionnalité non prise en charge, signale-le séparément au lieu
 de proposer une approximation silencieuse.
 
@@ -368,8 +414,8 @@ auto-multiple-choice (AMC). Convertis chaque question en un fichier `.pwq` :
 |---|---|
 | `\begin{question}` | `input_radio` |
 | `\begin{questionmult}` | `input_checkbox` |
-| texte avant `\begin{reponses}` | `question_statement`, avant le champ |
-| `\bonne{…}`, `\mauvaise{…}` | la liste `choices` et les indices de `solution` |
+| texte avant `\begin{reponses}` | `question_statement`, avant le bloc des choix |
+| `\bonne{…}`, `\mauvaise{…}` | `[x] …`, `[ ] …` dans le bloc des choix, dans le même ordre |
 | `\lastchoices` | `fixed_last` : nombre de choix qui le suivent |
 | case « Aucune de ces réponses » ajoutée par l’option `completemulti` | un dernier choix écrit explicitement, avec `fixed_last=1`, juste quand aucun autre ne l’est |
 | `reponseshoriz` | `columns` égal au nombre de choix, si les choix sont courts |
@@ -444,15 +490,17 @@ from random import sample
 from sympy import isprime
 
 numbers = sample(range(2, 50), 4)
-choices = [f"${n}$" for n in numbers] + ["Aucun de ces nombres"]
-correct = [i for i, n in enumerate(numbers) if isprime(n)]
-if not correct:
-    correct = [4]
+primes = [n for n in numbers if isprime(n)]
 %
 % question_statement
 %
 Parmi les nombres suivants, lesquels sont <b>premiers</b> ?
-{{ input_checkbox('answer', choices=choices, solution=correct, columns=5, fixed_last=1, scoring='b=1,m=-0.5,p=0') }}
+{% call input_checkbox('answer', columns=5, fixed_last=1, scoring='b=1,m=-0.5,p=0') %}
+{% for n in numbers %}
+[{{ 'x' if n in primes else ' ' }}] ${{ n }}$
+{% endfor %}
+[{{ ' ' if primes else 'x' }}] Aucun de ces nombres
+{% endcall %}
 %
 % question_solution_explanation
 %
