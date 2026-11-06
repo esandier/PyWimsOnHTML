@@ -362,7 +362,7 @@ auto-multiple-choice (AMC). Convertis chaque question en un fichier `.pwq` :
   correction sans `question_check` vérifie déjà la réponse en tout ou rien. Écris-en un
   seulement si l’on te demande des retours ciblés ; il écrit alors un
   `feedback` utile, qui ne donne pas la réponse (voir
-  `questions/nombres-premiers.pwq`).
+  « Reconnaître des nombres premiers » dans `questions/`).
 - Ne transpose pas en silence ce qui n’a pas d’équivalent : question ouverte
   (`\AMCOpen`), barème par
   réponse (`\bonne{…}\bareme{…}`), directive `formula`, `set.…`, `default.…`,

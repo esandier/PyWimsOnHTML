@@ -17,7 +17,7 @@ STD
 #   choices=      liste des choix, en texte simple (ni formule, ni HTML)
 #   solution=     indice du bon choix
 #   shuffle=false garde l’ordre de la liste ; fixed_last=n comme pour input_radio
-#   inline=true   la fond dans la phrase, pour un texte à trous (voir texte-a-trous.pwq)
+#   inline=true   la fond dans la phrase, pour un texte à trous (voir L1 - Mathématiques - Fonctions d'une variable - Sens de variation d'une fonction affine.pwq)
 # Vide, elle affiche « choisir » ; une flèche la distingue d’un champ où l’on tape.
 from random import randint
 from sympy import isprime

@@ -24,7 +24,7 @@ SHEET = "PyWimsOnHTML : feuille de démonstration"
 EXAMPLE = "Exemple d’activité"
 # Un choix multiple à retours ciblés, puis une réponse écrite corrigée par Python ; on a écarté la
 # formule (input_math) : dans le cadre de l’accueil, son clavier s’ouvrirait au bas du cadre.
-EXAMPLE_QUESTIONS = ["Reconnaître des nombres premiers", "Addition de fractions"]
+EXAMPLE_QUESTIONS = ["Arithmétique : reconnaître des nombres premiers", "Fractions : additionner deux fractions"]
 
 
 def free_port():

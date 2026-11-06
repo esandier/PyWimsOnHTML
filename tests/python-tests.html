@@ -395,7 +395,7 @@ json.dumps({
       const questionFields = {};
       for (const file of questionFiles) {
         const response = await fetch(`../${file}`);
-        // Clé : le nom du fichier, que des tests ci-dessous désignent (« pgcd.pwq »).
+        // Clé : le nom du fichier, que des tests ci-dessous désignent (« L1 - Mathématiques - Algèbre et arithmétique - PGCD de deux entiers.pwq »).
         questionFields[file.split("/").pop()] = PyWimsCompiler.parseQuestionSource(await response.text(), file);
       }
 
@@ -416,7 +416,7 @@ json.dumps({
             throw new Error(`${file} : tirages incomplets ou en double (${draws.length})`);
           }
         }
-        const triangular = await PyWimsCompiler.computeDraws(questionFields["matrice-triangulaire.pwq"], { count: 3 });
+        const triangular = await PyWimsCompiler.computeDraws(questionFields["L1 - Mathématiques - Algèbre linéaire - Matrice triangulaire supérieure.pwq"], { count: 3 });
         const cells = triangular[0].solutions.matrix;
         // Au-dessus de la diagonale, case libre (ANY, null) ; sous la diagonale, zéro imposé.
         if (cells[0].at(-1) !== null || cells.at(-1)[0] !== "0") {
@@ -446,7 +446,7 @@ json.dumps({
       });
 
       await test("les tirages sont reproductibles et les doublons sont fusionnés", async () => {
-        const fields = questionFields["pgcd.pwq"];
+        const fields = questionFields["L1 - Mathématiques - Algèbre et arithmétique - PGCD de deux entiers.pwq"];
         const first = JSON.stringify(await PyWimsCompiler.computeDraws(fields, { count: 5 }));
         const second = JSON.stringify(await PyWimsCompiler.computeDraws(fields, { count: 5 }));
         if (first !== second) throw new Error("Deux compilations donnent des tirages différents.");

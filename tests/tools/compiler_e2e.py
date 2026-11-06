@@ -59,7 +59,7 @@ TITLES = "items => items.map(li => li.querySelector('.question-title').textConte
 def remembered_folder(page, files):
     for name, text in files.items():
         # Une question dans un sous-dossier : elle est lue aussi.
-        path = f"questions-essai/{'sous-dossier/' if name.startswith('pgcd') else ''}{name}"
+        path = f"questions-essai/{'sous-dossier/' if 'PGCD' in name else ''}{name}"
         page.evaluate(WRITE_OPFS, [path, text])
     page.evaluate(PICK_OPFS)
     page.fill("#question-search", "")
@@ -70,15 +70,15 @@ def remembered_folder(page, files):
         raise AssertionError("« Relire » n’apparaît pas pour un dossier ouvert par Chrome ou Edge.")
     # Liste regroupée : le dossier choisi d’abord, puis le sous-dossier sous son chemin (§ 11.3).
     groups = page.evaluate("[...document.querySelectorAll('#question-list li')].map(li => li.classList.contains('question-group') ? '# ' + li.textContent : li.querySelector('.question-title').textContent)")
-    if len(groups) != 4 or groups[0] != "# questions-essai" or groups[2] != "# sous-dossier/" or groups[3] != "PGCD":
+    if len(groups) != 4 or groups[0] != "# questions-essai" or groups[2] != "# sous-dossier/" or groups[3] != "Arithmétique : PGCD de deux entiers":
         raise AssertionError(f"liste regroupée inattendue : {groups}")
     print("dossier mémorisé : ouvert, sous-dossier compris, liste regroupée par dossier")
 
     # Fichier modifié, puis « Relire » : le nouveau titre apparaît, la sélection est gardée.
-    decim_source = files["Decim3.pwq"]
+    decim_source = files["L1 - Mathématiques - Calculus - Valeur approchée à 0.1 près.pwq"]
     old_title = decim_source.split("% question_title\n%\n", 1)[1].split("\n", 1)[0]
     page.click(".question-selection >> nth=1")
-    page.evaluate(WRITE_OPFS, ["questions-essai/Decim3.pwq", decim_source.replace(old_title, "Titre relu")])
+    page.evaluate(WRITE_OPFS, ["questions-essai/L1 - Mathématiques - Calculus - Valeur approchée à 0.1 près.pwq", decim_source.replace(old_title, "Titre relu")])
     page.click("#reload-folder")
     page.wait_for_function("[...document.querySelectorAll('.question-title')].some(t => t.textContent === 'Titre relu')")
     if sum(page.evaluate("[...document.querySelectorAll('.question-selection')].map(c => c.checked)")) != 1:
@@ -86,7 +86,7 @@ def remembered_folder(page, files):
     print("relire : fichier modifié pris en compte, sélection gardée")
 
     # Fichier modifié sans « Relire » : la compilation relit la question et compile sa dernière version.
-    page.evaluate(WRITE_OPFS, ["questions-essai/Decim3.pwq", decim_source.replace(old_title, "Titre compilé")])
+    page.evaluate(WRITE_OPFS, ["questions-essai/L1 - Mathématiques - Calculus - Valeur approchée à 0.1 près.pwq", decim_source.replace(old_title, "Titre compilé")])
     for checkbox in page.query_selector_all(".question-selection"):
         if checkbox.is_checked():
             checkbox.uncheck()
@@ -122,23 +122,23 @@ def remembered_folder(page, files):
     page.fill("#activity-title", "Activité ordonnée")
     order_script = "[...document.querySelectorAll('#activity-order-list .order-title')].map(b => b.textContent)"
     ranks = "[...document.querySelectorAll('#question-list .question-rank')].map(r => r.textContent)"
-    if page.evaluate(order_script) != ["PGCD", "Titre compilé"] or page.evaluate(ranks) != ["2", "1"]:
+    if page.evaluate(order_script) != ["Arithmétique : PGCD de deux entiers", "Titre compilé"] or page.evaluate(ranks) != ["2", "1"]:
         raise AssertionError(f"ordre des cases cochées non suivi : {page.evaluate(order_script)}, rangs {page.evaluate(ranks)}")
     page.click(".order-title >> text=PGCD")
     page.click("#move-down")
-    if page.evaluate(order_script) != ["Titre compilé", "PGCD"]:
+    if page.evaluate(order_script) != ["Titre compilé", "Arithmétique : PGCD de deux entiers"]:
         raise AssertionError(f"« ↓ » n’a pas déplacé la question choisie : {page.evaluate(order_script)}")
     # Arrivée en fin, « ↓ » est inactif : le focus passe à « ↑ ».
     if not page.is_disabled("#move-down") or page.evaluate("document.activeElement.id") != "move-up":
         raise AssertionError("En fin de liste, « ↓ » devait être inactif et le focus passer à « ↑ ».")
     page.click("#reload-folder")
     page.wait_for_function("document.getElementById('project-status').textContent.includes('chargé')")
-    if page.evaluate(order_script) != ["Titre compilé", "PGCD"] or page.evaluate(ranks) != ["1", "2"]:
+    if page.evaluate(order_script) != ["Titre compilé", "Arithmétique : PGCD de deux entiers"] or page.evaluate(ranks) != ["1", "2"]:
         raise AssertionError(f"« Relire » n’a pas gardé l’ordre : {page.evaluate(order_script)}, rangs {page.evaluate(ranks)}")
     with page.expect_download(timeout=180_000) as waiting:
         page.click("#compile-question")
     activity = open(waiting.value.path(), encoding="utf-8").read()
-    if not 0 <= activity.find("Titre compilé") < activity.find(">PGCD<"):
+    if not 0 <= activity.find("Titre compilé") < activity.find(">Arithmétique : PGCD de deux entiers<"):
         raise AssertionError("Le fichier compilé ne suit pas l’ordre choisi.")
     page.select_option("#output-mode", "separate")
     if page.is_visible("#activity-order") or any(page.evaluate(ranks)):
@@ -240,7 +240,7 @@ def editor_and_paste(browser, url, pgcd):
     page.on("dialog", lambda dialog: dialog.accept())
     page.goto(url)
     page.wait_for_function("!!window.PyWimsEditor")
-    page.evaluate(WRITE_OPFS, ["questions-edition/pgcd.pwq", pgcd])
+    page.evaluate(WRITE_OPFS, ["questions-edition/L1 - Mathématiques - Algèbre et arithmétique - PGCD de deux entiers.pwq", pgcd])
     page.evaluate(PICK_OPFS.replace("questions-essai", "questions-edition"))
     page.click("#choose-folder")
     page.wait_for_function("document.querySelectorAll('.question-preview-button').length === 1")
@@ -252,14 +252,15 @@ def editor_and_paste(browser, url, pgcd):
         raise AssertionError("« Éditeur » n’a pas montré l’éditeur élargi, avec « ← » vers la liste.")
     # Le titre est la quatrième ligne du fichier : il est modifié dans l’éditeur, puis enregistré seul.
     editor = "document.querySelector('#editor-view .CodeMirror').CodeMirror"
-    page.evaluate(f"{editor}.replaceRange('PGCD modifié', {{ line: 3, ch: 0 }}, {{ line: 3, ch: 4 }})")
+    title = "Arithmétique : PGCD de deux entiers"
+    page.evaluate(f"{editor}.replaceRange('PGCD modifié', {{ line: 3, ch: 0 }}, {{ line: 3, ch: {len(title)} }})")
     # Attente de l’écriture, côté Python : wait_for_function tiendrait la promesse d’une lecture pour vraie.
     for _ in range(60):
-        written = page.evaluate(READ_OPFS, "questions-edition/pgcd.pwq")
+        written = page.evaluate(READ_OPFS, "questions-edition/L1 - Mathématiques - Algèbre et arithmétique - PGCD de deux entiers.pwq")
         if "PGCD modifié" in written:
             break
         page.wait_for_timeout(500)
-    if written != pgcd.replace("\nPGCD\n", "\nPGCD modifié\n", 1):
+    if written != pgcd.replace(f"\n{title}\n", "\nPGCD modifié\n", 1):
         difference = "".join(difflib.unified_diff(pgcd.splitlines(True), written.splitlines(True)))
         raise AssertionError(f"Le fichier enregistré n’est pas l’original au titre près :\n{difference[:800]}")
     # L’aperçu ne suit qu’à la demande : la ligne d’état le dit, puis Ctrl+Entrée le met à jour, avec un
@@ -316,13 +317,13 @@ def editor_and_paste(browser, url, pgcd):
     # autour : écrites aussitôt dans le dossier, marquées « nouvelle », et retour à la liste.
     page.click("#paste-questions")
     page.wait_for_function(f"{editor}.getValue() === '' && document.querySelector('#editor-view .CodeMirror-placeholder')")
-    pasted = f"Voici :\n=== premiere.pwq ===\n```\n{pgcd.replace('PGCD', 'Collée')}```\n=== seconde.pwq ===\n{pgcd}"
+    pasted = f"Voici :\n=== premiere.pwq ===\n```\n{pgcd.replace('Arithmétique : PGCD de deux entiers', 'Collée')}```\n=== seconde.pwq ===\n{pgcd}"
     page.evaluate(f"text => {editor}.replaceRange(text, {{ line: 0, ch: 0 }}, undefined, 'paste')", pasted)
     page.wait_for_function("document.getElementById('back-to-list').hidden", timeout=30_000)
     if page.evaluate(READ_OPFS, "questions-edition/seconde.pwq") != pgcd:
         raise AssertionError("La question collée n’a pas été écrite dans le dossier.")
     marked = page.eval_on_selector_all("#question-list li", "items => items.filter(li => li.querySelector('.question-state')).map(li => li.querySelector('.question-title').textContent)")
-    if sorted(marked) != ["Collée", "PGCD"]:
+    if sorted(marked) != ["Arithmétique : PGCD de deux entiers", "Collée"]:
         raise AssertionError(f"questions marquées « nouvelle » inattendues : {marked}")
     # Flèches ↑ ↓ après un clic : la question suivante devient la question courante. La liste, reconstruite
     # au clic, faisait perdre le focus : ↓ ne faisait plus rien.
@@ -357,7 +358,7 @@ def editor_and_paste(browser, url, pgcd):
 
     # Un fichier aux fins de ligne Windows (CRLF), seulement ouvert, n’est pas réécrit : CodeMirror ne
     # connaît que LF, et l’atelier croyait le fichier modifié.
-    crlf = pgcd.replace("\nPGCD\n", "\nPGCD CRLF\n", 1).replace("\n", "\r\n")
+    crlf = pgcd.replace(f"\n{title}\n", "\nPGCD CRLF\n", 1).replace("\n", "\r\n")
     page.evaluate(WRITE_OPFS, ["questions-edition/crlf.pwq", crlf])
     page.click("#reload-folder")
     page.wait_for_function("[...document.querySelectorAll('.question-title')].some(item => item.textContent === 'PGCD CRLF')")
@@ -400,7 +401,7 @@ def without_remembered_folder(browser, url, folder):
     page.wait_for_function(f"document.getElementById('folder-name').textContent === 'Dernier dossier : {name}'")
     page.set_input_files("#question-folder", folder)
     page.wait_for_function("document.querySelectorAll('#question-list li:not(.question-group)').length > 0")
-    with open(os.path.join(folder, "Decim3.pwq"), "a", encoding="utf-8") as file:
+    with open(os.path.join(folder, "L1 - Mathématiques - Calculus - Valeur approchée à 0.1 près.pwq"), "a", encoding="utf-8") as file:
         file.write("\n")
     page.fill("#question-search", "Valeur approchée")
     page.click(".question-selection >> nth=0")
@@ -517,7 +518,7 @@ def main():
                 # Il n’apparaît qu’en mode « Activité unique ».
                 titles = page.eval_on_selector_all("#question-list li:not(.question-group)",
                                                    "items => items.map(li => li.querySelector('.question-title').textContent)")
-                for title in ("PGCD", "Reconnaître des nombres premiers"):
+                for title in ("Arithmétique : PGCD de deux entiers", "Arithmétique : reconnaître des nombres premiers"):
                     page.click(f".question-selection >> nth={titles.index(title)}")
                 if page.is_visible("#scoring-warning"):
                     raise AssertionError("avertissement de note affiché hors du mode « Activité unique »")
@@ -526,7 +527,7 @@ def main():
                 warning = page.text_content("#scoring-warning")
                 unscored = page.get_attribute("#scoring-warning", "title") or ""
                 if not page.is_visible("#scoring-warning") or "n’affichera pas de note" not in warning \
-                        or "pgcd.pwq" not in unscored:
+                        or "L1 - Mathématiques - Algèbre et arithmétique - PGCD de deux entiers.pwq" not in unscored:
                     raise AssertionError(f"avertissement attendu pour une activité en partie notée : {warning} / {unscored}")
                 page.select_option("#output-mode", "separate")
                 page.click("#select-visible")
@@ -553,13 +554,13 @@ def main():
                         raise AssertionError(f"paquet SCORM inattendu : {package.suggested_filename}, {names}")
                     return package.suggested_filename
 
-                page.click(f".question-selection >> nth={titles.index('PGCD')}")
+                page.click(f".question-selection >> nth={titles.index('Arithmétique : PGCD de deux entiers')}")
                 if page.evaluate(modes) != ["page", "page-scorm"]:
                     raise AssertionError(f"modes d’une question seule : {page.evaluate(modes)}")
                 single = export_scorm("page-scorm")
                 # Le mode choisi est retenu : on revient à la page HTML pour la suite du test.
                 page.select_option("#output-mode", "page")
-                page.click(f".question-selection >> nth={titles.index('Reconnaître des nombres premiers')}")
+                page.click(f".question-selection >> nth={titles.index('Arithmétique : reconnaître des nombres premiers')}")
                 if page.evaluate(modes) != ["separate", "activity", "activity-scorm"]:
                     raise AssertionError(f"modes de plusieurs questions : {page.evaluate(modes)}")
                 page.select_option("#output-mode", "activity-scorm")
@@ -586,10 +587,10 @@ def main():
 
                 archive_question(browser, url)
                 remembered_folder(page, {name: open(os.path.join(folder, name), encoding="utf-8").read()
-                                        for name in ("Decim3.pwq", "pgcd.pwq")})
+                                        for name in ("L1 - Mathématiques - Calculus - Valeur approchée à 0.1 près.pwq", "L1 - Mathématiques - Algèbre et arithmétique - PGCD de deux entiers.pwq")})
                 # Erreurs JavaScript de la page principale seulement : la page sans mémoire a les siennes.
                 without_remembered_folder(browser, url, folder)
-                editor_and_paste(browser, url, open(os.path.join(folder, "pgcd.pwq"), encoding="utf-8").read())
+                editor_and_paste(browser, url, open(os.path.join(folder, "L1 - Mathématiques - Algèbre et arithmétique - PGCD de deux entiers.pwq"), encoding="utf-8").read())
 
             finally:
                 browser.close()

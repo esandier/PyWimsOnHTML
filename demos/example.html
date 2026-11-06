@@ -91,6 +91,15 @@ body {
 }
 
 
+.pw-space-before {
+  margin-left: 0.1em;
+}
+
+.pw-space-after {
+  margin-right: 0.1em;
+}
+
+
 .pw-sr-only {
   position: absolute;
   width: 1px;
@@ -820,8 +829,12 @@ body:not([data-scored]) .pw-help-score {
 }
 
 
+.pw-math-input {
+  min-width: min(100%, 17em);
+}
+
 .pw-math-input::part(content) {
-  min-width: 12em;
+  min-width: 0;
 }
 
 
@@ -952,6 +965,11 @@ body:not([data-scored]) .pw-help-score {
   flex: 1 1 auto;
   min-width: 0;
   overflow-wrap: normal;
+}
+
+
+mjx-container > mjx-assistive-mml {
+  width: 1px !important;
 }
 
 
@@ -1599,7 +1617,7 @@ body:not([data-scored]) .pw-help-score {
 
 
 
-<body data-sheet="activity" data-sheet-id="209wngw3csq">
+<body data-sheet="activity" data-sheet-id="2e79c7zc36e">
 
   <div class="pw-top">
 
@@ -1643,7 +1661,7 @@ choices = [f&quot;${n}$&quot; for n in numbers] + [&quot;Aucun de ces nombres&qu
 correct = [i for i, n in enumerate(numbers) if isprime(n)]
 if not correct:
     correct = [4]</pre>
-<pre data-field="question_title">Reconnaître des nombres premiers</pre>
+<pre data-field="question_title">Arithmétique : reconnaître des nombres premiers</pre>
 <pre data-field="question_keywords">arithmétique, nombres premiers, QCM</pre>
 <pre data-field="question_layout">STD</pre>
 <pre data-field="question_statement">Parmi les nombres suivants, lesquels sont &lt;b&gt;premiers&lt;/b&gt; ?
@@ -1679,7 +1697,7 @@ common = ilcm(m, q)
 n_common = n * (common // m)
 p_common = p * (common // q)
 numerator_sum = n_common + p_common</pre>
-<pre data-field="question_title">Addition de fractions</pre>
+<pre data-field="question_title">Fractions : additionner deux fractions</pre>
 <pre data-field="question_keywords">fractions, addition, dénominateur commun, fraction irréductible</pre>
 <pre data-field="question_layout">STD</pre>
 <pre data-field="question_statement">Additionnez ces fractions et donnez le résultat sous forme d’une fraction
@@ -2743,6 +2761,14 @@ def _collect_draw(namespace, spec):
     import json
     spec = json.loads(spec)
     errors = []
+    sympy = _sys.modules.get("sympy")
+    for name in ("none", "true", "false"):
+        if name in namespace and not (sympy and namespace[name] is getattr(sympy, name, None)):
+            errors.append("La variable « {} » de « question_setup » est un mot réservé de Jinja "
+                          "(la valeur {}) : renommez-la.".format(name, name.capitalize()))
+    warnings = ["La variable « {} » de « question_setup » masque la fonction « {} » de Jinja dans "
+                "l’énoncé : renommez-la.".format(name, name)
+                for name in sorted(_jinja().globals) if name in namespace]
     rendered = {}
     read = set()
     for key, field in (("statement", "question_statement"), ("explanation", "question_solution_explanation")):
@@ -2809,7 +2835,7 @@ def _collect_draw(namespace, spec):
     return json.dumps({
         "statement": rendered.get("statement"), "explanation": rendered.get("explanation"),
         "context": context, "dimensions": dimensions, "solutions": solutions,
-        "choices": choices, "errors": errors,
+        "choices": choices, "errors": errors, "warnings": warnings,
     }, ensure_ascii=False)
 
 
@@ -3720,7 +3746,29 @@ self.onmessage = async ({ data: { id, op, args } }) => {
       await window.MathJax.typesetPromise([element]);
     }
     frenchSpacing(element);
+    formulaSpacing(element);
     fitWideFormulas(element);
+  }
+
+  function formulaSpacing(element) {
+    const neighbor = (formula, before) => {
+      const sibling = before ? "previousSibling" : "nextSibling";
+      let node = formula;
+      while (!node[sibling]) {
+        node = node.parentElement;
+        if (!node || node === element || getComputedStyle(node).display !== "inline") return "";
+      }
+      node = node[sibling];
+      if (node.nodeType === Node.ELEMENT_NODE &&
+          (node.localName === "br" || getComputedStyle(node).display !== "inline")) return "";
+      const text = node.textContent;
+      return before ? text.slice(-1) : text.charAt(0);
+    };
+    for (const formula of element.querySelectorAll("mjx-container")) {
+      if (formula.getAttribute("display") === "true") continue;
+      formula.classList.toggle("pw-space-before", /\s/.test(neighbor(formula, true)));
+      formula.classList.toggle("pw-space-after", /\s/.test(neighbor(formula, false)));
+    }
   }
 
   function fitWideFormulas(element) {

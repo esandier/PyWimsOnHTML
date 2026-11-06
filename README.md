@@ -186,20 +186,20 @@ correspondance et un exemple complet.
 Le guide complet, avec un exemple, est [`PROMPT.md`](PROMPT.md). Exemples du
 dépôt :
 
-- [`pgcd.pwq`](questions/pgcd.pwq) — champ texte ;
-- [`addition-fractions.pwq`](questions/addition-fractions.pwq) — fraction
+- [PGCD de deux entiers](<questions/L1 - Mathématiques - Algèbre et arithmétique - PGCD de deux entiers.pwq>) — champ texte ;
+- [Addition de fractions](<questions/L1 - Mathématiques - Calculus - Addition de fractions.pwq>) — fraction
   irréductible et dénominateur positif ;
-- [`dérivée-polynôme.pwq`](questions/dérivée-polynôme.pwq) — saisie MathLive et
-  correction symbolique ;
-- [`matrice-triangulaire.pwq`](questions/matrice-triangulaire.pwq) — matrice de
-  taille fixe, valeurs libres (`ANY`) et explication de la solution ;
-- [`produit-matrices.pwq`](questions/produit-matrices.pwq) — matrice
+- [Dérivée d'un polynôme](<questions/L1 - Mathématiques - Calculus - Dérivée d'un polynôme.pwq>) — saisie
+  MathLive et correction symbolique ;
+- [Matrice triangulaire supérieure](<questions/L1 - Mathématiques - Algèbre linéaire - Matrice triangulaire supérieure.pwq>)
+  — matrice de taille fixe, valeurs libres (`ANY`) et explication de la solution ;
+- [Produit de matrices](<questions/L1 - Mathématiques - Algèbre linéaire - Produit de matrices.pwq>) — matrice
   redimensionnable ;
-- [`nombres-premiers.pwq`](questions/nombres-premiers.pwq) — choix multiple
-  converti depuis AMC, avec « Aucun de ces nombres », un barème et des retours
+- [Reconnaître des nombres premiers](<questions/L1 - Mathématiques - Algèbre et arithmétique - Reconnaître des nombres premiers.pwq>)
+  — choix multiple converti depuis AMC, avec « Aucun de ces nombres », un barème et des retours
   ciblés (`question_check`) ;
-- [`Decim3.pwq`](questions/Decim3.pwq) — choix unique sans `question_check`, corrigé
-  sans Python, avec un barème et une explication de la solution.
+- [Valeur approchée à 0,1 près](<questions/L1 - Mathématiques - Calculus - Valeur approchée à 0.1 près.pwq>) — choix
+  unique sans `question_check`, corrigé sans Python, avec un barème et une explication de la solution.
 
 Les matrices redimensionnables commencent à 2 × 2 ; la poignée ↘ ajoute ou
 retire des lignes et des colonnes jusqu’aux limites déclarées, à la souris ou

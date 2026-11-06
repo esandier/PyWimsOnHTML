@@ -91,6 +91,15 @@ body {
 }
 
 
+.pw-space-before {
+  margin-left: 0.1em;
+}
+
+.pw-space-after {
+  margin-right: 0.1em;
+}
+
+
 .pw-sr-only {
   position: absolute;
   width: 1px;
@@ -820,8 +829,12 @@ body:not([data-scored]) .pw-help-score {
 }
 
 
+.pw-math-input {
+  min-width: min(100%, 17em);
+}
+
 .pw-math-input::part(content) {
-  min-width: 12em;
+  min-width: 0;
 }
 
 
@@ -952,6 +965,11 @@ body:not([data-scored]) .pw-help-score {
   flex: 1 1 auto;
   min-width: 0;
   overflow-wrap: normal;
+}
+
+
+mjx-container > mjx-assistive-mml {
+  width: 1px !important;
 }
 
 
@@ -1606,7 +1624,7 @@ window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
 
 
 
-<body data-sheet="activity" data-sheet-id="1rilzkg61a7">
+<body data-sheet="activity" data-sheet-id="1yh3jxx8f7v">
 
   <div class="pw-top">
 
@@ -1641,6 +1659,114 @@ window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
   <main class="pw-sheet">
 <section class="pw-question" id="q1" data-python="true">
 <div class="pw-question-data" hidden>
+<pre data-field="question_setup">from random import randint
+from sympy import *
+
+# Tire deux entiers et calcule leur plus grand diviseur commun.
+x = randint(26,145)
+y = randint(23,252)
+result = gcd(x,y)
+
+# Divisions de l’algorithme d’Euclide (dividende, quotient, diviseur, reste), pour l’explication.
+steps = []
+dividend, divisor = max(x, y), min(x, y)
+while divisor:
+    steps.append((dividend, dividend // divisor, divisor, dividend % divisor))
+    dividend, divisor = divisor, dividend % divisor</pre>
+<pre data-field="question_title">Arithmétique : PGCD de deux entiers</pre>
+<pre data-field="question_keywords">arithmétique, PGCD, nombres entiers</pre>
+<pre data-field="question_layout">STD</pre>
+<pre data-field="question_statement">Quel est le plus grand diviseur commun de ${{x}}$ et ${{y}}$ ?
+&lt;br&gt;&lt;br&gt;
+Réponse : {{ input_value(&#39;answer&#39;, solution=result, style=&#39;width :5em&#39;) }}</pre>
+<pre data-field="question_check"># La saisie arrive comme sa valeur (None si ce n’est pas un nombre), et ok_answer est déjà
+# rempli par la correction par défaut : il ne reste qu’à expliquer l’erreur sans donner la réponse.
+if ok_answer[&#39;answer&#39;]:
+    feedback = &#39;Bravo, c’est exact !&#39;
+elif answer is None or not answer.is_Integer or answer &lt;= 0:
+    feedback = &#39;Saisissez un nombre entier positif.&#39;
+elif x % answer == 0 and y % answer == 0:
+    feedback = &#39;{} divise bien {} et {}, mais ce n’est pas le plus grand diviseur commun.&#39;.format(answer, x, y)
+else:
+    feedback = &#39;{} ne divise pas {}.&#39;.format(answer, x if x % answer else y)</pre>
+<pre data-draws="gzip">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</pre>
+</div>
+</section>
+<section class="pw-question" id="q2" data-python="true">
+<div class="pw-question-data" hidden>
+<pre data-field="question_setup">from random import sample
+from sympy import isprime
+
+# Quatre entiers distincts ; « Aucun de ces nombres » reste le dernier choix (fixed_last=1).
+numbers = sample(range(2, 50), 4)
+choices = [f&quot;${n}$&quot; for n in numbers] + [&quot;Aucun de ces nombres&quot;]
+correct = [i for i, n in enumerate(numbers) if isprime(n)]
+if not correct:
+    correct = [4]</pre>
+<pre data-field="question_title">Arithmétique : reconnaître des nombres premiers</pre>
+<pre data-field="question_keywords">arithmétique, nombres premiers, QCM</pre>
+<pre data-field="question_layout">STD</pre>
+<pre data-field="question_statement">Parmi les nombres suivants, lesquels sont &lt;b&gt;premiers&lt;/b&gt; ?
+{{ input_checkbox(&#39;answer&#39;, choices=choices, solution=correct, fixed_last=1, scoring=&#39;b=1,m=-0.5,p=0&#39;) }}</pre>
+<pre data-field="question_check"># « question_check » ne sert qu’aux retours ciblés : sans lui, la correction par défaut jugerait déjà la
+# réponse en tout ou rien. La saisie et « correct » sont des listes croissantes d’indices.
+ok_answer[&#39;answer&#39;] = answer == correct
+if ok_answer[&#39;answer&#39;]:
+    feedback = &#39;Bravo, c’est exact !&#39;
+elif 4 in answer and len(answer) &gt; 1:
+    feedback = &#39;« Aucun de ces nombres » contredit les autres cases cochées.&#39;
+elif any(i &lt; 4 and not isprime(numbers[i]) for i in answer):
+    feedback = &#39;Au moins un nombre coché a un diviseur autre que $1$ et lui-même.&#39;
+else:
+    feedback = &#39;Il manque au moins un nombre premier.&#39;</pre>
+<pre data-draws="gzip">H4sIAAAAAAAACu2YTW7bMBSEr0IQWrIt/+zYQpAgN+imq8QLWXpABUhUKlKpgcAX6jV6sUJ6NCrZDgsp2bEb05RhQvgwmDfDx1dqAQqackatyxzUYBxN6desrUtSgSWmqfctWGK78iUzzrL+6Y8OKktsYxy53d89t1CX0NrbL/s7cv9knjrOuciM/QktfqeMwuG5ykzmysbQlH4z/mDi/0wyAocsxxcgBXQHUpQvpYWutSQliUgIOFJ15af6968aPlNG88Y4ODiavh4ZLcoajC0bY3Fvm6pzfkvxVWj6qHdHRvPvTZnD9AeayHVCGU3kZlj08CmGzUOXd4YUQPK/OGh/UNMW0E7PEUwxyTjTu+ORndiK2NkKPuBUyHa9mC1nkqkpWxkFW87E23RXA88blC9uhFwi3B7vBK6KA25AuEhVbXHxyuVz4XKmmDiHq//DRcmKYfG+O9sV+ED2zBVWsbPVYmSyiUb9Sj0XLnqCmMJdRwE3YLh+jnlvUAvHGR+iwhnbmzjYMhUIYhKBooIlUtbqQ5LYJgq8oSS2HscEuXSg9ePsIi1so4Dbz5uAehXK1vvvKY5t5wLujUFd9Ig4Spr8p/NiO5M+lS3IuvIK3DhammAhvL6n+cmGGlazU8P1EhxHUwvFBjkyg0SjiNXqQ7xXxFHVAsbro65ECWtvvLNjw3W6cXS14GDbjOeaXi9MZdfnWhx1LWANwuexkSX40vbuKiziqGuhm93VKCecDEIuun5UF84QR2EL0PVq9ffmcpx75xlDbwtnbVjE0ddCd2R4uzCNDAvqmhzG2hRuHH0tIF0fEsZBLHlXU9v9AcK1r2lPGwAA</pre>
+</div>
+</section>
+<section class="pw-question" id="q3" data-python="true">
+<div class="pw-question-data" hidden>
+<pre data-field="question_setup">from random import choice, randint
+from sympy import *
+from pywims import math_expression
+
+# Le terme cubique non nul garantit que la question demande bien une dérivée
+# d’un polynôme de degré trois, tandis que les autres coefficients varient.
+x = symbols(&quot;x&quot;)
+a = choice([-4, -3, -2, -1, 1, 2, 3, 4])
+b = randint(-5, 5)
+c = randint(-5, 5)
+d = randint(-5, 5)
+function = expand(a*x**3 + b*x**2 + c*x + d)
+derivative = diff(function, x)
+
+# Chaque terme et sa dérivée, du plus haut degré au plus bas, pour l’explication de la solution.
+terms = [(term, diff(term, x)) for term in sorted(Add.make_args(function), key=lambda term: -degree(term, x))]</pre>
+<pre data-field="question_title">Dérivée : polynôme</pre>
+<pre data-field="question_keywords">dérivée, fonction polynomiale, calcul différentiel</pre>
+<pre data-field="question_layout">STD</pre>
+<pre data-field="question_statement">Soit la fonction polynomiale
+$f(x) = {{ function}}$.
+Donnez sa dérivée :&lt;br&gt;&lt;br&gt;
+$f&#39;(x) =$ {{ input_math(&#39;answer&#39;, solution=derivative) }}</pre>
+<pre data-field="question_check"># L’expression ASCII issue de MathLive est analysée par la fonction sécurisée
+# du runtime, puis comparée à la dérivée exacte sans imposer une forme unique.
+answer = math_expression(answer)
+correct = answer is not None and simplify(answer - derivative) == 0
+ok_answer[&quot;answer&quot;] = correct
+
+if correct:
+    feedback = &quot;Bravo, cette dérivée est correcte !&quot;
+elif answer is None:
+    feedback = &quot;Expression non reconnue : vérifiez votre saisie.&quot;
+elif simplify(answer - function) == 0:
+    feedback = &quot;Vous avez recopié la fonction au lieu de la dériver.&quot;
+else:
+    # Rappelle la règle sans donner la réponse, que le bouton « Correction » fournit.
+    feedback = r&quot;Ce n’est pas la bonne dérivée. Dérivez terme à terme avec $(x^n)&#39; = n\,x^{n-1}$ ; la dérivée d’une constante est nulle.&quot;</pre>
+<pre data-draws="gzip">H4sIAAAAAAAACtWaz47bNhDGX2VAGIjXFgOLlNRdpemp9x56jLOA49WiBrxUYGtTtYbfpdc8x75YQYoSRVmUSObCHAz/gy1yfjPk9w316YLORfGE8k2EztWuKl4KVqEc/VkeKjju4Llk++pQMvhaHv9h5cthdyy2bPG8rO/gI1CoHy/0Cmv+TK6AIYUaMMSL91v2e8lY8S+cd/D09v10+Pb2vYD81y+n3/iD/8c78ScL2L5uNpt4x85/F6fmNYpQUX897tiOXxvl6A8m/6SAqji9FPD2n3yx+1bsYbGsH9ndO/gIbLuN6scLw/F1AfmWLZZyjOLbh2acC/ggfnIhzccE6uYjMX7xEU7lJ7F4u1m8RxHal6wq6grlF/T82sQF5cgYBBQhPsYzytGnJV3VqxWN4IE/k7sIlvw5ArKq+RucruoIcCpexxFs7j6ja4SeDi8FOx9Kdkb55Rqhc3l8reRb1EQM5UhOC9Z8Jvz6/Kf7v8rDvpC/K09PxUm8vkYt8diHOOaXkNNNugknwVHvxtnQhKxPXg5cfHWv2Cct+8Sa/WQ4NP6YyATAWZcByarJgXuZA4nIgcQrB7opwprPiY/CKguIXxYkctpYn3ZQGZBoGRCTfgp045bfjqfBFHhDBHToSQs9Jh113GLHQ+5OuNv5NIO35k39eA+TfM3XfsBAgyLe501nK55K0FSSpxblboyDzl1Sp6ZSp5w4FfCpc6FTrdDXQK3AJz8CHmtr2zqwpd6IHWs1TsxLvc1Kb4jEDHgsa53crvHuSzztLk4cSj71Id8metqkWEC8FW2NdavcpHCbL+bBDDWODUZFUagzIc5cy1UVq50qy/zKVIlQtS0IKRgQuG6Ush41NU56pZqoQpVlGsv3qUWdGkOhV2oryLFS5EQu0omsVV6pcaPOnUtVafJWDdrQ/8WHPumWJpVsPKVDYt9X45m+RFNtkc5a9g15CX6euzEIGvVWhCsNLpfqRpcLWxaBYO6KPOuSLZMbgw3w+x+TYz+RBNN4OmktG33VUnOWU7EapxWwBx9gCdyaxJAkVN8p6T5p3CrPy6XRGWsMW2vUc0ZDP+wqkDpLJJSxXRPEq++Fe0T7rZc1JAFRnXbAI+0vIrdbItlb1KgxDvM+WOt/ES6wmiRw3mp72JuLEzv0Xg0wNWE6vGpA6M0F3d9tMwN44lDeN1GYK/J2v82G4Il/tWcu2L06Xqrb08n54IyRGbrBBztbJmMU5qAPXLC/nep1vYjUd1bQvdpe45MNSVYbvLAd73lRbQjApFU2onYV1NSPtGefi94IlhBLfNJCj2o15xqfDMWshR5IOP9C7zvoexf+Xt0u1d1LB43dkKp9stOZajUfb0xdbpsWijEYc83OtDXT8eam0e3eQ1ErAJ+Odac79uqhqYM8XU6G5dSMfZTR/tlA11n4tokozDRSBs0zpeucbZw6yExcdJ1X74wONvmwaBvvXTAdbNjfrdCb8Mx9CsMTDN+7E8Q47VB6dsVUD3C4cYXkzSZvTTCeSw/28XmLNhmO2VsTbg6p1U7u6tPUnQnYbSf3arXhEYfentWFpeSmmjOjLv322NJGzU2EY75HMzDr/dNLd0E3MOwzx5ef/weWm5HGmyYAAA==</pre>
+</div>
+</section>
+<section class="pw-question" id="q4" data-python="true">
+<div class="pw-question-data" hidden>
 <pre data-field="question_setup">from random import choice
 from sympy import *
 from pywims import math_expression
@@ -1656,7 +1782,7 @@ common = ilcm(m, q)
 n_common = n * (common // m)
 p_common = p * (common // q)
 numerator_sum = n_common + p_common</pre>
-<pre data-field="question_title">Addition de fractions</pre>
+<pre data-field="question_title">Fractions : additionner deux fractions</pre>
 <pre data-field="question_keywords">fractions, addition, dénominateur commun, fraction irréductible</pre>
 <pre data-field="question_layout">STD</pre>
 <pre data-field="question_statement">Additionnez ces fractions et donnez le résultat sous forme d’une fraction
@@ -1683,103 +1809,9 @@ else:
 <pre data-draws="gzip">H4sIAAAAAAAACs2abY6jRhCGr9Jq+d+iDNXNh7GykXKCHCBEK9b0apEMzEIj7caylGvkCJNrzE1ykggMjGkK6I48M/3Ldk/ZLg2Pq956i9/PtBYipQfXobVMpMhFIemB/pqmmczKohB/kqOoyZcqObavayIkSa/nJ0Gq56e6OclEkrpsavKlrHJB0n//+rspxPieuMiq6vkpbY4y+3wS5BAXP3+ufomLXRynWf14Sn7U8sdJkDhu33ImPrmciUcu5MN4xNsjn1zIxx2JG9d1oRLtN1+fU4eK74+npEja76MH+ltBum/MJEkakj//06b1/FSUeVYkUjQV2TF312byP3KIi4/jGevimDsJBDYc3obycDjd/UQdeiwLKb5LejjTY5nnXdrMpQ7N6YF61KHtgd8+fnr5e/e6yUWVyLL6VDdtLA+pQx/bJ+3jSzAw6tBv/YfIUianLviBufTi0DTLRVG3V5QezheH1uWpkf1Lev3f3oYfv5bZUfSxZZWKqnt+cQZ+wCJ+YH7trpfpnvx4q/ispHDLBBIGbn82iRsCF9HxFHJgSg4g4AD04PgKOG4PDrsBB+DB0+dmiN7EhlmEDfKThzfGZiWFWxyQMIZQE5pCo5QbrNoMxQamzDAEmdCEmFATGG4RMDA0pQ/zK/NWfWolh1sUPKRNvfSuSUeL9NuUjxcbD+GGRXix6Vrat/5NAzksMupSY/gmPZ7d9PC7lxswpocj9aYrLqCIHH84nDSqcDhdpAc26GFYq1rSOD7WqsIHMKBnDN+kx7eInu4HzV+ZnmAVnpUUbpHYt2fBJCzqj+bkBCvgBD03vOfGm3KzN+AmwrEJjKgJtKAJLILGn1+x+zcsYNsSB89hUnI6GdxOUvOaowDGx9PlmsMUdtTBysUGK39BH2Mti/sPwAwGqyF8k5/QIn7YvF3AWwuelRxmVUcRPKjeAW6ud5hG5eG4UMbYAW4kd8bwTXb2FrGzJDXeWSxzhB1MLAMOz+uIZYg25M6EHjOxDNpiObKInhGV97N0VlKYdCNdS2cI1J7O+RQcvlZ1tCwdbmTpcM0JHWyykhGNen9Px1gmY54OIpM5JpPhNWQy4M2K40agiUwGTZkMNhnIyG/Ye+sFxEoOEx7QBUSALiDAfAGh1BxAFxADPZ5SdAJsAQFmCwjQXkDYZCUjF49ZABDTBWiP8cMMlLIJP2xoWmzKzx7Bh5lJZaYtlcEmY5m9v7mzksJMKmuYO9y0azENlcwNzB1u1LW4bteyzlB+Z3dnJYcZNlrmznXCMjN3TCYsHW8HIiNvZwzfxscmRxkZju8vlc33EZhWxvYR6DridbYRCztQbBdhtorQ3kSATa4y4sjdfzbfAGclh3ndwdagKjnXNagZOho9a3MNyqZrUBN6xvBtfGwylfn80o0j8/3w8be1Mp7DLRRXJqZx/aJCvS9sDF3Gx1fwUbRytIaPMmqxwd/hCj6+GT6+Hj7W+crILTP3xUdD9eA5zKxBRfV4mOgJ9TXPwv1emDm40LY8BJ3QSPCE2nrHJkvZs0DvrOQw8wZ19M51zjLrWjr+4MYyS5m0jO6+4BtN64//AMtCjR+jLAAA</pre>
 </div>
 </section>
-<section class="pw-question" id="q2" data-python="true">
+<section class="pw-question" id="q5" data-python="false">
 <div class="pw-question-data" hidden>
-<pre data-field="question_setup">from random import choice, randint, shuffle
-from sympy import Matrix, randMatrix
-
-modeles = []
-modeles.append([[0,0,0],[1,2,3],[3,2,1]])
-modeles.append([[1,2,3],[1,2,3],[3,2,1]])
-modeles.append([[1,2,3],[-1,-2,-3],[3,2,1]])
-modeles.append([[1,2,3],[3,2,1],[1,1,1]])
-modeles.append([[1,2,3],[3,2,1],[1,2,1]])
-
-index = randint(0,4)
-sens = choice([&quot;ligne&quot;, &quot;colonne&quot;])
-
-shuffle(modeles[index])
-
-matrix = Matrix(modeles[index])
-
-if sens==&quot;colonne&quot;:
-    matrix = matrix.T
-
-result = matrix.rank()</pre>
-<pre data-field="question_title">Calcul du rang d&#39;une matrice</pre>
-<pre data-field="question_keywords">algèbre linéaire, matrices, rang, déterminant</pre>
-<pre data-field="question_layout">STD</pre>
-<pre data-field="question_statement">Soit $A$ la matrice $3 \times 3$ définie par :
-$$A = {{ matrix }} $$
-&lt;i&gt;Quel est le rang de la matrice $A$ &lt;/i&gt;? &lt;br&gt;&lt;br&gt; Réponse : 
-{{ input_value(&#39;answer&#39;, solution=result, form=integer, style=&quot;width:2em&quot;) }}</pre>
-<pre data-field="question_check">if index == 0 and answer == 3:
-    feedback = f&quot;Attention, il y a une {sens} de zéros!&quot;
-if index == 0 and answer &lt; 2:
-    feedback = f&quot;Attention, deux des {sens}s sont linéairement indépendantes!&quot;
-if index == 1 and answer == 3:
-    feedback = f&quot;Attention, deux {sens}s sont égales!&quot;
-if index == 1 and answer &lt; 2:
-    feedback = f&quot;Attention, deux des {sens}s sont linéairement indépendantes!&quot;
-if index == 2 and answer == 3:
-    feedback = f&quot;Attention, deux {sens}s sont proportionelles!&quot;
-if index == 2 and answer &lt; 2:
-    feedback = f&quot;Attention, deux des {sens}s sont linéairement indépendantes!&quot;
-if index == 3 and answer == 3:
-    feedback = f&quot;Attention, une des {sens}s est combinaison linéaire des deux autres!&quot;
-if index == 3 and answer &lt; 2:
-    feedback = f&quot;Attention, deux des {sens}s sont linéairement indépendantes!&quot;
-if index == 4 and answer &lt; 3:
-    feedback = f&quot;Attention, les trois lignes sont linéairement indépendantes! (ça marche aussi avec les trois colonnes)&quot;</pre>
-<pre data-draws="gzip">H4sIAAAAAAAACu2a326bMBTGX+XIQtUmQRvC/mio69SL3e1m22XdCzecpJbMcYTNFinKu+yW5+DFJpNmC1U7bXTUQeHCko8Axz7fD3P4yNWaGcSMpZOQGSss5kiWpeyrlhaCywCUgFzYQs4QggQ4tzJHA0kAWV3NJUmEpSgg5RQEl/AeOFc4t1ec3+BC0rq5dLWJ4QQSOIGYc85dMHVtFzRHOUfKdudzXsjFrb2GIOB0Li8+l6gAjQWFUAhaQIatiV0GcH4mLz7A+U1x4Rp8qaulJoOQAideTiaTWJD5jsW2z0KGq6USJKzUxFL26dGB3c/W1UIoqH9AMA1O4SMBzuc4s6UgCxka0Mu6KpqhDNSVqiuXRSELNGDKAhQaUHJB7swSkKCubJlJd7U7lNWVxSKXJMiaZjyjSxPdTcKEoOn3OehyQDq/KRBysZK5UM2kt8O/0KWLZlppIjQvQUmqKzcTNyOQlNXVEikTZNGcspDNNFlcWZau2Tb3LGX/V0MWsgJNqRxVU7YJWSZzJONyxdL1JmRGq9LehWwrkuttp8WmLGTfhCrR9c9ittmEbHarXWK2l+siw6Lpb8IdzHGfMCd3a28lIrkXjDAfNMxdNfQB89QPzBM4gaaNMA8W5j9r6APmpO8y49faH8vKCPNBw9xVQx8wv+p7Z453a5/er7eSEeYBwNxVQx8wv362F8BWIvZSNAiYk6OFuauG+zAn/w5zsgdz8rcwv3m2MiPef0TtPa9GmA8e5i4a+oD5rZ8XwMhFkQujsdI4dJ6fIKOPYuNd3/tzfP/eblVdQ9mfj5fnrhp6cZt7degeLLviIZbOx01zFw290NyrRRe1buyo9RoRJeP2PBCgnyCjF6Z7der2XPbRdh4o0F019EJz71bdQ19Dh+duHC/NXTX0QnPvXp1bc9QqvaKWbTnaG4MAuqOMXpju1bJr1V7jx5TBAt1FQx/+c9y7W/fQH1bGemNYNHfR8Bn35uufrFC5WuosAAA=</pre>
-</div>
-</section>
-<section class="pw-question" id="q3" data-python="true">
-<div class="pw-question-data" hidden>
-<pre data-field="question_setup">from random import choice, randint
-from sympy import *
-from pywims import math_expression
-
-# Le terme cubique non nul garantit que la question demande bien une dérivée
-# d’un polynôme de degré trois, tandis que les autres coefficients varient.
-x = symbols(&quot;x&quot;)
-a = choice([-4, -3, -2, -1, 1, 2, 3, 4])
-b = randint(-5, 5)
-c = randint(-5, 5)
-d = randint(-5, 5)
-function = expand(a*x**3 + b*x**2 + c*x + d)
-derivative = diff(function, x)
-
-# Chaque terme et sa dérivée, du plus haut degré au plus bas, pour l’explication de la solution.
-terms = [(term, diff(term, x)) for term in sorted(Add.make_args(function), key=lambda term: -degree(term, x))]</pre>
-<pre data-field="question_title">Dérivée d’un polynôme</pre>
-<pre data-field="question_keywords">dérivée, fonction polynomiale, calcul différentiel</pre>
-<pre data-field="question_layout">STD</pre>
-<pre data-field="question_statement">Soit la fonction polynomiale
-$f(x) = {{ function}}$.
-Donnez sa dérivée :&lt;br&gt;&lt;br&gt;
-$f&#39;(x) =$ {{ input_math(&#39;answer&#39;, solution=derivative) }}</pre>
-<pre data-field="question_check"># L’expression ASCII issue de MathLive est analysée par la fonction sécurisée
-# du runtime, puis comparée à la dérivée exacte sans imposer une forme unique.
-answer = math_expression(answer)
-correct = answer is not None and simplify(answer - derivative) == 0
-ok_answer[&quot;answer&quot;] = correct
-
-if correct:
-    feedback = &quot;Bravo, cette dérivée est correcte !&quot;
-elif answer is None:
-    feedback = &quot;Expression non reconnue : vérifiez votre saisie.&quot;
-elif simplify(answer - function) == 0:
-    feedback = &quot;Vous avez recopié la fonction au lieu de la dériver.&quot;
-else:
-    # Rappelle la règle sans donner la réponse, que le bouton « Correction » fournit.
-    feedback = r&quot;Ce n’est pas la bonne dérivée. Dérivez terme à terme avec $(x^n)&#39; = n\,x^{n-1}$ ; la dérivée d’une constante est nulle.&quot;</pre>
-<pre data-draws="gzip">H4sIAAAAAAAACtWaz47bNhDGX2VAGIjXFgOLlNRdpemp9x56jLOA49WiBrxUYGtTtYbfpdc8x75YQYoSRVmUSObCHAz/gy1yfjPk9w316YLORfGE8k2EztWuKl4KVqEc/VkeKjju4Llk++pQMvhaHv9h5cthdyy2bPG8rO/gI1CoHy/0Cmv+TK6AIYUaMMSL91v2e8lY8S+cd/D09v10+Pb2vYD81y+n3/iD/8c78ScL2L5uNpt4x85/F6fmNYpQUX897tiOXxvl6A8m/6SAqji9FPD2n3yx+1bsYbGsH9ndO/gIbLuN6scLw/F1AfmWLZZyjOLbh2acC/ggfnIhzccE6uYjMX7xEU7lJ7F4u1m8RxHal6wq6grlF/T82sQF5cgYBBQhPsYzytGnJV3VqxWN4IE/k7sIlvw5ArKq+RucruoIcCpexxFs7j6ja4SeDi8FOx9Kdkb55Rqhc3l8reRb1EQM5UhOC9Z8Jvz6/Kf7v8rDvpC/K09PxUm8vkYt8diHOOaXkNNNugknwVHvxtnQhKxPXg5cfHWv2Cct+8Sa/WQ4NP6YyATAWZcByarJgXuZA4nIgcQrB7opwprPiY/CKguIXxYkctpYn3ZQGZBoGRCTfgp045bfjqfBFHhDBHToSQs9Jh113GLHQ+5OuNv5NIO35k39eA+TfM3XfsBAgyLe501nK55K0FSSpxblboyDzl1Sp6ZSp5w4FfCpc6FTrdDXQK3AJz8CHmtr2zqwpd6IHWs1TsxLvc1Kb4jEDHgsa53crvHuSzztLk4cSj71Id8metqkWEC8FW2NdavcpHCbL+bBDDWODUZFUagzIc5cy1UVq50qy/zKVIlQtS0IKRgQuG6Ush41NU56pZqoQpVlGsv3qUWdGkOhV2oryLFS5EQu0omsVV6pcaPOnUtVafJWDdrQ/8WHPumWJpVsPKVDYt9X45m+RFNtkc5a9g15CX6euzEIGvVWhCsNLpfqRpcLWxaBYO6KPOuSLZMbgw3w+x+TYz+RBNN4OmktG33VUnOWU7EapxWwBx9gCdyaxJAkVN8p6T5p3CrPy6XRGWsMW2vUc0ZDP+wqkDpLJJSxXRPEq++Fe0T7rZc1JAFRnXbAI+0vIrdbItlb1KgxDvM+WOt/ES6wmiRw3mp72JuLEzv0Xg0wNWE6vGpA6M0F3d9tMwN44lDeN1GYK/J2v82G4Il/tWcu2L06Xqrb08n54IyRGbrBBztbJmMU5qAPXLC/nep1vYjUd1bQvdpe45MNSVYbvLAd73lRbQjApFU2onYV1NSPtGefi94IlhBLfNJCj2o15xqfDMWshR5IOP9C7zvoexf+Xt0u1d1LB43dkKp9stOZajUfb0xdbpsWijEYc83OtDXT8eam0e3eQ1ErAJ+Odac79uqhqYM8XU6G5dSMfZTR/tlA11n4tokozDRSBs0zpeucbZw6yExcdJ1X74wONvmwaBvvXTAdbNjfrdCb8Mx9CsMTDN+7E8Q47VB6dsVUD3C4cYXkzSZvTTCeSw/28XmLNhmO2VsTbg6p1U7u6tPUnQnYbSf3arXhEYfentWFpeSmmjOjLv322NJGzU2EY75HMzDr/dNLd0E3MOwzx5ef/weWm5HGmyYAAA==</pre>
-</div>
-</section>
-<section class="pw-question" id="q4" data-python="false">
-<div class="pw-question-data" hidden>
-<pre data-field="question_title">Déterminer une loi à partir de conditions, puis son espérance</pre>
+<pre data-field="question_title">Loi discrète : déduire la loi de données sur des évènements</pre>
 <pre data-field="question_keywords">probabilités, variable aléatoire discrète, loi, espérance, inégalités, L2</pre>
 <pre data-field="question_layout">STD</pre>
 <pre data-field="question_draws">40</pre>
@@ -1812,7 +1844,133 @@ $\mathbb{E}(X) =$ {{ input_value(&#39;mean&#39;, solution=expectation, form=frac
 <pre data-draws="gzip">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</pre>
 </div>
 </section>
-<section class="pw-question" id="q5" data-python="true">
+<section class="pw-question" id="q6" data-python="true">
+<div class="pw-question-data" hidden>
+<pre data-field="question_setup">from random import randint, choice
+from sympy import Matrix
+from pywims import math_expression, ANY
+
+# Choisit une petite dimension pour générer une nouvelle matrice à chaque essai.
+size = randint(2,4)
+
+# Plusieurs matrices conviennent : seuls les zéros sous la diagonale sont imposés.
+solution_matrix = Matrix(size, size, lambda i, j: 0 if i &gt; j else choice([-2,-1,1,2]) if i == j else ANY)</pre>
+<pre data-field="question_title">Matrices : matrice triangulaire supérieure</pre>
+<pre data-field="question_keywords">matrices, matrice triangulaire, zéros, algèbre linéaire</pre>
+<pre data-field="question_layout">STD</pre>
+<pre data-field="question_statement">Complétez cette matrice carrée de taille ${{ size }} \times {{ size }}$ pour
+qu’elle soit triangulaire supérieure, et de rang égal à ${{ size }}$.
+&lt;br&gt;&lt;br&gt;
+
+&lt;div style=&quot;text-align:center&quot;&gt;
+  {{ input_matrix(&#39;matrix&#39;, size=size, solution=solution_matrix, input_style=&#39;width:2em&#39;) }}
+&lt;/div&gt;</pre>
+<pre data-field="question_check"># Vérifie chaque case : toute valeur est numérique, et celles sous la diagonale sont nulles.
+# Chaque case est vérifiée (pas de break) pour que toutes les cases fausses soient colorées ;
+# chaque message n&#39;est ajouté qu&#39;une fois, même si plusieurs cases sont fausses.
+messages = []
+
+def add_message(text):
+    if text not in messages:
+        messages.append(text)
+
+for i in range(size):
+    for j in range(size):
+        value = math_expression(matrix[i][j])
+        is_number = value is not None and value.is_number
+        if i &gt; j:
+            correct = is_number and value == 0
+            message = &quot;Les coefficients sous la diagonale doivent être nuls.&quot;
+        elif i == j:
+            correct = is_number and value != 0
+            message = &quot;Les coefficients diagonaux doivent être des nombres différents de zéro.&quot;
+        else:
+            correct = is_number
+            message = &quot;Tous les coefficients doivent être des nombres.&quot;
+        ok_answer[f&quot;matrix[{i}][{j}]&quot;] = correct
+        if not correct:
+            add_message(message)
+
+if messages:
+    feedback = &quot;&lt;br&gt;&quot;.join(messages)
+else:
+    feedback = f&quot;Bravo, cette matrice est triangulaire supérieure et son rang est {size} !&quot;</pre>
+<pre data-draws="gzip">H4sIAAAAAAAACu3azW7aQBAA4FcZrSylrQwFQ/9QkkuvfQM2h4090JXsWbI/EU2ElNfIrVf6GrxJn6RaCCQhdusCB5fuwQjW0vhn/Wk8swxvmUHM2KATM2OFxQLJsgH7rIpJvphbvIEUrUUohNUyRUiF1os5QoZghcxzhKgHnFtZoIFeBBPlNKcr9/PuHv1eo6QFq6WgscuF1AjGTRZzLdFpjAGtj6QFjWExH4scFt8h6kVtTqeX+txvnDidZvIajP2W4xlnFqe2JXI5pkGKZFFzds4JgLtOp9Ndnud09Z3T6dtMXp+zmOF0kgsSVipiA/YFDaQKRyOZSiRrgJRdzA2cvDmBCbprJAuLH1Yj0M+7e1lMlLYIVw5zIFVcamzDixBgpHU+iFHOQC4gk2KsSOQImZJPQ7rctFdX9iLIKgYaME4/j2EUWRD6Ulrt76KJoRDSbIdWtAzvZyleTgU4epy7Z9MQ0XrWKIpBEQjgFEWc+/t762dkBmdAnMvRCB5Gn53rw7m56eaws3YUcXqVCTKwfFRMDP7y/XOkC0mCLKCxfmyiVeakn/ytO7CJ+prFLFXkj8sGt8zIG2QD1mOzmGWyQDJSkXnc05vFzKjc2fXw6kFgg+GQJSwml+fLj4t4yDosZq2HwfVvv3XZxcUsZulXJVP0QWYxUzpDvfw+i9dWurtbSTZWksNYSYKVYKXcSlJlJfmNlW0XdU0kwUQw8Z+YaCU1UfQCioDiWFF0d0sU/WAimDhSE90d88S73U30Nyb6hzHRDyaCiXIT/SoT/T+beFmBd0uq8qrK3G91Mb0PmAKmI8XUSqo0lfW4nijbxlQ7NX0IfeGgqfmaduoLt8pSUEn2qY3lY6htApbmYzlEbVOXxKeQPwKJ5pPYKX+UpY+S961W7XXFPRbhQ+kSsBxZ6VLRB6j9NtbdY50+5J7AqdG5pwxNWelSO/fssVYZsAQsjcZS9qK2vX75d1r2aDIHLUFLo7XUTC21rezRQg5VTbDS6KqmsqipWt2sWI+pjSm0mAOmfwDTQf5nWbvQ36PJHDJMQNHoDFPdN2tVNc7KSpsani5+Af2Y/08NNgAA</pre>
+</div>
+</section>
+<section class="pw-question" id="q7" data-python="true">
+<div class="pw-question-data" hidden>
+<pre data-field="question_setup">from random import randint
+from sympy import *
+from pywims import math_expression
+
+# Choisit des dimensions compatibles et des coefficients entiers entre -1 et 1.
+m = randint(1, 4)
+n = randint(2, 3)
+p = randint(1, 4)
+A = Matrix(m, n, lambda i, j: randint(-1, 1))
+B = Matrix(n, p, lambda i, j: randint(-1, 1))
+product = A * B
+
+# Calcul détaillé du premier coefficient, pour l’explication de la solution : les produits
+# A[0, k] × B[k, 0], et leur somme.
+first_products = [(A[0, k], B[k, 0]) for k in range(n)]
+first_coefficient = product[0, 0]</pre>
+<pre data-field="question_title">Matrices : produit de deux matrices</pre>
+<pre data-field="question_keywords">matrices, produit matriciel, algèbre linéaire</pre>
+<pre data-field="question_layout">STD</pre>
+<pre data-field="question_statement">Calculez le produit des matrices suivantes :
+$$ A = {{ A }},\quad B = {{ B }}.$$
+Entrez le résultat ci-dessous :
+&lt;div style=&quot;text-align:center&quot;&gt;
+  $AB = $
+  {{ input_vmatrix(&#39;matrix&#39;, max_rows=5, max_cols=5, input_style=&#39;width:2em&#39;, solution=product) }}
+&lt;/div&gt;</pre>
+<pre data-field="question_check"># Vérifie d’abord les dimensions, puis compare exactement les coefficients.
+row_count = len(matrix)
+column_count = len(matrix[0]) if matrix else 0
+feedback = &quot;&quot;
+
+if row_count != m:
+    feedback += &quot;Votre matrice n’a pas le bon nombre de lignes. &quot;
+if column_count != p:
+    feedback += &quot;Votre matrice n’a pas le bon nombre de colonnes.&quot;
+
+if row_count == m and column_count == p:
+    errors = 0
+    for i in range(m):
+        for j in range(p):
+            value = math_expression(matrix[i][j])
+            correct = (
+                value is not None
+                and getattr(value, &quot;is_number&quot;, False)
+                and simplify(value - product[i, j]) == 0
+            )
+            ok_answer[&quot;matrix[{}][{}]&quot;.format(i, j)] = correct
+            if not correct:
+                errors += 1
+    if errors == 0:
+        feedback = &quot;Bravo, le produit des matrices est correct !&quot;
+    else:
+        # Compte les erreurs et rappelle la méthode, sans donner les coefficients.
+        feedback = &quot;{} coefficient{} sur {} {}. &quot;.format(
+            errors, &quot;s&quot; if errors &gt; 1 else &quot;&quot;, m * p,
+            &quot;sont incorrects&quot; if errors &gt; 1 else &quot;est incorrect&quot;
+        ) + &quot;Le coefficient $(i, j)$ de $AB$ s’obtient avec la ligne $i$ de $A$ et la colonne $j$ de $B$.&quot;</pre>
+<pre data-draws="gzip">H4sIAAAAAAAACu2bXW7jNhDHr0IQwiLBilvS6ae6WSAp+tYbmMFClZmsFrKUWnSQNvCBeo5erKA+LFKybA4p7ZMeHIiSLDkc/jjD/wzXb7gUYoMjGuJSxlJsRS5xhH+Ls2SfiX9QJtDzrtjsU4k2okTbWO7SRJSo3KcvcS5FiSKeBwG6Q7eI80w8yjXnf4qnNH+r7n09UPQOMfQOUc45Vw2qN9QVwlSrPqqviXzTfp3zXfr0RT6EnP+1jzfofvRF9WOah518xocg4PnvudzV/9juv3/LfSZjiZKUbERZFvvq3/m4SV9QKf/OxC3HUrxKEmfpUx4lIpdix/EnniMU3KlfEqhDvqeUsvpd9THPP363SV8+4RCL1+cszmOZFjmO8B8CJYV4fEyTVOQSBVd399ef39KvhwCJUqIsRmWx3Yqqr5t+L6uG9i11Qt2pfpNAQRqodnAXoOd4x/NE7F+bG5IiK3J1y9f6lvsA/apuQuJVbJ8zwfPm/Ywd0C2iiHOZbkWJrgi7Ru8R65/o7mDoFhEWfMAhTopc9RGO3vAdjvCsgwCH+H70HZftj0P8mO5K+VnrTRxhwo4Xqj5PZIkjvL6iISLsOkRXrD2gIWLXD/gQ4k26FXmZFnmJo7dDiMsi28umievX4mi9Vs9+CNeYVn/Jqm08HEKcfCkUSvX3i91G7KrjQ9gyyWZjkpi2cASONXZsO15rLvAB4asI6+h636cRhpuNfc+yBDMtkCvCFEY1TgTOU4gpDnHLVdh87JBazermRrrHgqTFZ/n6LMVMDyK4ixof32dQmdLfVFjUfIDdjBUAN7MBcJxy1IErCNVM04UDbaSwoAFH40z0RoFoWJj2QmQGsCoQGj02ow6+RH2aIO3YtvUm388LU9vr5BgVOzuYpuMXNzMDSz7rIpidLZY/Z0zsBZbn4scKpx9mDs7qKaffz9185ExX2+n16nOhyzmIo8MgbiBD3CKygkZ1jpY/y9tFo4/xthqN/mgX/R1VBxhwK01tsA0Jf5xXZvBzXEwXjoaz5fjydkEOJDecP+EqQTg7M2ezu0oRxoGTKEEgkeNPs0aOmmqj6TceBPYC+M62C3++AeUYawAfBzT5RfAcrD2C3Yir82FtddT/unVbe65ZwBlrufacFZY/fwNXeCIQ8ZVK9ImSGLPlMdWyiCj+frJZ+50JUJWwQl18pN2gsBVZfMbDCMl03H8S1g9bgToM1ZA2Zf0Wcit4f/mm8NK2RQfalo8Aar6JDlrj0/oCsnvASwcUu4W6nsPD0jNDR4ZPTEzdkK6efaPoXXXueNW5bFpfGvJumRmfr1zF3zH35lh9XjfSssawWYB2jqAHotEpP62YBuqyzp54qgEwwu24Xku1oPrIL4jbFlNITp3NV6dyYiFi5qKGJQru1WO6jcxiJMNq7OwUvkALyqOcWQcDY+nJhsrlINt/lMCCbKbVobmCXTncmy6/Ga41zk23bN5lrKOtY3E2X6GNUYzUKyY0Iq8LsytghT0YNku12/TL6kH5qacqNtU4sVt0OwwRmGZG9Hws8ZLPSEe3Vj/XCmndRXA9BJu3uuiUUmJa0FNMMyXUhe6pvPwp3J1FM6+RYAGz9SBwdOJEd+cuXpwdvTe5OUJs7ZhnrlnyWDN3EdqSWZpqXWxWJgEpc4iPIXYE8+NYhQQWktl8hUha7YlnXcRSbTSLEtzEmfAkziWTXq4hn8TNeNUxUNj2pPkKh+ggdDeTWj6uxsyT9RYHZgCw5Fum20x4psivYQ64V8NtfABSqO5DAybc0n6hrQu6ukQzXNwNS9xB1UpsvnIlOgjfhymunmznm5fpJ+K6OGXxp9NW79KewgtmfJKRYZWrAQ8KMOO0n1J1JnxlCLMa2MSUbZskqyXj89U+9TeSem83PlXNsrA77fZJoCpjZWPLLccA88KCY+qXP6HG1mNtJzLAk85XpOS9k7/TzxaSPElyll18tutfsJ8bKm5yywUcHv4HNvHE13dGAAA=</pre>
+</div>
+</section>
+<section class="pw-question" id="q8" data-python="false">
+<div class="pw-question-data" hidden>
+<pre data-field="question_title">Nombres décimaux : valeur approchée à 0,1 près</pre>
+<pre data-field="question_keywords">décimaux, arrondis, valeur approchée, arrondi</pre>
+<pre data-field="question_layout">STD</pre>
+<pre data-field="question_statement">Soit $x=7,937253933$. Quelle est la valeur approchée de $x$ à $10^{-1}$ près &lt;b&gt;au plus proche&lt;/b&gt; ?
+{{ input_radio(&#39;answer&#39;, choices=choices, solution=correct, columns=4, scoring=&#39;e=-0.5,v=0,b=1,m=-0.5&#39;) }}</pre>
+<pre data-draws="gzip">H4sIAAAAAAAACu3XwWrcMBAG4FcZBh9SmCaS1XSzJk2foe0x2YJiz3YFimUkK126GPoavfWYPIffpE9S7KSw3t510k0ScxAf4p/R7QEDc4OVIAy97vmB2x4r/OJMD8X+w4rWalVeqrVSxTl8imwtA4cerIZHbTl60F3nXb0bnxkahmJfwPgbCim+Ht7KoYDOj08Bru9vdITOxgBzNV9f3N/Ax7v2LgohpG7Dd/YvayTkfWd1q3vjWqzwM3/TvuEfYBnqndluPUOI5lG3PZwVqngDnYsemvG5Ng17CH9+/jIWtjr2oL13bWM8dHqumA9dnLe8r8encI6EjXngNhjXBqwOA2FwNvavW3y5G1ZiIKx3ztS8OL7FFa2R8AppWqlpSULiZiB0vmG/rJakqCSxGQb6Ry8zfSJ6QSWpY/oy0yd79YLKY3qV6ZPQC1Ikl/TvMn0ienkaOJeZPgn9HDckj+nfZ/pkgXNCf5XpE716edpm15k+CX1J84yzmOvznyrVdFn+Z5/TPt2nSi0jR66yfaLMmcacRaeVudWmarVT4k+Zs/kLv8C9iEQTAAA=</pre>
+</div>
+</section>
+<section class="pw-question" id="q9" data-python="true">
 <div class="pw-question-data" hidden>
 <pre data-field="question_setup">from random import choice, randrange
 from sympy import Rational
@@ -1907,7 +2065,7 @@ else:
 first = 0
 asked_choices = [&quot;$&quot; + text + &quot;$&quot; for text, _ in asked]
 formula_choices = [&quot;$&quot; + text + &quot;$&quot; for text, _ in formulas]</pre>
-<pre data-field="question_title">La fusée à trois étages : probabilités composées</pre>
+<pre data-field="question_title">Probabilités composées : la fusée à trois étages</pre>
 <pre data-field="question_keywords">probabilités, probabilité conditionnelle, probabilités composées, intersection, modélisation, L2</pre>
 <pre data-field="question_layout">STD</pre>
 <pre data-field="question_draws">60</pre>
@@ -1956,205 +2114,65 @@ Sur les lancements passés, le premier étage s’est allumé dans {{ p1 * 100 }
 <pre data-draws="gzip">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</pre>
 </div>
 </section>
-<section class="pw-question" id="q6" data-python="true">
+<section class="pw-question" id="q10" data-python="true">
 <div class="pw-question-data" hidden>
-<pre data-field="question_setup">from random import randint, choice
-from sympy import Matrix
-from pywims import math_expression, ANY
+<pre data-field="question_setup">from random import choice, randint, shuffle
+from sympy import Matrix, randMatrix
 
-# Choisit une petite dimension pour générer une nouvelle matrice à chaque essai.
-size = randint(2,4)
+modeles = []
+modeles.append([[0,0,0],[1,2,3],[3,2,1]])
+modeles.append([[1,2,3],[1,2,3],[3,2,1]])
+modeles.append([[1,2,3],[-1,-2,-3],[3,2,1]])
+modeles.append([[1,2,3],[3,2,1],[1,1,1]])
+modeles.append([[1,2,3],[3,2,1],[1,2,1]])
 
-# Plusieurs matrices conviennent : seuls les zéros sous la diagonale sont imposés.
-solution_matrix = Matrix(size, size, lambda i, j: 0 if i &gt; j else choice([-2,-1,1,2]) if i == j else ANY)</pre>
-<pre data-field="question_title">Matrice triangulaire supérieure</pre>
-<pre data-field="question_keywords">matrices, matrice triangulaire, zéros, algèbre linéaire</pre>
+index = randint(0,4)
+sens = choice([&quot;ligne&quot;, &quot;colonne&quot;])
+
+shuffle(modeles[index])
+
+matrix = Matrix(modeles[index])
+
+if sens==&quot;colonne&quot;:
+    matrix = matrix.T
+
+result = matrix.rank()</pre>
+<pre data-field="question_title">Rang : calculer le rang d&#39;une matrice</pre>
+<pre data-field="question_keywords">algèbre linéaire, matrices, rang, déterminant</pre>
 <pre data-field="question_layout">STD</pre>
-<pre data-field="question_statement">Complétez cette matrice carrée de taille ${{ size }} \times {{ size }}$ pour
-qu’elle soit triangulaire supérieure, et de rang égal à ${{ size }}$.
-&lt;br&gt;&lt;br&gt;
-
-&lt;div style=&quot;text-align:center&quot;&gt;
-  {{ input_matrix(&#39;matrix&#39;, size=size, solution=solution_matrix, input_style=&#39;width:2em&#39;) }}
-&lt;/div&gt;</pre>
-<pre data-field="question_check"># Vérifie chaque case : toute valeur est numérique, et celles sous la diagonale sont nulles.
-# Chaque case est vérifiée (pas de break) pour que toutes les cases fausses soient colorées ;
-# chaque message n&#39;est ajouté qu&#39;une fois, même si plusieurs cases sont fausses.
-messages = []
-
-def add_message(text):
-    if text not in messages:
-        messages.append(text)
-
-for i in range(size):
-    for j in range(size):
-        value = math_expression(matrix[i][j])
-        is_number = value is not None and value.is_number
-        if i &gt; j:
-            correct = is_number and value == 0
-            message = &quot;Les coefficients sous la diagonale doivent être nuls.&quot;
-        elif i == j:
-            correct = is_number and value != 0
-            message = &quot;Les coefficients diagonaux doivent être des nombres différents de zéro.&quot;
-        else:
-            correct = is_number
-            message = &quot;Tous les coefficients doivent être des nombres.&quot;
-        ok_answer[f&quot;matrix[{i}][{j}]&quot;] = correct
-        if not correct:
-            add_message(message)
-
-if messages:
-    feedback = &quot;&lt;br&gt;&quot;.join(messages)
-else:
-    feedback = f&quot;Bravo, cette matrice est triangulaire supérieure et son rang est {size} !&quot;</pre>
-<pre data-draws="gzip">H4sIAAAAAAAACu3azW7aQBAA4FcZrSylrQwFQ/9QkkuvfQM2h4090JXsWbI/EU2ElNfIrVf6GrxJn6RaCCQhdusCB5fuwQjW0vhn/Wk8swxvmUHM2KATM2OFxQLJsgH7rIpJvphbvIEUrUUohNUyRUiF1os5QoZghcxzhKgHnFtZoIFeBBPlNKcr9/PuHv1eo6QFq6WgscuF1AjGTRZzLdFpjAGtj6QFjWExH4scFt8h6kVtTqeX+txvnDidZvIajP2W4xlnFqe2JXI5pkGKZFFzds4JgLtOp9Ndnud09Z3T6dtMXp+zmOF0kgsSVipiA/YFDaQKRyOZSiRrgJRdzA2cvDmBCbprJAuLH1Yj0M+7e1lMlLYIVw5zIFVcamzDixBgpHU+iFHOQC4gk2KsSOQImZJPQ7rctFdX9iLIKgYaME4/j2EUWRD6Ulrt76KJoRDSbIdWtAzvZyleTgU4epy7Z9MQ0XrWKIpBEQjgFEWc+/t762dkBmdAnMvRCB5Gn53rw7m56eaws3YUcXqVCTKwfFRMDP7y/XOkC0mCLKCxfmyiVeakn/ytO7CJ+prFLFXkj8sGt8zIG2QD1mOzmGWyQDJSkXnc05vFzKjc2fXw6kFgg+GQJSwml+fLj4t4yDosZq2HwfVvv3XZxcUsZulXJVP0QWYxUzpDvfw+i9dWurtbSTZWksNYSYKVYKXcSlJlJfmNlW0XdU0kwUQw8Z+YaCU1UfQCioDiWFF0d0sU/WAimDhSE90d88S73U30Nyb6hzHRDyaCiXIT/SoT/T+beFmBd0uq8qrK3G91Mb0PmAKmI8XUSqo0lfW4nijbxlQ7NX0IfeGgqfmaduoLt8pSUEn2qY3lY6htApbmYzlEbVOXxKeQPwKJ5pPYKX+UpY+S961W7XXFPRbhQ+kSsBxZ6VLRB6j9NtbdY50+5J7AqdG5pwxNWelSO/fssVYZsAQsjcZS9qK2vX75d1r2aDIHLUFLo7XUTC21rezRQg5VTbDS6KqmsqipWt2sWI+pjSm0mAOmfwDTQf5nWbvQ36PJHDJMQNHoDFPdN2tVNc7KSpsani5+Af2Y/08NNgAA</pre>
+<pre data-field="question_statement">Soit $A$ la matrice $3 \times 3$ définie par :
+$$A = {{ matrix }} $$
+&lt;i&gt;Quel est le rang de la matrice $A$ &lt;/i&gt;? &lt;br&gt;&lt;br&gt; Réponse : 
+{{ input_value(&#39;answer&#39;, solution=result, form=integer, style=&quot;width:2em&quot;) }}</pre>
+<pre data-field="question_check">if index == 0 and answer == 3:
+    feedback = f&quot;Attention, il y a une {sens} de zéros!&quot;
+if index == 0 and answer &lt; 2:
+    feedback = f&quot;Attention, deux des {sens}s sont linéairement indépendantes!&quot;
+if index == 1 and answer == 3:
+    feedback = f&quot;Attention, deux {sens}s sont égales!&quot;
+if index == 1 and answer &lt; 2:
+    feedback = f&quot;Attention, deux des {sens}s sont linéairement indépendantes!&quot;
+if index == 2 and answer == 3:
+    feedback = f&quot;Attention, deux {sens}s sont proportionelles!&quot;
+if index == 2 and answer &lt; 2:
+    feedback = f&quot;Attention, deux des {sens}s sont linéairement indépendantes!&quot;
+if index == 3 and answer == 3:
+    feedback = f&quot;Attention, une des {sens}s est combinaison linéaire des deux autres!&quot;
+if index == 3 and answer &lt; 2:
+    feedback = f&quot;Attention, deux des {sens}s sont linéairement indépendantes!&quot;
+if index == 4 and answer &lt; 3:
+    feedback = f&quot;Attention, les trois lignes sont linéairement indépendantes! (ça marche aussi avec les trois colonnes)&quot;</pre>
+<pre data-draws="gzip">H4sIAAAAAAAACu2a326bMBTGX+XIQtUmQRvC/mio69SL3e1m22XdCzecpJbMcYTNFinKu+yW5+DFJpNmC1U7bXTUQeHCko8Axz7fD3P4yNWaGcSMpZOQGSss5kiWpeyrlhaCywCUgFzYQs4QggQ4tzJHA0kAWV3NJUmEpSgg5RQEl/AeOFc4t1ec3+BC0rq5dLWJ4QQSOIGYc85dMHVtFzRHOUfKdudzXsjFrb2GIOB0Li8+l6gAjQWFUAhaQIatiV0GcH4mLz7A+U1x4Rp8qaulJoOQAideTiaTWJD5jsW2z0KGq6USJKzUxFL26dGB3c/W1UIoqH9AMA1O4SMBzuc4s6UgCxka0Mu6KpqhDNSVqiuXRSELNGDKAhQaUHJB7swSkKCubJlJd7U7lNWVxSKXJMiaZjyjSxPdTcKEoOn3OehyQDq/KRBysZK5UM2kt8O/0KWLZlppIjQvQUmqKzcTNyOQlNXVEikTZNGcspDNNFlcWZau2Tb3LGX/V0MWsgJNqRxVU7YJWSZzJONyxdL1JmRGq9LehWwrkuttp8WmLGTfhCrR9c9ittmEbHarXWK2l+siw6Lpb8IdzHGfMCd3a28lIrkXjDAfNMxdNfQB89QPzBM4gaaNMA8W5j9r6APmpO8y49faH8vKCPNBw9xVQx8wv+p7Z453a5/er7eSEeYBwNxVQx8wv362F8BWIvZSNAiYk6OFuauG+zAn/w5zsgdz8rcwv3m2MiPef0TtPa9GmA8e5i4a+oD5rZ8XwMhFkQujsdI4dJ6fIKOPYuNd3/tzfP/eblVdQ9mfj5fnrhp6cZt7degeLLviIZbOx01zFw290NyrRRe1buyo9RoRJeP2PBCgnyCjF6Z7der2XPbRdh4o0F019EJz71bdQ19Dh+duHC/NXTX0QnPvXp1bc9QqvaKWbTnaG4MAuqOMXpju1bJr1V7jx5TBAt1FQx/+c9y7W/fQH1bGemNYNHfR8Bn35uufrFC5WuosAAA=</pre>
 </div>
 </section>
-<section class="pw-question" id="q7" data-python="true">
+<section class="pw-question" id="q11" data-python="false">
 <div class="pw-question-data" hidden>
-<pre data-field="question_setup">from random import randint
-from sympy import *
-
-# Tire deux entiers et calcule leur plus grand diviseur commun.
-x = randint(26,145)
-y = randint(23,252)
-result = gcd(x,y)
-
-# Divisions de l’algorithme d’Euclide (dividende, quotient, diviseur, reste), pour l’explication.
-steps = []
-dividend, divisor = max(x, y), min(x, y)
-while divisor:
-    steps.append((dividend, dividend // divisor, divisor, dividend % divisor))
-    dividend, divisor = divisor, dividend % divisor</pre>
-<pre data-field="question_title">PGCD</pre>
-<pre data-field="question_keywords">arithmétique, PGCD, nombres entiers</pre>
-<pre data-field="question_layout">STD</pre>
-<pre data-field="question_statement">Quel est le plus grand diviseur commun de ${{x}}$ et ${{y}}$ ?
-&lt;br&gt;&lt;br&gt;
-Réponse : {{ input_value(&#39;answer&#39;, solution=result, style=&#39;width :5em&#39;) }}</pre>
-<pre data-field="question_check"># La saisie arrive comme sa valeur (None si ce n’est pas un nombre), et ok_answer est déjà
-# rempli par la correction par défaut : il ne reste qu’à expliquer l’erreur sans donner la réponse.
-if ok_answer[&#39;answer&#39;]:
-    feedback = &#39;Bravo, c’est exact !&#39;
-elif answer is None or not answer.is_Integer or answer &lt;= 0:
-    feedback = &#39;Saisissez un nombre entier positif.&#39;
-elif x % answer == 0 and y % answer == 0:
-    feedback = &#39;{} divise bien {} et {}, mais ce n’est pas le plus grand diviseur commun.&#39;.format(answer, x, y)
-else:
-    feedback = &#39;{} ne divise pas {}.&#39;.format(answer, x if x % answer else y)</pre>
-<pre data-draws="gzip">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</pre>
-</div>
-</section>
-<section class="pw-question" id="q8" data-python="true">
-<div class="pw-question-data" hidden>
-<pre data-field="question_setup">from random import randint
-from sympy import *
-from pywims import math_expression
-
-# Choisit des dimensions compatibles et des coefficients entiers entre -1 et 1.
-m = randint(1, 4)
-n = randint(2, 3)
-p = randint(1, 4)
-A = Matrix(m, n, lambda i, j: randint(-1, 1))
-B = Matrix(n, p, lambda i, j: randint(-1, 1))
-product = A * B
-
-# Calcul détaillé du premier coefficient, pour l’explication de la solution : les produits
-# A[0, k] × B[k, 0], et leur somme.
-first_products = [(A[0, k], B[k, 0]) for k in range(n)]
-first_coefficient = product[0, 0]</pre>
-<pre data-field="question_title">Produit de matrices</pre>
-<pre data-field="question_keywords">matrices, produit matriciel, algèbre linéaire</pre>
-<pre data-field="question_layout">STD</pre>
-<pre data-field="question_statement">Calculez le produit des matrices suivantes :
-$$ A = {{ A }},\quad B = {{ B }}.$$
-Entrez le résultat ci-dessous :
-&lt;div style=&quot;text-align:center&quot;&gt;
-  $AB = $
-  {{ input_vmatrix(&#39;matrix&#39;, max_rows=5, max_cols=5, input_style=&#39;width:2em&#39;, solution=product) }}
-&lt;/div&gt;</pre>
-<pre data-field="question_check"># Vérifie d’abord les dimensions, puis compare exactement les coefficients.
-row_count = len(matrix)
-column_count = len(matrix[0]) if matrix else 0
-feedback = &quot;&quot;
-
-if row_count != m:
-    feedback += &quot;Votre matrice n’a pas le bon nombre de lignes. &quot;
-if column_count != p:
-    feedback += &quot;Votre matrice n’a pas le bon nombre de colonnes.&quot;
-
-if row_count == m and column_count == p:
-    errors = 0
-    for i in range(m):
-        for j in range(p):
-            value = math_expression(matrix[i][j])
-            correct = (
-                value is not None
-                and getattr(value, &quot;is_number&quot;, False)
-                and simplify(value - product[i, j]) == 0
-            )
-            ok_answer[&quot;matrix[{}][{}]&quot;.format(i, j)] = correct
-            if not correct:
-                errors += 1
-    if errors == 0:
-        feedback = &quot;Bravo, le produit des matrices est correct !&quot;
-    else:
-        # Compte les erreurs et rappelle la méthode, sans donner les coefficients.
-        feedback = &quot;{} coefficient{} sur {} {}. &quot;.format(
-            errors, &quot;s&quot; if errors &gt; 1 else &quot;&quot;, m * p,
-            &quot;sont incorrects&quot; if errors &gt; 1 else &quot;est incorrect&quot;
-        ) + &quot;Le coefficient $(i, j)$ de $AB$ s’obtient avec la ligne $i$ de $A$ et la colonne $j$ de $B$.&quot;</pre>
-<pre data-draws="gzip">H4sIAAAAAAAACu2bXW7jNhDHr0IQwiLBilvS6ae6WSAp+tYbmMFClZmsFrKUWnSQNvCBeo5erKA+LFKybA4p7ZMeHIiSLDkc/jjD/wzXb7gUYoMjGuJSxlJsRS5xhH+Ls2SfiX9QJtDzrtjsU4k2okTbWO7SRJSo3KcvcS5FiSKeBwG6Q7eI80w8yjXnf4qnNH+r7n09UPQOMfQOUc45Vw2qN9QVwlSrPqqviXzTfp3zXfr0RT6EnP+1jzfofvRF9WOah518xocg4PnvudzV/9juv3/LfSZjiZKUbERZFvvq3/m4SV9QKf/OxC3HUrxKEmfpUx4lIpdix/EnniMU3KlfEqhDvqeUsvpd9THPP363SV8+4RCL1+cszmOZFjmO8B8CJYV4fEyTVOQSBVd399ef39KvhwCJUqIsRmWx3Yqqr5t+L6uG9i11Qt2pfpNAQRqodnAXoOd4x/NE7F+bG5IiK3J1y9f6lvsA/apuQuJVbJ8zwfPm/Ywd0C2iiHOZbkWJrgi7Ru8R65/o7mDoFhEWfMAhTopc9RGO3vAdjvCsgwCH+H70HZftj0P8mO5K+VnrTRxhwo4Xqj5PZIkjvL6iISLsOkRXrD2gIWLXD/gQ4k26FXmZFnmJo7dDiMsi28umievX4mi9Vs9+CNeYVn/Jqm08HEKcfCkUSvX3i91G7KrjQ9gyyWZjkpi2cASONXZsO15rLvAB4asI6+h636cRhpuNfc+yBDMtkCvCFEY1TgTOU4gpDnHLVdh87JBazermRrrHgqTFZ/n6LMVMDyK4ixof32dQmdLfVFjUfIDdjBUAN7MBcJxy1IErCNVM04UDbaSwoAFH40z0RoFoWJj2QmQGsCoQGj02ow6+RH2aIO3YtvUm388LU9vr5BgVOzuYpuMXNzMDSz7rIpidLZY/Z0zsBZbn4scKpx9mDs7qKaffz9185ExX2+n16nOhyzmIo8MgbiBD3CKygkZ1jpY/y9tFo4/xthqN/mgX/R1VBxhwK01tsA0Jf5xXZvBzXEwXjoaz5fjydkEOJDecP+EqQTg7M2ezu0oRxoGTKEEgkeNPs0aOmmqj6TceBPYC+M62C3++AeUYawAfBzT5RfAcrD2C3Yir82FtddT/unVbe65ZwBlrufacFZY/fwNXeCIQ8ZVK9ImSGLPlMdWyiCj+frJZ+50JUJWwQl18pN2gsBVZfMbDCMl03H8S1g9bgToM1ZA2Zf0Wcit4f/mm8NK2RQfalo8Aar6JDlrj0/oCsnvASwcUu4W6nsPD0jNDR4ZPTEzdkK6efaPoXXXueNW5bFpfGvJumRmfr1zF3zH35lh9XjfSssawWYB2jqAHotEpP62YBuqyzp54qgEwwu24Xku1oPrIL4jbFlNITp3NV6dyYiFi5qKGJQru1WO6jcxiJMNq7OwUvkALyqOcWQcDY+nJhsrlINt/lMCCbKbVobmCXTncmy6/Ga41zk23bN5lrKOtY3E2X6GNUYzUKyY0Iq8LsytghT0YNku12/TL6kH5qacqNtU4sVt0OwwRmGZG9Hws8ZLPSEe3Vj/XCmndRXA9BJu3uuiUUmJa0FNMMyXUhe6pvPwp3J1FM6+RYAGz9SBwdOJEd+cuXpwdvTe5OUJs7ZhnrlnyWDN3EdqSWZpqXWxWJgEpc4iPIXYE8+NYhQQWktl8hUha7YlnXcRSbTSLEtzEmfAkziWTXq4hn8TNeNUxUNj2pPkKh+ggdDeTWj6uxsyT9RYHZgCw5Fum20x4psivYQ64V8NtfABSqO5DAybc0n6hrQu6ukQzXNwNS9xB1UpsvnIlOgjfhymunmznm5fpJ+K6OGXxp9NW79KewgtmfJKRYZWrAQ8KMOO0n1J1JnxlCLMa2MSUbZskqyXj89U+9TeSem83PlXNsrA77fZJoCpjZWPLLccA88KCY+qXP6HG1mNtJzLAk85XpOS9k7/TzxaSPElyll18tutfsJ8bKm5yywUcHv4HNvHE13dGAAA=</pre>
-</div>
-</section>
-<section class="pw-question" id="q9" data-python="false">
-<div class="pw-question-data" hidden>
-<pre data-field="question_title">Quiz théorique sur le rang d&#39;une matrice</pre>
+<pre data-field="question_title">Rang : quiz théorique</pre>
 <pre data-field="question_keywords">algèbre linéaire, matrices, rang, théorie, QCM</pre>
 <pre data-field="question_layout">STD</pre>
 <pre data-field="question_statement">{{ q.statement }}
 {{ input_radio(&#39;answer&#39;, choices=choices, solution=solution) }}</pre>
 <pre data-draws="gzip">H4sIAAAAAAAACu1awW7jNhD9lQEhIDbKTSU77bYBimJT9LDAXhZ7XOfASGOHATV0SMpNG+Rfelzvb+jHClK2IzmWIyfZRWP44tgUKZLzZuYNH/P5llnEjJ3GnFknHOZIjp2yT1o6iN5FUBBCLpyRKUKGMNYmFw6iHEYjJ3O0QNExfJKgEIygie/jh6F1UM4nQkH5L0QUQU/MMK3GTRAo6nO4LhCmWLg3miCTxr/fQqqVJkK7fNHvIxoVcRwnguxfaKrvjDO8mSpBwklN7JT9gXBdyH/AoXUICi1MjZ4aWc5dObcw1pQJvzPhH6EDd1nOtZHXhZ+oWKz8qL5XJBBqUn65MAhKUjkX0uAx4yyTOZKVmiw7vb3jzGpVuMVPVi2SncZ3nKWXWqbYaP7M/lR+Bd6KSC4YdyxyqZSf5MIg41t7lPPNPS6EDeioI7RT4ZE6EsbIWb2/1eTA6cJ5zArfxM7vONMmQ9NcZMKHfMDj87s7vvSOpIN3pMKYch7W4URYcEQbvCQr5w5NLkmQq3sLafLrCm6hQovVVCGzZz4QUcQ4i+LwSW+S6u+Pg6gdkJgP+LAOyOAQrv/XcH1iMD4e+VvCNeaDuncMn+MdH7a4hhKwMqjvsIjVsM0Zpk4bieqVOsGwzQk+LIGkQkGP9N+i6DN+3+y0E6qJ8vqzkPamwrj6M5mLSSuqMR/ypInqyQHV3VEdPIrq8+Djm92jFdVkPZP/1AHVBTeqBrkOV/gOo2P4WKBv9bgqATOhsDCQS5K5UAhTba28qMa/clptBTQaBiIdhM9kSbEtQISUyZM6ED83gfi4LENqVKnEahMyQ3LSlXPIjrTJDAbafJ0mbc18q+okqVcsrUaNQ+HYMOrbx4za2MbKxzflsL0zbjDqewV05C0yFdZnmbEk6a1c3/l2V95Qrv9yYIpvwf/b2OAJtcFW/vfsv1bV/dqCKjqIziLIsLhZmsIuT2OhMM/Lr/mSN1ZM4e0zESqksFRTiiacyFaBWXg4siLMcVa5gdPFlS6MhZkREvcN5mg0cnjjbv2Md713Z334DZpNffih2XLWD7HZYeAywDoND2euJ049Gik/NpfUW3sDX39BvzWlDHg4VDQUgC4C0aFO6XL8r8h0WKPUbUf/wQMk2sSYQx7YBZ+kex74fvH4DZJJpyS2gxLYpjwdvO9lTjEv6n1PZrDv6rbdS6BkXdmSDf5Z1qs19jlZTXsSfDRbeNagEprvqahR13ruCcUc9CpPKL/kuHSE/r75XMw4O2GcDRhnyS5oPEuR2lwJiJu9qwS2VZy5uOnlHKgKovVDHy1Cy4fhotcOFVsXZelwCnyqXrjLKfCBVPjgWNhdL0we1an2XlJpLd3axJS4JmI1YmzLhdtwLde9fcA8mkBc+TscHxN+d0pOCNd26r+nOr+QJKTPY6vdhuszUTiDthpoue8Y7n7SS0GTV5/3Wk9A7xWYsEZJYaflvBLCPHJ5oZyc+gsvmAoTysnqYYYz6W1Dhbrvbcp5KA4zhFbiCgeopiqZdBHIDvfZXUvWpUoc10hr2312UInXyGqjuDX2iABSpnNtppfS5lV4PSQbn45XlBQt0PHjveElXWHq5LiGRU3Ut/eivrBWp/6u9ZVC9HL/cnBfT5z/B2BEgzUjJAAA</pre>
-</div>
-</section>
-<section class="pw-question" id="q10" data-python="true">
-<div class="pw-question-data" hidden>
-<pre data-field="question_setup">from random import sample
-from sympy import isprime
-
-# Quatre entiers distincts ; « Aucun de ces nombres » reste le dernier choix (fixed_last=1).
-numbers = sample(range(2, 50), 4)
-choices = [f&quot;${n}$&quot; for n in numbers] + [&quot;Aucun de ces nombres&quot;]
-correct = [i for i, n in enumerate(numbers) if isprime(n)]
-if not correct:
-    correct = [4]</pre>
-<pre data-field="question_title">Reconnaître des nombres premiers</pre>
-<pre data-field="question_keywords">arithmétique, nombres premiers, QCM</pre>
-<pre data-field="question_layout">STD</pre>
-<pre data-field="question_statement">Parmi les nombres suivants, lesquels sont &lt;b&gt;premiers&lt;/b&gt; ?
-{{ input_checkbox(&#39;answer&#39;, choices=choices, solution=correct, fixed_last=1, scoring=&#39;b=1,m=-0.5,p=0&#39;) }}</pre>
-<pre data-field="question_check"># « question_check » ne sert qu’aux retours ciblés : sans lui, la correction par défaut jugerait déjà la
-# réponse en tout ou rien. La saisie et « correct » sont des listes croissantes d’indices.
-ok_answer[&#39;answer&#39;] = answer == correct
-if ok_answer[&#39;answer&#39;]:
-    feedback = &#39;Bravo, c’est exact !&#39;
-elif 4 in answer and len(answer) &gt; 1:
-    feedback = &#39;« Aucun de ces nombres » contredit les autres cases cochées.&#39;
-elif any(i &lt; 4 and not isprime(numbers[i]) for i in answer):
-    feedback = &#39;Au moins un nombre coché a un diviseur autre que $1$ et lui-même.&#39;
-else:
-    feedback = &#39;Il manque au moins un nombre premier.&#39;</pre>
-<pre data-draws="gzip">H4sIAAAAAAAACu2YTW7bMBSEr0IQWrIt/+zYQpAgN+imq8QLWXpABUhUKlKpgcAX6jV6sUJ6NCrZDgsp2bEb05RhQvgwmDfDx1dqAQqackatyxzUYBxN6desrUtSgSWmqfctWGK78iUzzrL+6Y8OKktsYxy53d89t1CX0NrbL/s7cv9knjrOuciM/QktfqeMwuG5ykzmysbQlH4z/mDi/0wyAocsxxcgBXQHUpQvpYWutSQliUgIOFJ15af6968aPlNG88Y4ODiavh4ZLcoajC0bY3Fvm6pzfkvxVWj6qHdHRvPvTZnD9AeayHVCGU3kZlj08CmGzUOXd4YUQPK/OGh/UNMW0E7PEUwxyTjTu+ORndiK2NkKPuBUyHa9mC1nkqkpWxkFW87E23RXA88blC9uhFwi3B7vBK6KA25AuEhVbXHxyuVz4XKmmDiHq//DRcmKYfG+O9sV+ED2zBVWsbPVYmSyiUb9Sj0XLnqCmMJdRwE3YLh+jnlvUAvHGR+iwhnbmzjYMhUIYhKBooIlUtbqQ5LYJgq8oSS2HscEuXSg9ePsIi1so4Dbz5uAehXK1vvvKY5t5wLujUFd9Ig4Spr8p/NiO5M+lS3IuvIK3DhammAhvL6n+cmGGlazU8P1EhxHUwvFBjkyg0SjiNXqQ7xXxFHVAsbro65ECWtvvLNjw3W6cXS14GDbjOeaXi9MZdfnWhx1LWANwuexkSX40vbuKiziqGuhm93VKCecDEIuun5UF84QR2EL0PVq9ffmcpx75xlDbwtnbVjE0ddCd2R4uzCNDAvqmhzG2hRuHH0tIF0fEsZBLHlXU9v9AcK1r2lPGwAA</pre>
-</div>
-</section>
-<section class="pw-question" id="q11" data-python="false">
-<div class="pw-question-data" hidden>
-<pre data-field="question_title">Valeur approchée au plus proche à 0,1 près</pre>
-<pre data-field="question_keywords">décimaux, arrondis, valeur approchée, arrondi</pre>
-<pre data-field="question_layout">STD</pre>
-<pre data-field="question_statement">Soit $x=7,937253933$. Quelle est la valeur approchée de $x$ à $10^{-1}$ près &lt;b&gt;au plus proche&lt;/b&gt; ?
-{{ input_radio(&#39;answer&#39;, choices=choices, solution=correct, columns=4, scoring=&#39;e=-0.5,v=0,b=1,m=-0.5&#39;) }}</pre>
-<pre data-draws="gzip">H4sIAAAAAAAACu3XwWrcMBAG4FcZBh9SmCaS1XSzJk2foe0x2YJiz3YFimUkK126GPoavfWYPIffpE9S7KSw3t510k0ScxAf4p/R7QEDc4OVIAy97vmB2x4r/OJMD8X+w4rWalVeqrVSxTl8imwtA4cerIZHbTl60F3nXb0bnxkahmJfwPgbCim+Ht7KoYDOj08Bru9vdITOxgBzNV9f3N/Ax7v2LgohpG7Dd/YvayTkfWd1q3vjWqzwM3/TvuEfYBnqndluPUOI5lG3PZwVqngDnYsemvG5Ng17CH9+/jIWtjr2oL13bWM8dHqumA9dnLe8r8encI6EjXngNhjXBqwOA2FwNvavW3y5G1ZiIKx3ztS8OL7FFa2R8AppWqlpSULiZiB0vmG/rJakqCSxGQb6Ry8zfSJ6QSWpY/oy0yd79YLKY3qV6ZPQC1Ikl/TvMn0ienkaOJeZPgn9HDckj+nfZ/pkgXNCf5XpE716edpm15k+CX1J84yzmOvznyrVdFn+Z5/TPt2nSi0jR66yfaLMmcacRaeVudWmarVT4k+Zs/kLv8C9iEQTAAA=</pre>
 </div>
 </section>
   </main>
@@ -3382,6 +3400,14 @@ def _collect_draw(namespace, spec):
     import json
     spec = json.loads(spec)
     errors = []
+    sympy = _sys.modules.get("sympy")
+    for name in ("none", "true", "false"):
+        if name in namespace and not (sympy and namespace[name] is getattr(sympy, name, None)):
+            errors.append("La variable « {} » de « question_setup » est un mot réservé de Jinja "
+                          "(la valeur {}) : renommez-la.".format(name, name.capitalize()))
+    warnings = ["La variable « {} » de « question_setup » masque la fonction « {} » de Jinja dans "
+                "l’énoncé : renommez-la.".format(name, name)
+                for name in sorted(_jinja().globals) if name in namespace]
     rendered = {}
     read = set()
     for key, field in (("statement", "question_statement"), ("explanation", "question_solution_explanation")):
@@ -3448,7 +3474,7 @@ def _collect_draw(namespace, spec):
     return json.dumps({
         "statement": rendered.get("statement"), "explanation": rendered.get("explanation"),
         "context": context, "dimensions": dimensions, "solutions": solutions,
-        "choices": choices, "errors": errors,
+        "choices": choices, "errors": errors, "warnings": warnings,
     }, ensure_ascii=False)
 
 
@@ -4359,7 +4385,29 @@ self.onmessage = async ({ data: { id, op, args } }) => {
       await window.MathJax.typesetPromise([element]);
     }
     frenchSpacing(element);
+    formulaSpacing(element);
     fitWideFormulas(element);
+  }
+
+  function formulaSpacing(element) {
+    const neighbor = (formula, before) => {
+      const sibling = before ? "previousSibling" : "nextSibling";
+      let node = formula;
+      while (!node[sibling]) {
+        node = node.parentElement;
+        if (!node || node === element || getComputedStyle(node).display !== "inline") return "";
+      }
+      node = node[sibling];
+      if (node.nodeType === Node.ELEMENT_NODE &&
+          (node.localName === "br" || getComputedStyle(node).display !== "inline")) return "";
+      const text = node.textContent;
+      return before ? text.slice(-1) : text.charAt(0);
+    };
+    for (const formula of element.querySelectorAll("mjx-container")) {
+      if (formula.getAttribute("display") === "true") continue;
+      formula.classList.toggle("pw-space-before", /\s/.test(neighbor(formula, true)));
+      formula.classList.toggle("pw-space-after", /\s/.test(neighbor(formula, false)));
+    }
   }
 
   function fitWideFormulas(element) {

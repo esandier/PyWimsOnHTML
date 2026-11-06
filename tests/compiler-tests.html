@@ -881,15 +881,15 @@
         throw new Error("Le contenu de la question n’est pas lisible, préservé et échappé.");
       }
     });
-    pendingTests.push(fetch("../questions/pgcd.pwq")
+    pendingTests.push(fetch("../questions/L1 - Mathématiques - Algèbre et arithmétique - PGCD de deux entiers.pwq")
       .then(response => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.text();
       })
       .then(text => {
-        const fields = PyWimsCompiler.parseQuestionSource(text, "pgcd.pwq");
+        const fields = PyWimsCompiler.parseQuestionSource(text, "L1 - Mathématiques - Algèbre et arithmétique - PGCD de deux entiers.pwq");
         test("analyse la question PGCD réelle", () => {
-          if (fields.question_title !== "PGCD" ||
+          if (fields.question_title !== "Arithmétique : PGCD de deux entiers" ||
               fields.question_keywords !== "arithmétique, PGCD, nombres entiers" ||
               fields.question_layout !== "STD" ||
               !fields.question_check.includes("ok_answer")) {
@@ -903,15 +903,15 @@
         item.style.color = "red";
         results.append(item);
       }));
-    pendingTests.push(fetch("../questions/addition-fractions.pwq")
+    pendingTests.push(fetch("../questions/L1 - Mathématiques - Calculus - Addition de fractions.pwq")
       .then(response => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.text();
       })
       .then(text => {
-        const fields = PyWimsCompiler.parseQuestionSource(text, "addition-fractions.pwq");
+        const fields = PyWimsCompiler.parseQuestionSource(text, "L1 - Mathématiques - Calculus - Addition de fractions.pwq");
         test("analyse la nouvelle question d’addition de fractions", () => {
-          if (fields.question_title !== "Addition de fractions" ||
+          if (fields.question_title !== "Fractions : additionner deux fractions" ||
               fields.question_keywords !== "fractions, addition, dénominateur commun, fraction irréductible" ||
               fields.question_layout !== "STD" ||
               PyWimsTemplate.validateTemplate(fields.question_statement).length ||
@@ -929,15 +929,15 @@
         item.style.color = "red";
         results.append(item);
       }));
-    pendingTests.push(fetch("../questions/matrice-triangulaire.pwq")
+    pendingTests.push(fetch("../questions/L1 - Mathématiques - Algèbre linéaire - Matrice triangulaire supérieure.pwq")
       .then(response => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.text();
       })
       .then(text => {
-        const fields = PyWimsCompiler.parseQuestionSource(text, "matrice-triangulaire.pwq");
+        const fields = PyWimsCompiler.parseQuestionSource(text, "L1 - Mathématiques - Algèbre linéaire - Matrice triangulaire supérieure.pwq");
         test("analyse la question réelle de matrice triangulaire", () => {
-          if (fields.question_title !== "Matrice triangulaire supérieure" ||
+          if (fields.question_title !== "Matrices : matrice triangulaire supérieure" ||
               fields.question_layout !== "STD" ||
               PyWimsTemplate.validateTemplate(fields.question_statement).length ||
               !fields.question_setup.includes("ANY") ||
@@ -1110,8 +1110,8 @@
         fetch("../widgets/input-math.js").then(response => response.text()),
         // Script du Worker : c’est lui qui charge Pyodide.
         fetch("../runtime/python-worker.js").then(response => response.text()),
-        fetch("../questions/dérivée-polynôme.pwq").then(response => response.text()),
-        fetch("../questions/produit-matrices.pwq").then(response => response.text())
+        fetch("../questions/L1 - Mathématiques - Calculus - Dérivée d'un polynôme.pwq").then(response => response.text()),
+        fetch("../questions/L1 - Mathématiques - Algèbre linéaire - Produit de matrices.pwq").then(response => response.text())
         ])
           .then(([compilerPage, compilerScript, layout, brandCss, upecCss, questionCss, inputWidget, matrixWidget, mathWidget, pythonWorker, derivativeQuestion, matrixProductQuestion]) => {
           // Les contrôles suivants couvrent l’interface, le runtime et les questions fournies.
@@ -1170,11 +1170,11 @@
           // Le module pywims, l’isolement des questions et les valeurs affichées sont testés avec le
           // vrai Pyodide dans python-tests.html.
           test("la nouvelle question génère un polynôme et corrige sa dérivée symboliquement", () => {
-            const fields = PyWimsCompiler.parseQuestionSource(derivativeQuestion, "dérivée-polynôme.pwq");
+            const fields = PyWimsCompiler.parseQuestionSource(derivativeQuestion, "L1 - Mathématiques - Calculus - Dérivée d'un polynôme.pwq");
             // Le nom du champ appartient à l’auteur : on le lit dans la balise, sans le supposer.
             const field = PyWimsTemplate.parseTags(fields.question_statement)
               .find(tag => tag.type === "input_math" && tag.attributes.solution === "derivative")?.name;
-            if (fields.question_title !== "Dérivée d’un polynôme" ||
+            if (fields.question_title !== "Dérivée : polynôme" ||
                 PyWimsTemplate.validateTemplate(fields.question_statement).length ||
                 !fields.question_setup.includes("derivative = diff(function, x)") ||
                 !field ||
@@ -1186,8 +1186,8 @@
             }
           });
           test("la question de produit de matrices génère et corrige un produit rectangulaire", () => {
-            const fields = PyWimsCompiler.parseQuestionSource(matrixProductQuestion, "produit-matrices.pwq");
-            if (fields.question_title !== "Produit de matrices" ||
+            const fields = PyWimsCompiler.parseQuestionSource(matrixProductQuestion, "L1 - Mathématiques - Algèbre linéaire - Produit de matrices.pwq");
+            if (fields.question_title !== "Matrices : produit de deux matrices" ||
                 PyWimsTemplate.validateTemplate(fields.question_statement).length ||
               !fields.question_setup.includes("A = Matrix(m, n") ||
               !fields.question_setup.includes("B = Matrix(n, p") ||
