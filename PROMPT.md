@@ -211,6 +211,21 @@ commentaire qui dit pourquoi.
 
   `$f(x) = {{ a|coef }}x^2 {{ b|term('x') }} {{ c|term }}$` donne $x^2-3x+2$
   pour `a, b, c = 1, -3, 2`.
+- Deux éléments écrivent ce qui a une structure, à partir des données de
+  `question_setup` :
+  - `{{ variation_table(xs, values, up) }}` : tableau de variations. `xs` :
+    abscisses des bornes et des points remarquables ; `values` : valeur de la
+    fonction en chacune (`None` pour une case vide, par exemple sans limite aux
+    bornes) ; `up` : sens de chaque intervalle (`True` : croissant).
+    `signs=['-', '+']` ajoute la ligne de f′ (0 aux abscisses intérieures),
+    `forbidden=[0]` une double barre où la fonction n’est pas définie. Les
+    infinis s’écrivent `oo` et `-oo` (SymPy) ou `float('inf')`.
+  - `{{ interval(a, b, left_closed, right_closed) }}` : intervalle à la
+    française, `[a\,;\,b]` ou `]a\,;\,b[`, dans une formule `$…$`.
+
+  Un élément ne contient jamais de champ de réponse : pour un tableau à
+  compléter, écris le tableau en HTML dans l’énoncé et place les champs dans
+  ses cases.
 - Ce que l’énoncé définit par `{% set %}`, à son premier niveau (hors condition
   ou boucle), est aussi visible dans l’explication : un fragment qui sert aux
   deux s’écrit une fois, en tête de l’énoncé.

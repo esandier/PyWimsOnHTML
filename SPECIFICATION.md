@@ -652,6 +652,25 @@ lieu d’un).
 pour 1, −3, 2. Un filtre ne calcule rien : il écrit un nombre déjà calculé, et
 refuse ce qui n’est pas un nombre réel.
 
+**Éléments d’écriture.** Ce qui a une structure et que plusieurs questions
+recopiaient est rendu par une fonction que l’énoncé appelle avec les données de
+`question_setup`. Règle d’entrée : un élément n’entre que s’il est déjà
+recopié dans plusieurs questions ; il ne crée jamais de champ de réponse (le
+compilateur repère les champs en lisant l’énoncé).
+
+- `{{ variation_table(xs, values, up) }}` : tableau de variations en HTML,
+  une case par formule. `xs` : abscisses des bornes et des points
+  remarquables ; `values` : valeur en chacune (`None` : case vide) ; `up` :
+  sens de chaque intervalle (`True` : croissant). `signs=[…]` (`"+"` ou `"-"`
+  par intervalle) ajoute la ligne de f′, avec 0 aux abscisses intérieures ;
+  `forbidden=[…]` met une double barre aux abscisses où la fonction n’est pas
+  définie ; `function` et `variable` changent les noms (f, x). Une valeur est
+  un nombre, ±∞ (`float('inf')` ou `oo`), ou un texte TeX tel quel. Remplace
+  `table_html`, recopié dans 15 questions, et le tableau d’« Extremum local ».
+- `{{ interval(a, b, left_closed, right_closed) }}` : intervalle à la
+  française, `[a\,;\,b]`, `\mathopen{]}a\,;\,b\mathclose{[}` ; une borne
+  infinie est ouverte. Remplace `interval_tex`, recopié dans 15 questions.
+
 **Définitions partagées.** Ce que l’énoncé définit par `{% set %}` à son
 premier niveau (hors bloc, boucle ou condition) est visible dans
 l’explication : un fragment qui sert aux deux s’écrit une fois, en tête de

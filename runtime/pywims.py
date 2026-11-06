@@ -218,8 +218,97 @@ def _jinja():
         environment.filters["term"] = _term
         environment.filters["signed"] = _signed
         environment.filters["paren"] = _paren
+        environment.globals["variation_table"] = variation_table
+        environment.globals["interval"] = interval
         _jinja_environment = environment
     return _jinja_environment
+
+
+# Éléments d’écriture (SPECIFICATION.md, § 2.10) : ce que plusieurs questions recopiaient, rendu par
+# l’énoncé à partir des données de « question_setup ». Un élément ne crée jamais de champ de réponse :
+# le compilateur repère les champs en lisant l’énoncé.
+def _bound_tex(value):
+    """Valeur d’un tableau ou d’une borne : ±∞ (float ou oo de SymPy), un texte TeX tel quel, sinon tex."""
+    if isinstance(value, str):
+        return value
+    sympy = _sys.modules.get("sympy")
+    if value == float("inf") or (sympy is not None and value == sympy.oo):
+        return r"+\infty"
+    if value == float("-inf") or (sympy is not None and value == -sympy.oo):
+        return r"-\infty"
+    return tex(value, frac=True)
+
+
+# Styles du tableau de variations. Sur un écran étroit, texte et marges réduits : un tableau à quatre
+# flèches tient dans un téléphone de 375 px ; sinon, seul le tableau défile, jamais la page.
+_VARIATION_STYLE = """<style>
+  .pw-tv-scroll { max-width: 100%; overflow-x: auto; }
+  .pw-tv { border-collapse: collapse; margin: 0.6em auto; text-align: center; }
+  .pw-tv td { padding: 0.3em 0.4em; }
+  .pw-tv .pw-tv-head { border-right: 1px solid; padding: 0.3em 0.5em; }
+  .pw-tv .pw-tv-line { border-bottom: 1px solid; }
+  @media (max-width: 480px) {
+    .pw-tv { font-size: 0.9em; }
+    .pw-tv td { padding: 0.3em 0.2em; }
+  }
+</style>"""
+
+
+def variation_table(xs, values, up, signs=None, forbidden=(), function="f", variable="x"):
+    r"""Tableau de variations (SPECIFICATION.md, § 2.10), rendu en HTML.
+
+    xs : abscisses des bornes et des points remarquables ; values : valeur de la fonction en chacune
+    (None : case vide, par exemple pas de limite aux bornes) ; up : sens de chaque intervalle, True pour
+    croissant ; signs : signe de la dérivée sur chaque intervalle (« + » ou « - »), qui ajoute la ligne
+    de f' avec 0 aux abscisses intérieures ; forbidden : abscisses où la fonction n’est pas définie
+    (double barre). Une valeur est un nombre, ±∞ (float('inf') ou oo), ou un texte TeX tel quel.
+    Valeurs alignées sur une ligne, et non placées en haut ou en bas selon le sens (choix de l’auteur,
+    octobre 2026). Tableau HTML dont chaque case est une formule, plutôt qu’un array de TeX : MathJax
+    en écartait les colonnes, et un tableau à quatre flèches défilait à 375 px.
+    """
+    xs, values, up = list(xs), list(values), list(up)
+    if len(values) != len(xs) or len(up) != len(xs) - 1 or (signs is not None and len(signs) != len(up)):
+        raise ValueError("variation_table : il faut une valeur par abscisse, et un sens (et un signe) par "
+                         "intervalle ({} abscisses, {} valeurs, {} sens).".format(len(xs), len(values), len(up)))
+    barred = {_bound_tex(value) for value in forbidden}
+    bar = r"\|"
+
+    def cell(text, line=False):
+        formula = "${}$".format(text) if text else ""
+        return '<td class="pw-tv-line">{}</td>'.format(formula) if line else "<td>{}</td>".format(formula)
+
+    rows = [['<td class="pw-tv-head pw-tv-line">${}$</td>'.format(variable)]]
+    if signs is not None:
+        rows.append(['<td class="pw-tv-head pw-tv-line">${}\'({})$</td>'.format(function, variable)])
+    rows.append(['<td class="pw-tv-head">${}({})$</td>'.format(function, variable)])
+    for index, x in enumerate(xs):
+        x_text = _bound_tex(x)
+        excluded = x_text in barred
+        inner = 0 < index < len(xs) - 1
+        rows[0].append(cell(x_text, True))
+        if signs is not None:
+            rows[1].append(cell(bar if excluded else "0" if inner else "", True))
+        value = values[index]
+        rows[-1].append(cell(bar if excluded else "" if value is None else _bound_tex(value)))
+        if index < len(up):
+            rows[0].append(cell("", True))
+            if signs is not None:
+                rows[1].append(cell(signs[index], True))
+            rows[-1].append(cell(r"\nearrow" if up[index] else r"\searrow"))
+    body = "".join("<tr>{}</tr>".format("".join(row)) for row in rows)
+    return '{}<div class="pw-tv-scroll"><table class="pw-tv">{}</table></div>'.format(_VARIATION_STYLE, body)
+
+
+def interval(left, right, left_closed=True, right_closed=True):
+    r"""Intervalle en TeX, à la française : [a\,;\,b], ]a\,;\,b[ ; une borne infinie est toujours ouverte.
+
+    \mathopen et \mathclose : un « ] » ouvrant est sinon lu comme fermant, et « ]-3 » s’écrit « ] − 3 ».
+    """
+    left_text, right_text = _bound_tex(left), _bound_tex(right)
+    left_closed = left_closed and "infty" not in left_text
+    right_closed = right_closed and "infty" not in right_text
+    return (("[" if left_closed else r"\mathopen{]}") + r"{}\,;\,{}".format(left_text, right_text)
+            + ("]" if right_closed else r"\mathclose{[}"))
 
 
 # Filtres d’écriture (SPECIFICATION.md, § 2.10) : ils écrivent un nombre déjà calculé, avec son

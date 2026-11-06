@@ -945,6 +945,25 @@ json.dumps({
         }
       });
 
+      await test("les éléments variation_table et interval écrivent le tableau et l’intervalle", async () => {
+        const fields = {
+          question_title: "Éléments",
+          question_layout: "STD",
+          question_setup: "from sympy import oo, Rational\nxs = [0, 1, oo]\nvalues = [None, Rational(-1, 2), None]\n" +
+            "up = [False, True]\nsigns = ['-', '+']\nminimum = values[1]",
+          question_statement: "{{ variation_table(xs, values, up, signs=signs, forbidden=[0]) }}\n" +
+            "${{ interval(-oo, 3, True, False) }}$ ${{ interval(1, 2) }}$ {{ input_value('v', solution=minimum) }}"
+        };
+        const [draw] = await PyWimsCompiler.computeDraws(fields, { count: 1 });
+        const cells = [...new DOMParser().parseFromString(draw.statement, "text/html").querySelectorAll("tr")]
+          .map(row => [...row.cells].map(cell => cell.textContent).join("|"));
+        const expected = ["$x$|$0$||$1$||$+\\infty$", "$f'(x)$|$\\|$|$-$|$0$|$+$|", "$f(x)$|$\\|$|$\\searrow$|$-\\frac{1}{2}$|$\\nearrow$|"];
+        if (JSON.stringify(cells) !== JSON.stringify(expected) ||
+            !draw.statement.includes("$\\mathopen{]}-\\infty\\,;\\,3\\mathclose{[}$ $[1\\,;\\,2]$")) {
+          throw new Error(`Rendu inattendu : ${JSON.stringify(cells)} ${draw.statement.slice(-120)}`);
+        }
+      });
+
       // Les questions seules ci-dessus portent leurs tirages en JSON (export « pour navigateur ancien ») ;
       // l’activité, compressés, comme un export ordinaire (SPECIFICATION.md, § 5.10).
       await test("une activité réunit toutes les questions dans un seul document et les corrige chacune", async () => {
