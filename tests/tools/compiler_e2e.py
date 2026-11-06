@@ -68,11 +68,17 @@ def remembered_folder(page, files):
     page.wait_for_function("document.querySelectorAll('#question-list li:not(.question-group)').length === 2")
     if page.is_hidden("#reload-folder"):
         raise AssertionError("« Relire » n’apparaît pas pour un dossier ouvert par Chrome ou Edge.")
-    # Liste regroupée : le dossier choisi d’abord, puis le sous-dossier sous son chemin (§ 11.3).
+    # Liste regroupée : le dossier choisi d’abord, puis le sous-dossier sous son chemin, et dans chacun,
+    # le cours lu dans le nom de fichier (§ 11.3).
     groups = page.evaluate("[...document.querySelectorAll('#question-list li')].map(li => li.classList.contains('question-group') ? '# ' + li.textContent : li.querySelector('.question-title').textContent)")
-    if len(groups) != 4 or groups[0] != "# questions-essai" or groups[2] != "# sous-dossier/" or groups[3] != "Arithmétique : PGCD de deux entiers":
+    expected_groups = ["# questions-essai", "# L1 Mathématiques · Calculus", "Nombres décimaux : valeur approchée à 0,1 près",
+                       "# sous-dossier/", "# L1 Mathématiques · Algèbre et arithmétique", "Arithmétique : PGCD de deux entiers"]
+    if groups != expected_groups:
         raise AssertionError(f"liste regroupée inattendue : {groups}")
-    print("dossier mémorisé : ouvert, sous-dossier compris, liste regroupée par dossier")
+    kinds = page.evaluate("[...document.querySelectorAll('.question-kind')].map(tag => tag.textContent)")
+    if kinds != ["choix unique", "nombre"]:
+        raise AssertionError(f"Les types de champs ne sont pas en étiquettes : {kinds}")
+    print("dossier mémorisé : ouvert, sous-dossier compris, liste regroupée par dossier et par cours, champs en étiquettes")
 
     # Fichier modifié, puis « Relire » : le nouveau titre apparaît, la sélection est gardée.
     decim_source = files["L1 - Mathématiques - Calculus - Valeur approchée à 0.1 près.pwq"]
@@ -319,8 +325,16 @@ def editor_and_paste(browser, url, pgcd):
     page.wait_for_function(f"{editor}.getValue() === '' && document.querySelector('#editor-view .CodeMirror-placeholder')")
     pasted = f"Voici :\n=== premiere.pwq ===\n```\n{pgcd.replace('Arithmétique : PGCD de deux entiers', 'Collée')}```\n=== seconde.pwq ===\n{pgcd}"
     page.evaluate(f"text => {editor}.replaceRange(text, {{ line: 0, ch: 0 }}, undefined, 'paste')", pasted)
+    # Les noms « === » ne suivent pas la convention : la fenêtre propose le niveau, la discipline et le
+    # cours de la question courante, et un résumé tiré du titre ; l’auteur confirme.
+    page.wait_for_selector("#name-dialog[open]")
+    proposed = page.eval_on_selector_all("#name-dialog .name-preview", "items => items.map(item => item.textContent)")
+    prefix = "L1 - Mathématiques - Algèbre et arithmétique - "
+    if proposed != [f"{prefix}Collée.pwq", f"{prefix}Arithmétique PGCD de deux entiers.pwq"]:
+        raise AssertionError(f"noms proposés inattendus : {proposed}")
+    page.click("#name-dialog button[type=submit]")
     page.wait_for_function("document.getElementById('back-to-list').hidden", timeout=30_000)
-    if page.evaluate(READ_OPFS, "questions-edition/seconde.pwq") != pgcd:
+    if page.evaluate(READ_OPFS, f"questions-edition/{prefix}Arithmétique PGCD de deux entiers.pwq") != pgcd:
         raise AssertionError("La question collée n’a pas été écrite dans le dossier.")
     marked = page.eval_on_selector_all("#question-list li", "items => items.filter(li => li.querySelector('.question-state')).map(li => li.querySelector('.question-title').textContent)")
     if sorted(marked) != ["Arithmétique : PGCD de deux entiers", "Collée"]:
@@ -345,7 +359,7 @@ def editor_and_paste(browser, url, pgcd):
     # « Supprimer » (confirmé : les fenêtres sont acceptées) : le fichier disparaît du dossier et de la liste.
     page.click("#question-list li:has(.question-title:text-is('Collée')) .question-delete")
     page.wait_for_function("![...document.querySelectorAll('.question-title')].some(item => item.textContent === 'Collée')")
-    if page.evaluate("async () => { const root = await navigator.storage.getDirectory(); const folder = await root.getDirectoryHandle('questions-edition'); try { await folder.getFileHandle('premiere.pwq'); return true; } catch { return false; } }"):
+    if page.evaluate("async () => { const root = await navigator.storage.getDirectory(); const folder = await root.getDirectoryHandle('questions-edition'); try { await folder.getFileHandle('L1 - Mathématiques - Algèbre et arithmétique - Collée.pwq'); return true; } catch { return false; } }"):
         raise AssertionError("« Supprimer » n’a pas effacé le fichier du dossier.")
     print("liste : « Supprimer » efface le fichier du dossier")
     # « Prompt », dans le bandeau : PROMPT.md copié dans le presse-papiers.

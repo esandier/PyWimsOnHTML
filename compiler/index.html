@@ -218,6 +218,25 @@
       letter-spacing: 0.02em;
     }
     #question-list .question-group:first-child { margin-top: 0; }
+    /* Intertitre d’un cours, lu dans le nom de fichier : niveau en pastille, discipline, cours en gras. */
+    #question-list .question-course {
+      margin-top: 0.6rem;
+      color: #3d4247;
+      font-size: 0.8rem;
+      font-weight: 400;
+      letter-spacing: 0;
+    }
+    #question-list .question-course strong { font-weight: 700; }
+    .course-level {
+      display: inline-block;
+      margin-right: 0.15rem;
+      padding: 0 0.3rem;
+      border-radius: 0.25rem;
+      color: #fff;
+      background: #656b72;
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
 
     /* Ligne d’une question : case de sélection, titre et types de champs, puis « Éditeur » et
        « Supprimer » (atelier, Chrome et Edge). */
@@ -296,6 +315,17 @@
       color: #656b72;
       font-size: 0.75rem;
       font-weight: 400;
+    }
+    /* Type de champ de réponse en étiquette : distinct du titre, et des mots-clés qu’on ne montre pas. */
+    .question-kind {
+      display: inline-block;
+      margin: 0.1rem 0.25rem 0 0;
+      padding: 0 0.35rem;
+      border: 1px solid #d5d9de;
+      border-radius: 0.6rem;
+      background: #f6f7f8;
+      font-size: 0.7rem;
+      line-height: 1.35;
     }
 
     /* Cadre Compilation : le bouton, puis le mode et le titre quand ils servent, sur une ligne. */
@@ -491,6 +521,21 @@
     /* Question collée pendant la visite (§ 11.10). */
     .question-state { margin-left: 0.35rem; color: #a95f00; font-size: 0.75rem; font-weight: 600; }
 
+    /* Nom des questions collées : niveau, discipline, cours et résumé, à confirmer (§ 11.10). */
+    .name-dialog { width: min(46rem, calc(100vw - 2rem)); max-height: calc(100vh - 2rem); padding: 1rem 1.2rem; border: 1px solid #aeb5bd; border-radius: 0.4rem; }
+    .name-dialog::backdrop { background: rgb(0 0 0 / 0.25); }
+    .name-dialog h2 { margin: 0 0 0.3rem; font-size: 1.05rem; }
+    .name-dialog p { margin: 0 0 0.6rem; font-size: 0.85rem; }
+    .name-dialog fieldset { margin: 0 0 0.7rem; padding: 0.4rem 0.6rem 0.6rem; border: 1px solid #d5d9de; border-radius: 0.3rem; }
+    .name-dialog legend { padding: 0 0.3rem; font-size: 0.85rem; font-weight: 600; }
+    .name-parts { display: grid; grid-template-columns: 4.5rem 9rem minmax(8rem, 1fr); gap: 0.4rem; }
+    .name-parts label { display: flex; flex-direction: column; gap: 0.1rem; font-size: 0.75rem; color: #3d4247; }
+    .name-parts .name-summary { grid-column: 1 / -1; }
+    .name-parts input { padding: 0.2rem 0.35rem; border: 1px solid #aeb5bd; border-radius: 0.25rem; font: inherit; font-size: 0.85rem; }
+    .name-preview { margin-top: 0.35rem; color: #656b72; font-size: 0.75rem; overflow-wrap: anywhere; }
+    .name-actions { display: flex; justify-content: flex-end; gap: 0.5rem; }
+    @media (max-width: 520px) { .name-parts { grid-template-columns: 1fr; } }
+
     .muted { color: #656b72; }
     .error { color: #8a1111; }
     .success { color: #176326; }
@@ -631,6 +676,7 @@
       </div>
       <!-- Éditeur de la question courante, rempli par editor.js. -->
       <div class="editor-view" id="editor-view" hidden></div>
+      <dialog class="name-dialog" id="name-dialog" aria-labelledby="name-dialog-title"></dialog>
     </section>
 
     <!-- Compilation : le bouton, puis le mode et le titre (activité). Les modes dépendent du nombre de

@@ -298,6 +298,53 @@
     return kinds.length ? kinds.join(" · ") : "aucun champ de réponse";
   }
 
+  // Nom de fichier « niveau - discipline - cours - résumé.pwq » (SPECIFICATION.md, § 11.3). Le nom est la
+  // seule source de ces informations : des champs dans le fichier les auraient doublées, et les deux
+  // finissent par se contredire. Solution écartée : un fichier de configuration par dossier, perdu
+  // quand une question voyage seule. Les cours de mathématiques viennent de dix maquettes de licence.
+  const nameSeparator = " - ";
+  const questionLevels = ["L1", "L2", "L3", "M1", "M2"];
+  const mathCourses = [
+    "Raisonnement", "Ensembles et logique", "Calculus", "Nombres complexes",
+    "Nombres réels suites et séries numériques", "Fonctions d'une variable", "Suites et séries de fonctions",
+    "Algèbre linéaire", "Algèbre et arithmétique", "Géométrie", "Calcul différentiel", "Équations différentielles",
+    "Mesure et intégration", "Topologie et espaces de Hilbert", "Analyse complexe", "Analyse numérique",
+    "Optimisation", "Probabilités", "Statistiques", "Outils mathématiques", "Histoire des mathématiques"
+  ];
+  // Caractères refusés dans une partie du nom : ceux que Windows interdit, et la virgule.
+  const forbiddenNameCharacters = /[:?<>"*/\\|,]/;
+
+  // Parties du nom d’une question, ou null s’il ne suit pas la convention (toléré : un fichier WIMS
+  // traduit, une démonstration). Le résumé garde un « - » qu’il contiendrait.
+  function questionNameParts(path) {
+    const parts = path.split("/").pop().replace(questionExtension, "").split(nameSeparator).map(part => part.trim());
+    if (parts.length < 4 || parts.slice(0, 4).some(part => !part)) return null;
+    const [level, discipline, course, ...summary] = parts;
+    return { level, discipline, course, summary: summary.join(nameSeparator) };
+  }
+
+  // Nom de fichier tiré des parties ; sans niveau, discipline ni cours, le résumé seul.
+  function questionNameFromParts({ level, discipline, course, summary }) {
+    const prefix = [level, discipline, course].map(part => part.trim());
+    return `${(prefix.every(part => !part) ? [summary.trim()] : [...prefix, summary.trim()]).join(nameSeparator)}.pwq`;
+  }
+
+  // Résumé tiré d’un titre : les deux-points deviennent une espace, les caractères refusés disparaissent.
+  function summaryFromTitle(title) {
+    return title.replace(/\s*:\s*/g, " ").replace(/’/g, "'").replace(/[?<>"*/\\|,]/g, "")
+      .replace(/\s+/g, " ").trim().slice(0, 90).trim();
+  }
+
+  // Problème d’une partie du nom, ou null ; le résumé seul est obligatoire.
+  function namePartProblem(name, value, required) {
+    if (required && !value.trim()) return `${name} : à remplir.`;
+    if (forbiddenNameCharacters.test(value)) return `${name} : pas de virgule ni de : ? < > " * / \\ |.`;
+    if (!required && value.includes(nameSeparator)) {
+      return `${name} : pas de « - » entouré d’espaces, qui sépare les parties du nom.`;
+    }
+    return null;
+  }
+
   // Avertissements sur l’écriture de l’énoncé, qui n’empêchent pas la compilation (SPECIFICATION.md,
   // § 2.4). Les trois accolades de suite (\frac{{{n}}}) en faisaient partie ; avec Jinja, c’est une
   // erreur (PyWimsTemplate.syntaxErrors).
@@ -333,6 +380,12 @@
     fieldHeader,
     archiveQuestionSource,
     fieldKindsLabel,
-    templateWarnings
+    templateWarnings,
+    questionLevels,
+    mathCourses,
+    questionNameParts,
+    questionNameFromParts,
+    summaryFromTitle,
+    namePartProblem
   });
 })();

@@ -1,7 +1,34 @@
 # Prompt de génération des questions PyWimsOnHTML
 
 Tu rédiges un fichier source de question pour PyWimsOnHTML. Réponds uniquement
-avec un fichier `.pwq` complet, sans bloc Markdown ni commentaire.
+avec le fichier `.pwq` complet, précédé de la ligne qui le nomme (voir « Titre,
+nom de fichier et cours »), sans bloc Markdown ni commentaire.
+
+## Titre, nom de fichier et cours
+
+- Le titre commence par la notion, puis dit ce qu’on fait, et la situation
+  entre parenthèses quand elle aide : « Loi normale : pourcentage au-delà d’un
+  seuil (tailles) », « Dérivée : produit ou quotient ».
+- Fais précéder chaque question, même seule, d’une ligne qui donne son nom de
+  fichier : `=== niveau - discipline - cours - résumé.pwq ===`, par exemple
+  `=== L2 - Mathématiques - Probabilités - Écart-type d'une somme (flacons).pwq ===`
+  (apostrophe droite dans le nom de fichier).
+  - **niveau** : `L1`, `L2`, `L3`, `M1` ou `M2`, celui qu’on t’indique, sinon
+    déduis-le de la question ;
+  - **discipline** : celle de la question, et non celle du public
+    (`Mathématiques` pour une question de maths posée à des biologistes) ;
+  - **cours** : en mathématiques, un cours de cette liste, tel quel :
+    Raisonnement, Ensembles et logique, Calculus, Nombres complexes, Nombres
+    réels suites et séries numériques, Fonctions d'une variable, Suites et
+    séries de fonctions, Algèbre linéaire, Algèbre et arithmétique, Géométrie,
+    Calcul différentiel, Équations différentielles, Mesure et intégration,
+    Topologie et espaces de Hilbert, Analyse complexe, Analyse numérique,
+    Optimisation, Probabilités, Statistiques, Outils mathématiques (cours de
+    mathématiques d’une autre licence), Histoire des mathématiques ;
+  - **résumé** : quelques mots tirés du titre.
+
+  Aucune partie ne contient de virgule ni l’un des caractères `: ? < > " * / \ |`,
+  et les parties sont séparées par ` - ` (espace, tiret, espace).
 
 ## Structure obligatoire
 
@@ -27,7 +54,8 @@ N’insère pas de ligne contenant uniquement `%` dans le contenu d’un champ.
 
 Tout le contenu destiné à l’élève doit être en français, y compris le titre,
 les mots-clés, l’énoncé et les messages de correction. Écris les mots-clés en
-français, séparés par des virgules.
+français, séparés par des virgules : les notions de la question, sans le type
+de réponse (« QCM »), que l’atelier déduit des champs.
 
 ## Ce que les tirages font varier
 
@@ -357,7 +385,7 @@ auto-multiple-choice (AMC). Convertis chaque question en un fichier `.pwq` :
   `<br>`. Garde les formules `$…$` telles quelles. Dans un choix, le HTML
   n’est pas interprété : écris un texte simple.
 - Un titre et des mots-clés en français sont obligatoires : déduis-les de la
-  question.
+  question, comme le nom du fichier (voir « Titre, nom de fichier et cours »).
 - N’écris pas de `question_check` : AMC n’a pas de retour selon la réponse, et la
   correction sans `question_check` vérifie déjà la réponse en tout ou rien. Écris-en un
   seulement si l’on te demande des retours ciblés ; il écrit alors un
@@ -373,7 +401,7 @@ auto-multiple-choice (AMC). Convertis chaque question en un fichier `.pwq` :
 - Une image (`\includegraphics{figure}`) devient `<img src="figure.png"
   alt="…">` ; rappelle de joindre l’image au `.pwq` dans une archive `.pwqa`.
 - Pour plusieurs questions, donne les fichiers l’un après l’autre, chacun
-  précédé d’une ligne `=== nom-du-fichier.pwq ===`.
+  précédé de sa ligne `=== … .pwq ===`.
 
 Exemple. Source AMC :
 
@@ -396,14 +424,15 @@ Fichier `.pwq` (les nombres sont tirés au hasard, ce qu’AMC ne faisait pas ;
 c’est permis quand la question s’y prête) :
 
 ```text
+=== L1 - Mathématiques - Algèbre et arithmétique - Reconnaître des nombres premiers.pwq ===
 %
 % question_title
 %
-Reconnaître des nombres premiers
+Arithmétique : reconnaître des nombres premiers
 %
 % question_keywords
 %
-arithmétique, nombres premiers, QCM
+arithmétique, nombres premiers
 %
 % question_layout
 %
@@ -434,10 +463,11 @@ Un nombre premier a exactement deux diviseurs : $1$ et lui-même.
 ## Exemple
 
 ```text
+=== L1 - Mathématiques - Algèbre et arithmétique - Plus grand diviseur commun.pwq ===
 %
 % question_title
 %
-Plus grand diviseur commun
+Arithmétique : plus grand diviseur commun
 %
 % question_keywords
 %

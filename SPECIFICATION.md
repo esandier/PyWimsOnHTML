@@ -1394,15 +1394,28 @@ d’emploi pour créer une question, avec ou sans IA.
 
 ### 11.3 Liste des questions
 
-- Une ligne par question : son **titre**, puis, à droite, en petit et en gris,
-  les types de champs de réponse qu’elle utilise, dans l’ordre de l’énoncé et
-  sans répétition : « texte », « nombre », « formule », « matrice », « matrice
+- Une ligne par question : son **titre**, puis, dessous, une étiquette par type
+  de champ de réponse qu’elle utilise, dans l’ordre de l’énoncé et sans
+  répétition : « texte », « nombre », « formule », « matrice », « matrice
   redimensionnable », « choix unique », « choix multiple ». Un titre trop long
   est coupé par « … » ; le survol donne le titre, les types et le chemin.
+- **Nom de fichier** : `niveau - discipline - cours - résumé.pwq`, par exemple
+  `L2 - Mathématiques - Probabilités - Écart-type d'une somme (flacons).pwq`.
+  C’est la seule source de ces informations (pas de champ dans le fichier, qui
+  finirait par contredire le nom ; pas de fichier de configuration par dossier,
+  perdu quand une question voyage seule). Le niveau va de `L1` à `M2` ; la
+  discipline est celle de la question, et non du public ; en mathématiques, le
+  cours vient d’une liste tirée de dix maquettes de licence (`PROMPT.md`,
+  `compiler/format.js`). Aucune partie ne contient de virgule ni de
+  `: ? < > " * / \ |`. Un nom qui ne suit pas la convention (traduction WIMS,
+  démonstration) est toléré.
 - Les questions sont regroupées par sous-dossier (le dossier choisi d’abord,
-  puis chaque sous-dossier sous son chemin, en intertitre), et triés par titre
-  dans l’ordre naturel (« (2) » avant « (10) ») dans chaque groupe. Sans
-  sous-dossier, la liste n’a pas d’intertitre.
+  puis chaque sous-dossier sous son chemin, en intertitre), puis, dans chaque
+  dossier, par niveau, discipline et cours, en intertitre « L2 · Mathématiques ·
+  **Probabilités** » (le niveau en pastille) ; les noms hors convention viennent
+  ensuite, sous « Autres fichiers ». Dans chaque groupe, tri par titre dans
+  l’ordre naturel (« (2) » avant « (10) »). Un dossier sans aucun nom conforme
+  n’a pas d’intertitre de cours ; sans sous-dossier, pas d’intertitre de dossier.
 - Un fichier illisible est listé sous son nom de fichier, avec la mention
   « fichier illisible » ; son erreur s’affiche quand on le choisit.
 - La recherche porte sur le titre, les mots-clés et le chemin.
@@ -1616,12 +1629,18 @@ En tête du panneau de gauche, à droite, précédé de son message bref :
   bouton demande d’en ouvrir un.
 
 Le texte collé est découpé en questions aux lignes `=== nom.pwq ===` que
-`PROMPT.md` demande pour plusieurs questions ; à défaut, avant chaque
+`PROMPT.md` demande avant chaque question ; à défaut, avant chaque
 `% question_title`. Les lignes de bloc de code (```) et le texte qui précède le
-premier `%` sont retirés : les IA en ajoutent malgré la consigne. Chaque question
-est aussitôt écrite à la racine du dossier, sous le nom de la ligne `===` ou un
-nom tiré du titre (`loi-binomiale.pwq`), rendu unique s’il est déjà pris, et
-marquée « nouvelle » dans la liste pendant la visite. Une seule question : elle
+premier `%` sont retirés : les IA en ajoutent malgré la consigne. Une fenêtre
+demande alors le nom de chaque question : niveau, discipline, cours (listes de
+suggestions : niveaux, cours de mathématiques, et ceux du dossier) et résumé,
+avec le nom de fichier qui en résulte. Elle est pré-remplie par la ligne `===`
+si elle suit la convention (§ 11.3), sinon par le niveau, la discipline et le
+cours de la question courante (ou de la première question du dossier qui en a)
+et un résumé tiré du titre. L’auteur confirme ou corrige : une IA se trompe
+parfois de niveau ou de cours. « Annuler » n’écrit rien. Chaque question est
+alors écrite à la racine du dossier, sous ce nom, rendu unique s’il est déjà
+pris, et marquée « nouvelle » dans la liste pendant la visite. Une seule question : elle
 devient la question courante, et l’éditeur la montre. Plusieurs : la page
 revient à la liste, où on les voit toutes, et la première devient la question
 courante ; sinon, on pourrait croire perdues les suivantes.

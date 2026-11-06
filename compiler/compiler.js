@@ -4,7 +4,7 @@
 // page (SPECIFICATION.md, § 11.1) ; le dossier choisi par l’utilisateur ne contient que ses questions.
 (() => {
   // Fonctions des modules du compilateur (format.js, draws.js, assemble.js, zip.js).
-  const { archiveQuestionSource, assembleActivity, assembleQuestion, compressDraws, computeDraws, createQuestionFilename, createZip, fieldKindsLabel, isArchive, isPwqFile, isQuestionFile, neededResources, parseQuestionSource, pwqExtension, questionExtension, readZip, resourcePaths, scormPackageEntries, splitPastedQuestions, splitQuestionSource, templateWarnings } = PyWimsCompiler;
+  const { archiveQuestionSource, assembleActivity, assembleQuestion, compressDraws, computeDraws, createQuestionFilename, createZip, fieldKindsLabel, isArchive, isPwqFile, isQuestionFile, mathCourses, namePartProblem, neededResources, parseQuestionSource, pwqExtension, questionExtension, questionLevels, questionNameFromParts, questionNameParts, readZip, resourcePaths, scormPackageEntries, splitPastedQuestions, splitQuestionSource, summaryFromTitle, templateWarnings } = PyWimsCompiler;
 
   const chooseFolderButton = document.getElementById("choose-folder");
   const filePicker = document.getElementById("question-folder");
@@ -540,6 +540,22 @@
     return question.fields?.question_title || question.path.split("/").pop();
   }
 
+  // Intertitre d’un cours dans la liste : « L2 · Mathématiques · Probabilités », le cours en gras ;
+  // « Autres fichiers » pour les noms qui ne suivent pas la convention. Une fois par groupe, et non sur
+  // chaque ligne : dans un dossier, ces trois informations sont presque toujours les mêmes.
+  function courseHeading(parts) {
+    const heading = document.createElement("li");
+    heading.className = "question-group question-course";
+    if (!parts) {
+      heading.textContent = "Autres fichiers";
+      return heading;
+    }
+    const level = Object.assign(document.createElement("span"), { className: "course-level", textContent: parts.level });
+    const course = Object.assign(document.createElement("strong"), { textContent: parts.course });
+    heading.append(level, ` ${parts.discipline} · `, course);
+    return heading;
+  }
+
   // Filtre et trie les questions, puis reconstruit leur liste accessible.
   function renderQuestionList() {
     const query = search.value.trim().toLocaleLowerCase();
@@ -562,23 +578,41 @@
     });
 
     // Regroupement par sous-dossier (SPECIFICATION.md, § 11.3) : le dossier choisi d’abord, puis
-    // chaque sous-dossier sous son chemin ; dans chaque groupe, ordre naturel des titres (« (2) »
-    // avant « (10) »). Sans sous-dossier, aucun intertitre.
+    // chaque sous-dossier sous son chemin ; dans chaque dossier, par niveau, discipline et cours, lus
+    // dans le nom de fichier, les noms qui ne suivent pas la convention à la fin ; dans chaque groupe,
+    // ordre naturel des titres (« (2) » avant « (10) »). Sans sous-dossier ni cours, aucun intertitre.
     const naturalOrder = (left, right) => left.localeCompare(right, "fr", { numeric: true });
     const folderOf = question => question.path.includes("/") ? question.path.slice(0, question.path.lastIndexOf("/")) : "";
+    // Clé du cours : l’apostrophe typographique et la casse n’en font pas un autre cours.
+    const courseOf = question => {
+      const parts = questionNameParts(question.path);
+      return parts ? [parts.level, parts.discipline, parts.course].join(" · ") : "";
+    };
+    const courseKey = question => courseOf(question).replace(/’/g, "'").toLocaleLowerCase();
     matches.sort((left, right) =>
       (folderOf(left) === "" ? -1 : 0) - (folderOf(right) === "" ? -1 : 0) ||
       naturalOrder(folderOf(left), folderOf(right)) ||
+      (courseKey(left) === "" ? 1 : 0) - (courseKey(right) === "" ? 1 : 0) ||
+      naturalOrder(courseKey(left), courseKey(right)) ||
       naturalOrder(questionLabel(left), questionLabel(right)));
     const grouped = questions.some(question => folderOf(question) !== "");
+    // Un dossier dont aucune question ne suit la convention n’a pas d’intertitre de cours.
+    const foldersWithCourses = new Set(questions.filter(courseOf).map(folderOf));
     let currentFolder = null;
+    let currentCourse = null;
     for (const question of matches) {
       if (grouped && folderOf(question) !== currentFolder) {
         currentFolder = folderOf(question);
+        currentCourse = null;
         const heading = document.createElement("li");
         heading.className = "question-group";
         heading.textContent = currentFolder === "" ? folderName.textContent : `${currentFolder}/`;
         questionList.append(heading);
+      }
+      if (foldersWithCourses.has(folderOf(question)) && courseKey(question) !== currentCourse) {
+        currentFolder = folderOf(question);
+        currentCourse = courseKey(question);
+        questionList.append(courseHeading(questionNameParts(question.path)));
       }
       const item = document.createElement("li");
       item.question = question;
@@ -612,9 +646,16 @@
       title.append(rank, questionLabel(question));
       const kinds = document.createElement("span");
       kinds.className = "question-fields";
-      kinds.textContent = !question.error
+      const kindsLabel = !question.error
         ? fieldKindsLabel(question.fields.question_statement)
         : editor.knows(question) ? "erreur : voir l’éditeur" : "fichier illisible";
+      // Chaque type de champ en étiquette, pour le distinguer du titre ; une erreur reste du texte.
+      if (question.error) {
+        kinds.textContent = kindsLabel;
+      } else {
+        kinds.append(...kindsLabel.split(" · ").map(kind =>
+          Object.assign(document.createElement("span"), { className: "question-kind", textContent: kind })));
+      }
       if (question.isNew) {
         const mark = document.createElement("span");
         mark.className = "question-state";
@@ -623,7 +664,7 @@
       }
       // Au survol : titre et types entiers (la ligne les coupe), et le chemin, car deux questions
       // peuvent porter le même titre.
-      button.title = `${questionLabel(question)} (${kinds.textContent})\n${question.path}`;
+      button.title = `${questionLabel(question)} (${kindsLabel})\n${question.path}`;
       button.append(title, kinds);
       // Un clic montre l’aperçu ; « Éditeur », au bout de la ligne, ouvre la question dans l’atelier (§ 11.10).
       button.addEventListener("click", () => selectQuestion(question));
@@ -1125,18 +1166,114 @@
     return candidate;
   }
 
-  // Écrit les questions d’un texte collé à la racine du dossier (§ 11.10). Une seule : l’éditeur la
-  // montre. Plusieurs : retour à la liste, où on les voit toutes, la première étant la question
-  // courante ; sinon, on pourrait croire perdues les suivantes. Renvoie un message d’erreur, ou null.
+  // Niveau, discipline et cours proposés pour une question collée sans nom conforme : ceux de la question
+  // courante, sinon de la première question du dossier qui en a.
+  function neighbourNameParts() {
+    const neighbour = [selectedQuestion, ...questions].find(question => question && questionNameParts(question.path));
+    return neighbour ? questionNameParts(neighbour.path) : { level: "", discipline: "", course: "" };
+  }
+
+  // Fenêtre de confirmation des noms des questions collées (§ 11.10) : niveau, discipline, cours et
+  // résumé, pré-remplis par la ligne « === » si elle suit la convention, sinon par une question voisine
+  // et le titre. Renvoie les noms de fichiers, ou null si l’on annule. L’atelier propose, l’auteur
+  // décide : une IA se trompe parfois de niveau ou de cours.
+  function confirmNames(pieces) {
+    const dialog = document.getElementById("name-dialog");
+    if (dialog.open) return Promise.resolve(null);
+    const datalist = (id, values) => {
+      const element = document.createElement("datalist");
+      element.id = id;
+      element.append(...[...new Set(values)].map(value => Object.assign(document.createElement("option"), { value })));
+      return element;
+    };
+    const known = questions.map(question => questionNameParts(question.path)).filter(Boolean);
+    const form = document.createElement("form");
+    form.method = "dialog";
+    const heading = Object.assign(document.createElement("h2"), { id: "name-dialog-title", textContent: pieces.length > 1 ? "Nom des questions collées" : "Nom de la question collée" });
+    const help = Object.assign(document.createElement("p"), { textContent: "Le nom du fichier donne le niveau, la discipline et le cours, qui regroupent la liste ; le résumé reprend le titre en quelques mots." });
+    form.append(heading, help,
+      datalist("name-levels", [...questionLevels, ...known.map(parts => parts.level)]),
+      datalist("name-disciplines", ["Mathématiques", ...known.map(parts => parts.discipline)]),
+      datalist("name-courses", [...mathCourses, ...known.map(parts => parts.course)]));
+    const neighbour = neighbourNameParts();
+    const rows = pieces.map(({ name, title }) => {
+      const given = name && questionNameParts(name);
+      // Un nom « === » hors convention (« loi-binomiale.pwq ») cède au titre, plus lisible.
+      const values = given ?? { ...neighbour, summary: summaryFromTitle(title || name?.replace(pwqExtension, "") || "question") };
+      const fieldset = document.createElement("fieldset");
+      fieldset.append(Object.assign(document.createElement("legend"), { textContent: title || name || "Question sans titre" }));
+      const grid = Object.assign(document.createElement("div"), { className: "name-parts" });
+      const inputs = {};
+      for (const [key, label, listId] of [["level", "Niveau", "name-levels"], ["discipline", "Discipline", "name-disciplines"], ["course", "Cours", "name-courses"], ["summary", "Résumé", null]]) {
+        const wrapper = Object.assign(document.createElement("label"), { className: key === "summary" ? "name-summary" : "" });
+        const input = Object.assign(document.createElement("input"), { type: "text", value: values[key] ?? "", spellcheck: false });
+        if (listId) input.setAttribute("list", listId);
+        input.dataset.part = key;
+        inputs[key] = input;
+        wrapper.append(label, input);
+        grid.append(wrapper);
+      }
+      const preview = Object.assign(document.createElement("div"), { className: "name-preview" });
+      const read = () => Object.fromEntries(Object.entries(inputs).map(([key, input]) => [key, input.value]));
+      const update = () => { preview.textContent = questionNameFromParts(read()); };
+      grid.addEventListener("input", update);
+      update();
+      fieldset.append(grid, preview);
+      return { fieldset, read, inputs };
+    });
+    const problem = Object.assign(document.createElement("p"), { className: "error", hidden: true });
+    const actions = Object.assign(document.createElement("div"), { className: "name-actions" });
+    const cancel = Object.assign(document.createElement("button"), { type: "button", className: "small-button", textContent: "Annuler" });
+    const save = Object.assign(document.createElement("button"), { type: "submit", className: "small-button is-primary", textContent: "Enregistrer" });
+    actions.append(cancel, save);
+    form.append(...rows.map(row => row.fieldset), problem, actions);
+    dialog.replaceChildren(form);
+    return new Promise(resolve => {
+      const finish = result => {
+        dialog.close();
+        dialog.replaceChildren();
+        resolve(result);
+      };
+      cancel.addEventListener("click", () => finish(null));
+      dialog.addEventListener("cancel", event => { event.preventDefault(); finish(null); }, { once: true });
+      form.addEventListener("submit", event => {
+        event.preventDefault();
+        const labels = { level: "Niveau", discipline: "Discipline", course: "Cours", summary: "Résumé" };
+        for (const row of rows) {
+          for (const [key, input] of Object.entries(row.inputs)) {
+            const message = namePartProblem(labels[key], input.value, key === "summary");
+            if (message) {
+              problem.textContent = message;
+              problem.hidden = false;
+              input.focus();
+              return;
+            }
+          }
+        }
+        finish(rows.map(row => questionNameFromParts(row.read())));
+      });
+      dialog.showModal();
+      save.focus();
+    });
+  }
+
+  // Écrit les questions d’un texte collé à la racine du dossier (§ 11.10), sous les noms confirmés par
+  // l’auteur. Une seule : l’éditeur la montre. Plusieurs : retour à la liste, où on les voit toutes, la
+  // première étant la question courante ; sinon, on pourrait croire perdues les suivantes. Renvoie un
+  // message d’erreur, ou null.
   async function addPastedQuestions(text) {
-    const pieces = splitPastedQuestions(text);
+    const pieces = splitPastedQuestions(text).map(piece => ({
+      ...piece,
+      title: splitQuestionSource(piece.source)?.fields.find(field => field.name === "question_title")?.content.trim()
+    }));
     if (!pieces.length) {
       return "Aucune question : le code d’une question commence par une ligne « % », puis « % question_title ».";
     }
+    const names = await confirmNames(pieces);
+    if (!names) return "Collage annulé : rien n’a été écrit dans le dossier.";
     const added = [];
-    for (const { name, source } of pieces) {
-      const title = splitQuestionSource(source)?.fields.find(field => field.name === "question_title")?.content.trim();
-      const path = await uniquePath(name ?? createQuestionFilename(title || "question").replace(/\.html$/, ".pwq"));
+    for (const [index, { source }] of pieces.entries()) {
+      const path = await uniquePath(names[index]);
       let handle;
       try {
         handle = await folderHandle.getFileHandle(path, { create: true });
