@@ -1,12 +1,12 @@
 """Matrice redimensionnable : l'élève choisit la taille, dans les limites max_rows × max_cols (10 par
 défaut) ; la solution doit y tenir."""
-from pywims import _solution_cells
+from pywims_widgets.lib.values import solution_cells
 
 
 def prepare(attributes):
     max_rows = attributes.get("max_rows", 10)
     max_cols = attributes.get("max_cols", 10)
-    cells = _solution_cells(attributes["solution"])
+    cells = solution_cells(attributes["solution"])
     columns = len(cells[0]) if cells else 0
     if (any(len(row) != columns for row in cells) or not 1 <= len(cells) <= max_rows
             or not 1 <= columns <= max_cols):

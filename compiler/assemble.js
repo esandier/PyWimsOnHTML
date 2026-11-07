@@ -53,8 +53,8 @@
     python: text => text.replace(/^[ \t]*#[^\n]*\n/gm, "")
   };
 
-  // Fichiers du projet intégrés au HTML généré ; les scripts des widgets, eux, viennent de loadWidgets
-  // (compiler/draws.js), qui les a lus avec leurs déclarations.
+  // Fichiers du projet intégrés au HTML généré ; le code des widgets, lui, vient de widgetResources
+  // (compiler/draws.js), qui l’a lu avec leurs déclarations.
   const resourcePaths = {
     layout: "layouts/standard.html",
     template: "runtime/template.js",
@@ -76,19 +76,12 @@
   function neededResources(fieldsOrList) {
     const list = Array.isArray(fieldsOrList) ? fieldsOrList : [fieldsOrList];
     // Le module pywims et le script du Worker ne servent qu’aux questions qui ont un « question_check » : elles
-    // seules chargent Python.
+    // seules chargent Python. Le code des widgets n’est pas un fichier fixe : voir widgetResources.
     const usesPython = list.some(fields => fields.question_check !== undefined);
     return Object.keys(resourcePaths).filter(key =>
       key !== "scorm" &&
       (!["pywims", "pythonWorker"].includes(key) || usesPython)
     );
-  }
-
-  // Code des widgets d’une feuille, d’après les champs de ses tirages (SPECIFICATION.md, § 2.11), à
-  // donner à l’assemblage dans resources.widgets.
-  function widgetResources(questions) {
-    return PyWimsCompiler.widgetScripts(
-      questions.flatMap(({ draws }) => draws.flatMap(draw => draw.fields.map(field => field.type))));
   }
 
   // Section d’une question : ses champs et ses tirages en texte échappé, lus par question.js.
@@ -134,13 +127,14 @@ ${renderDrawData(draws, compressedDraws)}
   // Emplacements de la mise en page qui reçoivent du code tel quel, avec la balise qui l’entoure.
   const inlinedPlaceholders = {
     CSS: "style", TEMPLATE: "script", CORRECTION: "script", WIDGETS: "script",
-    PYWIMS: "script", PYTHON_WORKER: "script", PYTHON_RUNTIME: "script", FIELDS: "script", QUESTION: "script",
+    PYTHON_WORKER: "script", PYTHON_RUNTIME: "script", FIELDS: "script", QUESTION: "script",
     SCORM: "script", SHEET: "script"
   };
 
   // Refuse un code qui fermerait sa balise : « </script » au milieu d’un script termine la balise
   // pour le navigateur, et la page générée serait cassée sans aucun message. On n’échappe pas en
-  // « <\/script » : le module pywims, intégré tel quel dans un bloc non exécuté, serait modifié.
+  // « <\/script » : les modules Python, intégrés tels quels dans des blocs non exécutés, seraient
+  // modifiés. Chaque module est contrôlé à part (pythonModuleBlocks).
   function checkInlined(name, code) {
     const element = inlinedPlaceholders[name];
     if (element && new RegExp(`</${element}`, "i").test(code)) {
@@ -197,7 +191,25 @@ ${renderDrawData(draws, compressedDraws)}
       ].some(text => delimiter.test(String(text)))));
   }
 
+  // Modules Python de la page (runtime/pywims.py et les éléments, SPECIFICATION.md § 2.11), sans leurs
+  // commentaires : un bloc <script type="text/x-python" data-module="chemin"> par module, que le
+  // navigateur n’exécute pas et que lit runtime/python.js. Le code reste lisible dans la source de la
+  // page, comme les données des questions. Vide sans module pywims : aucune question de la feuille n’a
+  // de « question_check ».
+  // Solution écartée (novembre 2026) : tous les modules en JSON dans un seul bloc ; sûr, mais illisible
+  // (\u003c pour chaque « < », tout sur une ligne).
+  function pythonModuleBlocks(pywims, modules, strip) {
+    if (!pywims) return "";
+    return Object.entries({ "pywims.py": pywims, ...modules }).map(([path, text]) => {
+      if (/<\/script/i.test(text)) {
+        throw new Error(`Le module Python « ${path} » contient « </script », qui fermerait son bloc dans la page générée : coupez la chaîne, par exemple '</' + 'script'.`);
+      }
+      return `<script type="text/x-python" data-module="${escapeHtml(path)}">${strip(text)}</script>`;
+    }).join("\n  ");
+  }
+
   // Assemble le HTML autonome à partir des textes des fichiers du projet, sans accès au disque.
+  // resources.widgets : le code des widgets de la feuille, { js, css, python } (widgetResources).
   // Pyodide, MathJax et MathLive sont chargés une seule fois, quel que soit le nombre de questions.
   function assembleSheet({ title, kind, questions, compact = false }, resources) {
     const sections = questions.map(({ fields, draws, compressedDraws }, index) =>
@@ -211,12 +223,12 @@ ${renderDrawData(draws, compressedDraws)}
       SHEET_ID: kind === "activity" ? ` data-sheet-id="${sheetFingerprint(title, questions)}"` : "",
       // Le style compact ne concerne que les activités ; une question seule garde le style habituel.
       SHEET_STYLE: compact && kind === "activity" ? ' data-style="compact"' : "",
-      CSS: css(`${resources.brandCss}\n${resources.questionCss}`),
+      CSS: css(`${resources.brandCss}\n${resources.questionCss}\n${resources.widgets.css}`),
       TEMPLATE: js(resources.template),
       CORRECTION: js(resources.correction),
-      WIDGETS: js(resources.widgets),
+      WIDGETS: js(resources.widgets.js),
       // Vide si aucune question n’a d’« question_check » : Python n’est alors jamais chargé.
-      PYWIMS: python(resources.pywims ?? ""),
+      PYWIMS: pythonModuleBlocks(resources.pywims, resources.widgets.python, python),
       PYTHON_WORKER: js(resources.pythonWorker ?? ""),
       PYTHON_RUNTIME: js(resources.python),
       QUESTIONS: sections.join("\n"),
@@ -286,7 +298,6 @@ ${renderDrawData(draws, compressedDraws)}
     compressDraws,
     resourcePaths,
     neededResources,
-    widgetResources,
     assembleQuestion,
     assembleActivity,
     renderQuestionData,

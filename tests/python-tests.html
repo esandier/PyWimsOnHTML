@@ -66,31 +66,70 @@
     }
 
     (async () => {
-      // Le module pywims et le script du Worker viennent du projet, comme dans le compilateur.
+      // Les modules Python et le script du Worker viennent du projet, comme dans le compilateur.
       const moduleSource = await (await fetch("../runtime/pywims.py", { cache: "no-store" })).text();
       const workerSource = await (await fetch("../runtime/python-worker.js", { cache: "no-store" })).text();
       PyWimsPython.setWorkerSource(workerSource);
-      await PyWimsPython.setModuleSource(moduleSource);
+      const modules = await PyWimsCompiler.pythonModules(moduleSource);
+      await PyWimsPython.setModules(modules);
       const questionFiles = await listQuestionFiles();
 
-      await test("chaque outil exporté par pywims est un nom de champ réservé", async () => {
-        const session = PyWimsPython.createSession("exports");
-        await session.initialize("import pywims");
-        const missing = JSON.parse(await session.run(
-          "__import__('json').dumps(sorted(set(__import__('pywims').__all__) - __import__('pywims')._RESERVED_FIELD_NAMES))"));
-        if (missing.length) {
-          throw new Error(`Noms à ajouter à _RESERVED_FIELD_NAMES dans runtime/pywims.py : ${missing.join(", ")}`);
+      // Un champ ne porte ni le nom d’un outil de pywims ni celui d’un élément : la saisie, transmise à
+      // « question_check » sous ce nom, masquerait la fonction. La règle se déduit de pywims.__all__ et
+      // des widgets : un outil ou un élément nouveau est réservé sans rien ajouter.
+      await test("un champ ne peut pas porter le nom d’un outil de pywims ou d’un élément", async () => {
+        const session = PyWimsPython.createSession("noms-reserves");
+        await session.initialize("a = 1");
+        await session.run("a = 1");
+        for (const name of ["tex", "mcq", "ANY", "interval", "variation_table", "feedback"]) {
+          const draw = await session.collectDraw(await PyWimsCompiler.drawSpec(
+            { question_statement: `{{ input_text('${name}', solution=a) }}` }));
+          if (!draw.errors.some(error => error.includes("ne peut pas être le nom d’un champ"))) {
+            throw new Error(`Le nom « ${name} » est accepté : ${JSON.stringify(draw.errors)}`);
+          }
+        }
+        await session.dispose();
+      });
+
+      // Un élément a deux faces : dans un modèle, et dans le code Python de l’auteur (from pywims import
+      // interval), où « question_check » écrit la même notation que l’énoncé.
+      await test("un élément s’appelle aussi depuis Python, avec le même texte que dans l’énoncé", async () => {
+        const session = PyWimsPython.createSession("element-python");
+        await session.initialize("from pywims import *\nfrom sympy import oo");
+        await session.run("from pywims import *\nfrom sympy import oo\nI = interval(-oo, 3, True, False)");
+        const python = await session.getTemplateValue("I");
+        if (python !== String.raw`\mathopen{]}-\infty\,;\,3\mathclose{[}`) {
+          throw new Error(`Texte de interval en Python : ${python}`);
+        }
+        const draw = await session.collectDraw(await PyWimsCompiler.drawSpec(
+          { question_statement: "{{ interval(-oo, 3, True, False) }}|{{ interval(1, b) }}" }));
+        if (!draw.errors.some(error => error.includes("« b »"))) {
+          throw new Error(`Une variable absente dans un élément n’est pas signalée : ${JSON.stringify(draw.errors)}`);
+        }
+        const rendered = await session.collectDraw(await PyWimsCompiler.drawSpec(
+          { question_statement: "{{ interval(-oo, 3, True, False) }}", question_solution_explanation: "{{ interval(0, 1) }}" }));
+        if (rendered.statement !== python || rendered.explanation !== String.raw`[0\,;\,1]` ||
+            JSON.stringify(rendered.elements) !== '["interval"]' || rendered.fields.length) {
+          throw new Error(`Rendu de interval : ${JSON.stringify(rendered)}`);
+        }
+        // Une variable de l’auteur du même nom masque l’élément, avec un avertissement (questions de WIMS
+        // traduites : « interval = interval_tex(…) »).
+        await session.run("interval = 'mon texte'");
+        const masked = await session.collectDraw(await PyWimsCompiler.drawSpec({ question_statement: "{{ interval }}" }));
+        if (masked.statement !== "mon texte" || !masked.warnings.some(warning => warning.includes("masque le widget « interval »")) ||
+            masked.context.interval !== "mon texte") {
+          throw new Error(`Variable « interval » de l’auteur : ${JSON.stringify(masked)}`);
         }
         await session.dispose();
       });
 
       await test("un module pywims modifié remplace l’ancien sans recharger la page", async () => {
-        await PyWimsPython.setModuleSource(`${moduleSource}\nMARQUE_ESSAI = 1\n`);
+        await PyWimsPython.setModules({ ...modules, "pywims.py": `${moduleSource}\nMARQUE_ESSAI = 1\n` });
         const session = PyWimsPython.createSession("module-modifie");
         await session.initialize("import pywims");
         await expectPython(session, "getattr(__import__('pywims'), 'MARQUE_ESSAI', None) == 1", "Le module modifié n’est pas importé");
         await session.dispose();
-        await PyWimsPython.setModuleSource(moduleSource);
+        await PyWimsPython.setModules(modules);
         const restored = PyWimsPython.createSession("module-restaure");
         await restored.initialize("import pywims");
         await expectPython(restored, "not hasattr(__import__('pywims'), 'MARQUE_ESSAI')", "Le module d’origine n’est pas rétabli");
@@ -224,9 +263,8 @@
         const decomposed = "résultat";
         const statement = `{{ résultat }} et {{ ${decomposed} }} : {{ input_value('réponse', solution=réponse_attendue) }}`;
         // Jinja ramène lui aussi les noms à leur forme NFKC, comme Python.
-        const draw = await session.collectDraw({
-          statement, explanation: null, has_check: true, widgets: await PyWimsCompiler.loadWidgets()
-        });
+        const draw = await session.collectDraw(await PyWimsCompiler.drawSpec(
+          { question_statement: statement, question_check: "" }));
         const html = PyWimsTemplate.renderStatement(draw.statement ?? "", draw.fields, tag => `[${tag.name}:${tag.type}]`);
         if (html !== "12 et 12 : [réponse:input_value]" || draw.errors.length || draw.solutions.réponse?.value !== "5/1" ||
             JSON.stringify(Object.keys(draw.context)) !== JSON.stringify(["réponse_attendue", "résultat"])) {
@@ -246,17 +284,18 @@
         await session.run("from sympy import *\nfrom pywims import ANY\nx = symbols('x')");
         const converted = JSON.parse(await session.run(`
 import json
-_pw = __import__("pywims")
+from pywims_widgets.lib.values import solution_cells, solution_text
+from pywims_widgets.input_math.widget import solution_latex
 json.dumps({
-  "fraction": _pw._solution_text(Rational(19, 12)),
-  "expression": _pw._solution_text(x**2 + 2*x),
-  "entier": _pw._solution_text(7),
-  "libre": _pw._solution_text(ANY),
-  "latex": _pw._solution_latex(3*x**2 - 1),
-  "cases": _pw._solution_cells(Matrix(2, 2, lambda i, j: 0 if i > j else ANY)),
-  "liste": _pw._solution_cells([[1, x], [Rational(1, 2), 0]]),
-  "flottants": [_pw._solution_text(v) for v in (0.1 + 0.2, 2.0, -0.0, 1e-05, Float(2) / 3)],
-  "texte": _pw._solution_text("0,3")
+  "fraction": solution_text(Rational(19, 12)),
+  "expression": solution_text(x**2 + 2*x),
+  "entier": solution_text(7),
+  "libre": solution_text(ANY),
+  "latex": solution_latex(3*x**2 - 1),
+  "cases": solution_cells(Matrix(2, 2, lambda i, j: 0 if i > j else ANY)),
+  "liste": solution_cells([[1, x], [Rational(1, 2), 0]]),
+  "flottants": [solution_text(v) for v in (0.1 + 0.2, 2.0, -0.0, 1e-05, Float(2) / 3)],
+  "texte": solution_text("0,3")
 })`));
         const expected = {
           fraction: "19/12",
@@ -308,12 +347,7 @@ json.dumps({
           // L’énoncé se rend avec les variables de « question_setup », et chaque valeur lue a un texte ;
           // chaque champ a une solution. Saisir la solution et la faire juger par « question_check » est
           // le contrôle de cohérence du compilateur, que fait le balayage des tirages, plus bas.
-          const draw = await session.collectDraw({
-            statement: fields.question_statement,
-            explanation: fields.question_solution_explanation ?? null,
-            has_check: fields.question_check !== undefined,
-            widgets: await PyWimsCompiler.loadWidgets()
-          });
+          const draw = await session.collectDraw(await PyWimsCompiler.drawSpec(fields));
           if (draw.errors.length || !draw.statement?.trim() ||
               Object.values(draw.context).some(value => typeof value !== "string") ||
               draw.fields.some(tag => draw.solutions[tag.name] === undefined)) {

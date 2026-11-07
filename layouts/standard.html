@@ -123,7 +123,7 @@
     <!-- Note de la question (si elle a un barème), dans le coin inférieur droit de la carte. -->
     <div class="pw-q-score" data-role="score" aria-live="polite" hidden></div>
   </template>
-  <!-- La grammaire des balises précède les widgets, qui utilisent son échappement. -->
+  <!-- Outils communs (échappement, barème, affichage de l’énoncé rendu), utilisés par les widgets. -->
   <script>@@TEMPLATE@@</script>
   <!-- Correction par défaut des questions sans « question_check », sans Python. -->
   <script>@@CORRECTION@@</script>
@@ -131,9 +131,10 @@
        (SPECIFICATION.md, § 2.11) ; MathLive n’est chargé que par le widget input_math. -->
   <script>@@FIELDS@@</script>
   <script>@@WIDGETS@@</script>
-  <!-- Module Python « pywims » (runtime/pywims.py), lu par le runtime Python : le type text/x-python
-       empêche le navigateur de l’exécuter. Vide si aucune question n’a d’« question_check ». -->
-  <script type="text/x-python" id="pywims-module">@@PYWIMS@@</script>
+  <!-- Modules Python de la page (runtime/pywims.py et les éléments des widgets), un bloc par module, lus
+       par le runtime Python : le type text/x-python empêche le navigateur de les exécuter. Vide si
+       aucune question n’a de « question_check ». -->
+  @@PYWIMS@@
   <!-- Script du Worker de Python (runtime/python-worker.js), dont python.js fait le script du Worker :
        le type text/x-worker empêche le navigateur de l’exécuter dans la page. Vide sans « question_check ». -->
   <script type="text/x-worker" id="pywims-worker">@@PYTHON_WORKER@@</script>

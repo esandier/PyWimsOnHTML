@@ -17,56 +17,110 @@
   }
 
   // Widgets du moteur (SPECIFICATION.md, § 2.11) : la liste de widgets/widgets.json, puis la déclaration
-  // (widget.json) et le Python (widget.py, facultatif) de chacun, lus une fois et remis à chaque tirage.
-  // Le moteur ne connaît aucun widget par son nom : ajouter un widget, c’est ajouter son dossier et son
-  // nom dans widgets.json (un serveur web ne donne pas la liste d’un dossier).
-  // Le script de chaque widget (widget.js) et les bibliothèques qu’il déclare (« libraries ») sont exécutés
-  // aussi dans la page du compilateur : le contrôle de cohérence corrige la solution avec le même code
-  // que la page de l’élève. Leurs textes sont gardés pour l’assemblage (widgetScripts) : la page compilée
-  // intègre exactement le code qui a contrôlé ses tirages.
-  const widgetsBase = new URL("../widgets/", document.currentScript.src);
+  // de chacun (widget.json) et les fichiers qu’elle nomme : les siens (« files » : widget.py, widget.js,
+  // widget.css) et les bibliothèques communes (« libraries », widgets/lib/*.js et *.py). Le moteur ne
+  // connaît aucun widget par son nom : ajouter un widget, c’est ajouter son dossier et son nom dans
+  // widgets.json (un serveur web ne donne pas la liste d’un dossier, d’où aussi la liste des fichiers).
+  // Les scripts sont exécutés aussi dans la page du compilateur : le contrôle de cohérence corrige la
+  // solution avec le même code que la page de l’élève. Tous les textes sont gardés pour l’assemblage
+  // (widgetResources) et pour Python (pythonModules) : la page compilée intègre exactement le code qui a
+  // contrôlé ses tirages.
+  const scriptBase = document.currentScript.src;
+  const widgetsBase = new URL("../widgets/", scriptBase);
   let widgetsLoading = null;
   let loadedWidgets = null;
-  const scriptTexts = new Map();
+  const texts = new Map();
+  async function readText(url, label) {
+    const response = await fetch(url, { cache: "no-cache" });
+    if (!response.ok) {
+      throw new Error(`Fichier du moteur introuvable : « ${label} » (${response.status}).`);
+    }
+    return response.text();
+  }
+  const ownFiles = (name, extension) => loadedWidgets[name].declaration.files
+    .filter(file => file.endsWith(extension)).map(file => `${name}/${file}`);
+  const libraries = (name, extension) => loadedWidgets[name].declaration.libraries.filter(path => path.endsWith(extension));
+  // Fichiers d’une extension pour des widgets : les bibliothèques d’abord, chacune une fois, puis ceux
+  // de chaque widget, dans l’ordre des noms (le code d’un widget utilise ses bibliothèques).
+  const filesOf = (names, extension) => [...new Set([
+    ...names.flatMap(name => libraries(name, extension)),
+    ...names.flatMap(name => ownFiles(name, extension))
+  ])];
   function loadWidgets() {
     if (!widgetsLoading) {
-      const read = async (path, optional = false) => {
-        const response = await fetch(new URL(path, widgetsBase), { cache: "no-cache" });
-        if (optional && response.status === 404) return null;
-        if (!response.ok) {
-          throw new Error(`Fichier du moteur introuvable : « widgets/${path} » (${response.status}).`);
-        }
-        return response.text();
-      };
+      const read = path => readText(new URL(path, widgetsBase), `widgets/${path}`);
       widgetsLoading = (async () => {
         const names = JSON.parse(await read("widgets.json"));
-        const widgets = Object.fromEntries(await Promise.all(names.map(async name => [name, {
-          declaration: JSON.parse(await read(`${name}/widget.json`)),
-          python: await read(`${name}/widget.py`, true)
-        }])));
-        const paths = [...new Set(names.flatMap(name => [...widgets[name].declaration.libraries, `${name}/widget.js`]))];
-        const texts = await Promise.all(paths.map(path => read(path)));
-        paths.forEach((path, index) => {
-          scriptTexts.set(path, texts[index]);
+        loadedWidgets = Object.fromEntries(await Promise.all(names.map(async name =>
+          [name, { declaration: JSON.parse(await read(`${name}/widget.json`)) }])));
+        const paths = [...new Set(names.flatMap(name => [
+          ...loadedWidgets[name].declaration.libraries,
+          ...loadedWidgets[name].declaration.files.map(file => `${name}/${file}`)
+        ]))];
+        (await Promise.all(paths.map(read))).forEach((text, index) => texts.set(paths[index], text));
+        for (const path of filesOf(names, ".js")) {
           const script = document.createElement("script");
-          script.textContent = texts[index];
+          script.textContent = texts.get(path);
           document.head.append(script);
-        });
-        loadedWidgets = widgets;
-        return widgets;
+        }
+        return loadedWidgets;
       })();
-      widgetsLoading.catch(() => { widgetsLoading = null; });
+      widgetsLoading.catch(() => { widgetsLoading = null; loadedWidgets = null; });
     }
     return widgetsLoading;
   }
 
-  // Code des widgets d’une feuille : les bibliothèques déclarées, chacune une fois, puis le script de
-  // chaque widget employé. loadWidgets doit avoir été attendu (les tirages l’ont fait).
-  function widgetScripts(types) {
+  function loadedNames() {
     if (!loadedWidgets) throw new Error("Les widgets ne sont pas chargés : calculez d’abord les tirages.");
-    const names = [...new Set(types)].sort();
-    const paths = [...new Set(names.flatMap(name => [...loadedWidgets[name].declaration.libraries, `${name}/widget.js`]))];
-    return paths.map(path => scriptTexts.get(path)).join("\n");
+    return Object.keys(loadedWidgets);
+  }
+
+  // Code des widgets d’une feuille, pour l’assemblage (resources.widgets) : scripts et styles de ceux
+  // qu’emploient ses tirages, une fois par page ; modules Python des éléments, que « question_check »
+  // peut appeler (from pywims import interval) même si l’énoncé ne les emploie pas. Les champs sont
+  // ceux de chaque tirage ; les éléments, ceux que computeDraws a relevés (draws.elements).
+  function widgetResources(questions) {
+    const all = loadedNames();
+    const used = new Set(questions.flatMap(({ draws }) =>
+      [...draws.flatMap(draw => draw.fields.map(field => field.type)), ...(draws.elements ?? [])]));
+    const names = all.filter(name => used.has(name)).sort();
+    return {
+      js: filesOf(names, ".js").map(path => texts.get(path)).join("\n"),
+      css: filesOf(names, ".css").map(path => texts.get(path)).join("\n"),
+      python: widgetModules(all.filter(name => loadedWidgets[name].declaration.kind === "element"))
+    };
+  }
+
+  // Paquet Python pywims_widgets : le dossier widgets/ tel quel (widget.py et bibliothèques .py des
+  // widgets nommés), et la liste des éléments, que pywims offre à l’auteur (runtime/pywims.py).
+  function widgetModules(names) {
+    const elements = loadedNames().filter(name => loadedWidgets[name].declaration.kind === "element");
+    return Object.fromEntries([
+      ["pywims_widgets/__init__.py", `ELEMENTS = ${JSON.stringify(elements)}\n`],
+      ...filesOf(names, ".py").map(path => [`pywims_widgets/${path}`, texts.get(path)])
+    ]);
+  }
+
+  // Modules Python de la compilation : le module de l’auteur (pywims, lu avec les autres fichiers du
+  // projet), le rendu des tirages (compiler/pywims_draws.py) et tous les widgets.
+  let drawsModule = null;
+  async function pythonModules(pywims) {
+    await loadWidgets();
+    drawsModule ??= readText(new URL("pywims_draws.py", scriptBase), "compiler/pywims_draws.py")
+      .catch(error => { drawsModule = null; throw error; });
+    return { "pywims.py": pywims, "pywims_draws.py": await drawsModule, ...widgetModules(loadedNames()) };
+  }
+
+  // Ce que Python reçoit pour rendre un tirage d’une question (pywims_draws.collect_draw) : ses modèles,
+  // la présence d’un « question_check » et la déclaration de chaque widget.
+  async function drawSpec(fields) {
+    const widgets = await loadWidgets();
+    return {
+      statement: fields.question_statement,
+      explanation: fields.question_solution_explanation ?? null,
+      has_check: fields.question_check !== undefined,
+      widgets: Object.fromEntries(Object.entries(widgets).map(([name, { declaration }]) => [name, declaration]))
+    };
   }
 
   // Champs d’un tirage, comparés à ceux du premier : un champ dans un {% if %} manque à certains
@@ -162,20 +216,17 @@
     return errors;
   }
 
-  // Solutions des champs input_value (SPECIFICATION.md, § 2.8) : Python donne la valeur exacte
-  // ({ value: "n/d", exact }) ; on y ajoute le texte qu’écrit le bouton « Correction », selon form et
-  // tolerance. Le tirage garde les deux : le texte pour l’affichage, la valeur pour la correction.
-  // Renvoie les messages des solutions qui ne peuvent pas s’écrire ainsi.
-  function valueSolutionErrors(tags, draw) {
+  // Solutions complétées par la page (completeSolution de chaque widget) : la valeur exacte d’un champ
+  // input_value reçoit le texte qu’écrit le bouton « Solution », selon form et tolerance (§ 2.8), que
+  // la correction de la page sait seule écrire. Renvoie les messages des solutions refusées.
+  function completeSolutions(draw) {
     const errors = [];
-    for (const { name, type, attributes } of tags) {
-      const raw = draw.solutions[name];
-      if (type !== "input_value" || raw === null || raw === undefined) continue;
+    for (const field of draw.fields) {
       try {
-        draw.solutions[name] = { text: PyWimsCorrection.valueSolutionText(raw, attributes), value: raw.value };
+        draw.solutions[field.name] = PyWimsWidgets.get(field.type).completeSolution(draw.solutions[field.name], field);
       } catch (error) {
-        errors.push(`La solution du champ « ${name} » : ${error.message}`);
-        delete draw.solutions[name];
+        errors.push(`La solution du champ « ${field.name} » : ${error.message}`);
+        delete draw.solutions[field.name];
       }
     }
     return errors;
@@ -245,14 +296,8 @@
     const count = requested ?? (fields.question_draws === undefined ? drawCount : Number(fields.question_draws));
     // Les modèles sont rendus par Python, tirage par tirage (SPECIFICATION.md, § 2.10) ; Jinja y appelle
     // les widgets, qui notent les champs du tirage (§ 2.11).
-    const widgets = await loadWidgets();
-    const spec = {
-      statement: fields.question_statement,
-      explanation: fields.question_solution_explanation ?? null,
-      has_check: fields.question_check !== undefined,
-      widgets
-    };
-    const isChoice = tag => widgets[tag.type]?.declaration.choices === true;
+    const spec = await drawSpec(fields);
+    const isChoice = tag => spec.widgets[tag.type].choices === true;
     // Une formule TeX dans une chaîne ordinaire passe sans erreur Python mais s’affiche abîmée :
     // on la refuse avant tout tirage, pour les deux champs Python.
     const stringErrors = [
@@ -280,7 +325,7 @@
           throw new Error(`Erreur dans « question_setup » pour la graine ${seed}, ${pythonErrorSummary(error.message)}`);
         }
         const draw = await session.collectDraw(spec);
-        draw.errors.push(...valueSolutionErrors(draw.fields, draw));
+        draw.errors.push(...completeSolutions(draw));
         return { session, draw };
       } catch (error) {
         await session.dispose();
@@ -302,6 +347,7 @@
     const draws = [];
     const seen = new Set();
     const warnings = new Set();
+    const elements = new Set();
     // Champs du premier tirage : tous les autres doivent avoir les mêmes.
     let reference = null;
     for (let seed = 0; seed < count; seed += 1) {
@@ -313,6 +359,7 @@
           errors.push(...choiceErrors(draw), ...scoringErrors(draw.fields), ...fieldListErrors(reference, draw.fields));
         }
         draw.warnings.forEach(warning => warnings.add(warning));
+        draw.elements.forEach(element => elements.add(element));
         if (errors.length) {
           throw new Error(`Graine ${seed} : ${errors.join(" ")}`);
         }
@@ -361,9 +408,11 @@
       }
       onProgress?.(seed + 1, count);
     }
-    // Avertissements de Python (nom de variable qui masque une fonction de Jinja) : portés par le
-    // tableau, pour que l’aperçu les retrouve dans son cache ; JSON.stringify les ignore.
+    // Avertissements de Python (nom de variable qui masque une fonction de Jinja) et éléments employés
+    // (leur style entre dans la page) : portés par le tableau, pour que l’aperçu les retrouve dans son
+    // cache ; JSON.stringify les ignore, et la page ne les reçoit pas.
     draws.warnings = [...warnings];
+    draws.elements = [...elements].sort();
     return draws;
   }
 
@@ -371,7 +420,9 @@
     ...window.PyWimsCompiler,
     choiceOrder,
     computeDraws,
+    drawSpec,
     loadWidgets,
-    widgetScripts
+    pythonModules,
+    widgetResources
   });
 })();

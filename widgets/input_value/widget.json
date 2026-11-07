@@ -1,5 +1,6 @@
 {
   "kind": "field",
+  "files": ["widget.py", "widget.js"],
   "libraries": ["lib/text.js"],
   "attributes": {
     "solution": {"type": "value", "required": true},

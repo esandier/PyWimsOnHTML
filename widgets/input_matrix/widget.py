@@ -1,5 +1,5 @@
 """Matrice de taille fixe : size (carrée), ou rows et cols, de 1 à 10 ; la solution en a la taille."""
-from pywims import _solution_cells
+from pywims_widgets.lib.values import solution_cells
 
 
 def prepare(attributes):
@@ -11,7 +11,7 @@ def prepare(attributes):
     cols = attributes.setdefault("cols", size)
     if not all(1 <= value <= 10 for value in (rows, cols)):
         raise TypeError("les dimensions ({} × {}) doivent être comprises entre 1 et 10.".format(rows, cols))
-    cells = _solution_cells(attributes["solution"])
+    cells = solution_cells(attributes["solution"])
     if any(len(row) != cols for row in cells) or len(cells) != rows:
         raise TypeError("la solution est une matrice {} × {}, alors que le champ est {} × {}.".format(
             len(cells), len(cells[0]) if cells else 0, rows, cols))

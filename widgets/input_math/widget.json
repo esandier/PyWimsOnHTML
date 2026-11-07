@@ -1,6 +1,7 @@
 {
   "kind": "field",
-  "libraries": [],
+  "files": ["widget.py", "widget.js"],
+  "libraries": ["lib/values.py"],
   "attributes": {
     "solution": {"type": "value", "required": true}
   },

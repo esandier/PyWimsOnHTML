@@ -1,6 +1,7 @@
 {
   "kind": "field",
-  "libraries": ["lib/matrix.js"],
+  "files": ["widget.py", "widget.js"],
+  "libraries": ["lib/matrix.js", "lib/values.py"],
   "attributes": {
     "solution": {"type": "value", "required": true},
     "size": {"type": "integer"},

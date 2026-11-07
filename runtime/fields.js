@@ -169,7 +169,10 @@ window.PyWimsWidgets = (() => {
       });
     },
     // Écriture d’une valeur libre dans le champ.
-    freeText: freeValue
+    freeText: freeValue,
+    // Solution du tirage complétée à la compilation, avant tout contrôle (compiler/draws.js) : ce que
+    // seul le code de la page sait écrire. Lève une erreur pour une solution qui ne convient pas.
+    completeSolution: solution => solution
   };
 
   function define(name, widget) {

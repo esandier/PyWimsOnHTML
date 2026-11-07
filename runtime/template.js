@@ -1,7 +1,7 @@
 // Outils communs au compilateur et à la question générée : échappement, barème d’AMC, affichage de
 // l’énoncé rendu. L’énoncé et l’explication sont des modèles Jinja, rendus par Python à la compilation
 // (SPECIFICATION.md, § 2.10) ; Jinja y appelle les widgets, qui notent les champs de chaque tirage
-// (§ 2.11, runtime/pywims.py). Ce fichier ne lit donc jamais l’énoncé écrit par l’auteur.
+// (§ 2.11, compiler/pywims_draws.py). Ce fichier ne lit donc jamais l’énoncé écrit par l’auteur.
 window.PyWimsTemplate = (() => {
   // Marque d’un champ dans l’énoncé rendu (« \u0001nom\u0001 ») : le widget la renvoie à Jinja, et la
   // page la remplace par le champ, dont le HTML dépend de la page (identifiants q2-…, état).

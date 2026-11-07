@@ -1,6 +1,7 @@
 {
   "kind": "field",
-  "libraries": ["lib/choices.js"],
+  "files": ["widget.py", "widget.js"],
+  "libraries": ["lib/choices.js", "lib/values.py", "lib/choices.py"],
   "attributes": {
     "choices": {"type": "value", "required": true, "block_supplies": true},
     "solution": {"type": "value", "required": true, "block_supplies": true},

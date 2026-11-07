@@ -353,7 +353,7 @@
 
   // Avertissements sur l’écriture de l’énoncé, qui n’empêchent pas la compilation (SPECIFICATION.md,
   // § 2.4). Les trois accolades de suite (\frac{{{n}}}) en faisaient partie ; avec Jinja, c’est une
-  // erreur, signalée au rendu (runtime/pywims.py, _render).
+  // erreur, signalée au rendu (compiler/pywims_draws.py, render).
   function templateWarnings(fields) {
     const warnings = [];
     // Une image intégrée (data:) pèse les trois quarts de son écriture en base64.

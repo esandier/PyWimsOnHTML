@@ -20,6 +20,10 @@ PyWimsWidgets.define("input_value", {
   sendToPython(python, { name }, answer, draw, values) {
     values[name] = PyWimsCorrection.exactValue(answer);
   },
+  // Python donne la valeur exacte ({ value: "n/d", exact }) ; le texte affiché dépend de form et de
+  // tolerance, que la correction de la page lit (runtime/correction.js).
+  completeSolution: (raw, { attributes }) =>
+    raw === null ? null : { text: PyWimsCorrection.valueSolutionText(raw, attributes), value: raw.value },
   typedAnswer: ({ name }, draw) => draw.solutions[name]?.text ?? "1",
   solutionOf: (input, { name }, draw) => draw.solutions[name]?.text ?? null
 });

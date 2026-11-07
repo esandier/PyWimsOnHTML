@@ -594,7 +594,7 @@ def main():
                     page.click("#compile-question")
                 without_python = open(waiting.value.path(), encoding="utf-8").read()
                 if ('id="pywims-worker"></script>' not in without_python or
-                        'id="pywims-module"></script>' not in without_python):
+                        'data-module=' in without_python):
                     raise AssertionError("Une question sans « question_check » intègre le module ou le script du Worker.")
                 print(f"question sans « question_check » : ni module ni Worker intégrés ({len(without_python) // 1024} Ko)")
 

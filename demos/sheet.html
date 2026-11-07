@@ -1596,6 +1596,7 @@ mjx-container > mjx-assistive-mml {
   }
 }
 
+
   </style>
   <script>
     window.MathJax = {
@@ -2595,7 +2596,8 @@ window.PyWimsWidgets = (() => {
         lock(input, true);
       });
     },
-    freeText: freeValue
+    freeText: freeValue,
+    completeSolution: solution => solution
   };
 
   function define(name, widget) {
@@ -2766,70 +2768,6 @@ window.PyWimsWidgets = (() => {
 
   return Object.freeze({ ...existing, inputChoice, inputSelect, fitSelects, fitChoiceColumns, choiceBehaviour });
 })();
-
-PyWimsWidgets.define("input_checkbox", {
-  ...PyWimsWidgets.choiceBehaviour({ multiple: true }),
-  render: ({ name, attributes }, { draw, idPrefix }) => PyWimsWidgets.inputChoice(name, {
-    multiple: true, texts: draw.choices?.[name], order: draw.orders?.[name], columns: attributes.columns, idPrefix
-  })
-});
-
-window.PyWimsWidgets = (() => {
-  const existing = window.PyWimsWidgets || {};
-  const { escapeHtml } = PyWimsTemplate;
-
-  const keyboardPolicy = window.top === window ? "auto" : "sandboxed";
-
-  if (keyboardPolicy === "sandboxed" && !("mathVirtualKeyboard" in window)) {
-    Object.defineProperty(window, "mathVirtualKeyboard", { value: undefined, configurable: true, writable: true });
-  }
-
-  function inputMath(name, options = {}) {
-    if (!PyWimsTemplate.isName(name)) {
-      throw new Error(`Nom invalide pour input_math : ${name}`);
-    }
-
-    const idPrefix = PyWimsTemplate.checkIdPrefix(options.idPrefix);
-    return `<math-field class="input pw-input pw-math-input" id="${idPrefix}form_txt_${name}" data-name="${name}" math-virtual-keyboard-policy="${keyboardPolicy}" aria-label="${escapeHtml(name)}"></math-field>`;
-  }
-
-  function enableMathKeyboard(root) {
-    if (keyboardPolicy !== "sandboxed") {
-      return;
-    }
-    for (const field of root.querySelectorAll("math-field")) {
-      field.addEventListener("touchend", () => {
-        if (!field.readOnly) {
-          window.mathVirtualKeyboard?.show();
-        }
-      });
-      field.addEventListener("focusout", () => window.mathVirtualKeyboard?.hide());
-    }
-  }
-
-  return Object.freeze({ ...existing, inputMath, enableMathKeyboard });
-})();
-
-{
-  let loading = null;
-  PyWimsWidgets.define("input_math", {
-    render: ({ name }, { idPrefix }) => PyWimsWidgets.inputMath(name, { idPrefix }),
-    ready() {
-      loading ??= new Promise((resolve, reject) => {
-        const script = document.createElement("script");
-        script.src = "https://unpkg.com/mathlive@0.111.0";
-        script.onload = resolve;
-        script.onerror = () => reject(new Error("Échec du chargement de MathLive."));
-        document.head.append(script);
-      }).then(() => customElements.whenDefined("math-field"));
-      return loading;
-    },
-    prepare: prompt => PyWimsWidgets.enableMathKeyboard(prompt),
-    verdicts: (answer, { name }) => ({ verdicts: { [name]: null }, hints: {} }),
-    typedAnswer: ({ name }, draw) => draw.inputs?.[name] ?? "1",
-    freeText: "\\ast"
-  });
-}
 
 window.PyWimsWidgets = (() => {
   const existing = window.PyWimsWidgets || {};
@@ -3012,19 +2950,6 @@ window.PyWimsWidgets = (() => {
   });
 })();
 
-PyWimsWidgets.define("input_matrix", {
-  ...PyWimsWidgets.matrixBehaviour,
-  render: ({ name, attributes }, { idPrefix }) =>
-    PyWimsWidgets.inputMatrix(name, attributes.rows, attributes.cols, { inputStyle: attributes.input_style || "", idPrefix })
-});
-
-PyWimsWidgets.define("input_radio", {
-  ...PyWimsWidgets.choiceBehaviour({ multiple: false }),
-  render: ({ name, attributes }, { draw, idPrefix }) => PyWimsWidgets.inputChoice(name, {
-    multiple: false, texts: draw.choices?.[name], order: draw.orders?.[name], columns: attributes.columns, idPrefix
-  })
-});
-
 window.PyWimsWidgets = (() => {
   const existing = window.PyWimsWidgets || {};
   const { escapeHtml } = PyWimsTemplate;
@@ -3041,6 +2966,83 @@ window.PyWimsWidgets = (() => {
 
   return Object.freeze({ ...existing, inputText });
 })();
+
+PyWimsWidgets.define("input_checkbox", {
+  ...PyWimsWidgets.choiceBehaviour({ multiple: true }),
+  render: ({ name, attributes }, { draw, idPrefix }) => PyWimsWidgets.inputChoice(name, {
+    multiple: true, texts: draw.choices?.[name], order: draw.orders?.[name], columns: attributes.columns, idPrefix
+  })
+});
+
+window.PyWimsWidgets = (() => {
+  const existing = window.PyWimsWidgets || {};
+  const { escapeHtml } = PyWimsTemplate;
+
+  const keyboardPolicy = window.top === window ? "auto" : "sandboxed";
+
+  if (keyboardPolicy === "sandboxed" && !("mathVirtualKeyboard" in window)) {
+    Object.defineProperty(window, "mathVirtualKeyboard", { value: undefined, configurable: true, writable: true });
+  }
+
+  function inputMath(name, options = {}) {
+    if (!PyWimsTemplate.isName(name)) {
+      throw new Error(`Nom invalide pour input_math : ${name}`);
+    }
+
+    const idPrefix = PyWimsTemplate.checkIdPrefix(options.idPrefix);
+    return `<math-field class="input pw-input pw-math-input" id="${idPrefix}form_txt_${name}" data-name="${name}" math-virtual-keyboard-policy="${keyboardPolicy}" aria-label="${escapeHtml(name)}"></math-field>`;
+  }
+
+  function enableMathKeyboard(root) {
+    if (keyboardPolicy !== "sandboxed") {
+      return;
+    }
+    for (const field of root.querySelectorAll("math-field")) {
+      field.addEventListener("touchend", () => {
+        if (!field.readOnly) {
+          window.mathVirtualKeyboard?.show();
+        }
+      });
+      field.addEventListener("focusout", () => window.mathVirtualKeyboard?.hide());
+    }
+  }
+
+  return Object.freeze({ ...existing, inputMath, enableMathKeyboard });
+})();
+
+{
+  let loading = null;
+  PyWimsWidgets.define("input_math", {
+    render: ({ name }, { idPrefix }) => PyWimsWidgets.inputMath(name, { idPrefix }),
+    ready() {
+      loading ??= new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = "https://unpkg.com/mathlive@0.111.0";
+        script.onload = resolve;
+        script.onerror = () => reject(new Error("Échec du chargement de MathLive."));
+        document.head.append(script);
+      }).then(() => customElements.whenDefined("math-field"));
+      return loading;
+    },
+    prepare: prompt => PyWimsWidgets.enableMathKeyboard(prompt),
+    verdicts: (answer, { name }) => ({ verdicts: { [name]: null }, hints: {} }),
+    typedAnswer: ({ name }, draw) => draw.inputs?.[name] ?? "1",
+    freeText: "\\ast"
+  });
+}
+
+PyWimsWidgets.define("input_matrix", {
+  ...PyWimsWidgets.matrixBehaviour,
+  render: ({ name, attributes }, { idPrefix }) =>
+    PyWimsWidgets.inputMatrix(name, attributes.rows, attributes.cols, { inputStyle: attributes.input_style || "", idPrefix })
+});
+
+PyWimsWidgets.define("input_radio", {
+  ...PyWimsWidgets.choiceBehaviour({ multiple: false }),
+  render: ({ name, attributes }, { draw, idPrefix }) => PyWimsWidgets.inputChoice(name, {
+    multiple: false, texts: draw.choices?.[name], order: draw.orders?.[name], columns: attributes.columns, idPrefix
+  })
+});
 
 PyWimsWidgets.define("input_text", {
   render: ({ name, attributes }, { idPrefix }) =>
@@ -3065,6 +3067,8 @@ PyWimsWidgets.define("input_value", {
   sendToPython(python, { name }, answer, draw, values) {
     values[name] = PyWimsCorrection.exactValue(answer);
   },
+  completeSolution: (raw, { attributes }) =>
+    raw === null ? null : { text: PyWimsCorrection.valueSolutionText(raw, attributes), value: raw.value },
   typedAnswer: ({ name }, draw) => draw.solutions[name]?.text ?? "1",
   solutionOf: (input, { name }, draw) => draw.solutions[name]?.text ?? null
 });
@@ -3102,23 +3106,33 @@ PyWimsWidgets.define("input_value", {
   });
 }
 </script>
-  <script type="text/x-python" id="pywims-module">"""Outils PyWims : from pywims import math_expression, mcq, tex, ANY"""
+  <script type="text/x-python" data-module="pywims.py">"""Outils PyWims : from pywims import math_expression, mcq, tex, ANY, interval, variation_table"""
 import re as _re
 import sys as _sys
 
-__all__ = ["math_expression", "mcq", "tex", "ANY"]
+try:
+    from pywims_widgets import ELEMENTS as _ELEMENTS
+except ImportError:
+    _ELEMENTS = ()
+
+__all__ = ["math_expression", "mcq", "tex", "ANY", *_ELEMENTS]
 
 _any_value = None
 
 
 def __getattr__(name):
-    """Crée ANY à la demande : SymPy n’est importé que par les questions qui l’utilisent."""
+    """Crée ANY à la demande : SymPy n’est importé que par les questions qui l’utilisent. Un élément
+    (interval, variation_table) est la fonction render de son widget : « question_check » écrit ainsi
+    la même notation que l’énoncé, par exemple dans un feedback."""
     global _any_value
     if name == "ANY":
         if _any_value is None:
             import sympy
             _any_value = sympy.Dummy("ANY")
         return _any_value
+    if name in _ELEMENTS:
+        import importlib
+        return importlib.import_module("pywims_widgets.{}.widget".format(name)).render
     raise AttributeError(f"module 'pywims' has no attribute {name!r}")
 
 
@@ -3149,100 +3163,6 @@ def _float_text(value):
     return _plain_decimal(decimal.Decimal(format(number, ".12g")))
 
 
-def _solution_text(value):
-    """Solution d’un champ texte, écrite comme un élève la saisirait ; None pour une valeur libre."""
-    if _is_any(value):
-        return None
-    if isinstance(value, float):
-        return _float_text(value)
-    sympy = _sys.modules.get("sympy")
-    if sympy is not None and isinstance(value, sympy.Float):
-        return _float_text(value)
-    if sympy is not None and isinstance(value, sympy.Basic):
-        return sympy.sstr(value).replace("**", "^")
-    return str(value)
-
-
-def _solution_latex(value):
-    """Solution d’un champ MathLive, en LaTeX ; None pour une valeur libre."""
-    if _is_any(value):
-        return None
-    sympy = _sys.modules.get("sympy")
-    if sympy is not None:
-        return sympy.latex(value)
-    return str(value)
-
-
-def _solution_cells(value):
-    """Solution d’une matrice : liste de lignes de textes, None pour une case libre."""
-    sympy = _sys.modules.get("sympy")
-    if sympy is not None:
-        from sympy.matrices.matrixbase import MatrixBase
-        if isinstance(value, MatrixBase):
-            value = value.tolist()
-    if not isinstance(value, (list, tuple)) or not all(isinstance(row, (list, tuple)) for row in value):
-        raise TypeError("La solution d’une matrice doit être une Matrix ou une liste de lignes.")
-    return [[_solution_text(cell) for cell in row] for row in value]
-
-
-def _value_solution(value):
-    """Solution d’un champ input_value : {"value": "n/d", "exact": bool}, ou None pour une valeur libre.
-
-    La valeur est une fraction exacte, que le navigateur compare sans erreur d’arrondi
-    (SPECIFICATION.md, § 2.8). Un flottant est d’abord arrondi à 12 chiffres significatifs, comme
-    la solution d’un champ texte : 0.1 + 0.2 vaut 3/10. Un irrationnel (sqrt(2), pi) est pris avec
-    30 chiffres significatifs et marqué inexact : il exige une tolérance.
-    """
-    import decimal
-    import fractions
-    if _is_any(value):
-        return None
-    sympy = _sys.modules.get("sympy")
-    exact = True
-    if isinstance(value, bool):
-        raise TypeError("ce doit être un nombre, pas un booléen.")
-    if isinstance(value, int):
-        ratio = fractions.Fraction(value)
-    elif isinstance(value, fractions.Fraction):
-        ratio = value
-    elif isinstance(value, decimal.Decimal):
-        ratio = fractions.Fraction(value)
-    elif isinstance(value, float) or (sympy is not None and isinstance(value, sympy.Float)):
-        text = _float_text(value)
-        try:
-            ratio = fractions.Fraction(decimal.Decimal(text))
-        except (decimal.InvalidOperation, ValueError, OverflowError):
-            raise TypeError("{} n’est pas un nombre fini.".format(text)) from None
-    elif sympy is not None and isinstance(value, sympy.Basic) and getattr(value, "is_number", False) and value.is_real:
-        if value.is_rational:
-            rational = sympy.Rational(value)
-            ratio = fractions.Fraction(int(rational.p), int(rational.q))
-        else:
-            ratio = fractions.Fraction(decimal.Decimal(str(sympy.N(value, 30))))
-            exact = False
-    else:
-        raise TypeError("ce doit être un nombre réel, et non {!r}.".format(value))
-    return {"value": "{}/{}".format(ratio.numerator, ratio.denominator), "exact": exact}
-
-
-def _choice_texts(value, plain=False):
-    """Textes des choix d’un champ à choix : un texte reste tel quel, un objet SymPy devient une formule.
-
-    plain : choix d’une liste déroulante (input_select, SPECIFICATION.md, § 2.9), qui n’affiche ni
-    HTML ni formule : un objet SymPy s’y écrit comme dans un champ texte, et une formule TeX est
-    refusée, au lieu de s’afficher en code brut.
-    """
-    if isinstance(value, (str, bytes)) or not isinstance(value, (list, tuple)) or len(value) < 2:
-        raise TypeError("ce doit être une liste d’au moins deux choix.")
-    if not plain:
-        return [_choice_text(choice) for choice in value]
-    texts = [_solution_text(choice) for choice in value]
-    for text in texts:
-        if "$" in text or "\\(" in text or "\\[" in text:
-            raise TypeError("une liste déroulante n’affiche pas de formule : « {} » doit être du texte simple.".format(text))
-    return texts
-
-
 def _choice_text(choice):
     """Texte d’un choix : un texte reste tel quel, un objet SymPy devient une formule en ligne, pour
     que les choix restent compacts, côte à côte sur téléphone."""
@@ -3250,535 +3170,6 @@ def _choice_text(choice):
     if sympy is not None and isinstance(choice, sympy.Basic):
         return r"\(" + sympy.latex(choice) + r"\)"
     return str(choice)
-
-
-def _choice_index(value, count):
-    """Indice d’un choix, entre 0 et count - 1 ; un entier SymPy est admis, un booléen non.
-
-    En Python, True vaut 1 : sans ce refus, « solution = [x > 0] » passerait pour l’indice 1 (ou 0
-    pour False) et désignerait silencieusement un choix, au lieu de signaler l’erreur de l’auteur.
-    """
-    try:
-        if isinstance(value, bool):
-            raise TypeError
-        index = int(value)
-    except (TypeError, ValueError):
-        raise TypeError("{!r} n’est pas un indice de choix.".format(value)) from None
-    if index != value or not 0 <= index < count:
-        raise TypeError("{!r} n’est pas un indice de choix (de 0 à {}).".format(value, count - 1))
-    return index
-
-
-def _choice_solution(value, multiple, count):
-    """Solution d’un champ à choix : un indice (choix unique), ou la liste croissante des indices
-    des bons choix (choix multiple), vide si aucun choix n’est bon."""
-    if not multiple:
-        if isinstance(value, (list, tuple, set)):
-            raise TypeError("ce doit être l’indice du bon choix, pas une liste.")
-        return _choice_index(value, count)
-    if isinstance(value, (str, bytes)) or not isinstance(value, (list, tuple, set)):
-        raise TypeError("ce doit être la liste des indices des bons choix.")
-    indices = [_choice_index(item, count) for item in value]
-    if len(set(indices)) != len(indices):
-        raise TypeError("un indice de choix est répété.")
-    return sorted(indices)
-
-
-def _is_matrix(value):
-    sympy = _sys.modules.get("sympy")
-    if sympy is not None:
-        from sympy.matrices.matrixbase import MatrixBase
-        if isinstance(value, MatrixBase):
-            return True
-    return isinstance(value, (list, tuple))
-
-
-_jinja_environment = None
-
-
-def _jinja():
-    """Environnement Jinja des modèles (SPECIFICATION.md, § 2.10), créé une fois.
-
-    StrictUndefined : une variable absente est une erreur, au lieu d’un texte vide qu’on ne voit qu’en
-    relisant l’énoncé. Pas d’échappement : l’énoncé est le HTML de l’auteur, et une macro peut produire
-    du HTML ; le texte de l’élève n’entre jamais dans un modèle. finalize écrit chaque {{ valeur }}
-    par tex, et les filtres frac et dec en sont les options.
-    """
-    global _jinja_environment
-    if _jinja_environment is None:
-        import jinja2
-        environment = jinja2.Environment(undefined=jinja2.StrictUndefined, autoescape=False,
-                                         keep_trailing_newline=True, finalize=tex)
-        environment.filters["frac"] = lambda value: tex(value, frac=True)
-        environment.filters["dec"] = lambda value, digits=None: tex(value, dec=True, digits=digits)
-        environment.filters["coef"] = _coef
-        environment.filters["term"] = _term
-        environment.filters["signed"] = _signed
-        environment.filters["paren"] = _paren
-        environment.globals["variation_table"] = variation_table
-        environment.globals["interval"] = interval
-        _jinja_environment = environment
-    return _jinja_environment
-
-
-def _bound_tex(value):
-    """Valeur d’un tableau ou d’une borne : ±∞ (float ou oo de SymPy), un texte TeX tel quel, sinon tex."""
-    if isinstance(value, str):
-        return value
-    sympy = _sys.modules.get("sympy")
-    if value == float("inf") or (sympy is not None and value == sympy.oo):
-        return r"+\infty"
-    if value == float("-inf") or (sympy is not None and value == -sympy.oo):
-        return r"-\infty"
-    return tex(value, frac=True)
-
-
-_VARIATION_STYLE = """<style>
-  .pw-tv-scroll { max-width: 100%; overflow-x: auto; }
-  .pw-tv { border-collapse: collapse; margin: 0.6em auto; text-align: center; }
-  .pw-tv td { padding: 0.3em 0.4em; }
-  .pw-tv .pw-tv-head { border-right: 1px solid; padding: 0.3em 0.5em; }
-  .pw-tv .pw-tv-line { border-bottom: 1px solid; }
-  @media (max-width: 480px) {
-    .pw-tv { font-size: 0.9em; }
-    .pw-tv td { padding: 0.3em 0.2em; }
-  }
-</style>"""
-
-
-def variation_table(xs, values, up, signs=None, forbidden=(), function="f", variable="x"):
-    r"""Tableau de variations (SPECIFICATION.md, § 2.10), rendu en HTML.
-
-    xs : abscisses des bornes et des points remarquables ; values : valeur de la fonction en chacune
-    (None : case vide, par exemple pas de limite aux bornes) ; up : sens de chaque intervalle, True pour
-    croissant ; signs : signe de la dérivée sur chaque intervalle (« + » ou « - »), qui ajoute la ligne
-    de f' avec 0 aux abscisses intérieures ; forbidden : abscisses où la fonction n’est pas définie
-    (double barre). Une valeur est un nombre, ±∞ (float('inf') ou oo), ou un texte TeX tel quel.
-    Valeurs alignées sur une ligne, et non placées en haut ou en bas selon le sens (choix de l’auteur,
-    octobre 2026). Tableau HTML dont chaque case est une formule, plutôt qu’un array de TeX : MathJax
-    en écartait les colonnes, et un tableau à quatre flèches défilait à 375 px.
-    """
-    xs, values, up = list(xs), list(values), list(up)
-    if len(values) != len(xs) or len(up) != len(xs) - 1 or (signs is not None and len(signs) != len(up)):
-        raise ValueError("variation_table : il faut une valeur par abscisse, et un sens (et un signe) par "
-                         "intervalle ({} abscisses, {} valeurs, {} sens).".format(len(xs), len(values), len(up)))
-    barred = {_bound_tex(value) for value in forbidden}
-    bar = r"\|"
-
-    def cell(text, line=False):
-        formula = "${}$".format(text) if text else ""
-        return '<td class="pw-tv-line">{}</td>'.format(formula) if line else "<td>{}</td>".format(formula)
-
-    rows = [['<td class="pw-tv-head pw-tv-line">${}$</td>'.format(variable)]]
-    if signs is not None:
-        rows.append(['<td class="pw-tv-head pw-tv-line">${}\'({})$</td>'.format(function, variable)])
-    rows.append(['<td class="pw-tv-head">${}({})$</td>'.format(function, variable)])
-    for index, x in enumerate(xs):
-        x_text = _bound_tex(x)
-        excluded = x_text in barred
-        inner = 0 < index < len(xs) - 1
-        rows[0].append(cell(x_text, True))
-        if signs is not None:
-            rows[1].append(cell(bar if excluded else "0" if inner else "", True))
-        value = values[index]
-        rows[-1].append(cell(bar if excluded else "" if value is None else _bound_tex(value)))
-        if index < len(up):
-            rows[0].append(cell("", True))
-            if signs is not None:
-                rows[1].append(cell(signs[index], True))
-            rows[-1].append(cell(r"\nearrow" if up[index] else r"\searrow"))
-    body = "".join("<tr>{}</tr>".format("".join(row)) for row in rows)
-    return '{}<div class="pw-tv-scroll"><table class="pw-tv">{}</table></div>'.format(_VARIATION_STYLE, body)
-
-
-def interval(left, right, left_closed=True, right_closed=True):
-    r"""Intervalle en TeX, à la française : [a\,;\,b], ]a\,;\,b[ ; une borne infinie est toujours ouverte.
-
-    \mathopen et \mathclose : un « ] » ouvrant est sinon lu comme fermant, et « ]-3 » s’écrit « ] − 3 ».
-    """
-    left_text, right_text = _bound_tex(left), _bound_tex(right)
-    left_closed = left_closed and "infty" not in left_text
-    right_closed = right_closed and "infty" not in right_text
-    return (("[" if left_closed else r"\mathopen{]}") + r"{}\,;\,{}".format(left_text, right_text)
-            + ("]" if right_closed else r"\mathclose{[}"))
-
-
-def _real(value, name):
-    """Nombre réel écrit par un filtre, ou TypeError : un filtre ne calcule rien."""
-    if isinstance(value, bool) or isinstance(value, str):
-        raise TypeError("le filtre {} écrit un nombre, et non {!r}.".format(name, value))
-    try:
-        return value < 0, value == 0
-    except TypeError:
-        raise TypeError("le filtre {} écrit un nombre réel, et non {!r}.".format(name, value)) from None
-
-
-def _signed(value):
-    """+3, -3 : un nombre précédé de son signe."""
-    negative, _ = _real(value, "signed")
-    return tex(value, frac=True) if negative else "+" + tex(value, frac=True)
-
-
-def _paren(value):
-    """(-3) pour un négatif, dans un produit ou une puissance ; 3 sinon."""
-    negative, _ = _real(value, "paren")
-    return "(" + tex(value, frac=True) + ")" if negative else tex(value, frac=True)
-
-
-def _coef(value):
-    """Coefficient en tête d’un terme : 1 ne s’écrit pas, -1 s’écrit « - »."""
-    _real(value, "coef")
-    if value == 1:
-        return ""
-    if value == -1:
-        return "-"
-    return tex(value, frac=True)
-
-
-def _term(value, variable=""):
-    """Terme suivant d’une somme, avec son signe : +3x, -x ; rien pour un coefficient nul."""
-    negative, zero = _real(value, "term")
-    if zero:
-        return ""
-    sign = "-" if negative else "+"
-    size = -value if negative else value
-    if variable and size == 1:
-        return sign + variable
-    return sign + tex(size, frac=True) + variable
-
-
-def _template_line(error):
-    """Ligne du modèle où une erreur de rendu s’est produite, ou None (pile d’appels réécrite par Jinja)."""
-    line = getattr(error, "lineno", None)
-    traceback = error.__traceback__
-    while traceback is not None:
-        if traceback.tb_frame.f_code.co_filename == "<template>":
-            line = traceback.tb_lineno
-        traceback = traceback.tb_next
-    return line
-
-
-_JINJA_CODE = _re.compile(r"\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\}")
-
-
-def _render(namespace, source, field, functions=None, shared=None):
-    """Rend un modèle avec l’espace de noms du tirage ; renvoie (texte, noms lus, définitions), ou lève
-    ValueError.
-
-    Les noms lus sont les variables que le modèle ne définit pas lui-même (meta de Jinja) : ce sont
-    celles de « question_setup » que la page contrôle quand elle rejoue le tirage (§ 5.1).
-    functions : les widgets, que le modèle appelle (§ 2.11) ; ils ne comptent pas parmi les noms lus.
-    shared : définitions {% set %} de l’énoncé, visibles dans l’explication (§ 2.10) ; les définitions
-    renvoyées sont celles de premier niveau de ce modèle.
-    """
-    import jinja2
-    import jinja2.meta
-    import unicodedata
-    if "{{{" in source:
-        raise ValueError(r"« " + field + r" » : trois accolades de suite (par exemple \frac{{{n}}}{2}) : Jinja y lit "
-                         r"« {{ » suivi de « {n} » ; écrivez \frac{ {{n}} }{2}, avec des espaces.")
-    source = _JINJA_CODE.sub(lambda code: unicodedata.normalize("NFKC", code.group()), source)
-    environment = _jinja()
-    try:
-        names = jinja2.meta.find_undeclared_variables(environment.parse(source))
-        template = environment.from_string(source)
-    except jinja2.TemplateSyntaxError as error:
-        raise ValueError("« {} », ligne {} : {}.".format(field, error.lineno, error.message)) from None
-    values = dict(namespace)
-    values.update(shared or {})
-    values.update(functions or {})
-    names = names - set(functions or {})
-    try:
-        try:
-            module = template.make_module(values)
-        except Exception:
-            environment.handle_exception()
-        text = str(module)
-        definitions = {key: value for key, value in vars(module).items() if not key.startswith("_")}
-    except Exception as error:
-        line = _template_line(error)
-        where = "« {} »{}".format(field, ", ligne {}".format(line) if line else "")
-        if isinstance(error, _FieldError):
-            raise ValueError("{} : {}".format(where, error)) from None
-        undefined = _re.fullmatch(r"'([^']+)' is undefined", str(error))
-        if undefined:
-            raise ValueError("{} : la variable « {} » n’est pas définie par « question_setup ».".format(
-                where, undefined.group(1))) from None
-        raise ValueError("{} : {}: {}".format(where, type(error).__name__, error)) from None
-    return text, names - set(shared or {}), definitions
-
-
-_CHOICE_MARK = _re.compile(r"^[ \t]*\[([ xX])\][ \t]?", _re.M)
-
-
-def _block_choices(text):
-    """Choix d’un bloc rendu : (textes, rangs des bons choix), ou TypeError."""
-    marks = list(_CHOICE_MARK.finditer(text))
-    if not marks:
-        raise TypeError("aucun choix : chaque choix commence, en début de ligne, par [x] (bon) ou [ ] (mauvais).")
-    if text[:marks[0].start()].strip():
-        raise TypeError("du texte précède le premier choix : « {} ».".format(text[:marks[0].start()].strip()[:60]))
-    texts, good = [], []
-    for rank, mark in enumerate(marks):
-        end = marks[rank + 1].start() if rank + 1 < len(marks) else len(text)
-        body = text[mark.end():end].strip()
-        if not body:
-            raise TypeError("le choix {} est vide.".format(rank))
-        texts.append(body)
-        if mark.group(1) in "xX":
-            good.append(rank)
-    return texts, good
-
-
-def _block_ranks(texts, good, count):
-    """Rangs des choix affichés avec count (§ 10.1) : les bons, et des mauvais tirés parmi ceux dont le
-    texte n’est pas déjà gardé, comme mcq. Le tirage dépend des textes rendus, et non du random de
-    l’auteur : le navigateur rejoue « question_setup » sans rendre les modèles."""
-    import random
-    import zlib
-    if count is None:
-        return list(range(len(texts)))
-    normalized = lambda text: " ".join(text.split())
-    seen = {normalized(texts[rank]) for rank in good}
-    wrong = []
-    for rank, text in enumerate(texts):
-        if rank not in good and normalized(text) not in seen:
-            seen.add(normalized(text))
-            wrong.append(rank)
-    needed = count - len(good)
-    if needed < 1 or needed > len(wrong):
-        raise TypeError("count={} demande {} mauvais choix, et le bloc en a {} de textes différents.".format(
-            count, needed, len(wrong)))
-    picker = random.Random(zlib.crc32("\u0002".join(texts).encode("utf-8")))
-    return sorted(good + picker.sample(wrong, needed))
-
-
-def _is_plain_value(value):
-    """Valeur dont le texte est reproductible : ni fonction, ni module, ni classe (leur texte
-    contient une adresse, qui change d’une exécution à l’autre)."""
-    import types
-    return not (callable(value) or isinstance(value, types.ModuleType))
-
-
-def _collect_draw(namespace, spec):
-    """Données d’un tirage pour le compilateur, avec la liste des erreurs de l’auteur.
-
-    spec (JSON) : {"statement": modèle, "explanation": modèle ou null, "has_check": booléen,
-                   "widgets": {nom: {"declaration": widget.json lu, "python": texte de widget.py ou null}}}
-    Les champs sont notés par les widgets que Jinja appelle en rendant l’énoncé (§ 2.11).
-    """
-    import json
-    spec = json.loads(spec)
-    errors = []
-    sympy = _sys.modules.get("sympy")
-    for name in ("none", "true", "false"):
-        if name in namespace and not (sympy and namespace[name] is getattr(sympy, name, None)):
-            errors.append("La variable « {} » de « question_setup » est un mot réservé de Jinja "
-                          "(la valeur {}) : renommez-la.".format(name, name.capitalize()))
-    warnings = ["La variable « {} » de « question_setup » masque la fonction « {} » de Jinja dans "
-                "l’énoncé : renommez-la.".format(name, name)
-                for name in sorted(_jinja().globals) if name in namespace]
-    widgets = {name: (widget["declaration"], _widget_module(name, widget.get("python")))
-               for name, widget in spec["widgets"].items()}
-    draw = {"fields": [], "solutions": {}, "choices": {}, "ranks": {}, "inputs": {}}
-    rendered = {}
-    read = set()
-    shared = {}
-    for key, field in (("statement", "question_statement"), ("explanation", "question_solution_explanation")):
-        if spec.get(key) is None:
-            continue
-        functions = {name: _field_function(name, declaration, module, draw, namespace, spec["has_check"],
-                                           in_statement=key == "statement")
-                     for name, (declaration, module) in widgets.items()}
-        try:
-            rendered[key], names, definitions = _render(
-                namespace, spec[key], field, functions=functions, shared=shared if key == "explanation" else None)
-            read |= names
-            if key == "statement":
-                shared = definitions
-        except ValueError as error:
-            errors.append(str(error))
-    context = {name: _template_value(namespace[name]) for name in sorted(read)
-               if name in namespace and _is_plain_value(namespace[name])}
-    return json.dumps({
-        "statement": rendered.get("statement"), "explanation": rendered.get("explanation"),
-        "context": context, **draw, "errors": errors, "warnings": warnings,
-    }, ensure_ascii=False)
-
-
-class _FieldError(Exception):
-    """Erreur de l’auteur dans l’appel d’un champ : le message est affiché tel quel, avec sa ligne."""
-
-
-_widget_modules = {}
-
-
-def _widget_module(name, source):
-    """Module d’un widget.py, exécuté une fois par texte ; None pour un widget sans Python."""
-    import types
-    if source is None:
-        return None
-    key = (name, source)
-    if key not in _widget_modules:
-        module = types.ModuleType("pywims_widget_" + name)
-        exec(compile(source, "widgets/{}/widget.py".format(name), "exec"), module.__dict__)
-        _widget_modules[key] = module
-    return _widget_modules[key]
-
-
-_RESERVED_FIELD_NAMES = {"ok_answer", "feedback", "math_expression", "mcq", "tex", "ANY", "pywims"}
-
-_TYPE_DESCRIPTIONS = {
-    "integer": "un entier",
-    "number": "un nombre positif, par exemple 0.01",
-    "text": "un texte entre guillemets",
-    "boolean": "true ou false",
-}
-
-
-def _number_text(value):
-    """Écriture décimale d’un nombre positif (une tolérance), gardée en texte pour rester exacte ; ou None."""
-    sympy = _sys.modules.get("sympy")
-    if isinstance(value, float) or (sympy is not None and isinstance(value, sympy.Float)):
-        text = _float_text(value)
-    else:
-        ratio = _ratio(value)
-        exact = None if ratio is None else _finite_decimal(ratio)
-        if exact is None:
-            return None
-        text = _plain_decimal(exact)
-    return None if text.startswith("-") or text in ("nan", "inf") else text
-
-
-def _attribute(value, expected):
-    """Valeur d’un attribut d’après son type déclaré, ou None si elle ne convient pas."""
-    if isinstance(expected, list):
-        return value if isinstance(value, str) and value in expected else None
-    if expected == "value":
-        return value
-    if expected == "boolean":
-        return value if isinstance(value, bool) else None
-    if expected == "text":
-        return value if isinstance(value, str) else None
-    if isinstance(value, (bool, str)):
-        return None
-    if expected == "integer":
-        try:
-            return int(value) if int(value) == value else None
-        except (TypeError, ValueError):
-            return None
-    return _number_text(value)
-
-
-def _field_function(widget, declaration, module, draw, namespace, has_check, in_statement):
-    """Fonction que Jinja appelle pour un champ du widget : elle note le champ dans draw et renvoie sa
-    marque (« \u0001nom\u0001 »), que la page remplace par le champ. Lève _FieldError."""
-    import keyword
-    import unicodedata
-    schema = declaration["attributes"]
-
-    def field(*args, caller=None, **attributes):
-        import jinja2
-        for value in (*args, *attributes.values()):
-            if isinstance(value, jinja2.Undefined):
-                value._fail_with_undefined_error()
-        if not in_statement:
-            raise _FieldError("un champ de réponse ({}) n’a sa place que dans l’énoncé.".format(widget))
-        if len(args) != 1 or not isinstance(args[0], str):
-            raise _FieldError("{0}(…) : le premier argument est le nom du champ, entre guillemets, par exemple "
-                              "{0}('answer', …), et les autres s’écrivent nom=valeur.".format(widget))
-        name = unicodedata.normalize("NFKC", args[0])
-        if not name.isidentifier() or keyword.iskeyword(name) or name in _RESERVED_FIELD_NAMES:
-            raise _FieldError("« {} » ne peut pas être le nom d’un champ : choisissez un nom de variable Python, "
-                              "ni réservé ni mot-clé.".format(name))
-        where = "le champ « {} » ({})".format(name, widget)
-        if any(known["name"] == name for known in draw["fields"]):
-            raise _FieldError("{} apparaît deux fois dans l’énoncé : deux champs ne portent jamais le même nom, "
-                              "et un champ ne peut pas être placé dans un {{% for %}}.".format(where))
-        if name in namespace:
-            raise _FieldError("{} porte le nom d’une variable de « question_setup » : renommez l’un des "
-                              "deux.".format(where))
-        block = caller is not None
-        if block and not declaration["block"]:
-            raise _FieldError("{} ne s’écrit pas en bloc : écrivez {{{{ {}('{}', …) }}}}.".format(where, widget, name))
-        values = {}
-        for key, value in attributes.items():
-            if key not in schema:
-                raise _FieldError("{} : attribut « {} » inconnu.".format(where, key))
-            expected = schema[key]
-            if block and expected.get("block_supplies"):
-                raise _FieldError("{} : l’attribut « {} » est inutile dans un bloc, qui écrit ses choix, marqués "
-                                  "[x] (bon) ou [ ] (mauvais).".format(where, key))
-            if not block and expected.get("block_only"):
-                raise _FieldError("{} : l’attribut « {} » n’existe que dans un bloc ({{% call {}(…) %}} … "
-                                  "{{% endcall %}}) ; avec une liste, tirez les choix avec mcq.".format(where, key, widget))
-            converted = _attribute(value, expected["type"])
-            if converted is None:
-                wanted = expected["type"]
-                description = ("l’une des valeurs " + ", ".join(wanted) if isinstance(wanted, list)
-                               else _TYPE_DESCRIPTIONS[wanted])
-                raise _FieldError("{} : l’attribut « {} » doit être {}, et non {!r}.".format(where, key, description, value))
-            values[key] = converted
-        try:
-            if block:
-                values.update(module.read_block(caller(), values))
-            for key, expected in schema.items():
-                if expected.get("required") and key not in values:
-                    raise TypeError("il faut indiquer {0}, par exemple {0}=variable.".format(key))
-            if declaration["needs_check"] and not has_check:
-                raise TypeError("ce champ exige un « question_check » : une formule se corrige par comparaison "
-                                "symbolique, par exemple simplify(math_expression(saisie) - solution) == 0.")
-            prepared = module.prepare(values)
-        except TypeError as error:
-            raise _FieldError("{}{} : {}".format(where, ", écrit en bloc" if block else "", error)) from None
-        draw["fields"].append({"name": name, "type": widget, "attributes": {
-            key: value for key, value in values.items() if key in schema and schema[key]["type"] != "value"}})
-        draw["solutions"][name] = prepared["solution"]
-        for key, target in (("choices", "choices"), ("ranks", "ranks"), ("input", "inputs")):
-            if prepared.get(key) is not None:
-                draw[target][name] = prepared[key]
-        return "\u0001{}\u0001".format(name)
-
-    return field
-
-
-def _read_choice_block(text, attributes, multiple):
-    """Choix d’un bloc rendu (§ 10.1) : textes affichés, solution et, avec count, rang de chaque choix
-    affiché dans le bloc, remis à « question_check » (§ 10.3)."""
-    texts, good = _block_choices(text)
-    if not multiple and len(good) != 1:
-        raise TypeError("il faut exactement un bon choix [x], et il y en a {}.".format(len(good)))
-    count = attributes.get("count")
-    if count is not None and count < 2:
-        raise TypeError("count doit être au moins 2.")
-    shown = _block_ranks(texts, good, count)
-    if len(shown) < 2:
-        raise TypeError("il faut au moins deux choix.")
-    positions = [shown.index(rank) for rank in good]
-    result = {"choices": [texts[rank] for rank in shown], "solution": positions if multiple else positions[0]}
-    if count is not None:
-        result["ranks"] = shown
-    return result
-
-
-def _prepare_choices(attributes, multiple, plain):
-    """Choix et solution d’un champ à choix ; plain : liste déroulante, en texte simple (§ 2.9)."""
-    try:
-        texts = _choice_texts(attributes["choices"], plain=plain)
-    except TypeError as error:
-        raise TypeError("les choix : {}".format(error)) from None
-    try:
-        solution = _choice_solution(attributes["solution"], multiple, len(texts))
-    except TypeError as error:
-        raise TypeError("la solution : {}".format(error)) from None
-    if not 1 <= attributes.get("columns", 1) <= 6:
-        raise TypeError("columns doit être compris entre 1 et 6.")
-    if attributes.get("shuffle") is False and "fixed_last" in attributes:
-        raise TypeError("fixed_last est sans effet avec shuffle=false, qui garde déjà tous les choix à leur place.")
-    if attributes.get("fixed_last", 0) >= len(texts):
-        raise TypeError("fixed_last={} doit être inférieur au nombre de choix ({}).".format(
-            attributes["fixed_last"], len(texts)))
-    return {"solution": solution, "choices": texts, "ranks": attributes.get("ranks")}
 
 
 def _prepare_check(namespace, data):
@@ -3798,37 +3189,6 @@ def _prepare_check(namespace, data):
             namespace[name] = None if value is None else Rational(int(value[0]), int(value[1]))
     namespace["ok_answer"] = dict(data.get("verdicts") or {})
     namespace.pop("feedback", None)
-
-
-_CONTROL_NAMES = {"\t": r"\t", "\r": r"\r", "\f": r"\f", "\b": r"\b", "\a": r"\a", "\v": r"\v"}
-
-
-def _string_errors(source, field):
-    r"""Chaînes du code de l’auteur qui contiennent un caractère de contrôle (sauf le retour à la ligne).
-
-    Dans une chaîne ordinaire, Python lit « \frac » comme un saut de page suivi de « rac », et
-    « \times » comme une tabulation suivie de « imes » : la formule TeX arrive abîmée à MathJax
-    (« Math input error »), sans aucune erreur Python. Un tel caractère n’a presque jamais sa place
-    dans une question ; on le signale donc à la compilation, avec la ligne, pour qu’une chaîne brute
-    r'…' soit utilisée. Renvoie la liste des messages, en JSON.
-    """
-    import ast
-    import json
-    try:
-        tree = ast.parse(source)
-    except SyntaxError:
-        return json.dumps([])
-    errors = []
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Constant) and isinstance(node.value, str):
-            found = sorted({char for char in node.value if ord(char) < 32 and char != "\n"})
-            if found:
-                names = ", ".join(_CONTROL_NAMES.get(char, "\\x{:02x}".format(ord(char))) for char in found)
-                errors.append(
-                    "« {} », ligne {} : une chaîne contient un caractère de contrôle ({}), sans doute une "
-                    "commande TeX (\\frac, \\times…) dans une chaîne ordinaire ; écrivez-la en chaîne "
-                    "brute, r'…'.".format(field, node.lineno, names))
-    return json.dumps(errors, ensure_ascii=False)
 
 
 def _ratio(value):
@@ -4095,19 +3455,120 @@ def math_expression(value):
     except Exception:  # Toute erreur d’analyse ou de calcul : la saisie est invalide.
         return None
 </script>
+  <script type="text/x-python" data-module="pywims_widgets/__init__.py">ELEMENTS = ["interval","variation_table"]
+</script>
+  <script type="text/x-python" data-module="pywims_widgets/lib/bounds.py">"""Écriture d’une borne ou d’une valeur de tableau, commune aux éléments interval et variation_table."""
+import sys
+
+from pywims import tex
+
+
+def bound_tex(value):
+    """Valeur d’un tableau ou d’une borne : ±∞ (float ou oo de SymPy), un texte TeX tel quel, sinon tex."""
+    if isinstance(value, str):
+        return value
+    sympy = sys.modules.get("sympy")
+    if value == float("inf") or (sympy is not None and value == sympy.oo):
+        return r"+\infty"
+    if value == float("-inf") or (sympy is not None and value == -sympy.oo):
+        return r"-\infty"
+    return tex(value, frac=True)
+</script>
+  <script type="text/x-python" data-module="pywims_widgets/interval/widget.py">"""Intervalle à la française (SPECIFICATION.md, § 2.10) : {{ interval(a, b, left_closed, right_closed) }}
+dans un modèle, interval(a, b, …) dans « question_check » (from pywims import interval)."""
+from pywims_widgets.lib.bounds import bound_tex
+
+
+def render(left, right, left_closed=True, right_closed=True):
+    r"""Intervalle en TeX : [a\,;\,b], ]a\,;\,b[ ; une borne infinie est toujours ouverte.
+
+    \mathopen et \mathclose : un « ] » ouvrant est sinon lu comme fermant, et « ]-3 » s’écrit « ] − 3 ».
+    """
+    left_text, right_text = bound_tex(left), bound_tex(right)
+    left_closed = left_closed and "infty" not in left_text
+    right_closed = right_closed and "infty" not in right_text
+    return (("[" if left_closed else r"\mathopen{]}") + r"{}\,;\,{}".format(left_text, right_text)
+            + ("]" if right_closed else r"\mathclose{[}"))
+</script>
+  <script type="text/x-python" data-module="pywims_widgets/variation_table/widget.py">"""Tableau de variations (SPECIFICATION.md, § 2.10) : {{ variation_table(xs, values, up) }} dans un
+modèle ; son style est dans widget.css, emporté une fois par page."""
+from pywims_widgets.lib.bounds import bound_tex
+
+
+def render(xs, values, up, signs=None, forbidden=(), function="f", variable="x"):
+    r"""Tableau de variations (SPECIFICATION.md, § 2.10), rendu en HTML.
+
+    xs : abscisses des bornes et des points remarquables ; values : valeur de la fonction en chacune
+    (None : case vide, par exemple pas de limite aux bornes) ; up : sens de chaque intervalle, True pour
+    croissant ; signs : signe de la dérivée sur chaque intervalle (« + » ou « - »), qui ajoute la ligne
+    de f' avec 0 aux abscisses intérieures ; forbidden : abscisses où la fonction n’est pas définie
+    (double barre). Une valeur est un nombre, ±∞ (float('inf') ou oo), ou un texte TeX tel quel.
+    Valeurs alignées sur une ligne, et non placées en haut ou en bas selon le sens (choix de l’auteur,
+    octobre 2026). Tableau HTML dont chaque case est une formule, plutôt qu’un array de TeX : MathJax
+    en écartait les colonnes, et un tableau à quatre flèches défilait à 375 px.
+    """
+    xs, values, up = list(xs), list(values), list(up)
+    if len(values) != len(xs) or len(up) != len(xs) - 1 or (signs is not None and len(signs) != len(up)):
+        raise ValueError("il faut une valeur par abscisse, et un sens (et un signe) par "
+                         "intervalle ({} abscisses, {} valeurs, {} sens).".format(len(xs), len(values), len(up)))
+    barred = {bound_tex(value) for value in forbidden}
+    bar = r"\|"
+
+    def cell(text, line=False):
+        formula = "${}$".format(text) if text else ""
+        return '<td class="pw-tv-line">{}</td>'.format(formula) if line else "<td>{}</td>".format(formula)
+
+    rows = [['<td class="pw-tv-head pw-tv-line">${}$</td>'.format(variable)]]
+    if signs is not None:
+        rows.append(['<td class="pw-tv-head pw-tv-line">${}\'({})$</td>'.format(function, variable)])
+    rows.append(['<td class="pw-tv-head">${}({})$</td>'.format(function, variable)])
+    for index, x in enumerate(xs):
+        x_text = bound_tex(x)
+        excluded = x_text in barred
+        inner = 0 < index < len(xs) - 1
+        rows[0].append(cell(x_text, True))
+        if signs is not None:
+            rows[1].append(cell(bar if excluded else "0" if inner else "", True))
+        value = values[index]
+        rows[-1].append(cell(bar if excluded else "" if value is None else bound_tex(value)))
+        if index < len(up):
+            rows[0].append(cell("", True))
+            if signs is not None:
+                rows[1].append(cell(signs[index], True))
+            rows[-1].append(cell(r"\nearrow" if up[index] else r"\searrow"))
+    body = "".join("<tr>{}</tr>".format("".join(row)) for row in rows)
+    return '<div class="pw-tv-scroll"><table class="pw-tv">{}</table></div>'.format(body)
+</script>
   <script type="text/x-worker" id="pywims-worker">const indexURL = "https://cdn.jsdelivr.net/pyodide/v0.27.7/full/";
 let pyodide;
 let pyodidePromise;
 let packageLoadQueue = Promise.resolve();
 let pythonOperationQueue = Promise.resolve();
-let pywimsModuleSource = null;
+let pythonModules = null;
 const sessions = new Map();
 const sessionInitializations = new Map();
 
-function installModule(instance) {
+function installModules(instance) {
   const sitePackages = instance.runPython("import site; site.getsitepackages()[0]");
-  instance.FS.writeFile(`${sitePackages}/pywims.py`, pywimsModuleSource);
-  instance.runPython("import importlib, sys; sys.modules.pop('pywims', None); importlib.invalidate_caches()");
+  const packages = new Set();
+  for (const [path, text] of Object.entries(pythonModules)) {
+    const folders = path.split("/").slice(0, -1);
+    folders.forEach((_, index) => packages.add(folders.slice(0, index + 1).join("/")));
+    if (folders.length) instance.FS.mkdirTree(`${sitePackages}/${folders.join("/")}`);
+    instance.FS.writeFile(`${sitePackages}/${path}`, text);
+  }
+  for (const folder of packages) {
+    const init = `${sitePackages}/${folder}/__init__.py`;
+    if (!Object.hasOwn(pythonModules, `${folder}/__init__.py`) && !instance.FS.analyzePath(init).exists) {
+      instance.FS.writeFile(init, "");
+    }
+  }
+  instance.runPython(`
+import importlib, sys
+for name in [name for name in sys.modules if name == "pywims" or name.startswith("pywims_")]:
+    del sys.modules[name]
+importlib.invalidate_caches()
+`);
 }
 
 function enqueuePythonOperation(operation) {
@@ -4117,7 +3578,7 @@ function enqueuePythonOperation(operation) {
 }
 
 function ensurePyodide() {
-  if (pywimsModuleSource === null) {
+  if (pythonModules === null) {
     throw new Error("Le module pywims n’est pas disponible : la page ne contient pas runtime/pywims.py.");
   }
   if (!pyodidePromise) {
@@ -4127,7 +3588,7 @@ function ensurePyodide() {
         indexURL,
         env: { PYTHONHASHSEED: "0" }
       });
-      installModule(instance);
+      installModules(instance);
       pyodide = instance;
       return instance;
     })().catch(error => {
@@ -4193,10 +3654,10 @@ function notifyStart(callId) {
 }
 
 const operations = {
-  setModuleSource(source) {
-    pywimsModuleSource = source;
+  setModules(modules) {
+    pythonModules = modules;
     if (pyodide) {
-      return enqueuePythonOperation(() => installModule(pyodide));
+      return enqueuePythonOperation(() => installModules(pyodide));
     }
   },
 
@@ -4257,7 +3718,7 @@ if importlib.util.find_spec("numpy") is not None:
     await ensurePackages("import jinja2");
     const globals = sessionGlobals(sessionId);
     return enqueuePythonOperation(() => {
-      const collect = pyodide.runPython('__import__("pywims")._collect_draw');
+      const collect = pyodide.runPython('__import__("pywims_draws").collect_draw');
       try {
         return JSON.parse(collect(globals, JSON.stringify(spec)));
       } finally {
@@ -4269,7 +3730,7 @@ if importlib.util.find_spec("numpy") is not None:
   async sourceErrors(code, field) {
     await ensurePyodide();
     return enqueuePythonOperation(() => {
-      const check = pyodide.runPython('__import__("pywims")._string_errors');
+      const check = pyodide.runPython('__import__("pywims_draws").string_errors');
       try {
         return JSON.parse(check(code, field));
       } finally {
@@ -4346,7 +3807,10 @@ self.onmessage = async ({ data: { id, op, args } }) => {
 };
 </script>
   <script>window.PyWimsPython = (() => {
-  let pywimsModuleSource = document.getElementById("pywims-module")?.textContent ?? null;
+  const embeddedModules = [...document.querySelectorAll('script[type="text/x-python"][data-module]')];
+  let pythonModules = embeddedModules.length
+    ? Object.fromEntries(embeddedModules.map(block => [block.dataset.module, block.textContent]))
+    : null;
   let workerSource = document.getElementById("pywims-worker")?.textContent || null;
   let worker = null;
   let loaded = false;
@@ -4419,8 +3883,8 @@ self.onmessage = async ({ data: { id, op, args } }) => {
       loaded = false;
       epoch += 1;
     };
-    if (pywimsModuleSource !== null) {
-      worker.postMessage({ id: nextCallId++, op: "setModuleSource", args: [pywimsModuleSource] });
+    if (pythonModules !== null) {
+      worker.postMessage({ id: nextCallId++, op: "setModules", args: [pythonModules] });
     }
     return worker;
   }
@@ -4436,12 +3900,13 @@ self.onmessage = async ({ data: { id, op, args } }) => {
 
   const isName = name => PyWimsTemplate.isName(name);
 
-  function setModuleSource(source) {
-    if (typeof source !== "string") {
-      throw new Error("Le module pywims doit être un texte.");
+  function setModules(modules) {
+    if (!modules || typeof modules["pywims.py"] !== "string" ||
+        !Object.values(modules).every(text => typeof text === "string")) {
+      throw new Error("Les modules Python doivent être des textes, dont pywims.py.");
     }
-    pywimsModuleSource = source;
-    return worker ? call("setModuleSource", [source]) : Promise.resolve();
+    pythonModules = modules;
+    return worker ? call("setModules", [modules]) : Promise.resolve();
   }
 
   function setWorkerSource(source) {
@@ -4542,7 +4007,7 @@ self.onmessage = async ({ data: { id, op, args } }) => {
   }
 
   return Object.freeze({
-    setModuleSource,
+    setModules,
     setWorkerSource,
     isLoaded: () => loaded,
     epoch: () => epoch,

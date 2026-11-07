@@ -346,7 +346,7 @@
     });
     // Ressources minimales pour assembler une feuille : la mise en page réelle, des scripts vides.
     const sheetResources = layout => ({
-      layout, brandCss: "", questionCss: "", template: "", correction: "", widgets: "",
+      layout, brandCss: "", questionCss: "", template: "", correction: "", widgets: { js: "", css: "", python: {} },
       python: "", pywims: "", pythonWorker: "", fields: "", question: "", sheet: ""
     });
     const sheetQuestion = (title, question_statement) => ({
@@ -480,6 +480,29 @@
         // Une chaîne coupée, elle, est acceptée.
         PyWimsCompiler.assembleQuestion(sheetQuestion("A", "x").fields, sheetQuestion("A", "x").draws,
           { ...sheetResources(layout), sheet: "const end = '</' + 'script>';" });
+      });
+      // Les modules Python sont intégrés tels quels, lisibles, un bloc par module ; un module qui fermerait
+      // son bloc est refusé. La fin de script est coupée ici : écrite d’un seul tenant, elle couperait le
+      // script de cette page.
+      test("les modules Python de la page sont intégrés tels quels, un bloc par module", () => {
+        const close = "</" + "script>";
+        const assemble = (pywims, python) => PyWimsCompiler.assembleQuestion(sheetQuestion("A", "x").fields,
+          sheetQuestion("A", "x").draws, { ...sheetResources(layout), pywims, widgets: { js: "", css: ".pw-x {}", python } });
+        const page = new DOMParser().parseFromString(
+          assemble("a = 1 < 2\n", { "pywims_widgets/a.py": "c = 'x'\n" }), "text/html");
+        const modules = Object.fromEntries([...page.querySelectorAll('script[type="text/x-python"][data-module]')]
+          .map(block => [block.dataset.module, block.textContent]));
+        if (JSON.stringify(modules) !== JSON.stringify({ "pywims.py": "a = 1 < 2\n", "pywims_widgets/a.py": "c = 'x'\n" }) ||
+            ![...page.querySelectorAll("style")].some(style => style.textContent.includes(".pw-x {}"))) {
+          throw new Error(`Modules ou styles mal intégrés : ${JSON.stringify(modules)}`);
+        }
+        let message = "";
+        try {
+          assemble("a = 1\n", { "pywims_widgets/b.py": `d = '${close}'\n` });
+        } catch (error) {
+          message = error.message;
+        }
+        if (!message.includes("pywims_widgets/b.py")) throw new Error("Un module qui ferme son bloc est intégré.");
       });
     }
     test("l’archive des pages séparées est un fichier ZIP", () => {

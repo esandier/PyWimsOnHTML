@@ -1,0 +1,12 @@
+/* Tableau de variations (widgets/variation_table/widget.py). Sur un écran étroit, texte et marges
+   réduits : un tableau à quatre flèches tient dans un téléphone de 375 px ; sinon, seul le tableau
+   défile, jamais la page. */
+.pw-tv-scroll { max-width: 100%; overflow-x: auto; }
+.pw-tv { border-collapse: collapse; margin: 0.6em auto; text-align: center; }
+.pw-tv td { padding: 0.3em 0.4em; }
+.pw-tv .pw-tv-head { border-right: 1px solid; padding: 0.3em 0.5em; }
+.pw-tv .pw-tv-line { border-bottom: 1px solid; }
+@media (max-width: 480px) {
+  .pw-tv { font-size: 0.9em; }
+  .pw-tv td { padding: 0.3em 0.2em; }
+}

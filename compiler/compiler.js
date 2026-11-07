@@ -1065,15 +1065,18 @@
     return resources;
   }
 
-  // Donne à Python le module pywims et le script du Worker lus avec les autres fichiers : tirages
-  // calculés et rejoués utilisent le même code (SPECIFICATION.md, § 3). Un script inchangé ne relance
-  // pas le Worker (setWorkerSource) ; le module n’est réinstallé que s’il a changé.
-  let installedModule = null;
+  // Donne à Python le module pywims et le script du Worker lus avec les autres fichiers, plus le rendu
+  // des tirages et les widgets (pythonModules) : tirages calculés et rejoués utilisent le même code
+  // (SPECIFICATION.md, § 3). Un script inchangé ne relance pas le Worker (setWorkerSource) ; les
+  // modules ne sont réinstallés que s’ils ont changé.
+  let installedModules = null;
   async function installPythonSources(resources) {
     PyWimsPython.setWorkerSource(resources.pythonWorker);
-    if (resources.pywims !== installedModule) {
-      await PyWimsPython.setModuleSource(resources.pywims);
-      installedModule = resources.pywims;
+    const modules = await PyWimsCompiler.pythonModules(resources.pywims);
+    const key = JSON.stringify(modules);
+    if (key !== installedModules) {
+      await PyWimsPython.setModules(modules);
+      installedModules = key;
     }
   }
 

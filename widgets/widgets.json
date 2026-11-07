@@ -6,5 +6,7 @@
   "input_vmatrix",
   "input_radio",
   "input_checkbox",
-  "input_select"
+  "input_select",
+  "interval",
+  "variation_table"
 ]

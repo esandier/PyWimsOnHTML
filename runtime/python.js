@@ -4,10 +4,15 @@
 // arrêté (SPECIFICATION.md, § 5.1). Chaque appel de l’interface publiée devient un message au Worker,
 // et sa réponse revient comme une promesse.
 window.PyWimsPython = (() => {
-  // Source du module « pywims » (runtime/pywims.py, SPECIFICATION.md § 3). La page générée l’intègre
-  // dans un bloc <script type="text/x-python" id="pywims-module">, que le navigateur n’exécute pas ;
-  // le compilateur et les tests le fournissent avec setModuleSource, après l’avoir lu.
-  let pywimsModuleSource = document.getElementById("pywims-module")?.textContent ?? null;
+  // Modules Python installés dans Pyodide, { chemin : texte } (SPECIFICATION.md, § 3) : le module de
+  // l’auteur (pywims.py) et le paquet des widgets (pywims_widgets/…) ; à la compilation, aussi le rendu
+  // des tirages (pywims_draws.py). La page générée les intègre dans des blocs
+  // <script type="text/x-python" data-module="chemin">, que le navigateur n’exécute pas ; le
+  // compilateur et les tests les fournissent avec setModules, après les avoir lus.
+  const embeddedModules = [...document.querySelectorAll('script[type="text/x-python"][data-module]')];
+  let pythonModules = embeddedModules.length
+    ? Object.fromEntries(embeddedModules.map(block => [block.dataset.module, block.textContent]))
+    : null;
   // Script du Worker (runtime/python-worker.js), par le même chemin : bloc non exécuté
   // <script type="text/x-worker" id="pywims-worker"> de la page générée, ou setWorkerSource.
   let workerSource = document.getElementById("pywims-worker")?.textContent || null;
@@ -97,8 +102,8 @@ window.PyWimsPython = (() => {
       loaded = false;
       epoch += 1;
     };
-    if (pywimsModuleSource !== null) {
-      worker.postMessage({ id: nextCallId++, op: "setModuleSource", args: [pywimsModuleSource] });
+    if (pythonModules !== null) {
+      worker.postMessage({ id: nextCallId++, op: "setModules", args: [pythonModules] });
     }
     return worker;
   }
@@ -120,15 +125,16 @@ window.PyWimsPython = (() => {
   // comprises), toujours chargé avant ce module : une copie ici obligeait à changer la règle deux fois.
   const isName = name => PyWimsTemplate.isName(name);
 
-  // Fournit le module pywims lu dans le dossier du projet (compilateur, tests). Si Python tourne
-  // déjà, le module est remplacé (les tests s’en servent ; le compilateur, lui, lit pywims.py une
-  // seule fois, à son ouverture).
-  function setModuleSource(source) {
-    if (typeof source !== "string") {
-      throw new Error("Le module pywims doit être un texte.");
+  // Fournit les modules Python lus dans le dossier du projet (compilateur, tests). Si Python tourne
+  // déjà, ils remplacent les précédents (les tests s’en servent ; le compilateur, lui, ne les
+  // réinstalle que s’ils ont changé).
+  function setModules(modules) {
+    if (!modules || typeof modules["pywims.py"] !== "string" ||
+        !Object.values(modules).every(text => typeof text === "string")) {
+      throw new Error("Les modules Python doivent être des textes, dont pywims.py.");
     }
-    pywimsModuleSource = source;
-    return worker ? call("setModuleSource", [source]) : Promise.resolve();
+    pythonModules = modules;
+    return worker ? call("setModules", [modules]) : Promise.resolve();
   }
 
   // Fournit le script du Worker lu dans le dossier du projet (compilateur, tests). Un Worker déjà
@@ -244,7 +250,7 @@ window.PyWimsPython = (() => {
   }
 
   return Object.freeze({
-    setModuleSource,
+    setModules,
     setWorkerSource,
     // Indique si Pyodide est déjà chargé (le compilateur adapte son message d’attente).
     isLoaded: () => loaded,

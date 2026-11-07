@@ -12,16 +12,34 @@ let pyodide;
 let pyodidePromise;
 let packageLoadQueue = Promise.resolve();
 let pythonOperationQueue = Promise.resolve();
-let pywimsModuleSource = null;
+let pythonModules = null;
 const sessions = new Map();
 const sessionInitializations = new Map();
 
-// Écrit le module dans les paquets du site, où un simple « import pywims » le trouve, et oublie
-// la version déjà importée : les sessions suivantes importent la nouvelle.
-function installModule(instance) {
+// Écrit les modules dans les paquets du site, où un simple « import pywims » les trouve, et oublie
+// les versions déjà importées : les sessions suivantes importent les nouvelles. Chaque dossier
+// (pywims_widgets, pywims_widgets/lib…) reçoit un __init__.py vide s’il n’en a pas : c’est un paquet.
+function installModules(instance) {
   const sitePackages = instance.runPython("import site; site.getsitepackages()[0]");
-  instance.FS.writeFile(`${sitePackages}/pywims.py`, pywimsModuleSource);
-  instance.runPython("import importlib, sys; sys.modules.pop('pywims', None); importlib.invalidate_caches()");
+  const packages = new Set();
+  for (const [path, text] of Object.entries(pythonModules)) {
+    const folders = path.split("/").slice(0, -1);
+    folders.forEach((_, index) => packages.add(folders.slice(0, index + 1).join("/")));
+    if (folders.length) instance.FS.mkdirTree(`${sitePackages}/${folders.join("/")}`);
+    instance.FS.writeFile(`${sitePackages}/${path}`, text);
+  }
+  for (const folder of packages) {
+    const init = `${sitePackages}/${folder}/__init__.py`;
+    if (!Object.hasOwn(pythonModules, `${folder}/__init__.py`) && !instance.FS.analyzePath(init).exists) {
+      instance.FS.writeFile(init, "");
+    }
+  }
+  instance.runPython(`
+import importlib, sys
+for name in [name for name in sys.modules if name == "pywims" or name.startswith("pywims_")]:
+    del sys.modules[name]
+importlib.invalidate_caches()
+`);
 }
 
 // Exécute les opérations Python l’une après l’autre : Pyodide n’a qu’un interpréteur, et deux
@@ -35,7 +53,7 @@ function enqueuePythonOperation(operation) {
 
 // Charge Pyodide une seule fois ; un échec permet de réessayer plus tard.
 function ensurePyodide() {
-  if (pywimsModuleSource === null) {
+  if (pythonModules === null) {
     throw new Error("Le module pywims n’est pas disponible : la page ne contient pas runtime/pywims.py.");
   }
   if (!pyodidePromise) {
@@ -50,7 +68,7 @@ function ensurePyodide() {
         // de la compilation (mesuré sur Pyodide 0.27.7, SPECIFICATION.md § 3).
         env: { PYTHONHASHSEED: "0" }
       });
-      installModule(instance);
+      installModules(instance);
       pyodide = instance;
       return instance;
     })().catch(error => {
@@ -129,10 +147,10 @@ function notifyStart(callId) {
 }
 
 const operations = {
-  setModuleSource(source) {
-    pywimsModuleSource = source;
+  setModules(modules) {
+    pythonModules = modules;
     if (pyodide) {
-      return enqueuePythonOperation(() => installModule(pyodide));
+      return enqueuePythonOperation(() => installModules(pyodide));
     }
   },
 
@@ -204,7 +222,7 @@ if importlib.util.find_spec("numpy") is not None:
     await ensurePackages("import jinja2");
     const globals = sessionGlobals(sessionId);
     return enqueuePythonOperation(() => {
-      const collect = pyodide.runPython('__import__("pywims")._collect_draw');
+      const collect = pyodide.runPython('__import__("pywims_draws").collect_draw');
       try {
         return JSON.parse(collect(globals, JSON.stringify(spec)));
       } finally {
@@ -213,12 +231,12 @@ if importlib.util.find_spec("numpy") is not None:
     });
   },
 
-  // Messages sur les chaînes abîmées d’un champ Python (voir _string_errors) ; utilisé par le
-  // compilateur avant de calculer les tirages. Le code est analysé, jamais exécuté.
+  // Messages sur les chaînes abîmées d’un champ Python (voir string_errors, compiler/pywims_draws.py) ;
+  // utilisé par le compilateur avant de calculer les tirages. Le code est analysé, jamais exécuté.
   async sourceErrors(code, field) {
     await ensurePyodide();
     return enqueuePythonOperation(() => {
-      const check = pyodide.runPython('__import__("pywims")._string_errors');
+      const check = pyodide.runPython('__import__("pywims_draws").string_errors');
       try {
         return JSON.parse(check(code, field));
       } finally {
