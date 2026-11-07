@@ -163,6 +163,7 @@ window.PyWimsWidgets = (() => {
     };
     return {
       single: !multiple,
+      shownTexts: ({ name }, draw) => draw.choices?.[name] ?? [],
       read: ([group]) => multiple ? checkedIndices(group) : checkedIndices(group)[0] ?? null,
       verdicts: (answer, { name }, draw) =>
         ({ verdicts: { [name]: PyWimsCorrection.sameChoice(answer, draw.solutions[name]) }, hints: {} }),

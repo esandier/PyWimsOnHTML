@@ -2,12 +2,20 @@ window.PyWimsWidgets = (() => {
   const existing = window.PyWimsWidgets || {};
   const { escapeHtml } = PyWimsTemplate;
 
+  // Case donnée d’une solution (given(v), widgets/lib/values.py) : { given: texte, tex: formule }.
+  const isGiven = cell => cell !== null && typeof cell === "object";
+
   // Construit les champs de saisie communs aux matrices fixes et redimensionnables. Le préfixe
-  // distingue les identifiants des questions d’une même feuille (« q2-… »).
-  function matrixCells(name, rowCount, columnCount, style, resizable = false, idPrefix = "") {
+  // distingue les identifiants des questions d’une même feuille (« q2-… »). given : lignes de la
+  // solution, dont les cases données s’affichent en formule à la place d’un champ.
+  function matrixCells(name, rowCount, columnCount, style, resizable = false, idPrefix = "", given = null) {
     idPrefix = PyWimsTemplate.checkIdPrefix(idPrefix);
     return Array.from({ length: rowCount }, (_, row) =>
       Array.from({ length: columnCount }, (_, column) => {
+        const cell = given?.[row]?.[column];
+        if (isGiven(cell)) {
+          return `<span class="pw-matrix-given" data-matrix-given="${escapeHtml(name)}" data-matrix-row="${row}" data-matrix-column="${column}" data-given-value="${escapeHtml(cell.given)}">\\(${escapeHtml(cell.tex)}\\)</span>`;
+        }
         const cellName = `${name} ligne ${row + 1} colonne ${column + 1}`;
         const id = `${idPrefix}form_txt_${name}[${row}][${column}]`;
         const cellClass = resizable
@@ -37,7 +45,7 @@ window.PyWimsWidgets = (() => {
     const style = options.inputStyle
       ? ` style="${escapeHtml(options.inputStyle)}"`
       : "";
-    const rows = matrixCells(name, rowCount, columnCount, style, false, options.idPrefix)
+    const rows = matrixCells(name, rowCount, columnCount, style, false, options.idPrefix, options.given)
       .map(cells => `<tr>${cells.map(cell => `<td>${cell}</td>`).join("")}</tr>`)
       .join("");
 
@@ -158,16 +166,22 @@ window.PyWimsWidgets = (() => {
 
   // Comportement commun aux matrices fixes et redimensionnables (SPECIFICATION.md, § 2.11) : une case
   // par coefficient, chacune avec sa clé « m[i][j] » dans ok_answer ; « question_check » reçoit la liste
-  // des lignes.
+  // des lignes. Une case donnée n’est pas un élément à remplir : elle n’a ni clé, ni couleur, ni
+  // solution à écrire, mais sa valeur est à sa place dans la réponse.
   const matrixBehaviour = Object.freeze({
     single: false,
     inputs: (prompt, field) => [...prompt.querySelectorAll(`[data-matrix-name="${CSS.escape(field.name)}"]`)],
     key: (input, field) => `${field.name}[${input.dataset.matrixRow}][${input.dataset.matrixColumn}]`,
-    // Lignes de textes, dans l’ordre des cases.
-    read(inputs) {
+    // Lignes de textes, dans l’ordre des cases, cases données comprises.
+    read(inputs, field) {
       const rows = [];
-      for (const input of inputs) {
-        (rows[Number(input.dataset.matrixRow)] ??= [])[Number(input.dataset.matrixColumn)] = input.value;
+      const place = (element, value) => {
+        (rows[Number(element.dataset.matrixRow)] ??= [])[Number(element.dataset.matrixColumn)] = value;
+      };
+      for (const input of inputs) place(input, input.value);
+      const frame = inputs[0]?.closest(".pw-matrix-frame");
+      for (const given of frame?.querySelectorAll(`[data-matrix-given="${CSS.escape(field.name)}"]`) ?? []) {
+        place(given, given.dataset.givenValue);
       }
       return rows;
     },
@@ -176,13 +190,17 @@ window.PyWimsWidgets = (() => {
       const verdicts = {};
       answer.forEach((row, i) => row.forEach((value, j) => {
         const solution = cells[i]?.[j];
+        if (isGiven(solution)) return;
         verdicts[`${name}[${i}][${j}]`] = solution === undefined ? false
           : solution === null ? value.trim() !== "" : PyWimsCorrection.sameText(value, solution);
       }));
       return { verdicts, hints: {} };
     },
     sendToPython: (python, { name }, answer) => python.setMatrix(name, answer),
-    typedAnswer: ({ name }, draw) => draw.solutions[name].map(row => row.map(cell => cell ?? "1")),
+    typedAnswer: ({ name }, draw) =>
+      draw.solutions[name].map(row => row.map(cell => cell === null ? "1" : isGiven(cell) ? cell.given : cell)),
+    shownTexts: ({ name }, draw) =>
+      draw.solutions[name].flat().filter(isGiven).map(cell => `\\(${cell.tex}\\)`),
     solutionOf: (input, { name }, draw) =>
       draw.solutions[name]?.[Number(input.dataset.matrixRow)]?.[Number(input.dataset.matrixColumn)] ?? null
   });

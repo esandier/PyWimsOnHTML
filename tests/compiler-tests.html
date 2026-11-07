@@ -419,7 +419,9 @@
           throw new Error("« question_setup » doit être intégré seulement à la question qui a un « question_check ».");
         }
       });
-      test("MathJax n’est intégré qu’à une feuille qui peut afficher une formule", () => {
+      // Ce qu’affiche un champ hors de l’énoncé vient de son widget (shownTexts) : ils doivent être chargés.
+      asyncTest("MathJax n’est intégré qu’à une feuille qui peut afficher une formule", async () => {
+        await PyWimsCompiler.loadWidgets();
         const question = ({ question_statement = "Un {{ input_text('r', solution=a) }}", question_check = false, explanation, draw = {} }) => {
           const built = sheetQuestion("Q", question_statement);
           if (!question_check) delete built.fields.question_check;
@@ -432,7 +434,13 @@
           ["sans formule ni « question_check »", question({}), false],
           ["formule dans l’énoncé", question({ question_statement: "Calculer $x^2$ : {{ input_text('r', solution=a) }}" }), true],
           ["formule \\( \\) dans l’énoncé rendu d’un tirage", question({ draw: { statement: "Soit \\(x\\) \u0001r\u0001" } }), true],
-          ["formule dans un choix", question({ draw: { choices: { c: ["$1$", "deux"] } } }), true],
+          ["formule dans un choix", question({ draw: {
+            fields: [{ name: "c", type: "input_radio", attributes: {} }], choices: { c: ["$1$", "deux"] }, solutions: { c: 0 } } }), true],
+          ["formule d’une case donnée de matrice", question({ draw: {
+            fields: [{ name: "m", type: "input_matrix", attributes: { rows: 1, cols: 2 } }],
+            solutions: { m: [[{ given: "1/2", tex: "\\frac{1}{2}" }, "2"]] } } }), true],
+          ["matrice sans case donnée", question({ draw: {
+            fields: [{ name: "m", type: "input_matrix", attributes: { rows: 1, cols: 2 } }], solutions: { m: [["1", "2"]] } } }), false],
           ["formule dans l’explication", question({ explanation: "Car $2+2=4$." }), true],
           ["« question_check » sans formule", question({ question_check: true }), true]
         ];
@@ -1035,7 +1043,10 @@
       fetch("../layouts/standard.html").then(response => response.text()),
         fetch("../css/brand.css").then(response => response.text()),
         fetch("../css/brands/upec.css").then(response => response.text()),
-        fetch("../css/question.css").then(response => response.text()),
+        // Styles d’une page qui a des matrices : ceux des questions, puis ceux de la bibliothèque des
+        // matrices, que l’assemblage ajoute (widgetResources).
+        Promise.all(["../css/question.css", "../widgets/lib/matrix.css"].map(path =>
+          fetch(path).then(response => response.text()))).then(texts => texts.join("\n")),
         fetch("../widgets/lib/text.js").then(response => response.text()),
           fetch("../widgets/lib/matrix.js").then(response => response.text()),
         fetch("../widgets/input_math/widget.js").then(response => response.text()),

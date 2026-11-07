@@ -700,8 +700,14 @@ json.dumps({
             ["l’attribut « tolerance » doit être un nombre positif"]],
           [{ question_setup: "a = 1", question_statement: "{{ input_text('r', solution=a, inline=1) }}" },
             ["l’attribut « inline » doit être true ou false, et non 1"]],
+          [{ question_setup: "a = 1", question_statement: "Un {% input_value 'r' solution=a %}" },
+            ["{% input_value … %} n’existe pas ; un widget s’écrit {{ input_value('nom', …) }}."]],
           [{ question_setup: "M = [[1]]", question_statement: "{{ input_matrix('m', size=1, rows=1, solution=M) }}" },
             ["input_matrix demande soit size, soit rows et cols."]],
+          [{ question_setup: "from pywims import given\nM = [[given(1), given(2)]]", question_statement: "{{ input_matrix('m', rows=1, cols=2, solution=M) }}" },
+            ["toutes les cases sont données (given) : il ne reste rien à saisir."]],
+          [{ question_setup: "from pywims import given\nM = [[given(1), 2]]", question_statement: "{{ input_vmatrix('m', solution=M) }}" },
+            ["une case donnée (given) n’existe que dans une matrice de taille fixe (input_matrix)."]],
           [{ question_setup: "c = ['a', 'b']\ns = 0", question_statement: "{{ input_radio('r', choices=c, solution=s, columns=7) }}" },
             ["columns doit être compris entre 1 et 6."]],
           [{ question_setup: "c = ['a', 'b']\ns = 0", question_statement: "{{ input_radio('r', choices=c, solution=s, shuffle=false, fixed_last=1) }}" },
@@ -908,6 +914,39 @@ json.dumps({
           await solveQuestion(frame, 1, fields, draws[0]);
           if (frame.contentWindow.PyWimsPython.isLoaded()) {
             throw new Error("La page a chargé Pyodide pour une question sans « question_check ».");
+          }
+        } finally {
+          frame.remove();
+        }
+      });
+
+      // Cases données d’une matrice (given, SPECIFICATION.md § 2.3) : la valeur s’affiche en formule à la
+      // place de la case, l’élève ne remplit que les autres, et « question_check » reçoit la matrice entière,
+      // valeur donnée comprise. La matrice de l’explication montre la valeur seule.
+      await test("une matrice à cases données affiche leur valeur et la transmet à question_check", async () => {
+        const fields = {
+          question_title: "Cases données",
+          question_layout: "STD",
+          question_setup: "from sympy import Matrix, Rational\nfrom pywims import given\nM = Matrix([[given(Rational(1, 2)), 2], [3, given(4)]])",
+          question_statement: "Complétez : {{ input_matrix('m', size=2, solution=M) }}",
+          question_solution_explanation: "$M = {{ M }}$",
+          question_check: "ok_answer['m[0][1]'] = m == [['1/2', '2'], ['3', '4']]\nfeedback = 'donnée ' + m[0][0]"
+        };
+        const draws = await PyWimsCompiler.computeDraws(fields, { count: 1 });
+        const cells = draws[0].solutions.m;
+        if (JSON.stringify(cells) !== JSON.stringify([[{ given: "1/2", tex: "1/2" }, "2"], ["3", { given: "4", tex: "4" }]]) ||
+            /given/.test(draws[0].explanation)) {
+          throw new Error(`Tirage inattendu : ${JSON.stringify(draws[0])}`);
+        }
+        const frame = await openCompiledSheet([{ fields, draws }]);
+        try {
+          await solveQuestion(frame, 1, fields, draws[0]);
+          const section = frame.contentDocument.getElementById("q1");
+          const given = [...section.querySelectorAll("[data-matrix-given]")];
+          if (given.length !== 2 || section.querySelectorAll("input[data-matrix-name]").length !== 2 ||
+              !given.every(cell => cell.querySelector("mjx-container")) ||
+              !section.querySelector('[data-role="feedback"]').textContent.includes("donnée 1/2")) {
+            throw new Error(`Page inattendue : ${section.querySelector('[data-role="feedback"]').textContent}`);
           }
         } finally {
           frame.remove();

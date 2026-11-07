@@ -124,8 +124,8 @@ refusé.
 
 Un champ s’écrit dans l’énoncé comme un appel de fonction entre `{{ }}` : son
 nom entre guillemets, puis ses attributs `nom=valeur`, séparés par des
-virgules. Il porte obligatoirement `solution=variable`, le nom d’une variable
-définie par `question_setup` :
+virgules. Il porte obligatoirement `solution=…`, en général une variable
+définie par `question_setup`. Chaque champ est un widget (§ 2.11) :
 
 ```
 {{ input_text('result', solution=total, style='width:7em') }}
@@ -157,8 +157,8 @@ définie par `question_setup` :
   le texte autour du champ, pas le champ. Deux champs ne portent jamais le
   même nom (la saisie arrive dans la variable de ce nom).
 - **Ancienne notation.** `{% input_value 'n' solution=s %}` est refusé, avec
-  un message qui donne la nouvelle écriture ; de même `shuffle=0` et
-  `shuffle=1` (« `shuffle=0` s’écrit maintenant `shuffle=false` »).
+  un message qui donne l’écriture actuelle ; `shuffle=0` aussi, un booléen
+  s’écrivant `true` ou `false`.
 
 **Noms.** Un nom de champ ou de variable (`solution=`, `choices=`, `rows=`…)
 suit la règle des identifiants de Python : lettres, accentuées
@@ -181,7 +181,7 @@ n’a pas besoin de Python pour l’afficher.
 | `input_text` | nombre, expression SymPy ou texte | le texte qu’un élève taperait : `Rational(19, 12)` → `19/12`, `x**2 + 1` → `x^2 + 1`, `'oui'` → `oui` |
 | `input_value` | nombre Python ou SymPy | le nombre, écrit selon `form` (§ 2.8) : `Rational(3, 2)` → `3/2` ou `1,5` |
 | `input_math` | expression SymPy | son code LaTeX, affiché par MathLive : `Rational(19, 12)` → `\frac{19}{12}` |
-| `input_matrix` | `Matrix` ou liste de lignes | un texte par case, converti comme pour `input_text` |
+| `input_matrix` | `Matrix` ou liste de lignes | un texte par case, converti comme pour `input_text` ; une case donnée (`given`) s’affiche à la place de la case |
 | `input_vmatrix` | idem | idem ; la grille prend les dimensions de la solution |
 | `input_radio`, `input_checkbox` | indice, ou liste d’indices | les choix correspondants sont cochés (§ 10) |
 
@@ -195,6 +195,25 @@ solution = Matrix(n, n, lambda i, j: 0 if i > j else ANY)
 
 Une case libre affiche « ∗ » dans un style neutre (bordure en pointillés,
 sans couleur de correction).
+
+**Cases données : `given`.** Dans une matrice de taille fixe (`input_matrix`),
+une case dont la valeur est donnée s’écrit `given(v)` dans la solution
+(fourni par `pywims`, utilisable dans une `Matrix`, comme `ANY`) :
+
+```python
+from pywims import given
+M = Matrix([[given(1), a], [0, given(b)]])
+```
+
+La valeur s’affiche à la place de la case, en formule, sans cadre, centrée
+dans sa colonne : la matrice se lit comme au tableau (choix de l’auteur,
+novembre 2026 ; écarté : une case grisée, qui ressemblait à un champ
+désactivé). L’élève ne remplit que les autres cases. Une case donnée n’a pas
+de verdict (pas de clé dans `ok_answer`, pas de couleur) ; `question_check`
+reçoit la matrice entière, la valeur donnée à sa place, écrite comme une
+saisie (`1/2`). Écrite dans un modèle (`{{ M }}`), la matrice montre la
+valeur seule. Refusés : une case donnée dans `input_vmatrix`, `given(ANY)`,
+une matrice dont toutes les cases sont données.
 
 **Clavier des téléphones.** Un champ `input_text` et une case de matrice
 reçoivent ce que l’élève tape, tel quel :
@@ -226,7 +245,9 @@ l’élargissent trop pour une phrase.
 Le compilateur refuse la question, avec un message précis, si :
 - un champ n’a pas de `solution=` ou désigne une variable absente ;
 - un champ est écrit dans l’ancienne notation `{% input_… %}`, ou n’apparaît
-  pas exactement une fois dans l’énoncé rendu d’un tirage (§ 2.3) ;
+  pas de la même façon dans tous les tirages (§ 2.3) ;
+- un attribut est inconnu du widget, d’un autre type que celui qu’il déclare,
+  ou manque (§ 2.11) ;
 - le modèle Jinja de l’énoncé ou de l’explication est invalide, utilise une
   variable que `question_setup` ne définit pas, ou lève une erreur au rendu
   d’un tirage (le champ, la ligne du modèle et la graine sont indiqués) ;
@@ -235,7 +256,8 @@ Le compilateur refuse la question, avec un message précis, si :
   incompréhensible ; le message dit d’écrire `\frac{ {{n}} }{2}` ;
 - la solution n’a pas la forme attendue par le champ (dimensions de matrice) ;
 - un nom de champ est déjà défini par `question_setup`, ou réservé (`ok_answer`,
-  `feedback`, noms du module `pywims`, mots-clés Python) ;
+  `feedback`, `pywims`, outils du module `pywims`, noms des widgets, mots-clés
+  Python) ;
 - une chaîne de `question_setup` ou de `question_check` contient un caractère de contrôle autre
   que le retour à la ligne : c’est presque toujours une formule TeX écrite dans
   une chaîne ordinaire (`'\frac'` contient un saut de page, `'\times'` une
@@ -657,10 +679,13 @@ pour 1, −3, 2. Un filtre ne calcule rien : il écrit un nombre déjà calculé
 refuse ce qui n’est pas un nombre réel.
 
 **Éléments d’écriture.** Ce qui a une structure et que plusieurs questions
-recopiaient est rendu par une fonction que l’énoncé appelle avec les données de
-`question_setup`. Règle d’entrée : un élément n’entre que s’il est déjà
-recopié dans plusieurs questions ; il ne crée jamais de champ de réponse (le
-compilateur repère les champs en lisant l’énoncé).
+recopiaient est rendu par un élément, un widget (§ 2.11) que l’énoncé ou
+l’explication appelle avec les données de `question_setup`. Règle d’entrée :
+un élément n’entre que s’il est déjà recopié dans plusieurs questions ; il
+n’attend pas de réponse. Un élément s’appelle aussi depuis le code Python de
+l’auteur, avec le même texte : `from pywims import interval`, par exemple pour
+un `feedback` qui reprend la notation de l’énoncé. Son style, s’il en a un
+(`variation_table`), est intégré une fois par page, et non à chaque tirage.
 
 - `{{ variation_table(xs, values, up) }}` : tableau de variations en HTML,
   une case par formule. `xs` : abscisses des bornes et des points
@@ -680,6 +705,83 @@ premier niveau (hors bloc, boucle ou condition) est visible dans
 l’explication : un fragment qui sert aux deux s’écrit une fois, en tête de
 l’énoncé. Si une variable de `question_setup` porte le même nom, c’est la
 définition de l’énoncé qui vaut dans l’explication.
+
+### 2.11 Widgets
+
+Un widget est ce que l’auteur appelle dans un modèle : un **champ**
+(`input_…`), qui attend une réponse, ou un **élément** (`interval`,
+`variation_table`), qui écrit un texte. Chacun est un dossier de `widgets/`,
+nommé dans `widgets/widgets.json`. Le moteur ne connaît aucun widget par son
+nom : ajouter un widget, c’est ajouter son dossier et une ligne à cette liste.
+Modèles suivis : PyWims (une balise de gabarit et son fichier, un crochet
+commun à l’envoi) et PrairieLearn (un élément, des fonctions appelées à des
+moments fixés). Solution écartée : un aiguillage par type de champ dans chaque
+fichier du moteur, où un champ nouveau devait être ajouté à six ou neuf
+endroits que rien ne désignait.
+
+**Le dossier.**
+- `widget.json`, la déclaration :
+  - `kind` : `field` ou `element` ;
+  - `files` : les fichiers du dossier parmi `widget.py`, `widget.js`,
+    `widget.css` (un serveur web ne donne pas la liste d’un dossier) ;
+  - `libraries` : bibliothèques communes de `widgets/lib/` (`.js`, `.py`,
+    `.css`), intégrées une fois par page ;
+  - pour un champ : `attributes`, chacun avec son `type` (`value` : toute
+    valeur, que le widget prépare ; `integer`, `number`, `text`, `boolean`, ou
+    une liste de mots), `required`, `block_supplies` (l’écriture en bloc le
+    fournit) et `block_only` ; `block` (écriture en bloc admise) ; `choices`
+    (champ à choix, § 10 : mélange, `count`, barème) ; `needs_check` (pas de
+    correction sans `question_check`, `input_math`).
+- `widget.py`, son Python, exécuté à la compilation :
+  - champ : `prepare(attributes)` reçoit les attributs vérifiés et renvoie
+    `{"solution": …}`, avec au besoin `choices` (textes affichés), `ranks`
+    (rangs d’un bloc) et `input` (saisie de l’élève qui donne la solution,
+    quand elle diffère de la solution affichée), ou lève `TypeError` avec un
+    message pour l’auteur ; `read_block(texte, attributes)` lit l’écriture en
+    bloc ;
+  - élément : `render(…)` renvoie le texte, TeX ou HTML ; c’est aussi la
+    fonction que l’auteur importe de `pywims`.
+- `widget.js` (champ), son comportement dans la page, inscrit par
+  `PyWimsWidgets.define(nom, { … })` (`runtime/fields.js`). Chaque fonction a
+  un défaut, celui d’un champ texte, et un widget ne fournit que ce qui
+  diffère : dessin (`render`), mise en route (`ready`, `prepare`, `layout`),
+  éléments à remplir et leurs clés dans `ok_answer` (`inputs`, `key`),
+  lecture (`read`, `isFilled`), correction sans Python (`verdicts`),
+  transmission à `question_check` (`sendToPython`), cohérence (`typedAnswer`,
+  `completeSolution`), formules affichées (`shownTexts`, qui décide de
+  MathJax), couleur, réouverture et solution (`color`, `reopen`, `solutionOf`,
+  `showSolution`). La page et le contrôle de cohérence de la compilation (§ 3)
+  appellent les mêmes fonctions : une seule règle de correction par widget.
+- `widget.css`, son style, intégré une fois par page qui l’emploie.
+
+**Jinja, seul lecteur.** Jinja exécute chaque appel, à la compilation : un
+champ vérifie ses attributs d’après la déclaration, prépare sa solution, est
+noté dans le tirage (nom, type, attributs) et laisse une marque à sa place ;
+un élément écrit son texte. La page reçoit la liste des champs avec chaque
+tirage et dessine chaque champ par son widget : elle ne relit jamais l’énoncé.
+Solution écartée : repérer les champs par une grammaire écrite en JavaScript,
+second lecteur de la même écriture, qui refusait toute expression.
+
+**Deux écritures d’un champ.** Un champ reçoit ses données de
+`question_setup` (`choices=choix, solution=bon`) ou, s’il déclare `block`, les
+écrit dans le modèle, entre `{% call %}` et `{% endcall %}` (bloc des choix,
+§ 10.1). Le bloc est rendu par Jinja puis remis à `read_block`, qui en tire les
+mêmes attributs ; les deux écritures suivent ensuite le même chemin. Seuls les
+champs à choix ont aujourd’hui une écriture en bloc : une autre (matrice,
+tableau de variations) n’entrera que si plusieurs questions en ont besoin,
+comme un élément (aucune question réelle n’écrit ses matrices à la main,
+novembre 2026).
+
+**Python.** Le dossier `widgets/` est installé dans Pyodide comme paquet
+`pywims_widgets` (`widgets/lib/choices.py` y est `pywims_widgets.lib.choices`),
+à côté de `pywims` et, à la compilation seulement, de `pywims_draws` (§ 3). La
+page n’emporte que les modules des éléments, que `question_check` peut appeler.
+
+**Noms.** Un champ ne porte le nom ni d’un widget ni d’un outil de `pywims`
+(§ 2.4). Une variable de `question_setup` du nom d’un widget le masque dans
+les modèles, avec un avertissement, comme une fonction de Jinja (§ 2.10) :
+des questions traduites de WIMS définissent leur propre `interval`. Un élément
+importé de `pywims` (`from pywims import *`) n’est pas un masque.
 
 ## 3. Compilation
 
@@ -717,11 +819,14 @@ définition de l’énoncé qui vaut dans l’explication.
     page remplace par le champ ;
   - `context` : pour le contrôle du tirage rejoué (§ 5.1), la valeur de chaque
     variable de `question_setup` lue par les modèles (selon
-    `jinja2.meta.find_undeclared_variables`), écrite par `tex`, et de chaque
-    dimension de matrice ; les fonctions, modules et classes en sont exclus,
+    `jinja2.meta.find_undeclared_variables`), écrite par `tex` ; les
+    fonctions, modules et classes en sont exclus,
     leur texte n’étant pas reproductible. Seule une question qui a un
     `question_check` le garde : sans Python, rien ne rejoue le tirage ;
-  - `solutions` : la valeur convertie de chaque champ (§ 2.3).
+  - `fields` : les champs du tirage, avec leur type et leurs attributs
+    (§ 2.11) ;
+  - `solutions` : la valeur convertie de chaque champ (§ 2.3), et pour un
+    champ à choix ses textes (`choices`) et leur ordre d’affichage.
 - **Cohérence.** Pour chaque tirage, dans le même espace de noms, le
   compilateur saisit la solution de chaque champ comme le ferait un élève,
   exécute `question_check` (ou, sans `question_check`, la correction par défaut du § 2.6) et
@@ -736,7 +841,7 @@ définition de l’énoncé qui vaut dans l’explication.
     verdict et texte, § 2.8) ;
   - `input_math` : la solution écrite comme pour `input_text` (`x^2 + 1`),
     proche de ce que MathLive transmet ;
-  - valeur `ANY` : `1`, une valeur quelconque ;
+  - valeur `ANY` : `1`, une valeur quelconque ; case donnée : sa valeur ;
   - `input_vmatrix` : une grille aux dimensions de la solution ;
   - champ à choix : l’indice ou la liste des indices de la solution.
   Les tests appliquent ce contrôle aux exemples du dépôt, sur 20 tirages ou
@@ -751,17 +856,26 @@ définition de l’énoncé qui vaut dans l’explication.
   `<script>` et `<style>`. L’assemblage refuse un fichier qui contient
   `</script` (ou `</style` pour une feuille de style) : le navigateur y
   fermerait la balise et la page serait cassée sans message. On refuse au lieu
-  d’échapper, car `<\/script` modifierait le texte du module `pywims`, intégré
-  tel quel dans son bloc `<script type="text/x-python">`.
+  d’échapper, car `<\/script` modifierait le texte des modules Python,
+  intégrés tels quels dans leurs blocs `<script type="text/x-python">`.
 - Versions figées : MathJax **3.2.2**, MathLive **0.111.0**. Le widget MathLive
   passe à l’attribut `math-virtual-keyboard-policy`.
-- **Module `pywims`.** C’est un vrai fichier Python, `runtime/pywims.py`. Le
-  compilateur le lit avec les autres fichiers du projet, une seule fois, à son
-  ouverture (§ 11.1), l’installe dans son Pyodide pour calculer les tirages,
-  et l’intègre tel quel au fichier généré (bloc
-  `<script type="text/x-python" id="pywims-module">`, que le navigateur
-  n’exécute pas), seulement si une question a un `question_check`. Tirages calculés et
-  tirages rejoués utilisent donc le même module.
+- **Modules Python.** Trois parties, chacune un vrai fichier :
+  - `runtime/pywims.py`, le module de l’auteur : ce que `question_setup` et
+    `question_check` importent (`tex`, `mcq`, `math_expression`, `ANY`,
+    `given`, les éléments), et la préparation de `question_check` ;
+  - `compiler/pywims_draws.py`, le rendu des tirages : Jinja, filtres, appel
+    des widgets, contrôle des chaînes de l’auteur ; il ne sert qu’à la
+    compilation ;
+  - le paquet `pywims_widgets`, le dossier `widgets/` (§ 2.11).
+  Le compilateur les lit avec les autres fichiers du projet, à son ouverture
+  (§ 11.1), et les installe dans son Pyodide (`setModules`). Le fichier
+  généré intègre `pywims.py` et les éléments tels quels, un bloc
+  `<script type="text/x-python" data-module="…">` par module, que le
+  navigateur n’exécute pas, seulement si une question a un `question_check`.
+  Tirages calculés et tirages rejoués utilisent donc le même code. Solution
+  écartée : un seul module pour tout, dont la page emportait plus du double
+  du nécessaire (46 Ko de Python au lieu de 20).
 - **Script du Worker.** Le code du Web Worker de Python est un vrai fichier,
   `runtime/python-worker.js`. Il suit le chemin du module `pywims` : le
   compilateur le lit en ligne avec les autres fichiers et le donne à `python.js`
@@ -771,8 +885,7 @@ définition de l’énoncé qui vaut dans l’explication.
   `python.js` en fait le script du Worker (Blob), ce qui marche aussi en
   `file://`.
 - L’auteur peut ajouter ses propres outils à `pywims.py` ; tout nom exporté
-  (`__all__`) doit aussi être un nom réservé de `runtime/template.js`, ce que
-  vérifient les tests.
+  (`__all__`) devient un nom de champ réservé, sans rien ajouter ailleurs.
 - **Aperçu.** La page réelle de la question s’affiche dans un cadre isolé
   (`sandbox="allow-scripts"`), et elle fonctionne comme pour l’élève : saisir,
   « Vérifier », retour de l’auteur, « Correction » (champs remplis et explication),
@@ -1056,8 +1169,8 @@ archive `…-scorm.zip` qui contient `imsmanifest.xml` et la feuille,
   compact » (visible dès qu’une question est cochée), garde les tirages en JSON (`<pre data-draws>`), dont seuls `&` et
   `<` sont échappés. La page est alors environ quatre fois plus lourde pour
   une activité (21 questions de probabilités : 1,5 Mo au lieu de 380 Ko).
-- Les commentaires du code du projet (mise en page, styles, scripts, module
-  `pywims`) sont retirés de la page : ils pesaient plus d’un tiers d’une
+- Les commentaires du code du projet (mise en page, styles, scripts, modules
+  Python) sont retirés de la page : ils pesaient plus d’un tiers d’une
   question seule. En JavaScript et en Python, seules les lignes entières de
   commentaire partent, un `//` en fin de ligne pouvant être dans une chaîne.
   Le contenu des questions n’est jamais modifié.
@@ -1066,21 +1179,23 @@ archive `…-scorm.zip` qui contient `imsmanifest.xml` et la feuille,
 
 | Fichier | Rôle |
 |---|---|
-| `runtime/template.js` | grammaire unique des balises et échappement HTML, utilisés par le compilateur (validation, aperçu) et par le fichier généré (rendu) |
+| `runtime/template.js` | outils communs au compilateur et à la page : échappement HTML, barème d’AMC, affichage de l’énoncé rendu (marques des champs) |
 | `runtime/correction.js` | correction par défaut sans Python (§ 2.6) : comparaison des choix et des textes, aux différences typographiques près ; utilisée par le fichier généré et par le compilateur |
-| `runtime/pywims.py` | module `pywims` : outils de l’auteur, conversion des solutions, contrôles des tirages |
+| `runtime/pywims.py` | module `pywims` de l’auteur (§ 3) : `tex`, `mcq`, `math_expression`, `ANY`, `given`, accès aux éléments ; préparation de `question_check` |
+| `compiler/pywims_draws.py` | rendu des tirages à la compilation : Jinja, filtres, appel des widgets, contrôle des chaînes de l’auteur |
 | `runtime/python.js` | Pyodide partagé, dans un Web Worker (la page ne gèle pas, un calcul sans fin peut être arrêté) : création et relance du Worker, appels asynchrones, sessions par question. L’interface reste asynchrone et inchangée pour `question.js` et le compilateur |
-| `runtime/python-worker.js` | script du Worker (§ 3) : chargement de Pyodide et des paquets, installation du module `pywims`, graines, exécution du code des sessions |
-| `runtime/fields.js` | outils communs sur les champs d’une question : lire et écrire une saisie, figer un champ, choix cochés, animation d’un champ |
+| `runtime/python-worker.js` | script du Worker (§ 3) : chargement de Pyodide et des paquets, installation des modules Python, graines, exécution du code des sessions |
+| `runtime/fields.js` | outils communs sur les champs d’une question (lire, écrire, figer, animer), et registre des widgets avec leurs comportements par défaut (§ 2.11) |
 | `runtime/question.js` | classe `Question` : rendu d’un tirage, préparation de Python, vérification, correction, solution, nouvel énoncé, note |
 | `runtime/sheet.js` | la feuille : création des questions, progression et sa mémoire, note indicative, aide, célébration, redimensionnement |
-| `widgets/*.js` | champs de saisie, avec pré-remplissage pour la solution ; le widget de choix retire des colonnes quand un choix déborde |
+| `widgets/<nom>/` | un widget, champ ou élément (§ 2.11) : `widget.json`, et selon le cas `widget.py`, `widget.js`, `widget.css` ; liste dans `widgets/widgets.json` |
+| `widgets/lib/` | bibliothèques communes des widgets : texte, matrices, choix (JavaScript, Python, style), bornes des éléments |
 | `layouts/standard.html` | mise en page commune aux feuilles et aux questions seules |
-| `css/question.css` | styles des feuilles, à partir des variables de la charte |
+| `css/question.css` | styles des feuilles, à partir des variables de la charte ; ceux d’un widget sont dans son dossier |
 | `css/brand.css` | charte neutre, par défaut (§ 11.4) |
 | `css/brands/*.css` | exemples de chartes à copier en `brand.css` dans son dossier de questions (UPEC) |
 | `compiler/format.js` | analyse d’un fichier `.pwq`, types de ses champs de réponse ; découpage et réécriture pour l’éditeur, découpage d’un texte collé |
-| `compiler/draws.js` | tirages avec Pyodide, contrôles de l’auteur, cohérence, ordre des choix |
+| `compiler/draws.js` | chargement des widgets et des modules Python, tirages avec Pyodide, contrôles de l’auteur, cohérence, ordre des choix, code des widgets d’une feuille |
 | `compiler/assemble.js` | ressources du projet, assemblage des feuilles, empreinte d’une activité |
 | `compiler/zip.js` | archive ZIP des pages séparées |
 | `compiler/editor.js` | atelier : éditeur d’un seul bloc de la question courante (CodeMirror 5, une coloration par section), validation, enregistrement automatique (§ 11.10) |

@@ -125,6 +125,12 @@ def render(namespace, source, field, functions=None, shared=None):
         names = jinja2.meta.find_undeclared_variables(environment.parse(source))
         template = environment.from_string(source)
     except jinja2.TemplateSyntaxError as error:
+        # L’ancienne notation d’un champ, {% input_value 'n' … %}, est pour Jinja une commande inconnue : le
+        # message, en anglais, ne dirait pas comment l’écrire.
+        tag = re.fullmatch(r"Encountered unknown tag '(\w+)'.*", error.message or "", re.S)
+        if tag and tag.group(1) in (functions or {}):
+            raise ValueError("« {} », ligne {} : {{% {} … %}} n’existe pas ; un widget s’écrit {{{{ {}('nom', …) }}}}."
+                             .format(field, error.lineno, tag.group(1), tag.group(1))) from None
         raise ValueError("« {} », ligne {} : {}.".format(field, error.lineno, error.message)) from None
     # Une variable de l’auteur masque le widget du même nom, comme elle masque une fonction de Jinja
     # (avertissement de collect_draw) : « interval = interval_tex(…) » puis {{ interval }} affiche le texte

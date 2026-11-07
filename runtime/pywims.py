@@ -1,4 +1,4 @@
-"""Outils PyWims : from pywims import math_expression, mcq, tex, ANY, interval, variation_table"""
+"""Outils PyWims : from pywims import math_expression, mcq, tex, ANY, given, interval, variation_table"""
 # Module de l’auteur (SPECIFICATION.md, § 3) : ce que « question_setup » et « question_check » importent,
 # et deux fonctions que la page appelle (_prepare_check, _template_value). Installé dans Pyodide par
 # runtime/python-worker.js, à la compilation comme dans le fichier généré, qui l’intègre tel quel : les
@@ -16,22 +16,49 @@ try:
 except ImportError:
     _ELEMENTS = ()
 
-__all__ = ["math_expression", "mcq", "tex", "ANY", *_ELEMENTS]
+__all__ = ["math_expression", "mcq", "tex", "ANY", "given", *_ELEMENTS]
 
 _any_value = None
+_given_class = None
+
+
+def _make_given():
+    """Classe given : une fonction SymPy non évaluée, utilisable dans une Matrix comme ANY.
+
+    given(v) marque une case donnée d’une matrice à remplir (input_matrix, SPECIFICATION.md § 2.3) :
+    la valeur s’affiche à la place de la case, l’élève ne la saisit pas, et « question_check » la reçoit
+    dans la saisie, à sa place. Écrite dans l’énoncé ({{ M }}), la matrice montre la valeur seule.
+    Solution écartée : un objet Python ordinaire, que Matrix refuse (SymPy ne sait pas le convertir).
+    """
+    import sympy
+
+    class given(sympy.Function):
+        nargs = 1
+
+        def _latex(self, printer):
+            return printer._print(self.args[0])
+
+        def _sympystr(self, printer):
+            return printer._print(self.args[0])
+
+    return given
 
 
 def __getattr__(name):
-    """Crée ANY à la demande : SymPy n’est importé que par les questions qui l’utilisent. Un élément
-    (interval, variation_table) est la fonction render de son widget : « question_check » écrit ainsi
-    la même notation que l’énoncé, par exemple dans un feedback."""
-    global _any_value
+    """Crée ANY et given à la demande : SymPy n’est importé que par les questions qui les utilisent.
+    Un élément (interval, variation_table) est la fonction render de son widget : « question_check »
+    écrit ainsi la même notation que l’énoncé, par exemple dans un feedback."""
+    global _any_value, _given_class
     if name == "ANY":
         if _any_value is None:
             import sympy
             # Symbole unique, utilisable dans une Matrix, qui marque une valeur de solution libre.
             _any_value = sympy.Dummy("ANY")
         return _any_value
+    if name == "given":
+        if _given_class is None:
+            _given_class = _make_given()
+        return _given_class
     if name in _ELEMENTS:
         import importlib
         return importlib.import_module("pywims_widgets.{}.widget".format(name)).render
@@ -40,6 +67,13 @@ def __getattr__(name):
 
 def _is_any(value):
     return _any_value is not None and value is _any_value
+
+
+def _given_value(value):
+    """Valeur d’une case donnée (given(v)), ou None pour une autre valeur."""
+    if _given_class is not None and isinstance(value, _given_class):
+        return value.args[0]
+    return None
 
 
 def _plain_decimal(value):

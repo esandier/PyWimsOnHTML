@@ -3,7 +3,7 @@
 # un widget la déclare dans ses « libraries ».
 import sys
 
-from pywims import _float_text, _is_any
+from pywims import _float_text, _given_value, _is_any, tex
 
 
 def solution_text(value):
@@ -20,8 +20,9 @@ def solution_text(value):
     return str(value)
 
 
-def solution_cells(value):
-    """Solution d’une matrice : liste de lignes de textes, None pour une case libre."""
+def solution_cells(value, allow_given=False):
+    """Solution d’une matrice : liste de lignes de textes, None pour une case libre ; une case donnée
+    (given(v), si allow_given) est {"given": texte saisi, "tex": formule affichée}."""
     sympy = sys.modules.get("sympy")
     if sympy is not None:
         from sympy.matrices.matrixbase import MatrixBase
@@ -29,7 +30,19 @@ def solution_cells(value):
             value = value.tolist()
     if not isinstance(value, (list, tuple)) or not all(isinstance(row, (list, tuple)) for row in value):
         raise TypeError("La solution d’une matrice doit être une Matrix ou une liste de lignes.")
-    return [[solution_text(cell) for cell in row] for row in value]
+    return [[solution_cell(cell, allow_given) for cell in row] for row in value]
+
+
+def solution_cell(value, allow_given):
+    given = _given_value(value)
+    if given is None:
+        return solution_text(value)
+    if not allow_given:
+        raise TypeError("une case donnée (given) n’existe que dans une matrice de taille fixe (input_matrix).")
+    if _is_any(given):
+        raise TypeError("une case donnée a une valeur : given(ANY) ne veut rien dire.")
+    # Le texte est ce que « question_check » reçoit, comme une saisie ; la formule, ce que voit l’élève.
+    return {"given": solution_text(given), "tex": tex(given)}
 
 
 def is_matrix(value):

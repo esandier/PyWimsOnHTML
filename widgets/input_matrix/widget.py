@@ -11,8 +11,10 @@ def prepare(attributes):
     cols = attributes.setdefault("cols", size)
     if not all(1 <= value <= 10 for value in (rows, cols)):
         raise TypeError("les dimensions ({} × {}) doivent être comprises entre 1 et 10.".format(rows, cols))
-    cells = solution_cells(attributes["solution"])
+    cells = solution_cells(attributes["solution"], allow_given=True)
     if any(len(row) != cols for row in cells) or len(cells) != rows:
         raise TypeError("la solution est une matrice {} × {}, alors que le champ est {} × {}.".format(
             len(cells), len(cells[0]) if cells else 0, rows, cols))
+    if all(isinstance(cell, dict) for row in cells for cell in row):
+        raise TypeError("toutes les cases sont données (given) : il ne reste rien à saisir.")
     return {"solution": cells}

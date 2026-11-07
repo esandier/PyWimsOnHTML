@@ -177,9 +177,10 @@ ${renderDrawData(draws, compressedDraws)}
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js"></script>`;
 
   // Une feuille a besoin de MathJax (≈ 600 Ko) si elle peut afficher une formule (SPECIFICATION.md,
-  // § 5.1) : un délimiteur dans l’énoncé ou l’explication rendus d’un tirage, ou dans l’un de ses choix,
-  // ou une question qui a un « question_check », dont le retour, calculé chez l’élève, peut en contenir
-  // une. Un « $ » qui n’ouvre pas de formule fait seulement charger MathJax pour rien.
+  // § 5.1) : un délimiteur dans l’énoncé ou l’explication rendus d’un tirage, ou dans ce qu’affiche l’un
+  // de ses champs (shownTexts du widget : choix, cases données), ou une question qui a un
+  // « question_check », dont le retour, calculé chez l’élève, peut en contenir une. Un « $ » qui n’ouvre
+  // pas de formule fait seulement charger MathJax pour rien.
   function needsMathJax(questions) {
     const delimiter = /\$|\\\(|\\\[/;
     return questions.some(({ fields, draws }) =>
@@ -187,7 +188,7 @@ ${renderDrawData(draws, compressedDraws)}
       draws.some(draw => [
         draw.statement ?? "",
         draw.explanation ?? "",
-        ...Object.values(draw.choices ?? {}).flat()
+        ...draw.fields.flatMap(field => PyWimsWidgets.get(field.type).shownTexts(field, draw))
       ].some(text => delimiter.test(String(text)))));
   }
 

@@ -105,7 +105,10 @@ dit pourquoi.
   tirage impossible à reproduire : le compilateur exécute chaque graine deux
   fois et refuse la question si les deux tirages diffèrent.
 - Les outils PyWims s’importent depuis le module `pywims` :
-  `from pywims import math_expression, mcq, tex, ANY`.
+  `from pywims import math_expression, mcq, tex, ANY, given`. Les éléments
+  `interval` et `variation_table` (plus bas) s’en importent aussi, pour
+  écrire dans `question_check` la même notation que dans l’énoncé (un
+  `feedback` qui cite un intervalle).
   - `math_expression(saisie)` analyse une expression écrite par un élève
     (`2x`, `x^2`, `sqrt(2)`, `sin x`, `ln(x)`), en n’admettant que les
     fonctions mathématiques usuelles, et renvoie une expression SymPy ou
@@ -233,6 +236,9 @@ dit pourquoi.
     ouvrant, mets la borne entre accolades si elle peut être négative : TeX
     lit `]` comme un crochet fermant, et `]-3` s’afficherait `] − 3`.
 
+  Ne nomme aucune variable `interval` ou `variation_table` : elle masquerait
+  l’élément dans l’énoncé (le compilateur l’avertit).
+
   Un élément ne contient jamais de champ de réponse : pour un tableau à
   compléter, écris le tableau en HTML dans l’énoncé et place les champs dans
   ses cases.
@@ -272,6 +278,11 @@ dit pourquoi.
   - `{{ input_matrix('nom', size=n, solution=variable, input_style='CSS facultatif') }}`
     ou `{{ input_matrix('nom', rows=m, cols=p, solution=variable) }}` ; chaque
     dimension est un entier ou une variable entière de `question_setup`, entre 1 et 10.
+    Une case dont la valeur est donnée à l’élève s’écrit `given(v)` dans la
+    solution : `Matrix([[given(1), a], [0, given(b)]])`. Elle s’affiche à la
+    place de la case, l’élève ne remplit que les autres, et `question_check`
+    reçoit la matrice entière, la valeur donnée à sa place. Il reste au moins
+    une case à remplir.
   - `{{ input_vmatrix('nom', max_rows=5, max_cols=5, solution=variable, input_style='width:2em') }}` :
     matrice que l’élève redimensionne lui-même. Comme pour une matrice fixe,
     une case prend la taille de son champ (2em de large par défaut) ;

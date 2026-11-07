@@ -802,93 +802,6 @@ body:not([data-scored]) .pw-help-score {
   min-width: 0;
 }
 
-/* Délimiteurs et disposition tabulaire des matrices. */
-.pw-matrix-frame {
-  display: inline-flex;
-  align-items: stretch;
-  vertical-align: middle;
-}
-
-.pw-matrix-delimiter {
-  width: 0.55em;
-  border-top: 2px solid var(--pw-input-border);
-  border-bottom: 2px solid var(--pw-input-border);
-}
-
-.pw-matrix-delimiter-left {
-  border-left: 2px solid var(--pw-input-border);
-}
-
-.pw-matrix-delimiter-right {
-  border-right: 2px solid var(--pw-input-border);
-}
-
-.pw-matrix {
-  border-spacing: 0.2em;
-  margin: 0.5em 0.15em;
-}
-
-.pw-matrix-cell {
-  position: relative;
-}
-
-.pw-matrix-cell .pw-input {
-  min-width: 0;
-  text-align: center;
-}
-
-/* La grille redimensionnable reste immobile par rapport à ses crochets ; la poignée est placée
-   après le crochet droit, dans une marge réservée, pour ne pas le recouvrir. */
-.pw-vmatrix-frame {
-  position: relative;
-  margin-right: 1.6em;
-}
-
-/* Mêmes espacements qu'une matrice fixe : marge extérieure de la table, et une marge intérieure
-   égale à l'écart entre cases, où le contour de focus d'une case du bord reste visible. La
-   largeur posée par le script est celle des cases visibles, marge intérieure non comprise. */
-.pw-vmatrix-viewport {
-  display: inline-block;
-  box-sizing: content-box;
-  padding: 0.2em;
-  margin: 0.5em 0.15em;
-  overflow: clip;
-  vertical-align: middle;
-  touch-action: none;
-}
-
-.pw-vmatrix-grid {
-  display: grid;
-  width: max-content;
-  height: max-content;
-  grid-template-columns: repeat(var(--pw-vmatrix-columns), var(--pw-vmatrix-cell-width, max-content));
-  grid-template-rows: repeat(var(--pw-vmatrix-rows), var(--pw-vmatrix-cell-height, max-content));
-  gap: 0.2em;
-}
-
-.pw-vmatrix-cell {
-  display: inline-block;
-  width: var(--pw-vmatrix-cell-width, auto);
-  height: var(--pw-vmatrix-cell-height, auto);
-}
-
-.pw-vmatrix-resize {
-  position: absolute;
-  right: -1.5em;
-  bottom: 0;
-  z-index: 12;
-  width: 1.25em;
-  height: 1.25em;
-  padding: 0;
-  border: 1px solid var(--pw-input-border);
-  border-radius: 0.25em;
-  background: var(--pw-action-background);
-  color: var(--pw-text-color);
-  cursor: nwse-resize;
-  line-height: 1;
-  touch-action: none;
-}
-
 /* Champs à choix : une ligne entière cliquable par choix, assez haute pour le doigt (44 px,
    taille tactile minimale recommandée).
    Grille de --pw-choice-columns colonnes de même largeur, pour que les choix restent alignés.
@@ -1500,10 +1413,6 @@ mjx-container > mjx-assistive-mml {
 [data-style="compact"] .pw-select-wrapper:not(.is-inline) .pw-select {
   border-width: 1px;
   border-radius: 4px;
-}
-
-[data-style="compact"] .pw-matrix-delimiter {
-  border-width: 1.5px;
 }
 
 /* Choix : à la suite dans le texte, sans cadre, chacun à sa largeur ; ils passent à la ligne quand la

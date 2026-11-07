@@ -172,7 +172,10 @@ window.PyWimsWidgets = (() => {
     freeText: freeValue,
     // Solution du tirage complétée à la compilation, avant tout contrôle (compiler/draws.js) : ce que
     // seul le code de la page sait écrire. Lève une erreur pour une solution qui ne convient pas.
-    completeSolution: solution => solution
+    completeSolution: solution => solution,
+    // Textes qu’affiche le champ hors de l’énoncé (choix, cases données), avec leurs délimiteurs de
+    // formule : l’assemblage y cherche une formule pour décider d’intégrer MathJax (compiler/assemble.js).
+    shownTexts: () => []
   };
 
   function define(name, widget) {
