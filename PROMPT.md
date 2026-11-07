@@ -262,11 +262,11 @@ dit pourquoi.
   N’invente jamais une image qu’on ne t’a pas donnée.
 - Champs pris en charge ; `solution=` est obligatoire et désigne une variable
   de `question_setup` qui contient la bonne réponse :
-  - `{{ input_value('nom', solution=variable, tolerance=0.01, form=decimal) }}` :
+  - `{{ input_value('nom', solution=variable, tolerance=0.01, form='decimal') }}` :
     réponse numérique, voir « Valeurs numériques » ci-dessous.
-  - `{{ input_text('nom', solution=variable, style='CSS facultatif', match=normal) }}` :
-    réponse écrite ; `match=exact` exige le texte caractère pour caractère,
-    `match=loose` ignore en plus majuscules, accents et ponctuation finale
+  - `{{ input_text('nom', solution=variable, style='CSS facultatif', match='normal') }}` :
+    réponse écrite ; `match='exact'` exige le texte caractère pour caractère,
+    `match='loose'` ignore en plus majuscules, accents et ponctuation finale
     (pour un mot ou un nom).
   - `{{ input_math('nom', solution=variable) }}` (saisie mathématique MathLive)
   - `{{ input_matrix('nom', size=n, solution=variable, input_style='CSS facultatif') }}`
@@ -309,7 +309,7 @@ dit pourquoi.
   `Rational(3, 2)`, `sqrt(2)`, `pi`… Garde-le exact (`Rational`, pas `1/3`).
 - `tolerance=0.01` admet un écart absolu ; sans lui, la valeur doit être
   exacte. Un irrationnel (`sqrt(2)`) exige une tolérance.
-- `form=` impose l’écriture : `any` (par défaut), `integer`, `decimal`,
+- `form=` impose l’écriture, un mot entre guillemets (`form='decimal'`) : `any` (par défaut), `integer`, `decimal`,
   `fraction`, `irreducible` (fraction irréductible), `scientific`
   (`1,5×10^3`), `percent` (`42 %` pour une solution 0,42). Un pourcentage est
   un nombre : `42 %` est juste pour 0,42 avec `any`. Une valeur juste dans une autre forme est refusée, avec un
