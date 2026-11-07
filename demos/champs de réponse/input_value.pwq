@@ -29,7 +29,7 @@ area = pi * r**2
 % question_statement
 %
 Aire d’un disque de rayon ${{r}}$ cm, à 0,1 cm² près :
-{{ input_value('answer', solution=area, tolerance=0.1, form=decimal, style='width:6em') }}&nbsp;cm²
+{{ input_value('answer', solution=area, tolerance=0.1, form='decimal', style='width:6em') }}&nbsp;cm²
 %
 % question_solution_explanation
 %

@@ -2856,11 +2856,6 @@ def _field_function(widget, declaration, module, draw, namespace, has_check, in_
 
     def field(*args, caller=None, **attributes):
         import jinja2
-        for key, value in attributes.items():
-            words = schema.get(key, {}).get("type")
-            if (isinstance(value, jinja2.Undefined) and isinstance(words, list)
-                    and value._undefined_name in words):
-                attributes[key] = value._undefined_name
         for value in (*args, *attributes.values()):
             if isinstance(value, jinja2.Undefined):
                 value._fail_with_undefined_error()

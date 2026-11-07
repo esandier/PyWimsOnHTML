@@ -873,7 +873,7 @@ window.PyWimsPython = (() => {
       await test("une valeur numérique juste mais mal écrite est fausse, et le retour dit pourquoi", async () => {
         const question = {
           question_title: "Moitié", question_layout: "STD", question_setup: "s = 1.5",
-          question_statement: "La moitié de 3 ? {{ input_value('r', solution=s, form=decimal) }}"
+          question_statement: "La moitié de 3 ? {{ input_value('r', solution=s, form='decimal') }}"
         };
         const draws = [{ seed: 0, context: {}, solutions: { r: { text: "1,5", value: "3/2" } } }];
         const { $, role, frame } = await openQuestion(question, draws, {});
@@ -902,7 +902,7 @@ window.PyWimsPython = (() => {
       await test("un input_value avec « question_check » reçoit sa valeur et son verdict par défaut", async () => {
         const question = {
           question_title: "Moitié", question_layout: "STD", question_setup: "s = 1.5",
-          question_statement: "La moitié de 3 ? {{ input_value('r', solution=s, form=decimal) }}",
+          question_statement: "La moitié de 3 ? {{ input_value('r', solution=s, form='decimal') }}",
           question_check: "pass"
         };
         const draws = [{ seed: 0, context: {}, solutions: { r: { text: "1,5", value: "3/2" } } }];

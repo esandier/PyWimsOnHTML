@@ -617,15 +617,9 @@ def _field_function(widget, declaration, module, draw, namespace, has_check, in_
 
     def field(*args, caller=None, **attributes):
         import jinja2
-        # Un mot d’une liste s’écrit avec ou sans guillemets (form=decimal ou form='decimal', § 2.3) :
-        # sans guillemets, Jinja y voit une variable inconnue, dont on reprend le nom.
-        for key, value in attributes.items():
-            words = schema.get(key, {}).get("type")
-            if (isinstance(value, jinja2.Undefined) and isinstance(words, list)
-                    and value._undefined_name in words):
-                attributes[key] = value._undefined_name
-        # Une autre variable inconnue arrive comme un objet Undefined, qui n’échoue qu’à son usage : on le
-        # fait échouer ici, pour le message habituel (« la variable « s » n’est pas définie… »).
+        # Une variable inconnue arrive comme un objet Undefined, qui n’échoue qu’à son usage : on le fait
+        # échouer ici, pour le message habituel (« la variable « s » n’est pas définie… »). Un mot d’une
+        # liste écrit sans guillemets (form=decimal) en est une : il s’écrit form='decimal', comme en Jinja.
         for value in (*args, *attributes.values()):
             if isinstance(value, jinja2.Undefined):
                 value._fail_with_undefined_error()

@@ -38,11 +38,11 @@ mantissa = Rational(m, 10)
 %
 <ol>
   <li>Valeur approchée de $\sqrt{ {{n}} }$ à 0,01 près :
-    {{ input_value('approx', solution=root, tolerance=0.01, form=decimal, style='width:5em') }}</li>
+    {{ input_value('approx', solution=root, tolerance=0.01, form='decimal', style='width:5em') }}</li>
   <li>Forme irréductible de $\dfrac{ {{p}} }{ {{q}} }$ :
-    {{ input_value('simplified', solution=fraction, form=irreducible, style='width:5em') }}</li>
+    {{ input_value('simplified', solution=fraction, form='irreducible', style='width:5em') }}</li>
   <li>Écriture scientifique de ${{big}}$ :
-    {{ input_value('scientific', solution=big, form=scientific, style='width:7em') }}</li>
+    {{ input_value('scientific', solution=big, form='scientific', style='width:7em') }}</li>
 </ol>
 %
 % question_solution_explanation

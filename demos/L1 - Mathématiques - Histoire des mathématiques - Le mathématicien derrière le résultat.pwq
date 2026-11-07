@@ -30,7 +30,7 @@ plain = unicodedata.normalize("NFD", name).encode("ascii", "ignore").decode().lo
 % question_statement
 %
 Quel mathématicien a donné son nom {{description}} ?
-{{ input_text('mathematician', solution=name, match=loose, style='width:9em') }}
+{{ input_text('mathematician', solution=name, match='loose', style='width:9em') }}
 %
 % question_solution_explanation
 %

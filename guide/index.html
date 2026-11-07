@@ -188,7 +188,7 @@
     <details class="field-item">
       <summary><code>input_value</code> : réponse numérique</summary>
 <pre><code>{{ input_value('answer', solution=product) }}
-{{ input_value('length', solution=hypotenuse, tolerance=0.01, form=decimal) }}</code></pre>
+{{ input_value('length', solution=hypotenuse, tolerance=0.01, form='decimal') }}</code></pre>
       <div class="table-wrap"><table>
         <thead><tr><th>Paramètre</th><th>Statut</th><th>Rôle</th></tr></thead>
         <tbody>
@@ -211,7 +211,7 @@
 
     <details class="field-item">
       <summary><code>input_text</code> : réponse écrite</summary>
-<pre><code>{{ input_text('answer', solution=noun, match=loose) }}</code></pre>
+<pre><code>{{ input_text('answer', solution=noun, match='loose') }}</code></pre>
       <div class="table-wrap"><table>
         <thead><tr><th>Paramètre</th><th>Statut</th><th>Rôle</th></tr></thead>
         <tbody>

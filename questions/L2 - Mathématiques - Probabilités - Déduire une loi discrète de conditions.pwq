@@ -66,14 +66,14 @@ Saisissez vos réponses sous forme de fractions.
 <table class="loi-tableau">
 <tr><th>$k$</th><td>${{v1}}$</td><td>${{v2}}$</td><td>${{v3}}$</td><td>${{v4}}$</td></tr>
 <tr><th>$\mathbb{P}(X = k)$</th>
-<td>{{ input_value('law_1', solution=answer_1, form=fraction, style='width:3em') }}</td>
-<td>{{ input_value('law_2', solution=answer_2, form=fraction, style='width:3em') }}</td>
-<td>{{ input_value('law_3', solution=answer_3, form=fraction, style='width:3em') }}</td>
-<td>{{ input_value('law_4', solution=answer_4, form=fraction, style='width:3em') }}</td></tr>
+<td>{{ input_value('law_1', solution=answer_1, form='fraction', style='width:3em') }}</td>
+<td>{{ input_value('law_2', solution=answer_2, form='fraction', style='width:3em') }}</td>
+<td>{{ input_value('law_3', solution=answer_3, form='fraction', style='width:3em') }}</td>
+<td>{{ input_value('law_4', solution=answer_4, form='fraction', style='width:3em') }}</td></tr>
 </table>
 </div>
 <h4>Espérance de X</h4>
-$\mathbb{E}(X) =$ {{ input_value('mean', solution=expectation, form=fraction) }}
+$\mathbb{E}(X) =$ {{ input_value('mean', solution=expectation, form='fraction') }}
 %
 % question_solution_explanation
 %

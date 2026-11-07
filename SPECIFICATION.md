@@ -140,12 +140,11 @@ définie par `question_setup` :
 {{ input_select('verb', choices=forms, solution=correct) }}
 ```
 
-- **Lu sans Python.** L’écriture est celle d’un appel, mais le champ n’est pas
-  évalué : la page doit connaître ses champs sans Python (§ 1). Une valeur est
-  un nombre, un texte entre guillemets, un booléen, ou un **nom** de variable
-  (`solution=total`), jamais une expression (`solution=p * 2` est refusé :
-  calculez la valeur dans `question_setup`). Les mots d’une liste
-  (`form`, `match`) s’écrivent avec ou sans guillemets.
+- **Un vrai appel.** Jinja exécute le champ, à la compilation, comme une
+  fonction (§ 2.11) : une valeur est une expression de Jinja, variable
+  (`solution=total`), calcul (`solution=p * 2`), nombre, booléen ou texte. Les
+  mots d’une liste (`form`, `match`) sont des textes : `form='decimal'`, entre
+  guillemets ; sans eux, Jinja y lirait une variable.
 - **Booléens.** Un attribut oui ou non (`shuffle`, `inline`) vaut `true` ou
   `false`, écrits aussi `True` et `False`, comme en Jinja ; toute autre valeur
   est refusée, avec un message qui le dit. Un attribut booléen s’écrit toujours
