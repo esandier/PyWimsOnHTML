@@ -156,5 +156,38 @@ window.PyWimsWidgets = (() => {
     }
   }
 
-  return Object.freeze({ ...existing, inputMatrix, inputVMatrix, enableVariableMatrixResize, resizeVariableMatrix });
+  // Comportement commun aux matrices fixes et redimensionnables (SPECIFICATION.md, § 2.11) : une case
+  // par coefficient, chacune avec sa clé « m[i][j] » dans ok_answer ; « question_check » reçoit la liste
+  // des lignes.
+  const matrixBehaviour = Object.freeze({
+    single: false,
+    inputs: (prompt, field) => [...prompt.querySelectorAll(`[data-matrix-name="${CSS.escape(field.name)}"]`)],
+    key: (input, field) => `${field.name}[${input.dataset.matrixRow}][${input.dataset.matrixColumn}]`,
+    // Lignes de textes, dans l’ordre des cases.
+    read(inputs) {
+      const rows = [];
+      for (const input of inputs) {
+        (rows[Number(input.dataset.matrixRow)] ??= [])[Number(input.dataset.matrixColumn)] = input.value;
+      }
+      return rows;
+    },
+    verdicts(answer, { name }, draw) {
+      const cells = draw.solutions[name];
+      const verdicts = {};
+      answer.forEach((row, i) => row.forEach((value, j) => {
+        const solution = cells[i]?.[j];
+        verdicts[`${name}[${i}][${j}]`] = solution === undefined ? false
+          : solution === null ? value.trim() !== "" : PyWimsCorrection.sameText(value, solution);
+      }));
+      return { verdicts, hints: {} };
+    },
+    sendToPython: (python, { name }, answer) => python.setMatrix(name, answer),
+    typedAnswer: ({ name }, draw) => draw.solutions[name].map(row => row.map(cell => cell ?? "1")),
+    solutionOf: (input, { name }, draw) =>
+      draw.solutions[name]?.[Number(input.dataset.matrixRow)]?.[Number(input.dataset.matrixColumn)] ?? null
+  });
+
+  return Object.freeze({
+    ...existing, inputMatrix, inputVMatrix, enableVariableMatrixResize, resizeVariableMatrix, matrixBehaviour
+  });
 })();

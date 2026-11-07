@@ -322,7 +322,7 @@
       lastWidth = innerWidth;
       questions.forEach(question => {
         if (widthChanged) question.forgetPromptHeight();
-        PyWimsWidgets.fitChoiceColumns?.(question.promptElement);
+        question.layoutWidgets();
         question.fitWideFormulas();
         question.layoutFeedback();
       });

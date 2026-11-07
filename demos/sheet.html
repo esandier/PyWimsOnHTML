@@ -1,11 +1,9 @@
 <!doctype html>
-
 <html lang="fr">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>PyWimsOnHTML : feuille de démonstration</title>
-
   <style>
 
 :root {
@@ -1599,7 +1597,6 @@ mjx-container > mjx-assistive-mml {
 }
 
   </style>
-
   <script>
     window.MathJax = {
       tex: {
@@ -1611,27 +1608,12 @@ mjx-container > mjx-assistive-mml {
     };
   </script>
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js"></script>
-
-  <script>// Charge le clavier mathématique uniquement pour les questions qui en ont besoin.
-window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
-  const script = document.createElement("script");
-  script.src = "https://unpkg.com/mathlive@0.111.0";
-  script.onload = resolve;
-  script.onerror = () => reject(new Error("Échec du chargement de MathLive."));
-  document.head.append(script);
-});</script>
 </head>
-
-
-
 <body data-sheet="activity" data-sheet-id="1hhwu3bdvdl">
-
   <div class="pw-top">
-
     <header class="pw-header">
       <h1 id="question-title">PyWimsOnHTML : feuille de démonstration</h1>
       <div class="pw-header-tools">
-
         <div class="pw-score-total" id="pw-score-total" role="status" aria-live="polite" hidden>
           <span class="pw-completion-value" id="pw-score-total-value"></span>
           <span class="pw-completion-label" id="pw-score-total-label"></span>
@@ -1640,7 +1622,6 @@ window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
           <span class="pw-completion-value" id="pw-completion-value">0 %</span>
           <span class="pw-completion-label" id="pw-completion-label"></span>
         </button>
-
         <button class="pw-help-button pw-restart-button" id="pw-restart" type="button" title="Réinitialiser la feuille" aria-label="Réinitialiser la feuille">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 3.5v4h4"/></svg>
         </button>
@@ -1649,13 +1630,11 @@ window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
       <span class="pw-brand-logo" aria-hidden="true"></span>
     </header>
     <div class="pw-progress" aria-hidden="true"><div class="pw-progress-fill" id="pw-progress-fill"></div></div>
-
     <p class="pw-completion-tip" id="pw-completion-tip" role="tooltip">
       Part des questions que vous avez réussies vous-même. Une question complétée avec « Correction » ne compte pas ;
       une réussite reste acquise après un nouvel énoncé.
     </p>
   </div>
-
   <main class="pw-sheet">
 <section class="pw-question" id="q1" data-python="true">
 <div class="pw-question-data" hidden>
@@ -2078,7 +2057,6 @@ elif formula_answer not in (None, first):
 </div>
 </section>
   </main>
-
   <dialog class="pw-help" id="pw-help" aria-labelledby="pw-help-title">
     <h2 id="pw-help-title">Comment répondre ?</h2>
     <ol class="pw-help-steps">
@@ -2102,7 +2080,6 @@ elif formula_answer not in (None, first):
         <li>Une réussite reste acquise, même si vous demandez ensuite un nouvel énoncé.</li>
         <li>Toutes les questions ont le même poids.</li>
       </ul>
-
       <p class="pw-help-memory">Vos réussites sont gardées sur cet appareil : en revenant à cette feuille, vous
         les retrouvez. Le bouton ↺ de l’en-tête réinitialise la feuille.</p>
     </section>
@@ -2118,17 +2095,14 @@ elif formula_answer not in (None, first):
     </section>
     <form method="dialog"><button class="pw-help-close" type="submit">Fermer</button></form>
   </dialog>
-
   <template id="pw-question-template">
     <div class="pw-q-badge" data-role="badge" aria-hidden="true"></div>
     <div class="pw-q-head">
       <h2 class="pw-q-title" data-role="title"></h2>
-
       <div class="validation-statement pw-actions">
         <button class="pw-act is-primary" data-role="check" type="button" disabled data-action="check" aria-label="Vérifier ma réponse">
           <svg class="pw-icon-check" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg>
           <svg class="pw-icon-fix" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>
-
           <span class="pw-act-label pw-swap"><span data-label="check">Vérifier ma réponse</span><span data-label="fix">Corriger ma réponse</span></span>
         </button>
         <button class="pw-act" data-role="solution" type="button" aria-label="Correction">
@@ -2143,14 +2117,11 @@ elif formula_answer not in (None, first):
     </div>
     <div class="form-statement" data-role="prompt"></div>
     <div class="pw-status" data-role="status" role="status" aria-live="polite" hidden></div>
-
     <div class="pw-q-slot" data-role="slot">
       <div class="feedback pw-feedback" data-role="feedback" aria-live="polite"></div>
     </div>
-
     <div class="pw-q-score" data-role="score" aria-live="polite" hidden></div>
   </template>
-
   <script>window.PyWimsTemplate = (() => {
   const markPattern = /\u0001([^\u0001]+)\u0001/gu;
   const nameSource = String.raw`[\p{ID_Start}_]\p{ID_Continue}*`;
@@ -2159,7 +2130,6 @@ elif formula_answer not in (None, first):
   const pythonName = name => name.normalize("NFKC");
   const mathPattern = /\$\$[\s\S]*?\$\$|(?<!\\)\$(?:\\[\s\S]|[^$\\])+\$|\\\([\s\S]*?\\\)|\\\[[\s\S]*?\\\]/g;
 
-  const choiceTypes = new Set(["input_radio", "input_checkbox", "input_select"]);
   const scoringDirectives = new Set(["b", "m", "d", "p", "P", "mz", "haut", "MAX", "v", "e"]);
   const unsupportedScoring = /^(formula|auto|SUF|allowempty|(set|setglobal|default|requires)\..+)$/;
   const rawInputAttributes =
@@ -2263,7 +2233,6 @@ elif formula_answer not in (None, first):
   return Object.freeze({
     isName,
     pythonName,
-    choiceTypes,
     rawInputAttributes,
     escapeHtml,
     limitedHtml,
@@ -2275,10 +2244,7 @@ elif formula_answer not in (None, first):
   });
 })();
 </script>
-
   <script>window.PyWimsCorrection = (() => {
-  const choiceTypes = new Set(["input_radio", "input_checkbox", "input_select"]);
-
   function normalizedText(text) {
     return String(text).normalize("NFC").replace(/\u2212/g, "-").replace(/\s+/g, "");
   }
@@ -2501,44 +2467,312 @@ elif formula_answer not in (None, first):
     return input === solution;
   }
 
-  function isCorrect(type, input, solution, attributes = {}) {
-    if (choiceTypes.has(type)) {
-      return sameChoice(input, solution);
+  return Object.freeze({
+    normalizedText, matchedText, sameText, sameChoice,
+    parseNumber, exactValue, valueVerdict, valueSolutionText, formHint
+  });
+})();
+</script>
+  <script>window.PyWimsFields = (() => {
+  const answerToggleDurationMs = 550;
+  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function fieldValue(input) {
+    if (input.matches("math-field")) {
+      return typeof input.getValue === "function" ? input.getValue("ascii-math") : "";
     }
-    if (type === "input_math") {
-      throw new Error("Un champ input_math n’a pas de correction par défaut : il exige un « question_check ».");
+    return input.value;
+  }
+
+  function setFieldValue(input, value) {
+    input.value = value;
+  }
+
+
+  const isChoiceGroup = field => field.matches(".pw-choices");
+  const choiceInputs = group => [...group.querySelectorAll("input")];
+  const choiceIndex = element => Number(element.closest(".pw-choice").dataset.choiceIndex);
+
+  function checkedIndices(group) {
+    return choiceInputs(group).filter(input => input.checked).map(choiceIndex).sort((a, b) => a - b);
+  }
+
+  function isFilled(field) {
+    if (isChoiceGroup(field)) {
+      return field.dataset.multiple === "true" || choiceInputs(field).some(input => input.checked);
     }
-    if (solution === null) {
-      return typeof input === "string" && input.trim() !== "";
+    return fieldValue(field).trim() !== "";
+  }
+
+  function lock(input, locked) {
+    if (isChoiceGroup(input)) {
+      choiceInputs(input).forEach(choice => { choice.disabled = locked; });
+    } else if (input.matches("math-field")) {
+      input.readOnly = locked;
+    } else {
+      input.disabled = locked;
     }
-    if (type === "input_value") {
-      return valueVerdict(input, solution, attributes) === "correct";
+  }
+
+  async function animateField(input, change, delay = 0) {
+    if (reduceMotion) {
+      change();
+      return;
     }
-    return sameText(input, solution, attributes.match);
+    await new Promise(resolve => setTimeout(resolve, delay));
+    const collapse = input.animate(
+      [{ transform: "scaleX(1)", opacity: 1 }, { transform: "scaleX(0)", opacity: 0 }],
+      { duration: answerToggleDurationMs / 2, easing: "ease-in", fill: "forwards" }
+    );
+    await collapse.finished;
+    change();
+    const expand = input.animate(
+      [{ transform: "scaleX(0)", opacity: 0 }, { transform: "scaleX(1)", opacity: 1 }],
+      { duration: answerToggleDurationMs * 0.7, easing: "ease-out", fill: "forwards" }
+    );
+    await expand.finished;
+    collapse.cancel();
+    expand.cancel();
+  }
+
+  function animateFields(inputs, change) {
+    return Promise.all(inputs.map((input, index) => animateField(input, () => change(input, index), index * 60)));
   }
 
   return Object.freeze({
-    normalizedText, matchedText, sameText, sameChoice, isCorrect,
-    parseNumber, exactValue, valueVerdict, valueSolutionText, formHint
+    reduceMotion, fieldValue, setFieldValue, isChoiceGroup, choiceInputs, choiceIndex,
+    checkedIndices, isFilled, lock, animateField, animateFields
   });
+})();
+
+window.PyWimsWidgets = (() => {
+  const existing = window.PyWimsWidgets || {};
+  const { fieldValue, setFieldValue, isFilled, lock, animateFields } = PyWimsFields;
+  const registry = new Map();
+  const freeValue = "∗";
+
+  const defaults = {
+    render() {
+      throw new Error("Un widget doit fournir render.");
+    },
+    ready: () => Promise.resolve(),
+    prepare() {},
+    layout() {},
+    inputs: (prompt, field) => [...prompt.querySelectorAll(`[data-name="${CSS.escape(field.name)}"]`)],
+    key: (input, field) => field.name,
+    read: inputs => fieldValue(inputs[0]),
+    isFilled: input => isFilled(input),
+    verdicts(answer, field, draw) {
+      const solution = draw.solutions[field.name];
+      const verdict = solution === null
+        ? typeof answer === "string" && answer.trim() !== ""
+        : PyWimsCorrection.sameText(answer, solution, field.attributes.match);
+      return { verdicts: { [field.name]: verdict }, hints: {} };
+    },
+    sendToPython: (python, field, answer) => python.set(field.name, answer),
+    typedAnswer: (field, draw) => draw.solutions[field.name] ?? "1",
+    single: true,
+    color: (inputs, verdictOf) => animateFields(inputs, input => {
+      input.classList.add(verdictOf(input) ? "is-correct" : "is-incorrect");
+      lock(input, true);
+    }),
+    reopen(input) {
+      input.classList.remove("is-incorrect");
+      lock(input, false);
+    },
+    solutionOf: (input, field, draw) => draw.solutions[field.name],
+    showSolution(inputs, field, draw) {
+      return animateFields(inputs, input => {
+        const solution = this.solutionOf(input, field, draw);
+        input.classList.remove("is-incorrect", "is-correct");
+        if (solution === null) {
+          setFieldValue(input, this.freeText);
+          input.classList.add("is-free");
+        } else {
+          setFieldValue(input, solution);
+          input.classList.add("is-correct");
+        }
+        lock(input, true);
+      });
+    },
+    freeText: freeValue
+  };
+
+  function define(name, widget) {
+    registry.set(name, Object.freeze({ ...defaults, ...widget, name }));
+  }
+
+  function get(name) {
+    if (!registry.has(name)) throw new Error(`Widget inconnu : ${name}`);
+    return registry.get(name);
+  }
+
+  return Object.freeze({ ...existing, define, get, has: name => registry.has(name), defaults: Object.freeze(defaults) });
 })();
 </script>
   <script>window.PyWimsWidgets = (() => {
   const existing = window.PyWimsWidgets || {};
   const { escapeHtml } = PyWimsTemplate;
 
-  function inputText(name, options = {}) {
+  function inputChoice(name, { multiple = false, texts, order, columns, idPrefix = "" } = {}) {
     if (!PyWimsTemplate.isName(name)) {
-      throw new Error(`Nom invalide pour input_text : ${name}`);
+      throw new Error(`Nom invalide pour un champ à choix : ${name}`);
     }
-
-    const idPrefix = PyWimsTemplate.checkIdPrefix(options.idPrefix);
-    const style = options.style ? ` style="${escapeHtml(options.style)}"` : "";
-    return `<span class="pw-input-wrapper${options.inline ? " is-inline" : ""}"><input class="input pw-input absolute" type="text" ${PyWimsTemplate.rawInputAttributes} id="${idPrefix}form_txt_${name}" data-name="${name}"${style} aria-label="${escapeHtml(name)}"><input class="input pw-input phantom" type="text" disabled aria-hidden="true" tabindex="-1"${style}></span>`;
+    idPrefix = PyWimsTemplate.checkIdPrefix(idPrefix);
+    if (!Array.isArray(texts) || texts.length < 2 || !Array.isArray(order) ||
+        order.length !== texts.length || [...order].sort((a, b) => a - b).some((index, rank) => index !== rank)) {
+      throw new Error(`Choix invalides pour le champ « ${name} »`);
+    }
+    const compact = columns === undefined;
+    if (compact) {
+      columns = 1;
+    } else if (!Number.isInteger(columns) || columns < 1 || columns > 6) {
+      throw new Error(`Nombre de colonnes invalide pour le champ « ${name} » : ${columns}`);
+    }
+    const type = multiple ? "checkbox" : "radio";
+    const items = order.map(index => {
+      const text = escapeHtml(texts[index]).replaceAll("{", "&#123;").replaceAll("}", "&#125;");
+      return `<label class="pw-choice" data-choice-index="${index}"><input type="${type}" name="${idPrefix}${name}" value="${index}" id="${idPrefix}form_choice_${name}_${index}"><span class="pw-choice-text">${text}</span><span class="pw-choice-mark" aria-hidden="true"></span></label>`;
+    }).join("");
+    const legend = multiple ? "Cochez toutes les bonnes réponses" : "Choisissez une réponse";
+    return `<fieldset class="pw-choices${compact ? " is-compact" : ""}" data-name="${name}" data-multiple="${multiple}" data-columns="${columns}" style="--pw-choice-columns:${columns}"><legend class="pw-sr-only">${legend}</legend>${items}</fieldset>`;
   }
 
-  return Object.freeze({ ...existing, inputText });
+  function inputSelect(name, { texts, order, idPrefix = "", inline = false } = {}) {
+    if (!PyWimsTemplate.isName(name)) {
+      throw new Error(`Nom invalide pour une liste déroulante : ${name}`);
+    }
+    idPrefix = PyWimsTemplate.checkIdPrefix(idPrefix);
+    if (!Array.isArray(texts) || texts.length < 2 || !Array.isArray(order) ||
+        order.length !== texts.length || [...order].sort((a, b) => a - b).some((index, rank) => index !== rank)) {
+      throw new Error(`Choix invalides pour le champ « ${name} »`);
+    }
+    const options = order.map(index =>
+      `<option value="${index}">${escapeHtml(texts[index]).replaceAll("{", "&#123;").replaceAll("}", "&#125;")}</option>`).join("");
+    return `<span class="pw-select-wrapper${inline ? " is-inline" : ""}"><select class="pw-select is-empty" id="${idPrefix}form_select_${name}" data-name="${name}" aria-label="${escapeHtml(name)}"><option value="" selected disabled hidden>choisir</option>${options}</select><span class="pw-select-arrow" aria-hidden="true">▾</span></span>`;
+  }
+
+  function fitSelects(root) {
+    for (const select of root.querySelectorAll("select.pw-select")) {
+      const option = select.selectedOptions[0];
+      select.classList.toggle("is-empty", !option || option.value === "");
+      const inline = select.parentElement.classList.contains("is-inline");
+      const texts = inline ? [option?.textContent ?? ""] : [...select.options].map(item => item.textContent);
+      const style = getComputedStyle(select);
+      const probe = document.createElement("span");
+      probe.style.cssText = "position:absolute;visibility:hidden;white-space:pre";
+      for (const property of ["fontStyle", "fontWeight", "fontSize", "fontFamily", "letterSpacing"]) {
+        probe.style[property] = style[property];
+      }
+      document.body.append(probe);
+      const width = Math.max(...texts.map(text => {
+        probe.textContent = text;
+        return probe.getBoundingClientRect().width;
+      }));
+      probe.remove();
+      select.style.setProperty("--pw-select-text-width", `${width}px`);
+    }
+  }
+
+  function fitCompactChoices(group) {
+    const choices = [...group.querySelectorAll(".pw-choice")];
+    group.style.gridTemplateColumns = "max-content";
+    const widest = Math.max(...choices.map(choice => choice.offsetWidth)) + 1;
+    const available = group.parentElement.clientWidth;
+    const gap = Number.parseFloat(getComputedStyle(group).columnGap) || 0;
+    const columns = Math.max(1, Math.min(choices.length, Math.floor((available + gap) / (widest + gap))));
+    group.style.gridTemplateColumns = `repeat(${columns}, minmax(0, 1fr))`;
+  }
+
+  function fitChoiceColumns(root) {
+    for (const group of root.querySelectorAll(".pw-choices")) {
+      const texts = [...group.querySelectorAll(".pw-choice-text")];
+      texts.forEach(text => text.classList.remove("is-wide"));
+      if (group.classList.contains("is-compact")) {
+        fitCompactChoices(group);
+      } else {
+        for (let columns = Number(group.dataset.columns); columns >= 1; columns -= 1) {
+          group.style.setProperty("--pw-choice-columns", String(columns));
+          if (!texts.some(overflows)) break;
+        }
+      }
+      texts.forEach(text => text.classList.toggle("is-wide", overflows(text)));
+    }
+  }
+
+  function overflows(text) {
+    return text.scrollWidth > text.clientWidth + 1;
+  }
+
+  function choiceBehaviour({ multiple }) {
+    const { checkedIndices, choiceInputs, choiceIndex, lock, animateFields } = PyWimsFields;
+    const goodChoices = (group, draw) => {
+      const solution = draw.solutions[group.dataset.name];
+      return new Set(Array.isArray(solution) ? solution : [solution]);
+    };
+    return {
+      single: !multiple,
+      read: ([group]) => multiple ? checkedIndices(group) : checkedIndices(group)[0] ?? null,
+      verdicts: (answer, { name }, draw) =>
+        ({ verdicts: { [name]: PyWimsCorrection.sameChoice(answer, draw.solutions[name]) }, hints: {} }),
+      sendToPython: (python, { name }, answer, draw) =>
+        python.setChoice(name, PyWimsTemplate.blockRank(answer, draw.ranks?.[name])),
+      typedAnswer: ({ name }, draw) => draw.solutions[name],
+      layout: prompt => fitChoiceColumns(prompt),
+      color(groups, verdictOf, field, draw) {
+        return Promise.all(groups.map(group => {
+          group.classList.add(verdictOf(group) ? "is-correct" : "is-incorrect");
+          lock(group, true);
+          const good = goodChoices(group, draw);
+          const labels = choiceInputs(group)
+            .filter(input => input.checked)
+            .map(input => input.closest(".pw-choice"))
+            .filter(label => !label.classList.contains("is-correct"));
+          return animateFields(labels, label => {
+            label.classList.add(good.has(choiceIndex(label)) ? "is-correct" : "is-incorrect");
+          });
+        }));
+      },
+      reopen(group) {
+        group.classList.remove("is-incorrect");
+        for (const choice of choiceInputs(group)) {
+          const label = choice.closest(".pw-choice");
+          const kept = multiple && label.classList.contains("is-correct");
+          label.classList.remove("is-incorrect");
+          if (!kept) label.classList.remove("is-correct");
+          choice.disabled = kept;
+        }
+      },
+      showSolution(groups, field, draw) {
+        return Promise.all(groups.map(group => {
+          const good = goodChoices(group, draw);
+          group.classList.remove("is-incorrect");
+          group.classList.add("is-correct");
+          lock(group, true);
+          const labels = [...group.querySelectorAll(".pw-choice")];
+          for (const label of labels.filter(label => !good.has(choiceIndex(label)))) {
+            label.classList.remove("is-correct", "is-incorrect");
+            label.querySelector("input").checked = false;
+          }
+          return animateFields(labels.filter(label => good.has(choiceIndex(label))), label => {
+            label.classList.remove("is-incorrect");
+            label.classList.add("is-correct");
+            label.querySelector("input").checked = true;
+          });
+        }));
+      }
+    };
+  }
+
+  return Object.freeze({ ...existing, inputChoice, inputSelect, fitSelects, fitChoiceColumns, choiceBehaviour });
 })();
+
+PyWimsWidgets.define("input_checkbox", {
+  ...PyWimsWidgets.choiceBehaviour({ multiple: true }),
+  render: ({ name, attributes }, { draw, idPrefix }) => PyWimsWidgets.inputChoice(name, {
+    multiple: true, texts: draw.choices?.[name], order: draw.orders?.[name], columns: attributes.columns, idPrefix
+  })
+});
 
 window.PyWimsWidgets = (() => {
   const existing = window.PyWimsWidgets || {};
@@ -2575,6 +2809,27 @@ window.PyWimsWidgets = (() => {
 
   return Object.freeze({ ...existing, inputMath, enableMathKeyboard });
 })();
+
+{
+  let loading = null;
+  PyWimsWidgets.define("input_math", {
+    render: ({ name }, { idPrefix }) => PyWimsWidgets.inputMath(name, { idPrefix }),
+    ready() {
+      loading ??= new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = "https://unpkg.com/mathlive@0.111.0";
+        script.onload = resolve;
+        script.onerror = () => reject(new Error("Échec du chargement de MathLive."));
+        document.head.append(script);
+      }).then(() => customElements.whenDefined("math-field"));
+      return loading;
+    },
+    prepare: prompt => PyWimsWidgets.enableMathKeyboard(prompt),
+    verdicts: (answer, { name }) => ({ verdicts: { [name]: null }, hints: {} }),
+    typedAnswer: ({ name }, draw) => draw.inputs?.[name] ?? "1",
+    freeText: "\\ast"
+  });
+}
 
 window.PyWimsWidgets = (() => {
   const existing = window.PyWimsWidgets || {};
@@ -2725,107 +2980,128 @@ window.PyWimsWidgets = (() => {
     }
   }
 
-  return Object.freeze({ ...existing, inputMatrix, inputVMatrix, enableVariableMatrixResize, resizeVariableMatrix });
+  const matrixBehaviour = Object.freeze({
+    single: false,
+    inputs: (prompt, field) => [...prompt.querySelectorAll(`[data-matrix-name="${CSS.escape(field.name)}"]`)],
+    key: (input, field) => `${field.name}[${input.dataset.matrixRow}][${input.dataset.matrixColumn}]`,
+    read(inputs) {
+      const rows = [];
+      for (const input of inputs) {
+        (rows[Number(input.dataset.matrixRow)] ??= [])[Number(input.dataset.matrixColumn)] = input.value;
+      }
+      return rows;
+    },
+    verdicts(answer, { name }, draw) {
+      const cells = draw.solutions[name];
+      const verdicts = {};
+      answer.forEach((row, i) => row.forEach((value, j) => {
+        const solution = cells[i]?.[j];
+        verdicts[`${name}[${i}][${j}]`] = solution === undefined ? false
+          : solution === null ? value.trim() !== "" : PyWimsCorrection.sameText(value, solution);
+      }));
+      return { verdicts, hints: {} };
+    },
+    sendToPython: (python, { name }, answer) => python.setMatrix(name, answer),
+    typedAnswer: ({ name }, draw) => draw.solutions[name].map(row => row.map(cell => cell ?? "1")),
+    solutionOf: (input, { name }, draw) =>
+      draw.solutions[name]?.[Number(input.dataset.matrixRow)]?.[Number(input.dataset.matrixColumn)] ?? null
+  });
+
+  return Object.freeze({
+    ...existing, inputMatrix, inputVMatrix, enableVariableMatrixResize, resizeVariableMatrix, matrixBehaviour
+  });
 })();
+
+PyWimsWidgets.define("input_matrix", {
+  ...PyWimsWidgets.matrixBehaviour,
+  render: ({ name, attributes }, { idPrefix }) =>
+    PyWimsWidgets.inputMatrix(name, attributes.rows, attributes.cols, { inputStyle: attributes.input_style || "", idPrefix })
+});
+
+PyWimsWidgets.define("input_radio", {
+  ...PyWimsWidgets.choiceBehaviour({ multiple: false }),
+  render: ({ name, attributes }, { draw, idPrefix }) => PyWimsWidgets.inputChoice(name, {
+    multiple: false, texts: draw.choices?.[name], order: draw.orders?.[name], columns: attributes.columns, idPrefix
+  })
+});
 
 window.PyWimsWidgets = (() => {
   const existing = window.PyWimsWidgets || {};
   const { escapeHtml } = PyWimsTemplate;
 
-  function inputChoice(name, { multiple = false, texts, order, columns, idPrefix = "" } = {}) {
+  function inputText(name, options = {}) {
     if (!PyWimsTemplate.isName(name)) {
-      throw new Error(`Nom invalide pour un champ à choix : ${name}`);
+      throw new Error(`Nom invalide pour input_text : ${name}`);
     }
-    idPrefix = PyWimsTemplate.checkIdPrefix(idPrefix);
-    if (!Array.isArray(texts) || texts.length < 2 || !Array.isArray(order) ||
-        order.length !== texts.length || [...order].sort((a, b) => a - b).some((index, rank) => index !== rank)) {
-      throw new Error(`Choix invalides pour le champ « ${name} »`);
-    }
-    const compact = columns === undefined;
-    if (compact) {
-      columns = 1;
-    } else if (!Number.isInteger(columns) || columns < 1 || columns > 6) {
-      throw new Error(`Nombre de colonnes invalide pour le champ « ${name} » : ${columns}`);
-    }
-    const type = multiple ? "checkbox" : "radio";
-    const items = order.map(index => {
-      const text = escapeHtml(texts[index]).replaceAll("{", "&#123;").replaceAll("}", "&#125;");
-      return `<label class="pw-choice" data-choice-index="${index}"><input type="${type}" name="${idPrefix}${name}" value="${index}" id="${idPrefix}form_choice_${name}_${index}"><span class="pw-choice-text">${text}</span><span class="pw-choice-mark" aria-hidden="true"></span></label>`;
-    }).join("");
-    const legend = multiple ? "Cochez toutes les bonnes réponses" : "Choisissez une réponse";
-    return `<fieldset class="pw-choices${compact ? " is-compact" : ""}" data-name="${name}" data-multiple="${multiple}" data-columns="${columns}" style="--pw-choice-columns:${columns}"><legend class="pw-sr-only">${legend}</legend>${items}</fieldset>`;
+
+    const idPrefix = PyWimsTemplate.checkIdPrefix(options.idPrefix);
+    const style = options.style ? ` style="${escapeHtml(options.style)}"` : "";
+    return `<span class="pw-input-wrapper${options.inline ? " is-inline" : ""}"><input class="input pw-input absolute" type="text" ${PyWimsTemplate.rawInputAttributes} id="${idPrefix}form_txt_${name}" data-name="${name}"${style} aria-label="${escapeHtml(name)}"><input class="input pw-input phantom" type="text" disabled aria-hidden="true" tabindex="-1"${style}></span>`;
   }
 
-  function inputSelect(name, { texts, order, idPrefix = "", inline = false } = {}) {
-    if (!PyWimsTemplate.isName(name)) {
-      throw new Error(`Nom invalide pour une liste déroulante : ${name}`);
-    }
-    idPrefix = PyWimsTemplate.checkIdPrefix(idPrefix);
-    if (!Array.isArray(texts) || texts.length < 2 || !Array.isArray(order) ||
-        order.length !== texts.length || [...order].sort((a, b) => a - b).some((index, rank) => index !== rank)) {
-      throw new Error(`Choix invalides pour le champ « ${name} »`);
-    }
-    const options = order.map(index =>
-      `<option value="${index}">${escapeHtml(texts[index]).replaceAll("{", "&#123;").replaceAll("}", "&#125;")}</option>`).join("");
-    return `<span class="pw-select-wrapper${inline ? " is-inline" : ""}"><select class="pw-select is-empty" id="${idPrefix}form_select_${name}" data-name="${name}" aria-label="${escapeHtml(name)}"><option value="" selected disabled hidden>choisir</option>${options}</select><span class="pw-select-arrow" aria-hidden="true">▾</span></span>`;
-  }
-
-  function fitSelects(root) {
-    for (const select of root.querySelectorAll("select.pw-select")) {
-      const option = select.selectedOptions[0];
-      select.classList.toggle("is-empty", !option || option.value === "");
-      const inline = select.parentElement.classList.contains("is-inline");
-      const texts = inline ? [option?.textContent ?? ""] : [...select.options].map(item => item.textContent);
-      const style = getComputedStyle(select);
-      const probe = document.createElement("span");
-      probe.style.cssText = "position:absolute;visibility:hidden;white-space:pre";
-      for (const property of ["fontStyle", "fontWeight", "fontSize", "fontFamily", "letterSpacing"]) {
-        probe.style[property] = style[property];
-      }
-      document.body.append(probe);
-      const width = Math.max(...texts.map(text => {
-        probe.textContent = text;
-        return probe.getBoundingClientRect().width;
-      }));
-      probe.remove();
-      select.style.setProperty("--pw-select-text-width", `${width}px`);
-    }
-  }
-
-  function fitCompactChoices(group) {
-    const choices = [...group.querySelectorAll(".pw-choice")];
-    group.style.gridTemplateColumns = "max-content";
-    const widest = Math.max(...choices.map(choice => choice.offsetWidth)) + 1;
-    const available = group.parentElement.clientWidth;
-    const gap = Number.parseFloat(getComputedStyle(group).columnGap) || 0;
-    const columns = Math.max(1, Math.min(choices.length, Math.floor((available + gap) / (widest + gap))));
-    group.style.gridTemplateColumns = `repeat(${columns}, minmax(0, 1fr))`;
-  }
-
-  function fitChoiceColumns(root) {
-    for (const group of root.querySelectorAll(".pw-choices")) {
-      const texts = [...group.querySelectorAll(".pw-choice-text")];
-      texts.forEach(text => text.classList.remove("is-wide"));
-      if (group.classList.contains("is-compact")) {
-        fitCompactChoices(group);
-      } else {
-        for (let columns = Number(group.dataset.columns); columns >= 1; columns -= 1) {
-          group.style.setProperty("--pw-choice-columns", String(columns));
-          if (!texts.some(overflows)) break;
-        }
-      }
-      texts.forEach(text => text.classList.toggle("is-wide", overflows(text)));
-    }
-  }
-
-  function overflows(text) {
-    return text.scrollWidth > text.clientWidth + 1;
-  }
-
-  return Object.freeze({ ...existing, inputChoice, inputSelect, fitSelects, fitChoiceColumns });
+  return Object.freeze({ ...existing, inputText });
 })();
-</script>
 
+PyWimsWidgets.define("input_text", {
+  render: ({ name, attributes }, { idPrefix }) =>
+    PyWimsWidgets.inputText(name, { style: attributes.style || "", idPrefix, inline: attributes.inline ?? false })
+});
+
+PyWimsWidgets.define("input_value", {
+  render: ({ name, attributes }, { idPrefix }) =>
+    PyWimsWidgets.inputText(name, { style: attributes.style || "", idPrefix, inline: attributes.inline ?? false }),
+  verdicts(answer, { name, attributes }, draw) {
+    const { valueVerdict, formHint } = PyWimsCorrection;
+    const solution = draw.solutions[name];
+    if (solution === null) {
+      return { verdicts: { [name]: typeof answer === "string" && answer.trim() !== "" }, hints: {} };
+    }
+    const verdict = valueVerdict(answer, solution, attributes);
+    return {
+      verdicts: { [name]: verdict === "correct" },
+      hints: verdict === "form" ? { [name]: formHint(attributes.form) } : {}
+    };
+  },
+  sendToPython(python, { name }, answer, draw, values) {
+    values[name] = PyWimsCorrection.exactValue(answer);
+  },
+  typedAnswer: ({ name }, draw) => draw.solutions[name]?.text ?? "1",
+  solutionOf: (input, { name }, draw) => draw.solutions[name]?.text ?? null
+});
+
+{
+  const { matrixBehaviour } = PyWimsWidgets;
+  const viewportOf = (prompt, name) =>
+    prompt.querySelector(`.pw-vmatrix-viewport[data-vmatrix-name="${CSS.escape(name)}"]`);
+
+  PyWimsWidgets.define("input_vmatrix", {
+    ...matrixBehaviour,
+    render: ({ name, attributes }, { idPrefix }) => PyWimsWidgets.inputVMatrix(name, attributes.max_rows ?? 10, attributes.max_cols ?? 10, {
+      cellWidth: attributes.cell_width, cellHeight: attributes.cell_height, inputStyle: attributes.input_style || "", idPrefix
+    }),
+    prepare: prompt => PyWimsWidgets.enableVariableMatrixResize(prompt),
+    inputs: (prompt, field) => matrixBehaviour.inputs(prompt, field).filter(input => {
+      const viewport = input.closest(".pw-vmatrix-viewport");
+      return Number(input.dataset.matrixRow) < Number(viewport.dataset.visibleRows) &&
+        Number(input.dataset.matrixColumn) < Number(viewport.dataset.visibleColumns);
+    }),
+    verdicts(answer, field, draw) {
+      const cells = draw.solutions[field.name];
+      if (answer.length !== cells.length || answer[0].length !== cells[0].length) {
+        const verdicts = {};
+        answer.forEach((row, i) => row.forEach((_, j) => { verdicts[`${field.name}[${i}][${j}]`] = false; }));
+        return { verdicts, hints: {} };
+      }
+      return matrixBehaviour.verdicts(answer, field, draw);
+    },
+    showSolution(inputs, field, draw, prompt) {
+      const cells = draw.solutions[field.name];
+      PyWimsWidgets.resizeVariableMatrix(viewportOf(prompt, field.name), cells.length, cells[0].length);
+      return PyWimsWidgets.defaults.showSolution.call(this, this.inputs(prompt, field), field, draw);
+    }
+  });
+}
+</script>
   <script type="text/x-python" id="pywims-module">"""Outils PyWims : from pywims import math_expression, mcq, tex, ANY"""
 import re as _re
 import sys as _sys
@@ -3819,7 +4095,6 @@ def math_expression(value):
     except Exception:  # Toute erreur d’analyse ou de calcul : la saisie est invalide.
         return None
 </script>
-
   <script type="text/x-worker" id="pywims-worker">const indexURL = "https://cdn.jsdelivr.net/pyodide/v0.27.7/full/";
 let pyodide;
 let pyodidePromise;
@@ -4287,87 +4562,8 @@ self.onmessage = async ({ data: { id, op, args } }) => {
   });
 })();
 </script>
-
-  <script>window.PyWimsFields = (() => {
-  const answerToggleDurationMs = 550;
-  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  function fieldValue(input) {
-    if (input.matches("math-field")) {
-      return typeof input.getValue === "function" ? input.getValue("ascii-math") : "";
-    }
-    return input.value;
-  }
-
-  function setFieldValue(input, value) {
-    input.value = value;
-  }
-
-
-  const isChoiceGroup = field => field.matches(".pw-choices");
-  const choiceInputs = group => [...group.querySelectorAll("input")];
-  const choiceIndex = element => Number(element.closest(".pw-choice").dataset.choiceIndex);
-  const isSingleAnswer = field => field.dataset.matrixName === undefined &&
-    !(isChoiceGroup(field) && field.dataset.multiple === "true");
-
-  function checkedIndices(group) {
-    return choiceInputs(group).filter(input => input.checked).map(choiceIndex).sort((a, b) => a - b);
-  }
-
-  function isFilled(field) {
-    if (isChoiceGroup(field)) {
-      return field.dataset.multiple === "true" || choiceInputs(field).some(input => input.checked);
-    }
-    return fieldValue(field).trim() !== "";
-  }
-
-  function lock(input, locked) {
-    if (isChoiceGroup(input)) {
-      choiceInputs(input).forEach(choice => { choice.disabled = locked; });
-    } else if (input.matches("math-field")) {
-      input.readOnly = locked;
-    } else {
-      input.disabled = locked;
-    }
-  }
-
-  async function animateField(input, change, delay = 0) {
-    if (reduceMotion) {
-      change();
-      return;
-    }
-    await new Promise(resolve => setTimeout(resolve, delay));
-    const collapse = input.animate(
-      [{ transform: "scaleX(1)", opacity: 1 }, { transform: "scaleX(0)", opacity: 0 }],
-      { duration: answerToggleDurationMs / 2, easing: "ease-in", fill: "forwards" }
-    );
-    await collapse.finished;
-    change();
-    const expand = input.animate(
-      [{ transform: "scaleX(0)", opacity: 0 }, { transform: "scaleX(1)", opacity: 1 }],
-      { duration: answerToggleDurationMs * 0.7, easing: "ease-out", fill: "forwards" }
-    );
-    await expand.finished;
-    collapse.cancel();
-    expand.cancel();
-  }
-
-  function animateFields(inputs, change) {
-    return Promise.all(inputs.map((input, index) => animateField(input, () => change(input, index), index * 60)));
-  }
-
-  return Object.freeze({
-    reduceMotion, fieldValue, setFieldValue, isChoiceGroup, choiceInputs, choiceIndex, isSingleAnswer,
-    checkedIndices, isFilled, lock, animateField, animateFields
-  });
-})();
-</script>
   <script>window.PyWimsQuestion = (() => {
-  const {
-    reduceMotion, fieldValue, setFieldValue, isChoiceGroup, choiceInputs, choiceIndex, isSingleAnswer,
-    checkedIndices, isFilled, lock, animateFields
-  } = PyWimsFields;
-  const freeValue = "∗";
+  const { reduceMotion } = PyWimsFields;
   const checkTimeoutMs = 15000;
   const checkTimeoutMessage =
     "La correction a pris trop de temps : votre réponse est peut-être trop complexe. Modifiez-la et vérifiez de nouveau.";
@@ -4506,7 +4702,7 @@ self.onmessage = async ({ data: { id, op, args } }) => {
 
       this.succeeded = false;
       this.onSuccess = onSuccess;
-      this.scoredTag = this.choiceTags.find(tag => Object.hasOwn(tag.attributes, "scoring")) ?? null;
+      this.scoredTag = this.tags.find(tag => Object.hasOwn(tag.attributes, "scoring")) ?? null;
       this.scoring = this.scoredTag && PyWimsTemplate.parseScoring(this.scoredTag.attributes.scoring);
       this.score = 0;
       this.scoreMax = 0;
@@ -4535,7 +4731,7 @@ self.onmessage = async ({ data: { id, op, args } }) => {
       }
 
       this.promptElement.addEventListener("input", () => {
-        if (this.tagTypes.has("input_select")) PyWimsWidgets.fitSelects(this.promptElement);
+        this.layoutWidgets();
         this.updateButtons();
       });
       this.checkButton.addEventListener("click", () => {
@@ -4545,7 +4741,7 @@ self.onmessage = async ({ data: { id, op, args } }) => {
       });
       this.solutionButton.addEventListener("click", () => this.showSolution());
       this.newDrawButton.addEventListener("click", () => this.newDraw());
-      this.mathLiveReady().then(() => this.updateButtons(), error => this.reportError(error));
+      this.widgetsReady().then(() => this.updateButtons(), error => this.reportError(error));
     }
 
     start() {
@@ -4573,56 +4769,19 @@ self.onmessage = async ({ data: { id, op, args } }) => {
 
     useFields(fields) {
       this.tags = fields;
-      this.tagTypes = new Set(fields.map(tag => tag.type));
-      this.typeOf = new Map(fields.map(tag => [tag.name, tag.type]));
-      this.attributesOf = new Map(fields.map(tag => [tag.name, tag.attributes]));
-      this.choiceTags = fields.filter(tag => PyWimsTemplate.choiceTypes.has(tag.type));
+      this.widgets = [...new Set(fields.map(tag => tag.type))].map(type => PyWimsWidgets.get(type));
+    }
+
+    widget(tag) {
+      return PyWimsWidgets.get(tag.type);
     }
 
     renderWidget(tag, draw) {
-      const { attributes } = tag;
-      const idPrefix = this.idPrefix;
+      return this.widget(tag).render(tag, { draw, idPrefix: this.idPrefix });
+    }
 
-      switch (tag.type) {
-        case "input_text":
-        case "input_value":
-          return PyWimsWidgets.inputText(tag.name, { style: attributes.style || "", idPrefix, inline: attributes.inline ?? false });
-        case "input_math":
-          return PyWimsWidgets.inputMath(tag.name, { idPrefix });
-        case "input_matrix":
-          return PyWimsWidgets.inputMatrix(tag.name, attributes.rows, attributes.cols,
-            { inputStyle: attributes.input_style || "", idPrefix });
-        case "input_vmatrix":
-          return PyWimsWidgets.inputVMatrix(
-            tag.name,
-            attributes.max_rows ?? 10,
-            attributes.max_cols ?? 10,
-            {
-              cellWidth: attributes.cell_width,
-              cellHeight: attributes.cell_height,
-              inputStyle: attributes.input_style || "",
-              idPrefix
-            }
-          );
-        case "input_select":
-          return PyWimsWidgets.inputSelect(tag.name, {
-            texts: draw.choices?.[tag.name],
-            order: draw.orders?.[tag.name],
-            idPrefix,
-            inline: attributes.inline ?? false
-          });
-        case "input_radio":
-        case "input_checkbox":
-          return PyWimsWidgets.inputChoice(tag.name, {
-            multiple: tag.type === "input_checkbox",
-            texts: draw.choices?.[tag.name],
-            order: draw.orders?.[tag.name],
-            columns: attributes.columns,
-            idPrefix
-          });
-        default:
-          throw new Error(`Balise de modèle non prise en charge : ${tag.type}`);
-      }
+    layoutWidgets() {
+      for (const widget of this.widgets) widget.layout(this.promptElement);
     }
 
     showStatus(message, isError = false) {
@@ -4642,26 +4801,20 @@ self.onmessage = async ({ data: { id, op, args } }) => {
       console.error(error);
     }
 
-    async mathLiveReady() {
-      if (this.tagTypes.has("input_math")) {
-        await window.pyWimsMathLiveReady;
-        await customElements.whenDefined("math-field");
-      }
+    widgetsReady() {
+      return Promise.all(this.widgets.map(widget => widget.ready()));
     }
 
-    fields() {
-      return [...this.promptElement.querySelectorAll("[data-name], [data-matrix-name]")].filter(input => {
-        if (input.dataset.vmatrixName === undefined) {
-          return true;
-        }
-        const viewport = input.closest(".pw-vmatrix-viewport");
-        return Number(input.dataset.matrixRow) < Number(viewport.dataset.visibleRows) &&
-          Number(input.dataset.matrixColumn) < Number(viewport.dataset.visibleColumns);
+    entries() {
+      return this.tags.map(field => {
+        const widget = this.widget(field);
+        return { field, widget, inputs: widget.inputs(this.promptElement, field) };
       });
     }
 
-    openFields() {
-      return this.fields().filter(input => !input.classList.contains("is-correct"));
+    openInputs() {
+      return this.entries().flatMap(({ widget, inputs }) =>
+        inputs.filter(input => !input.classList.contains("is-correct")).map(input => ({ widget, input })));
     }
 
     updateButtons() {
@@ -4671,7 +4824,7 @@ self.onmessage = async ({ data: { id, op, args } }) => {
       this.checkButton.setAttribute("aria-label", action === "check" ? "Vérifier ma réponse" : "Corriger ma réponse");
       setButton(this.checkButton, {
         absent: !(this.state === "open" || failed),
-        disabled: this.busy || (this.state === "open" && !this.openFields().some(isFilled))
+        disabled: this.busy || (this.state === "open" && !this.openInputs().some(({ widget, input }) => widget.isFilled(input)))
       });
       setButton(this.solutionButton, { absent: !(this.state === "open" || this.state === "checked"), disabled: this.busy });
       setButton(this.newDrawButton, { disabled: this.busy });
@@ -4718,10 +4871,10 @@ self.onmessage = async ({ data: { id, op, args } }) => {
     }
 
     scoreFor(checked) {
-      const { name, type } = this.scoredTag;
+      const { name } = this.scoredTag;
       const solution = this.draw.solutions[name];
       return PyWimsTemplate.scoreChoice(this.scoring, {
-        multiple: type === "input_checkbox",
+        multiple: !this.widget(this.scoredTag).single,
         count: this.draw.choices[name].length,
         checked,
         solution: Array.isArray(solution) ? solution : [solution]
@@ -4830,12 +4983,7 @@ self.onmessage = async ({ data: { id, op, args } }) => {
         this.tags,
         tag => this.renderWidget(tag, selected)
       );
-      if (this.tagTypes.has("input_vmatrix")) {
-        PyWimsWidgets.enableVariableMatrixResize(promptElement);
-      }
-      if (this.tagTypes.has("input_math")) {
-        PyWimsWidgets.enableMathKeyboard(promptElement);
-      }
+      for (const widget of this.widgets) widget.prepare(promptElement);
       this.hideFeedback();
       this.setState("open");
       if (this.scoring) {
@@ -4847,53 +4995,21 @@ self.onmessage = async ({ data: { id, op, args } }) => {
       } catch (error) {
         this.reportError(error);
       }
-      PyWimsWidgets.fitChoiceColumns?.(promptElement);
-      if (this.tagTypes.has("input_select")) PyWimsWidgets.fitSelects(promptElement);
+      this.layoutWidgets();
     }
 
-    defaultVerdicts(inputs) {
-      const { isCorrect, valueVerdict, formHint } = PyWimsCorrection;
-      const hints = inputs.map(() => null);
-      const answerResults = inputs.map((input, index) => {
-        const { name, matrixName, vmatrixName } = input.dataset;
-        if (isChoiceGroup(input)) {
-          const indices = checkedIndices(input);
-          const given = input.dataset.multiple === "true" ? indices : indices[0] ?? null;
-          return isCorrect(this.typeOf.get(name), given, this.draw.solutions[name]);
-        }
-        if (vmatrixName !== undefined) {
-          const viewport = input.closest(".pw-vmatrix-viewport");
-          const cells = this.draw.solutions[matrixName];
-          if (Number(viewport.dataset.visibleRows) !== cells.length ||
-              Number(viewport.dataset.visibleColumns) !== cells[0].length) {
-            return false;
-          }
-        }
-        const fieldName = matrixName ?? name;
-        const type = this.typeOf.get(fieldName);
-        if (type === "input_math") {
-          return null;
-        }
-        if (type === "input_select") {
-          return isCorrect(type, input.value === "" ? null : Number(input.value), this.draw.solutions[name]);
-        }
-        const attributes = this.attributesOf.get(fieldName) ?? {};
-        const solution = this.solutionFor(input);
-        if (type === "input_value" && solution !== null &&
-            valueVerdict(fieldValue(input), solution, attributes) === "form") {
-          hints[index] = formHint(attributes.form);
-        }
-        return isCorrect(type, fieldValue(input), solution, attributes);
-      });
-      return { answerResults, hints };
+    defaultVerdicts(entries) {
+      const verdicts = {};
+      const hints = {};
+      for (const { field, widget, inputs } of entries) {
+        const result = widget.verdicts(widget.read(inputs, field), field, this.draw);
+        Object.assign(verdicts, result.verdicts);
+        Object.assign(hints, result.hints);
+      }
+      return { verdicts, hints };
     }
 
-    answerKey(input) {
-      const { name, matrixName, matrixRow, matrixColumn } = input.dataset;
-      return matrixName === undefined ? name : `${matrixName}[${matrixRow}][${matrixColumn}]`;
-    }
-
-    async pythonVerdicts(inputs) {
+    async pythonVerdicts(entries) {
       const { python } = this;
       this.activatePython();
       if (this.pythonEpoch !== pythonEpoch()) {
@@ -4903,98 +5019,56 @@ self.onmessage = async ({ data: { id, op, args } }) => {
         this.showStatus("Chargement du moteur Python…");
       }
       await this.pythonReady;
-      const { exactValue } = PyWimsCorrection;
-      const { answerResults: defaults, hints } = this.defaultVerdicts(inputs);
-      const verdicts = {};
+      const { verdicts: defaults, hints } = this.defaultVerdicts(entries);
+      const prefilled = Object.fromEntries(Object.entries(defaults).filter(([, verdict]) => verdict !== null));
       const values = {};
-      inputs.forEach((input, index) => {
-        if (defaults[index] !== null) {
-          verdicts[this.answerKey(input)] = defaults[index];
-        }
-      });
-      const matrices = new Map();
-      for (const input of inputs) {
-        const { matrixName, matrixRow, matrixColumn, vmatrixName } = input.dataset;
-        const ranks = this.draw.ranks?.[input.dataset.name];
-        if (isChoiceGroup(input)) {
-          const indices = checkedIndices(input);
-          await python.setChoice(input.dataset.name,
-            PyWimsTemplate.blockRank(input.dataset.multiple === "true" ? indices : indices[0] ?? null, ranks));
-          continue;
-        }
-        if (input.matches("select")) {
-          await python.setChoice(input.dataset.name, PyWimsTemplate.blockRank(input.value === "" ? null : Number(input.value), ranks));
-          continue;
-        }
-        if (this.typeOf.get(input.dataset.name) === "input_value") {
-          values[input.dataset.name] = exactValue(fieldValue(input));
-          continue;
-        }
-        if (matrixName === undefined) {
-          await python.set(input.dataset.name, fieldValue(input));
-          continue;
-        }
-        if (!matrices.has(matrixName)) {
-          const viewport = vmatrixName === undefined ? null : input.closest(".pw-vmatrix-viewport");
-          matrices.set(matrixName, viewport
-            ? Array.from({ length: Number(viewport.dataset.visibleRows) },
-              () => Array(Number(viewport.dataset.visibleColumns)).fill(""))
-            : []);
-        }
-        const matrix = matrices.get(matrixName);
-        matrix[Number(matrixRow)] ??= [];
-        matrix[Number(matrixRow)][Number(matrixColumn)] = input.value;
+      for (const { field, widget, inputs } of entries) {
+        await widget.sendToPython(python, field, widget.read(inputs, field), this.draw, values);
       }
-      for (const [name, matrix] of matrices) {
-        await python.setMatrix(name, matrix);
-      }
-      await python.prepareCheck({ verdicts, values });
+      await python.prepareCheck({ verdicts: prefilled, values });
       await python.run(this.definition.question_check, { timeoutMs: checkTimeoutMs }).catch(error => {
         throw error.name === "PyWimsTimeout" ? new Error(checkTimeoutMessage) : error;
       });
-
-      const answerResults = await Promise.all(inputs.map(input =>
-        python.getBoolean(`bool(ok_answer.get(${JSON.stringify(this.answerKey(input))}, False))`)));
+      const verdicts = {};
+      for (const key of Object.keys(defaults)) {
+        verdicts[key] = await python.getBoolean(`bool(ok_answer.get(${JSON.stringify(key)}, False))`);
+      }
       const feedback = await python.getBoolean("'feedback' in globals()")
         ? await python.getTemplateValue("feedback")
         : null;
-      return { answerResults, hints, feedback };
+      return { verdicts, hints, feedback };
     }
 
     async check() {
       this.busy = true;
       this.updateButtons();
       try {
-        await this.mathLiveReady();
-        const inputs = this.fields();
-        const { answerResults, feedback: authorFeedback, hints } = this.usesPython
-          ? await this.pythonVerdicts(inputs)
-          : { ...this.defaultVerdicts(inputs), feedback: null };
-        const allCorrect = inputs.length > 0 && answerResults.every(Boolean);
-        const hint = hints.find((text, index) => text !== null && !answerResults[index]) ?? null;
-        const singleAnswer = inputs.length === 1 && isSingleAnswer(inputs[0]);
+        await this.widgetsReady();
+        const entries = this.entries();
+        const { verdicts, hints, feedback: authorFeedback } = this.usesPython
+          ? await this.pythonVerdicts(entries)
+          : { ...this.defaultVerdicts(entries), feedback: null };
+        const inputs = entries.flatMap(entry => entry.inputs.map(input => ({ ...entry, input })));
+        const verdictOf = ({ widget, field, input }) => verdicts[widget.key(input, field)] === true;
+        const allCorrect = inputs.length > 0 && inputs.every(verdictOf);
+        const hint = Object.entries(hints).find(([key]) => verdicts[key] !== true)?.[1] ?? null;
+        const singleAnswer = inputs.length === 1 && inputs[0].widget.single;
         const generic = allCorrect ? defaultFeedback.correct
           : singleAnswer ? defaultFeedback.incorrectSingle : defaultFeedback.incorrect;
         const feedback = authorFeedback ??
           (hint && !allCorrect ? (singleAnswer ? hint : `${generic} ${hint}`) : generic);
         this.hideStatus();
 
-        const verdicts = new Map(inputs.map((input, index) => [input, answerResults[index]]));
-        const toColor = inputs.filter(input => !input.classList.contains("is-correct"));
-        await Promise.all([
-          animateFields(toColor.filter(input => !isChoiceGroup(input)), input => {
-            input.classList.add(verdicts.get(input) ? "is-correct" : "is-incorrect");
-            lock(input, true);
-          }),
-          ...toColor.filter(isChoiceGroup).map(group => this.colorChoices(group, verdicts.get(group)))
-        ]);
+        await Promise.all(entries.map(({ field, widget, inputs: own }) => widget.color(
+          own.filter(input => !input.classList.contains("is-correct")),
+          input => verdictOf({ widget, field, input }), field, this.draw)));
         this.setState("checked", allCorrect ? "ok" : "ko");
         if (allCorrect) {
           this.markSucceeded();
         }
         if (this.scoring) {
-          const group = inputs.find(input => isChoiceGroup(input) && input.dataset.name === this.scoredTag.name);
-          this.setScore(this.scoreFor(checkedIndices(group)).score);
+          const scored = entries.find(entry => entry.field.name === this.scoredTag.name);
+          this.setScore(this.scoreFor([].concat(scored.widget.read(scored.inputs, scored.field) ?? [])).score);
         }
         await this.showFeedback(feedback, allCorrect ? "is-correct" : "is-incorrect");
       } catch (error) {
@@ -5005,103 +5079,25 @@ self.onmessage = async ({ data: { id, op, args } }) => {
       }
     }
 
-    choiceSolution(group) {
-      const solution = this.draw.solutions[group.dataset.name];
-      return new Set(Array.isArray(solution) ? solution : [solution]);
-    }
-
-    colorChoices(group, correct) {
-      group.classList.add(correct ? "is-correct" : "is-incorrect");
-      lock(group, true);
-      const solution = this.choiceSolution(group);
-      const labels = choiceInputs(group)
-        .filter(input => input.checked)
-        .map(input => input.closest(".pw-choice"))
-        .filter(label => !label.classList.contains("is-correct"));
-      return animateFields(labels, label => {
-        label.classList.add(solution.has(choiceIndex(label)) ? "is-correct" : "is-incorrect");
-      });
-    }
-
     correct() {
-      for (const input of this.fields()) {
-        if (!input.classList.contains("is-incorrect")) {
-          continue;
-        }
-        input.classList.remove("is-incorrect");
-        if (!isChoiceGroup(input)) {
-          lock(input, false);
-          continue;
-        }
-        const multiple = input.dataset.multiple === "true";
-        for (const choice of choiceInputs(input)) {
-          const label = choice.closest(".pw-choice");
-          const kept = multiple && label.classList.contains("is-correct");
-          label.classList.remove("is-incorrect");
-          if (!kept) label.classList.remove("is-correct");
-          choice.disabled = kept;
+      for (const { widget, inputs } of this.entries()) {
+        for (const input of inputs.filter(input => input.classList.contains("is-incorrect"))) {
+          widget.reopen(input);
         }
       }
       this.hideFeedback();
       this.setState("open");
-      this.openFields()[0]?.focus();
-    }
-
-    solutionFor(input) {
-      const { matrixName, matrixRow, matrixColumn } = input.dataset;
-      if (matrixName === undefined) {
-        return this.draw.solutions[input.dataset.name];
-      }
-      return this.draw.solutions[matrixName]?.[Number(matrixRow)]?.[Number(matrixColumn)] ?? null;
-    }
-
-    showChoiceSolution(group) {
-      const solution = this.choiceSolution(group);
-      group.classList.remove("is-incorrect");
-      group.classList.add("is-correct");
-      lock(group, true);
-      const labels = [...group.querySelectorAll(".pw-choice")];
-      for (const label of labels.filter(label => !solution.has(choiceIndex(label)))) {
-        label.classList.remove("is-correct", "is-incorrect");
-        label.querySelector("input").checked = false;
-      }
-      return animateFields(labels.filter(label => solution.has(choiceIndex(label))), label => {
-        label.classList.remove("is-incorrect");
-        label.classList.add("is-correct");
-        label.querySelector("input").checked = true;
-      });
+      this.openInputs()[0]?.input.focus();
     }
 
     async showSolution() {
       this.busy = true;
       this.updateButtons();
       try {
-        await this.mathLiveReady();
+        await this.widgetsReady();
         this.hideFeedback();
-        for (const viewport of this.promptElement.querySelectorAll(".pw-vmatrix-viewport")) {
-          const cells = this.draw.solutions[viewport.dataset.vmatrixName];
-          if (Array.isArray(cells) && cells.length) {
-            PyWimsWidgets.resizeVariableMatrix(viewport, cells.length, cells[0].length);
-          }
-        }
-        const fields = this.fields();
-        await Promise.all([
-          animateFields(fields.filter(input => !isChoiceGroup(input)), input => {
-            const stored = this.solutionFor(input);
-            const solution = stored !== null && typeof stored === "object" ? stored.text : stored;
-            input.classList.remove("is-incorrect", "is-correct");
-            if (solution === null) {
-              setFieldValue(input, input.matches("math-field") ? "\\ast" : freeValue);
-              input.classList.add("is-free");
-            } else {
-              setFieldValue(input, solution);
-              input.classList.add("is-correct");
-            }
-            lock(input, true);
-          }),
-          ...fields.filter(isChoiceGroup).map(group => this.showChoiceSolution(group))
-        ]);
-        if (this.tagTypes.has("input_select")) PyWimsWidgets.fitSelects(this.promptElement);
+        await Promise.all(this.entries().map(({ field, widget, inputs }) =>
+          widget.showSolution(inputs, field, this.draw, this.promptElement)));
         this.setState("solution");
         const explanation = this.draw.explanation;
         if (explanation) {
@@ -5150,7 +5146,6 @@ self.onmessage = async ({ data: { id, op, args } }) => {
   return Object.freeze({ Question, formatScore });
 })();
 </script>
-
   <script></script>
   <script>(async () => {
   const { reduceMotion } = PyWimsFields;
@@ -5422,7 +5417,7 @@ self.onmessage = async ({ data: { id, op, args } }) => {
       lastWidth = innerWidth;
       questions.forEach(question => {
         if (widthChanged) question.forgetPromptHeight();
-        PyWimsWidgets.fitChoiceColumns?.(question.promptElement);
+        question.layoutWidgets();
         question.fitWideFormulas();
         question.layoutFeedback();
       });

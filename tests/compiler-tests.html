@@ -11,15 +11,16 @@
   <ol id="results"></ol>
   <script src="../runtime/template.js"></script>
   <script src="../runtime/correction.js"></script>
+  <script src="../runtime/fields.js"></script>
   <script src="../compiler/format.js"></script>
   <script src="../compiler/draws.js"></script>
   <script src="../compiler/assemble.js"></script>
   <script src="../compiler/zip.js"></script>
   <script src="../compiler/compiler.js"></script>
-  <script src="../widgets/input-matrix.js"></script>
-  <script src="../widgets/input-math.js"></script>
-  <script src="../widgets/input-text.js"></script>
-  <script src="../widgets/input-choice.js"></script>
+  <script src="../widgets/lib/matrix.js"></script>
+  <script src="../widgets/lib/text.js"></script>
+  <script src="../widgets/lib/choices.js"></script>
+  <script src="../widgets/input_math/widget.js"></script>
   <script>
     const results = document.getElementById("results");
     // Exécute un contrôle isolément afin qu’un échec ne masque pas les autres résultats.
@@ -345,8 +346,8 @@
     });
     // Ressources minimales pour assembler une feuille : la mise en page réelle, des scripts vides.
     const sheetResources = layout => ({
-      layout, brandCss: "", questionCss: "", template: "", correction: "", textWidget: "", mathWidget: "",
-      matrixWidget: "", choiceWidget: "", python: "", pywims: "", pythonWorker: "", fields: "", question: "", sheet: ""
+      layout, brandCss: "", questionCss: "", template: "", correction: "", widgets: "",
+      python: "", pywims: "", pythonWorker: "", fields: "", question: "", sheet: ""
     });
     const sheetQuestion = (title, question_statement) => ({
       fields: { question_title: title, question_keywords: "", question_layout: "STD", question_setup: "a = 1", question_statement, question_check: "ok_answer['r'] = True" },
@@ -676,8 +677,14 @@
     });
     // Correction par défaut sans Python (runtime/correction.js, SPECIFICATION.md § 2.6) : l’élève
     // doit donner ce qu’affiche « Correction », aux différences typographiques près.
-    test("la correction par défaut compare les écritures, aux différences typographiques près", () => {
-      const { isCorrect } = PyWimsCorrection;
+    // Verdict de la correction par défaut d’un widget (SPECIFICATION.md, § 2.11), pour un champ « r ».
+    const verdictOf = (type, answer, solution, attributes = {}) => {
+      const field = { name: "r", type, attributes };
+      const { verdicts } = PyWimsWidgets.get(type).verdicts(answer, field, { solutions: { r: solution } });
+      return Object.values(verdicts)[0];
+    };
+    asyncTest("la correction par défaut compare les écritures, aux différences typographiques près", async () => {
+      await PyWimsCompiler.loadWidgets();
       for (const [input, solution, expected] of [
         ["19/12", "19/12", true], ["x^2+1", "x^2 + 1", true], [" 1 000 ", "1000", true],
         ["1\u202f000", "1000", true], ["\u22127", "-7", true], ["Cafe\u0301", "Café", true],
@@ -687,35 +694,33 @@
         ["(1.5)", "(1, 5)", false], ["0.50", "0.5", false], ["a", "A", false], ["", "12", false],
         ["tache", "tâche", false]
       ]) {
-        if (isCorrect("input_text", input, solution) !== expected) {
+        if (verdictOf("input_text", input, solution) !== expected) {
           throw new Error(`« ${input} » pour la solution « ${solution} » devrait être ${expected ? "juste" : "faux"}.`);
         }
       }
       // Une case de matrice suit la même règle ; une valeur libre (null) accepte toute saisie non vide.
-      if (!isCorrect("input_matrix", "-1", "\u22121") || isCorrect("input_vmatrix", "2", "3") ||
-          !isCorrect("input_matrix", "n’importe quoi", null) || isCorrect("input_text", "   ", null)) {
+      if (!verdictOf("input_matrix", [["-1"]], [["\u22121"]]) || verdictOf("input_vmatrix", [["2"]], [["3"]]) ||
+          !verdictOf("input_matrix", [["n’importe quoi"]], [[null]]) || verdictOf("input_text", "   ", null) ||
+          verdictOf("input_vmatrix", [["1", "2"]], [["1"]])) {
         throw new Error("Une case de matrice ou une valeur libre est mal jugée.");
       }
     });
-    test("la correction par défaut compare les choix comme des ensembles", () => {
-      const { isCorrect } = PyWimsCorrection;
+    asyncTest("la correction par défaut compare les choix comme des ensembles", async () => {
+      await PyWimsCompiler.loadWidgets();
       for (const [type, input, solution, expected] of [
         ["input_radio", 2, 2, true], ["input_radio", 1, 2, false], ["input_radio", null, 0, false],
         ["input_checkbox", [0, 3], [3, 0], true], ["input_checkbox", [], [], true],
         ["input_checkbox", [0], [0, 3], false], ["input_checkbox", [0, 3, 4], [0, 3], false],
         ["input_checkbox", [0, 0], [0, 3], false], ["input_checkbox", 0, [0], false]
       ]) {
-        if (isCorrect(type, input, solution) !== expected) {
+        if (verdictOf(type, input, solution) !== expected) {
           throw new Error(`${type} : ${JSON.stringify(input)} pour la solution ${JSON.stringify(solution)} devrait être ${expected ? "juste" : "faux"}.`);
         }
       }
-      let rejected = false;
-      try {
-        isCorrect("input_math", "x^2+1", "x^{2} + 1");
-      } catch {
-        rejected = true;
+      // Une formule n’a pas de correction par défaut : son verdict est celui de « question_check ».
+      if (verdictOf("input_math", "x^2+1", "x^{2} + 1") !== null) {
+        throw new Error("Un champ input_math a été jugé sans « question_check ».");
       }
-      if (!rejected) throw new Error("Un champ input_math a été jugé sans « question_check ».");
     });
     test("refuse un champ inconnu", () => {
       let message = "";
@@ -1008,9 +1013,9 @@
         fetch("../css/brand.css").then(response => response.text()),
         fetch("../css/brands/upec.css").then(response => response.text()),
         fetch("../css/question.css").then(response => response.text()),
-        fetch("../widgets/input-text.js").then(response => response.text()),
-          fetch("../widgets/input-matrix.js").then(response => response.text()),
-        fetch("../widgets/input-math.js").then(response => response.text()),
+        fetch("../widgets/lib/text.js").then(response => response.text()),
+          fetch("../widgets/lib/matrix.js").then(response => response.text()),
+        fetch("../widgets/input_math/widget.js").then(response => response.text()),
         // Script du Worker : c’est lui qui charge Pyodide.
         fetch("../runtime/python-worker.js").then(response => response.text()),
         fetch("../questions/L1 - Mathématiques - Calculus - Dérivée d'un polynôme.pwq").then(response => response.text()),
@@ -1061,7 +1066,7 @@
             }
           });
           test("les bibliothèques en ligne sont figées sur une version exacte", () => {
-            const urls = [layout, compilerScript, pythonWorker]
+            const urls = [layout, compilerScript, pythonWorker, mathWidget]
               .flatMap(source => source.match(/https:\/\/(?:cdn\.jsdelivr\.net|unpkg\.com)\/[^"'\s)]+/g) || []);
             const unpinned = urls.filter(url => !/(?:@|\/v)\d+\.\d+\.\d+(?:\/|$)/.test(url));
             // Chacune des trois bibliothèques doit être présente, quel que soit le nombre de ses URL.

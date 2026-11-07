@@ -12,6 +12,7 @@
   <ol id="results"></ol>
   <script src="../runtime/template.js"></script>
   <script src="../runtime/correction.js"></script>
+  <script src="../runtime/fields.js"></script>
   <script src="../compiler/format.js"></script>
   <script src="../compiler/draws.js"></script>
   <script src="../compiler/assemble.js"></script>
@@ -753,11 +754,14 @@ json.dumps({
         const resources = Object.fromEntries(
           PyWimsCompiler.neededResources(questions.map(question => question.fields)).map(key => [key, resourceTexts[key]])
         );
+        resources.widgets = PyWimsCompiler.widgetResources(questions);
         const frame = document.createElement("iframe");
         frame.style.cssText = "width:900px;height:700px";
-        frame.srcdoc = title === null
+        // Les erreurs de la page compilée sont relevées dès son chargement, pour les messages d’échec.
+        const watch = "<script>window.pwErrors = []; addEventListener(\"error\", event => pwErrors.push(event.message));</" + "script>";
+        frame.srcdoc = (title === null
           ? PyWimsCompiler.assembleQuestion(questions[0].fields, questions[0].draws, resources)
-          : PyWimsCompiler.assembleActivity(title, questions, resources);
+          : PyWimsCompiler.assembleActivity(title, questions, resources)).replace("<head>", `<head>${watch}`);
         document.body.append(frame);
         await new Promise(resolve => frame.addEventListener("load", resolve, { once: true }));
         return frame;
@@ -769,6 +773,11 @@ json.dumps({
         const frameWindow = frame.contentWindow;
         const section = page.getElementById(`q${n}`);
         const role = name => section.querySelector(`[data-role="${name}"]`);
+        // La feuille construit ses questions après avoir décompressé tous les tirages : on l’attend.
+        for (let tries = 0; !role("status"); tries += 1) {
+          if (tries > 200) throw new Error(`question ${n} non construite : ${JSON.stringify(frameWindow.pwErrors ?? [])}`);
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
         const waitFor = async (predicate, description, timeout) => {
           const end = Date.now() + timeout;
           while (Date.now() < end) {

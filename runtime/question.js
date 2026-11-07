@@ -2,11 +2,7 @@
 // arrière-plan et gère son cycle de vie : vérifier, corriger, solution, nouvel énoncé, note.
 // Script classique qui publie window.PyWimsQuestion ; sheet.js crée les questions de la feuille.
 window.PyWimsQuestion = (() => {
-  const {
-    reduceMotion, fieldValue, setFieldValue, isChoiceGroup, choiceInputs, choiceIndex, isSingleAnswer,
-    checkedIndices, isFilled, lock, animateFields
-  } = PyWimsFields;
-  const freeValue = "∗";
+  const { reduceMotion } = PyWimsFields;
   // Durée maximale de « question_check » à la vérification (SPECIFICATION.md, § 5.1) : au-delà, le moteur
   // Python est arrêté et relancé, et l’élève est invité à modifier sa réponse.
   const checkTimeoutMs = 15000;
@@ -208,7 +204,7 @@ window.PyWimsQuestion = (() => {
       // Barème : seul un champ à choix, seul dans sa question, peut en avoir un (contrôlé à la
       // compilation). La note est celle de la dernière vérification du tirage affiché, 0 sinon ;
       // son maximum dépend du tirage (nombre de choix, solution).
-      this.scoredTag = this.choiceTags.find(tag => Object.hasOwn(tag.attributes, "scoring")) ?? null;
+      this.scoredTag = this.tags.find(tag => Object.hasOwn(tag.attributes, "scoring")) ?? null;
       this.scoring = this.scoredTag && PyWimsTemplate.parseScoring(this.scoredTag.attributes.scoring);
       this.score = 0;
       this.scoreMax = 0;
@@ -242,7 +238,7 @@ window.PyWimsQuestion = (() => {
 
       this.promptElement.addEventListener("input", () => {
         // Une liste déroulante remplie prend la largeur de son choix (SPECIFICATION.md, § 2.9).
-        if (this.tagTypes.has("input_select")) PyWimsWidgets.fitSelects(this.promptElement);
+        this.layoutWidgets();
         this.updateButtons();
       });
       // Un bouton absent est inactif ; la garde protège aussi d’un clic déclenché par script.
@@ -253,7 +249,7 @@ window.PyWimsQuestion = (() => {
       });
       this.solutionButton.addEventListener("click", () => this.showSolution());
       this.newDrawButton.addEventListener("click", () => this.newDraw());
-      this.mathLiveReady().then(() => this.updateButtons(), error => this.reportError(error));
+      this.widgetsReady().then(() => this.updateButtons(), error => this.reportError(error));
     }
 
     // Affiche un tirage au hasard ; Python attend le premier contact de l’élève (activatePython).
@@ -285,63 +281,26 @@ window.PyWimsQuestion = (() => {
       this.preparePython(this.draw);
     }
 
-    // Champs du tirage affiché : leur type et leurs attributs, d’après leur nom ; la correction par
-    // défaut en dépend (match, tolerance, form).
+    // Champs du tirage affiché, avec leur type et leurs attributs (SPECIFICATION.md, § 2.11) ; la page
+    // ne connaît un champ que par les fonctions de son widget (runtime/fields.js).
     useFields(fields) {
       this.tags = fields;
-      this.tagTypes = new Set(fields.map(tag => tag.type));
-      this.typeOf = new Map(fields.map(tag => [tag.name, tag.type]));
-      this.attributesOf = new Map(fields.map(tag => [tag.name, tag.attributes]));
-      this.choiceTags = fields.filter(tag => PyWimsTemplate.choiceTypes.has(tag.type));
+      this.widgets = [...new Set(fields.map(tag => tag.type))].map(type => PyWimsWidgets.get(type));
     }
 
-    // Construit le widget d’un champ ; choix et ordre viennent du tirage.
-    renderWidget(tag, draw) {
-      const { attributes } = tag;
-      const idPrefix = this.idPrefix;
+    widget(tag) {
+      return PyWimsWidgets.get(tag.type);
+    }
 
-      switch (tag.type) {
-        // Une valeur numérique se saisit dans un champ texte : virgule, fraction ou « ×10^ » y
-        // sont permis, ce que le pavé numérique des téléphones ne permet pas (SPECIFICATION.md, § 2.3).
-        case "input_text":
-        case "input_value":
-          return PyWimsWidgets.inputText(tag.name, { style: attributes.style || "", idPrefix, inline: attributes.inline ?? false });
-        case "input_math":
-          return PyWimsWidgets.inputMath(tag.name, { idPrefix });
-        case "input_matrix":
-          return PyWimsWidgets.inputMatrix(tag.name, attributes.rows, attributes.cols,
-            { inputStyle: attributes.input_style || "", idPrefix });
-        case "input_vmatrix":
-          return PyWimsWidgets.inputVMatrix(
-            tag.name,
-            attributes.max_rows ?? 10,
-            attributes.max_cols ?? 10,
-            {
-              cellWidth: attributes.cell_width,
-              cellHeight: attributes.cell_height,
-              inputStyle: attributes.input_style || "",
-              idPrefix
-            }
-          );
-        case "input_select":
-          return PyWimsWidgets.inputSelect(tag.name, {
-            texts: draw.choices?.[tag.name],
-            order: draw.orders?.[tag.name],
-            idPrefix,
-            inline: attributes.inline ?? false
-          });
-        case "input_radio":
-        case "input_checkbox":
-          return PyWimsWidgets.inputChoice(tag.name, {
-            multiple: tag.type === "input_checkbox",
-            texts: draw.choices?.[tag.name],
-            order: draw.orders?.[tag.name],
-            columns: attributes.columns,
-            idPrefix
-          });
-        default:
-          throw new Error(`Balise de modèle non prise en charge : ${tag.type}`);
-      }
+    // Construit le HTML d’un champ ; choix et ordre viennent du tirage.
+    renderWidget(tag, draw) {
+      return this.widget(tag).render(tag, { draw, idPrefix: this.idPrefix });
+    }
+
+    // Mise en page des champs qui dépend des formules ou de la largeur (colonnes des choix, largeur des
+    // listes déroulantes) : après la composition, à chaque saisie et au redimensionnement.
+    layoutWidgets() {
+      for (const widget of this.widgets) widget.layout(this.promptElement);
     }
 
     // Ligne d’état sous l’énoncé : chargement de Python ou erreur.
@@ -364,29 +323,23 @@ window.PyWimsQuestion = (() => {
       console.error(error);
     }
 
-    // Attend MathLive avant de lire ou d’écrire la valeur d’un champ mathématique.
-    async mathLiveReady() {
-      if (this.tagTypes.has("input_math")) {
-        await window.pyWimsMathLiveReady;
-        await customElements.whenDefined("math-field");
-      }
+    // Attend que chaque widget puisse être lu et écrit (MathLive chargé).
+    widgetsReady() {
+      return Promise.all(this.widgets.map(widget => widget.ready()));
     }
 
-    // Champs de saisie de l’énoncé ; seules les cases visibles d’une matrice redimensionnable comptent.
-    fields() {
-      return [...this.promptElement.querySelectorAll("[data-name], [data-matrix-name]")].filter(input => {
-        if (input.dataset.vmatrixName === undefined) {
-          return true;
-        }
-        const viewport = input.closest(".pw-vmatrix-viewport");
-        return Number(input.dataset.matrixRow) < Number(viewport.dataset.visibleRows) &&
-          Number(input.dataset.matrixColumn) < Number(viewport.dataset.visibleColumns);
+    // Champs du tirage affiché, chacun avec son widget et ses éléments à remplir.
+    entries() {
+      return this.tags.map(field => {
+        const widget = this.widget(field);
+        return { field, widget, inputs: widget.inputs(this.promptElement, field) };
       });
     }
 
-    // Champs encore modifiables : un champ juste reste vert et figé.
-    openFields() {
-      return this.fields().filter(input => !input.classList.contains("is-correct"));
+    // Éléments encore modifiables : un élément juste reste vert et figé.
+    openInputs() {
+      return this.entries().flatMap(({ widget, inputs }) =>
+        inputs.filter(input => !input.classList.contains("is-correct")).map(input => ({ widget, input })));
     }
 
     // Seuls la visibilité, l’action et l’activation des boutons changent selon l’état.
@@ -397,7 +350,7 @@ window.PyWimsQuestion = (() => {
       this.checkButton.setAttribute("aria-label", action === "check" ? "Vérifier ma réponse" : "Corriger ma réponse");
       setButton(this.checkButton, {
         absent: !(this.state === "open" || failed),
-        disabled: this.busy || (this.state === "open" && !this.openFields().some(isFilled))
+        disabled: this.busy || (this.state === "open" && !this.openInputs().some(({ widget, input }) => widget.isFilled(input)))
       });
       // « Correction » reste offerte après une réponse juste : l’élève voit la réponse attendue et
       // l’explication ; sa réussite, déjà comptée, le reste. Solution écartée : garder ses réponses et
@@ -455,10 +408,10 @@ window.PyWimsQuestion = (() => {
 
     // Note et maximum que donnerait le barème pour ces indices cochés, sur le tirage affiché.
     scoreFor(checked) {
-      const { name, type } = this.scoredTag;
+      const { name } = this.scoredTag;
       const solution = this.draw.solutions[name];
       return PyWimsTemplate.scoreChoice(this.scoring, {
-        multiple: type === "input_checkbox",
+        multiple: !this.widget(this.scoredTag).single,
         count: this.draw.choices[name].length,
         checked,
         solution: Array.isArray(solution) ? solution : [solution]
@@ -596,12 +549,7 @@ window.PyWimsQuestion = (() => {
         this.tags,
         tag => this.renderWidget(tag, selected)
       );
-      if (this.tagTypes.has("input_vmatrix")) {
-        PyWimsWidgets.enableVariableMatrixResize(promptElement);
-      }
-      if (this.tagTypes.has("input_math")) {
-        PyWimsWidgets.enableMathKeyboard(promptElement);
-      }
+      for (const widget of this.widgets) widget.prepare(promptElement);
       this.hideFeedback();
       this.setState("open");
       // Nouveau tirage : la note revient à 0 et son maximum suit le tirage.
@@ -614,68 +562,30 @@ window.PyWimsQuestion = (() => {
       } catch (error) {
         this.reportError(error);
       }
-      // Les largeurs des choix ne sont connues qu’une fois les formules composées. Le widget de
-      // choix n’est intégré qu’à une feuille qui a une question à choix.
-      PyWimsWidgets.fitChoiceColumns?.(promptElement);
-      // Une liste inline vide prend la largeur de « choisir » (SPECIFICATION.md, § 2.9).
-      if (this.tagTypes.has("input_select")) PyWimsWidgets.fitSelects(promptElement);
+      // Les largeurs des choix ne sont connues qu’une fois les formules composées.
+      this.layoutWidgets();
     }
 
-    // Verdicts de la correction par défaut (SPECIFICATION.md, § 2.6), un par champ de fields() :
-    // chaque saisie est comparée à la solution du tirage, sans Python ; null pour input_math, qui
-    // n’a pas de correction par défaut. Renvoie aussi, par champ, l’indication d’une valeur juste
-    // mais mal écrite (input_value, § 2.8), ou null.
-    defaultVerdicts(inputs) {
-      const { isCorrect, valueVerdict, formHint } = PyWimsCorrection;
-      const hints = inputs.map(() => null);
-      const answerResults = inputs.map((input, index) => {
-        const { name, matrixName, vmatrixName } = input.dataset;
-        if (isChoiceGroup(input)) {
-          const indices = checkedIndices(input);
-          const given = input.dataset.multiple === "true" ? indices : indices[0] ?? null;
-          return isCorrect(this.typeOf.get(name), given, this.draw.solutions[name]);
-        }
-        // Une matrice redimensionnable aux dimensions fausses : toutes ses cases sont fausses. Sans
-        // ce contrôle, une case hors de la solution passerait pour une valeur libre (solutionFor).
-        if (vmatrixName !== undefined) {
-          const viewport = input.closest(".pw-vmatrix-viewport");
-          const cells = this.draw.solutions[matrixName];
-          if (Number(viewport.dataset.visibleRows) !== cells.length ||
-              Number(viewport.dataset.visibleColumns) !== cells[0].length) {
-            return false;
-          }
-        }
-        const fieldName = matrixName ?? name;
-        const type = this.typeOf.get(fieldName);
-        if (type === "input_math") {
-          return null;
-        }
-        // Liste déroulante : l’indice choisi dans l’ordre de l’auteur (« » : aucun choix).
-        if (type === "input_select") {
-          return isCorrect(type, input.value === "" ? null : Number(input.value), this.draw.solutions[name]);
-        }
-        const attributes = this.attributesOf.get(fieldName) ?? {};
-        const solution = this.solutionFor(input);
-        if (type === "input_value" && solution !== null &&
-            valueVerdict(fieldValue(input), solution, attributes) === "form") {
-          hints[index] = formHint(attributes.form);
-        }
-        return isCorrect(type, fieldValue(input), solution, attributes);
-      });
-      return { answerResults, hints };
+    // Verdicts de la correction par défaut (SPECIFICATION.md, § 2.6), sans Python : chaque widget lit
+    // la réponse de son champ et la compare à la solution du tirage. Renvoie, par clé de ok_answer, le
+    // verdict (null pour un champ sans correction par défaut, input_math) et l’indication d’une réponse
+    // juste mais mal écrite (input_value, § 2.8).
+    defaultVerdicts(entries) {
+      const verdicts = {};
+      const hints = {};
+      for (const { field, widget, inputs } of entries) {
+        const result = widget.verdicts(widget.read(inputs, field), field, this.draw);
+        Object.assign(verdicts, result.verdicts);
+        Object.assign(hints, result.hints);
+      }
+      return { verdicts, hints };
     }
 
-    // Clé d’une saisie dans ok_answer : le nom du champ, ou « matrice[i][j] » pour une case.
-    answerKey(input) {
-      const { name, matrixName, matrixRow, matrixColumn } = input.dataset;
-      return matrixName === undefined ? name : `${matrixName}[${matrixRow}][${matrixColumn}]`;
-    }
-
-    // Transmet toutes les saisies à Python et exécute « question_check ». Renvoie les verdicts, un par champ de
-    // fields(), les indications de forme de la correction par défaut, et le retour de l’auteur (null
-    // s’il n’a pas défini « feedback »). ok_answer est pré-rempli par la correction par défaut, et un
-    // champ input_value arrive comme sa valeur lue (§§ 2.6 et 2.8).
-    async pythonVerdicts(inputs) {
+    // Transmet toutes les réponses à Python et exécute « question_check ». ok_answer est pré-rempli par la
+    // correction par défaut ; chaque widget transmet sa réponse (sendToPython). Renvoie le verdict de
+    // chaque clé, les indications de la correction par défaut et le retour de l’auteur (null s’il n’a
+    // pas défini « feedback »).
+    async pythonVerdicts(entries) {
       const { python } = this;
       this.activatePython();
       // Le moteur a été relancé depuis la préparation (calcul trop long) : la session de cette
@@ -687,104 +597,62 @@ window.PyWimsQuestion = (() => {
         this.showStatus("Chargement du moteur Python…");
       }
       await this.pythonReady;
-      const { exactValue } = PyWimsCorrection;
-      const { answerResults: defaults, hints } = this.defaultVerdicts(inputs);
-      const verdicts = {};
+      const { verdicts: defaults, hints } = this.defaultVerdicts(entries);
+      const prefilled = Object.fromEntries(Object.entries(defaults).filter(([, verdict]) => verdict !== null));
       const values = {};
-      inputs.forEach((input, index) => {
-        if (defaults[index] !== null) {
-          verdicts[this.answerKey(input)] = defaults[index];
-        }
-      });
-      const matrices = new Map();
-      for (const input of inputs) {
-        const { matrixName, matrixRow, matrixColumn, vmatrixName } = input.dataset;
-        // Bloc des choix avec count : Python reçoit le rang dans le bloc (SPECIFICATION.md, § 10.3).
-        const ranks = this.draw.ranks?.[input.dataset.name];
-        if (isChoiceGroup(input)) {
-          const indices = checkedIndices(input);
-          await python.setChoice(input.dataset.name,
-            PyWimsTemplate.blockRank(input.dataset.multiple === "true" ? indices : indices[0] ?? null, ranks));
-          continue;
-        }
-        if (input.matches("select")) {
-          await python.setChoice(input.dataset.name, PyWimsTemplate.blockRank(input.value === "" ? null : Number(input.value), ranks));
-          continue;
-        }
-        if (this.typeOf.get(input.dataset.name) === "input_value") {
-          values[input.dataset.name] = exactValue(fieldValue(input));
-          continue;
-        }
-        if (matrixName === undefined) {
-          await python.set(input.dataset.name, fieldValue(input));
-          continue;
-        }
-        if (!matrices.has(matrixName)) {
-          const viewport = vmatrixName === undefined ? null : input.closest(".pw-vmatrix-viewport");
-          matrices.set(matrixName, viewport
-            ? Array.from({ length: Number(viewport.dataset.visibleRows) },
-              () => Array(Number(viewport.dataset.visibleColumns)).fill(""))
-            : []);
-        }
-        const matrix = matrices.get(matrixName);
-        matrix[Number(matrixRow)] ??= [];
-        matrix[Number(matrixRow)][Number(matrixColumn)] = input.value;
+      for (const { field, widget, inputs } of entries) {
+        await widget.sendToPython(python, field, widget.read(inputs, field), this.draw, values);
       }
-      for (const [name, matrix] of matrices) {
-        await python.setMatrix(name, matrix);
-      }
-      await python.prepareCheck({ verdicts, values });
+      await python.prepareCheck({ verdicts: prefilled, values });
       await python.run(this.definition.question_check, { timeoutMs: checkTimeoutMs }).catch(error => {
         throw error.name === "PyWimsTimeout" ? new Error(checkTimeoutMessage) : error;
       });
-
-      const answerResults = await Promise.all(inputs.map(input =>
-        python.getBoolean(`bool(ok_answer.get(${JSON.stringify(this.answerKey(input))}, False))`)));
+      const verdicts = {};
+      for (const key of Object.keys(defaults)) {
+        verdicts[key] = await python.getBoolean(`bool(ok_answer.get(${JSON.stringify(key)}, False))`);
+      }
       const feedback = await python.getBoolean("'feedback' in globals()")
         ? await python.getTemplateValue("feedback")
         : null;
-      return { answerResults, hints, feedback };
+      return { verdicts, hints, feedback };
     }
 
-    // Corrige les saisies (avec « question_check » ou par défaut), colore les champs ouverts et affiche le retour.
+    // Corrige les réponses (avec « question_check » ou par défaut), colore les éléments encore ouverts
+    // et affiche le retour.
     async check() {
       this.busy = true;
       this.updateButtons();
       try {
-        await this.mathLiveReady();
-        const inputs = this.fields();
-        const { answerResults, feedback: authorFeedback, hints } = this.usesPython
-          ? await this.pythonVerdicts(inputs)
-          : { ...this.defaultVerdicts(inputs), feedback: null };
-        const allCorrect = inputs.length > 0 && answerResults.every(Boolean);
-        // La variable « feedback » de « question_check » est facultative : sans elle, un retour générique s’affiche.
-        // Une valeur juste mais mal écrite (input_value) le dit, si le champ est resté faux (« question_check »
-        // peut accepter l’écriture) : l’élève sait ce qui reste à corriger.
-        const hint = hints.find((text, index) => text !== null && !answerResults[index]) ?? null;
-        const singleAnswer = inputs.length === 1 && isSingleAnswer(inputs[0]);
+        await this.widgetsReady();
+        const entries = this.entries();
+        const { verdicts, hints, feedback: authorFeedback } = this.usesPython
+          ? await this.pythonVerdicts(entries)
+          : { ...this.defaultVerdicts(entries), feedback: null };
+        const inputs = entries.flatMap(entry => entry.inputs.map(input => ({ ...entry, input })));
+        const verdictOf = ({ widget, field, input }) => verdicts[widget.key(input, field)] === true;
+        const allCorrect = inputs.length > 0 && inputs.every(verdictOf);
+        // La variable « feedback » de « question_check » est facultative : sans elle, un retour générique
+        // s’affiche. Une réponse juste mais mal écrite (input_value) le dit, si sa clé est restée fausse
+        // (« question_check » peut accepter l’écriture) : l’élève sait ce qui reste à corriger.
+        const hint = Object.entries(hints).find(([key]) => verdicts[key] !== true)?.[1] ?? null;
+        const singleAnswer = inputs.length === 1 && inputs[0].widget.single;
         const generic = allCorrect ? defaultFeedback.correct
           : singleAnswer ? defaultFeedback.incorrectSingle : defaultFeedback.incorrect;
         const feedback = authorFeedback ??
           (hint && !allCorrect ? (singleAnswer ? hint : `${generic} ${hint}`) : generic);
         this.hideStatus();
 
-        const verdicts = new Map(inputs.map((input, index) => [input, answerResults[index]]));
-        const toColor = inputs.filter(input => !input.classList.contains("is-correct"));
-        await Promise.all([
-          animateFields(toColor.filter(input => !isChoiceGroup(input)), input => {
-            input.classList.add(verdicts.get(input) ? "is-correct" : "is-incorrect");
-            lock(input, true);
-          }),
-          ...toColor.filter(isChoiceGroup).map(group => this.colorChoices(group, verdicts.get(group)))
-        ]);
+        await Promise.all(entries.map(({ field, widget, inputs: own }) => widget.color(
+          own.filter(input => !input.classList.contains("is-correct")),
+          input => verdictOf({ widget, field, input }), field, this.draw)));
         this.setState("checked", allCorrect ? "ok" : "ko");
         if (allCorrect) {
           this.markSucceeded();
         }
         // Chaque vérification donne une nouvelle note, calculée sur les choix cochés.
         if (this.scoring) {
-          const group = inputs.find(input => isChoiceGroup(input) && input.dataset.name === this.scoredTag.name);
-          this.setScore(this.scoreFor(checkedIndices(group)).score);
+          const scored = entries.find(entry => entry.field.name === this.scoredTag.name);
+          this.setScore(this.scoreFor([].concat(scored.widget.read(scored.inputs, scored.field) ?? [])).score);
         }
         await this.showFeedback(feedback, allCorrect ? "is-correct" : "is-incorrect");
       } catch (error) {
@@ -795,82 +663,16 @@ window.PyWimsQuestion = (() => {
       }
     }
 
-    // Indices des bons choix d’un groupe, d’après la solution du tirage.
-    choiceSolution(group) {
-      const solution = this.draw.solutions[group.dataset.name];
-      return new Set(Array.isArray(solution) ? solution : [solution]);
-    }
-
-    // Vérification d’un groupe de choix : le groupe prend le verdict de « question_check » (réussi ou non),
-    // et seuls les choix cochés se colorent, d’après la solution du tirage. Un choix déjà vert
-    // (coché juste lors d’une vérification précédente) ne s’anime pas de nouveau.
-    colorChoices(group, correct) {
-      group.classList.add(correct ? "is-correct" : "is-incorrect");
-      lock(group, true);
-      const solution = this.choiceSolution(group);
-      const labels = choiceInputs(group)
-        .filter(input => input.checked)
-        .map(input => input.closest(".pw-choice"))
-        .filter(label => !label.classList.contains("is-correct"));
-      return animateFields(labels, label => {
-        label.classList.add(solution.has(choiceIndex(label)) ? "is-correct" : "is-incorrect");
-      });
-    }
-
-    // Retour à la saisie sur le même tirage : les champs justes restent verts et figés.
+    // Retour à la saisie sur le même tirage : les éléments justes restent verts et figés.
     correct() {
-      for (const input of this.fields()) {
-        if (!input.classList.contains("is-incorrect")) {
-          continue;
-        }
-        input.classList.remove("is-incorrect");
-        if (!isChoiceGroup(input)) {
-          lock(input, false);
-          continue;
-        }
-        // Choix multiple : un bon choix coché reste vert et figé ; les autres choix, cochés ou non,
-        // redeviennent modifiables. Choix unique : tout se rouvre, car choisir une autre réponse
-        // décoche forcément la précédente.
-        const multiple = input.dataset.multiple === "true";
-        for (const choice of choiceInputs(input)) {
-          const label = choice.closest(".pw-choice");
-          const kept = multiple && label.classList.contains("is-correct");
-          label.classList.remove("is-incorrect");
-          if (!kept) label.classList.remove("is-correct");
-          choice.disabled = kept;
+      for (const { widget, inputs } of this.entries()) {
+        for (const input of inputs.filter(input => input.classList.contains("is-incorrect"))) {
+          widget.reopen(input);
         }
       }
       this.hideFeedback();
       this.setState("open");
-      this.openFields()[0]?.focus();
-    }
-
-    // Valeur de solution d’un champ ou d’une case ; null désigne une valeur libre.
-    solutionFor(input) {
-      const { matrixName, matrixRow, matrixColumn } = input.dataset;
-      if (matrixName === undefined) {
-        return this.draw.solutions[input.dataset.name];
-      }
-      return this.draw.solutions[matrixName]?.[Number(matrixRow)]?.[Number(matrixColumn)] ?? null;
-    }
-
-    // Solution d’un groupe de choix : les bons choix sont cochés et verts (ils s’animent l’un après
-    // l’autre), les autres décochés et neutres ; le groupe est figé.
-    showChoiceSolution(group) {
-      const solution = this.choiceSolution(group);
-      group.classList.remove("is-incorrect");
-      group.classList.add("is-correct");
-      lock(group, true);
-      const labels = [...group.querySelectorAll(".pw-choice")];
-      for (const label of labels.filter(label => !solution.has(choiceIndex(label)))) {
-        label.classList.remove("is-correct", "is-incorrect");
-        label.querySelector("input").checked = false;
-      }
-      return animateFields(labels.filter(label => solution.has(choiceIndex(label))), label => {
-        label.classList.remove("is-incorrect");
-        label.classList.add("is-correct");
-        label.querySelector("input").checked = true;
-      });
+      this.openInputs()[0]?.input.focus();
     }
 
     // Remplit tous les champs avec la solution, y compris ceux déjà justes : l’élève voit la solution
@@ -879,33 +681,10 @@ window.PyWimsQuestion = (() => {
       this.busy = true;
       this.updateButtons();
       try {
-        await this.mathLiveReady();
+        await this.widgetsReady();
         this.hideFeedback();
-        for (const viewport of this.promptElement.querySelectorAll(".pw-vmatrix-viewport")) {
-          const cells = this.draw.solutions[viewport.dataset.vmatrixName];
-          if (Array.isArray(cells) && cells.length) {
-            PyWimsWidgets.resizeVariableMatrix(viewport, cells.length, cells[0].length);
-          }
-        }
-        const fields = this.fields();
-        await Promise.all([
-          animateFields(fields.filter(input => !isChoiceGroup(input)), input => {
-            // Une valeur numérique (input_value) a une solution { text, value } : on écrit son texte.
-            const stored = this.solutionFor(input);
-            const solution = stored !== null && typeof stored === "object" ? stored.text : stored;
-            input.classList.remove("is-incorrect", "is-correct");
-            if (solution === null) {
-              setFieldValue(input, input.matches("math-field") ? "\\ast" : freeValue);
-              input.classList.add("is-free");
-            } else {
-              setFieldValue(input, solution);
-              input.classList.add("is-correct");
-            }
-            lock(input, true);
-          }),
-          ...fields.filter(isChoiceGroup).map(group => this.showChoiceSolution(group))
-        ]);
-        if (this.tagTypes.has("input_select")) PyWimsWidgets.fitSelects(this.promptElement);
+        await Promise.all(this.entries().map(({ field, widget, inputs }) =>
+          widget.showSolution(inputs, field, this.draw, this.promptElement)));
         this.setState("solution");
         // L’explication est un modèle Jinja, comme l’énoncé, rendu à la compilation pour chaque tirage.
         const explanation = this.draw.explanation;

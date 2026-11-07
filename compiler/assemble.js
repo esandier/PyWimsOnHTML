@@ -53,17 +53,14 @@
     python: text => text.replace(/^[ \t]*#[^\n]*\n/gm, "")
   };
 
-  // Fichiers du projet intégrés au HTML généré ; les widgets facultatifs ne sont lus que s’ils servent.
+  // Fichiers du projet intégrés au HTML généré ; les scripts des widgets, eux, viennent de loadWidgets
+  // (compiler/draws.js), qui les a lus avec leurs déclarations.
   const resourcePaths = {
     layout: "layouts/standard.html",
     template: "runtime/template.js",
     correction: "runtime/correction.js",
     brandCss: "css/brand.css",
     questionCss: "css/question.css",
-    textWidget: "widgets/input-text.js",
-    mathWidget: "widgets/input-math.js",
-    matrixWidget: "widgets/input-matrix.js",
-    choiceWidget: "widgets/input-choice.js",
     fields: "runtime/fields.js",
     question: "runtime/question.js",
     sheet: "runtime/sheet.js",
@@ -78,17 +75,20 @@
   // Indique quels fichiers du projet utilisent une question ou l’ensemble des questions d’une feuille.
   function neededResources(fieldsOrList) {
     const list = Array.isArray(fieldsOrList) ? fieldsOrList : [fieldsOrList];
-    const tagTypes = new Set(list.flatMap(fields => PyWimsCompiler.statementWidgets(fields.question_statement)));
     // Le module pywims et le script du Worker ne servent qu’aux questions qui ont un « question_check » : elles
     // seules chargent Python.
     const usesPython = list.some(fields => fields.question_check !== undefined);
     return Object.keys(resourcePaths).filter(key =>
       key !== "scorm" &&
-      (!["pywims", "pythonWorker"].includes(key) || usesPython) &&
-      (key !== "mathWidget" || tagTypes.has("input_math")) &&
-      (key !== "matrixWidget" || tagTypes.has("input_matrix") || tagTypes.has("input_vmatrix")) &&
-      (key !== "choiceWidget" || ["input_radio", "input_checkbox", "input_select"].some(type => tagTypes.has(type)))
+      (!["pywims", "pythonWorker"].includes(key) || usesPython)
     );
+  }
+
+  // Code des widgets d’une feuille, d’après les champs de ses tirages (SPECIFICATION.md, § 2.11), à
+  // donner à l’assemblage dans resources.widgets.
+  function widgetResources(questions) {
+    return PyWimsCompiler.widgetScripts(
+      questions.flatMap(({ draws }) => draws.flatMap(draw => draw.fields.map(field => field.type))));
   }
 
   // Section d’une question : ses champs et ses tirages en texte échappé, lus par question.js.
@@ -133,7 +133,7 @@ ${renderDrawData(draws, compressedDraws)}
 
   // Emplacements de la mise en page qui reçoivent du code tel quel, avec la balise qui l’entoure.
   const inlinedPlaceholders = {
-    CSS: "style", TEMPLATE: "script", CORRECTION: "script", WIDGETS: "script", MATHLIVE_LOADER: "script",
+    CSS: "style", TEMPLATE: "script", CORRECTION: "script", WIDGETS: "script",
     PYWIMS: "script", PYTHON_WORKER: "script", PYTHON_RUNTIME: "script", FIELDS: "script", QUESTION: "script",
     SCORM: "script", SHEET: "script"
   };
@@ -203,7 +203,6 @@ ${renderDrawData(draws, compressedDraws)}
     const sections = questions.map(({ fields, draws, compressedDraws }, index) =>
       renderQuestionSection(fields, draws, index, compressedDraws));
     const { html, css, js, python } = stripComments;
-    const usesMathWidget = neededResources(questions.map(({ fields }) => fields)).includes("mathWidget");
     const replacements = {
       MATHJAX: needsMathJax(questions) ? mathJaxMarkup : "",
       TITLE: escapeHtml(title),
@@ -215,18 +214,7 @@ ${renderDrawData(draws, compressedDraws)}
       CSS: css(`${resources.brandCss}\n${resources.questionCss}`),
       TEMPLATE: js(resources.template),
       CORRECTION: js(resources.correction),
-      WIDGETS: js([resources.textWidget, resources.mathWidget, resources.matrixWidget, resources.choiceWidget]
-        .filter(Boolean).join("\n")),
-      MATHLIVE_LOADER: usesMathWidget
-        ? `// Charge le clavier mathématique uniquement pour les questions qui en ont besoin.
-window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
-  const script = document.createElement("script");
-  script.src = "https://unpkg.com/mathlive@0.111.0";
-  script.onload = resolve;
-  script.onerror = () => reject(new Error("Échec du chargement de MathLive."));
-  document.head.append(script);
-});`
-        : "window.pyWimsMathLiveReady = Promise.resolve();",
+      WIDGETS: js(resources.widgets),
       // Vide si aucune question n’a d’« question_check » : Python n’est alors jamais chargé.
       PYWIMS: python(resources.pywims ?? ""),
       PYTHON_WORKER: js(resources.pythonWorker ?? ""),
@@ -298,6 +286,7 @@ window.pyWimsMathLiveReady = new Promise((resolve, reject) => {
     compressDraws,
     resourcePaths,
     neededResources,
+    widgetResources,
     assembleQuestion,
     assembleActivity,
     renderQuestionData,

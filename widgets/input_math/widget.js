@@ -1,4 +1,7 @@
-// Ajoute le champ de saisie MathLive aux widgets partagés par la question.
+// Formule saisie avec MathLive (SPECIFICATION.md, § 2.3) : pas de correction par défaut, une formule se
+// compare par SymPy dans « question_check » (le compilateur l’exige, d’après widget.json). Ce que
+// reçoit « question_check » est l’écriture ASCII (« x^2+1 »), plus proche de ce qu’un élève taperait
+// que le LaTeX affiché ; la solution s’écrit en LaTeX, « st » pour une valeur libre.
 window.PyWimsWidgets = (() => {
   const existing = window.PyWimsWidgets || {};
   const { escapeHtml } = PyWimsTemplate;
@@ -42,3 +45,26 @@ window.PyWimsWidgets = (() => {
 
   return Object.freeze({ ...existing, inputMath, enableMathKeyboard });
 })();
+
+{
+  // MathLive est chargé à la première demande, par la page qui affiche le champ : le compilateur, qui
+  // lit aussi ce fichier, ne le télécharge pas.
+  let loading = null;
+  PyWimsWidgets.define("input_math", {
+    render: ({ name }, { idPrefix }) => PyWimsWidgets.inputMath(name, { idPrefix }),
+    ready() {
+      loading ??= new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = "https://unpkg.com/mathlive@0.111.0";
+        script.onload = resolve;
+        script.onerror = () => reject(new Error("Échec du chargement de MathLive."));
+        document.head.append(script);
+      }).then(() => customElements.whenDefined("math-field"));
+      return loading;
+    },
+    prepare: prompt => PyWimsWidgets.enableMathKeyboard(prompt),
+    verdicts: (answer, { name }) => ({ verdicts: { [name]: null }, hints: {} }),
+    typedAnswer: ({ name }, draw) => draw.inputs?.[name] ?? "1",
+    freeText: "\\ast"
+  });
+}

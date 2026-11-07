@@ -20,8 +20,14 @@
   // (widget.json) et le Python (widget.py, facultatif) de chacun, lus une fois et remis à chaque tirage.
   // Le moteur ne connaît aucun widget par son nom : ajouter un widget, c’est ajouter son dossier et son
   // nom dans widgets.json (un serveur web ne donne pas la liste d’un dossier).
+  // Le script de chaque widget (widget.js) et les bibliothèques qu’il déclare (« libraries ») sont exécutés
+  // aussi dans la page du compilateur : le contrôle de cohérence corrige la solution avec le même code
+  // que la page de l’élève. Leurs textes sont gardés pour l’assemblage (widgetScripts) : la page compilée
+  // intègre exactement le code qui a contrôlé ses tirages.
   const widgetsBase = new URL("../widgets/", document.currentScript.src);
   let widgetsLoading = null;
+  let loadedWidgets = null;
+  const scriptTexts = new Map();
   function loadWidgets() {
     if (!widgetsLoading) {
       const read = async (path, optional = false) => {
@@ -34,14 +40,33 @@
       };
       widgetsLoading = (async () => {
         const names = JSON.parse(await read("widgets.json"));
-        return Object.fromEntries(await Promise.all(names.map(async name => [name, {
+        const widgets = Object.fromEntries(await Promise.all(names.map(async name => [name, {
           declaration: JSON.parse(await read(`${name}/widget.json`)),
           python: await read(`${name}/widget.py`, true)
         }])));
+        const paths = [...new Set(names.flatMap(name => [...widgets[name].declaration.libraries, `${name}/widget.js`]))];
+        const texts = await Promise.all(paths.map(path => read(path)));
+        paths.forEach((path, index) => {
+          scriptTexts.set(path, texts[index]);
+          const script = document.createElement("script");
+          script.textContent = texts[index];
+          document.head.append(script);
+        });
+        loadedWidgets = widgets;
+        return widgets;
       })();
       widgetsLoading.catch(() => { widgetsLoading = null; });
     }
     return widgetsLoading;
+  }
+
+  // Code des widgets d’une feuille : les bibliothèques déclarées, chacune une fois, puis le script de
+  // chaque widget employé. loadWidgets doit avoir été attendu (les tirages l’ont fait).
+  function widgetScripts(types) {
+    if (!loadedWidgets) throw new Error("Les widgets ne sont pas chargés : calculez d’abord les tirages.");
+    const names = [...new Set(types)].sort();
+    const paths = [...new Set(names.flatMap(name => [...loadedWidgets[name].declaration.libraries, `${name}/widget.js`]))];
+    return paths.map(path => scriptTexts.get(path)).join("\n");
   }
 
   // Champs d’un tirage, comparés à ceux du premier : un champ dans un {% if %} manque à certains
@@ -72,49 +97,54 @@
     return errors;
   }
 
-  // Contrôle de cohérence d’un tirage (SPECIFICATION.md, § 3) : la solution de chaque champ est
-  // saisie comme le ferait un élève, puis « question_check » doit la juger juste. Sans ce contrôle, le bouton
-  // « Correction » pourrait montrer une réponse que la correction refuse (fraction non simplifiée,
-  // indices dans un autre ordre…), ou « question_check » planter pour un tirage rare. La session est celle
-  // du tirage, où « question_setup » vient d’être exécuté ; elle est jetée ensuite. Renvoie les messages.
+  // Contrôle de cohérence d’un tirage (SPECIFICATION.md, § 3) : chaque champ reçoit la réponse d’un élève
+  // qui saisit la solution (typedAnswer de son widget), et chaque clé doit être jugée juste. Sans ce
+  // contrôle, le bouton « Solution » pourrait montrer une réponse que la correction refuse (fraction non
+  // simplifiée, indices dans un autre ordre…), ou « question_check » planter pour un tirage rare.
+  // La réponse passe par la correction par défaut du widget, le même code que dans la page. Avec un
+  // « question_check », Python est préparé comme dans la page (runtime/question.js) : ok_answer pré-rempli
+  // par ces verdicts, saisie transmise par sendToPython. La session est celle du tirage, où
+  // « question_setup » vient d’être exécuté ; elle est jetée ensuite. Renvoie les messages.
+  // Une solution vide (ou faite d’espaces) ne peut pas se saisir : le champ resterait vide, et
+  // « Vérifier » inactif. Une réponse est un texte, des lignes de textes (matrice) ou des indices.
   async function coherenceErrors(session, draw, question_check, timeoutMs = drawTimeoutMs) {
-    const tags = draw.fields;
-    if (question_check === undefined) {
-      return defaultCoherenceErrors(tags, draw);
-    }
-    // Une valeur ANY accepte n’importe quelle saisie : « 1 » en tient lieu.
-    const typed = value => value ?? "1";
-    // Python est préparé comme dans la page (runtime/question.js) : ok_answer pré-rempli par la
-    // correction par défaut, valeur des champs input_value (SPECIFICATION.md, §§ 2.6 et 2.8).
-    const { isCorrect, exactValue } = PyWimsCorrection;
-    const verdicts = {};
+    const prefilled = {};
     const values = {};
-    for (const tag of tags) {
-      const { name, type, attributes } = tag;
-      const solution = draw.solutions[name];
-      if (PyWimsTemplate.choiceTypes.has(type)) {
-        // Python reçoit le rang dans le bloc des choix (§ 10.3), comme dans la page.
-        await session.setChoice(name, PyWimsTemplate.blockRank(solution, draw.ranks?.[name]));
-        verdicts[name] = isCorrect(type, solution, solution);
-      } else if (type === "input_text") {
-        await session.set(name, typed(solution));
-        verdicts[name] = isCorrect(type, typed(solution), solution, attributes);
-      } else if (type === "input_value") {
-        const text = typed(solution?.text);
-        values[name] = exactValue(text);
-        verdicts[name] = isCorrect(type, text, solution, attributes);
-      } else if (type === "input_math") {
-        // MathLive transmet une expression en texte (« x^2 + 1 »), et non le LaTeX affiché par la
-        // solution : on saisit donc la forme texte, la plus proche de ce que reçoit « question_check ».
-        await session.set(name, typed(draw.inputs[name]));
-      } else {
-        await session.setMatrix(name, solution.map(row => row.map(typed)));
-        solution.forEach((row, i) => row.forEach((cell, j) => {
-          verdicts[`${name}[${i}][${j}]`] = isCorrect(type, typed(cell), cell, attributes);
-        }));
+    const keysOf = new Map();
+    const empty = new Set();
+    for (const field of draw.fields) {
+      const widget = PyWimsWidgets.get(field.type);
+      const answer = widget.typedAnswer(field, draw);
+      const { verdicts } = widget.verdicts(answer, field, draw);
+      keysOf.set(field, Object.keys(verdicts));
+      for (const [key, verdict] of Object.entries(verdicts)) {
+        if (verdict !== null) prefilled[key] = verdict;
       }
+      const texts = typeof answer === "string" ? [[field.name, answer]]
+        : Array.isArray(answer) && answer.every(Array.isArray)
+          ? answer.flatMap((row, i) => row.map((cell, j) => [`${field.name}[${i}][${j}]`, cell])) : [];
+      texts.filter(([, text]) => PyWimsCorrection.normalizedText(String(text)) === "").forEach(([key]) => empty.add(key));
+      if (question_check !== undefined) await widget.sendToPython(session, field, answer, draw, values);
     }
-    await session.prepareCheck({ verdicts, values });
+    const report = async (judge, reason) => {
+      const errors = [];
+      for (const [field, keys] of keysOf) {
+        const wrong = [];
+        for (const key of keys) {
+          if (empty.has(key) || !await judge(key)) wrong.push(key);
+        }
+        if (wrong.length) {
+          const cells = wrong[0] === field.name ? ""
+            : ` (case${wrong.length > 1 ? "s" : ""} ${wrong.map(key => key.slice(field.name.length)).join(", ")})`;
+          errors.push(`la solution du champ « ${field.name} »${cells} ${reason}.`);
+        }
+      }
+      return errors;
+    };
+    if (question_check === undefined) {
+      return report(key => prefilled[key] === true, "est vide ou n’est pas acceptée par la correction par défaut");
+    }
+    await session.prepareCheck({ verdicts: prefilled, values });
     try {
       await session.run(question_check, { timeoutMs });
     } catch (error) {
@@ -123,61 +153,11 @@
       }
       return [`« question_check » lève une erreur quand on saisit la solution, ${pythonErrorSummary(error.message)}`];
     }
-    const errors = [];
-    for (const tag of tags) {
-      const solution = draw.solutions[tag.name];
-      const matrix = ["input_matrix", "input_vmatrix"].includes(tag.type);
-      const keys = matrix
-        ? solution.flatMap((row, i) => row.map((_, j) => `${tag.name}[${i}][${j}]`))
-        : [tag.name];
-      const wrong = [];
-      for (const key of keys) {
-        if (!await session.getBoolean(`bool(ok_answer.get(${JSON.stringify(key)}, False))`)) {
-          wrong.push(key);
-        }
-      }
-      if (wrong.length) {
-        const cells = matrix ? ` (case${wrong.length > 1 ? "s" : ""} ${wrong.map(key => key.slice(tag.name.length)).join(", ")})` : "";
-        errors.push(`la solution du champ « ${tag.name} »${cells} est jugée fausse par « question_check ».`);
-      }
-    }
+    const errors = await report(key => session.getBoolean(`bool(ok_answer.get(${JSON.stringify(key)}, False))`),
+      "est jugée fausse par « question_check »");
     // Le retour de l’auteur aide souvent à comprendre pourquoi la solution est refusée.
     if (errors.length && await session.getBoolean("'feedback' in globals()")) {
       errors.push(`Retour obtenu : « ${await session.getTemplateValue("feedback")} ».`);
-    }
-    return errors;
-  }
-
-  // Cohérence sans « question_check » : la solution, saisie comme le ferait un élève, doit être acceptée par
-  // la correction par défaut (runtime/correction.js). C’est vrai par construction, sauf pour une
-  // solution qu’aucun élève ne peut saisir : un texte vide (ou fait d’espaces) laisserait le champ
-  // vide, et « Vérifier » resterait inactif. Le contrôle passe aussi par le même code que le
-  // navigateur, ce qui vérifie la normalisation sur chaque solution réelle.
-  function defaultCoherenceErrors(tags, draw) {
-    const { isCorrect, normalizedText } = PyWimsCorrection;
-    const errors = [];
-    for (const { name, type, attributes } of tags) {
-      const solution = draw.solutions[name];
-      let wrong;
-      if (PyWimsTemplate.choiceTypes.has(type)) {
-        wrong = isCorrect(type, solution, solution) ? [] : [""];
-      } else if (type === "input_value") {
-        // La solution affichée (texte), saisie comme par un élève, doit être juste à la tolérance près
-        // et dans la forme demandée : c’est ce qui vérifie l’arrondi de la solution affichée.
-        wrong = solution === null || isCorrect(type, solution.text, solution, attributes) ? [] : [""];
-      } else {
-        // Une valeur libre (null) se saisit « 1 », comme dans le contrôle avec « question_check ».
-        const cells = ["input_matrix", "input_vmatrix"].includes(type)
-          ? solution.flatMap((row, i) => row.map((cell, j) => [`[${i}][${j}]`, cell]))
-          : [["", solution]];
-        wrong = cells
-          .filter(([, cell]) => (cell !== null && normalizedText(cell) === "") || !isCorrect(type, cell ?? "1", cell, attributes))
-          .map(([key]) => key);
-      }
-      if (wrong.length) {
-        const where = wrong[0] ? ` (case${wrong.length > 1 ? "s" : ""} ${wrong.join(", ")})` : "";
-        errors.push(`la solution du champ « ${name} »${where} est vide ou n’est pas acceptée par la correction par défaut.`);
-      }
     }
     return errors;
   }
@@ -391,6 +371,7 @@
     ...window.PyWimsCompiler,
     choiceOrder,
     computeDraws,
-    loadWidgets
+    loadWidgets,
+    widgetScripts
   });
 })();

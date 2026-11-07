@@ -4,7 +4,7 @@
 // page (SPECIFICATION.md, § 11.1) ; le dossier choisi par l’utilisateur ne contient que ses questions.
 (() => {
   // Fonctions des modules du compilateur (format.js, draws.js, assemble.js, zip.js).
-  const { archiveQuestionSource, assembleActivity, assembleQuestion, compressDraws, computeDraws, createQuestionFilename, createZip, fieldKindsLabel, isArchive, isPwqFile, isQuestionFile, mathCourses, namePartProblem, neededResources, parseQuestionSource, pwqExtension, questionExtension, questionLevels, questionNameFromParts, questionNameParts, readZip, resourcePaths, scormPackageEntries, splitPastedQuestions, splitQuestionSource, summaryFromTitle, templateWarnings } = PyWimsCompiler;
+  const { archiveQuestionSource, assembleActivity, assembleQuestion, compressDraws, computeDraws, createQuestionFilename, createZip, fieldKindsLabel, isArchive, isPwqFile, isQuestionFile, mathCourses, namePartProblem, neededResources, widgetResources, parseQuestionSource, pwqExtension, questionExtension, questionLevels, questionNameFromParts, questionNameParts, readZip, resourcePaths, scormPackageEntries, splitPastedQuestions, splitQuestionSource, summaryFromTitle, templateWarnings } = PyWimsCompiler;
 
   const chooseFolderButton = document.getElementById("choose-folder");
   const filePicker = document.getElementById("question-folder");
@@ -382,6 +382,7 @@
     previewSessions.clear();
     previewFrameNumber += 1;
     resources.python = previewPythonBridge(previewFrameNumber);
+    resources.widgets = widgetResources([{ draws }]);
     // Le cadre est affiché avant de recevoir sa page, jamais rempli caché (voir showPreview).
     previewFrame.hidden = false;
     previewFrame.srcdoc = assembleQuestion(fields, draws, resources).replace("<body", '<body data-preview="true"');
@@ -1086,6 +1087,7 @@
     const needed = Object.fromEntries(
       neededResources(questions.map(({ fields }) => fields)).map(key => [key, resources[key]]));
     if (scorm) needed.scorm = resources.scorm;
+    needed.widgets = widgetResources(questions);
     return activityTitle === null
       ? assembleQuestion(questions[0].fields, questions[0].draws, needed, questions[0].compressedDraws)
       : assembleActivity(activityTitle, questions, needed, options);

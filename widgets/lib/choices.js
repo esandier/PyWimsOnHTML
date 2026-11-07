@@ -151,5 +151,75 @@ window.PyWimsWidgets = (() => {
     return text.scrollWidth > text.clientWidth + 1;
   }
 
-  return Object.freeze({ ...existing, inputChoice, inputSelect, fitSelects, fitChoiceColumns });
+  // Comportement commun aux champs à choix (SPECIFICATION.md, §§ 10.3 et 10.4). La réponse est l’indice
+  // choisi (null si rien n’est choisi), ou la liste croissante des indices cochés, dans l’ordre de
+  // l’auteur : le mélange de l’affichage est invisible pour « question_check ». Avec count, un bloc des
+  // choix n’en affiche qu’une partie, et « question_check » reçoit le rang dans le bloc.
+  function choiceBehaviour({ multiple }) {
+    const { checkedIndices, choiceInputs, choiceIndex, lock, animateFields } = PyWimsFields;
+    const goodChoices = (group, draw) => {
+      const solution = draw.solutions[group.dataset.name];
+      return new Set(Array.isArray(solution) ? solution : [solution]);
+    };
+    return {
+      single: !multiple,
+      read: ([group]) => multiple ? checkedIndices(group) : checkedIndices(group)[0] ?? null,
+      verdicts: (answer, { name }, draw) =>
+        ({ verdicts: { [name]: PyWimsCorrection.sameChoice(answer, draw.solutions[name]) }, hints: {} }),
+      sendToPython: (python, { name }, answer, draw) =>
+        python.setChoice(name, PyWimsTemplate.blockRank(answer, draw.ranks?.[name])),
+      typedAnswer: ({ name }, draw) => draw.solutions[name],
+      layout: prompt => fitChoiceColumns(prompt),
+      // Le groupe prend le verdict de la question ; seuls les choix cochés se colorent, d’après la
+      // solution du tirage. Un choix déjà vert (coché juste à une vérification précédente) ne s’anime
+      // pas de nouveau.
+      color(groups, verdictOf, field, draw) {
+        return Promise.all(groups.map(group => {
+          group.classList.add(verdictOf(group) ? "is-correct" : "is-incorrect");
+          lock(group, true);
+          const good = goodChoices(group, draw);
+          const labels = choiceInputs(group)
+            .filter(input => input.checked)
+            .map(input => input.closest(".pw-choice"))
+            .filter(label => !label.classList.contains("is-correct"));
+          return animateFields(labels, label => {
+            label.classList.add(good.has(choiceIndex(label)) ? "is-correct" : "is-incorrect");
+          });
+        }));
+      },
+      // Choix multiple : un bon choix coché reste vert et figé ; les autres, cochés ou non, redeviennent
+      // modifiables. Choix unique : tout se rouvre, car choisir une autre réponse décoche la précédente.
+      reopen(group) {
+        group.classList.remove("is-incorrect");
+        for (const choice of choiceInputs(group)) {
+          const label = choice.closest(".pw-choice");
+          const kept = multiple && label.classList.contains("is-correct");
+          label.classList.remove("is-incorrect");
+          if (!kept) label.classList.remove("is-correct");
+          choice.disabled = kept;
+        }
+      },
+      // Les bons choix sont cochés et verts, l’un après l’autre ; les autres décochés et neutres.
+      showSolution(groups, field, draw) {
+        return Promise.all(groups.map(group => {
+          const good = goodChoices(group, draw);
+          group.classList.remove("is-incorrect");
+          group.classList.add("is-correct");
+          lock(group, true);
+          const labels = [...group.querySelectorAll(".pw-choice")];
+          for (const label of labels.filter(label => !good.has(choiceIndex(label)))) {
+            label.classList.remove("is-correct", "is-incorrect");
+            label.querySelector("input").checked = false;
+          }
+          return animateFields(labels.filter(label => good.has(choiceIndex(label))), label => {
+            label.classList.remove("is-incorrect");
+            label.classList.add("is-correct");
+            label.querySelector("input").checked = true;
+          });
+        }));
+      }
+    };
+  }
+
+  return Object.freeze({ ...existing, inputChoice, inputSelect, fitSelects, fitChoiceColumns, choiceBehaviour });
 })();

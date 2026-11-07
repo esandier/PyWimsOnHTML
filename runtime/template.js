@@ -19,8 +19,6 @@ window.PyWimsTemplate = (() => {
   // Formule d’un énoncé rendu, avec les délimiteurs de MathJax (compiler/assemble.js).
   const mathPattern = /\$\$[\s\S]*?\$\$|(?<!\\)\$(?:\\[\s\S]|[^$\\])+\$|\\\([\s\S]*?\\\)|\\\[[\s\S]*?\\\]/g;
 
-  // Champs à choix : leurs choix viennent d’une liste de « question_setup » et peuvent porter un barème.
-  const choiceTypes = new Set(["input_radio", "input_checkbox", "input_select"]);
   // Directives de barème d’AMC prises en charge. « e » est acceptée sans effet, car une saisie
   // incohérente est impossible ici : un barème d’AMC se recopie ainsi tel quel.
   const scoringDirectives = new Set(["b", "m", "d", "p", "P", "mz", "haut", "MAX", "v", "e"]);
@@ -157,7 +155,6 @@ window.PyWimsTemplate = (() => {
   return Object.freeze({
     isName,
     pythonName,
-    choiceTypes,
     rawInputAttributes,
     escapeHtml,
     limitedHtml,

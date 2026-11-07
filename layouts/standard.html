@@ -12,8 +12,6 @@
   <!-- MathJax (configuration et chargement), seulement si la feuille peut afficher une formule
        (voir mathJaxMarkup dans compiler/assemble.js) ; vide sinon. -->
   @@MATHJAX@@
-  <!-- Charge MathLive uniquement si une question contient un champ mathématique. -->
-  <script>@@MATHLIVE_LOADER@@</script>
 </head>
 <!-- data-sheet : « single » pour une question seule, « activity » pour une feuille de plusieurs questions. -->
 <!-- data-sheet-id : empreinte d’une activité, clé de la mémoire de sa progression (absente pour une question seule). -->
@@ -129,6 +127,9 @@
   <script>@@TEMPLATE@@</script>
   <!-- Correction par défaut des questions sans « question_check », sans Python. -->
   <script>@@CORRECTION@@</script>
+  <!-- Outils sur les champs et registre des widgets, puis les widgets de la feuille, qui s’y inscrivent
+       (SPECIFICATION.md, § 2.11) ; MathLive n’est chargé que par le widget input_math. -->
+  <script>@@FIELDS@@</script>
   <script>@@WIDGETS@@</script>
   <!-- Module Python « pywims » (runtime/pywims.py), lu par le runtime Python : le type text/x-python
        empêche le navigateur de l’exécuter. Vide si aucune question n’a d’« question_check ». -->
@@ -137,8 +138,7 @@
        le type text/x-worker empêche le navigateur de l’exécuter dans la page. Vide sans « question_check ». -->
   <script type="text/x-worker" id="pywims-worker">@@PYTHON_WORKER@@</script>
   <script>@@PYTHON_RUNTIME@@</script>
-  <!-- Outils sur les champs, la classe des questions, puis la feuille, qui crée les questions. -->
-  <script>@@FIELDS@@</script>
+  <!-- La classe des questions, puis la feuille, qui crée les questions. -->
   <script>@@QUESTION@@</script>
   <!-- Liaison SCORM au LMS, seulement dans un paquet SCORM (SPECIFICATION.md, § 5.9) ; vide sinon. -->
   <script>@@SCORM@@</script>

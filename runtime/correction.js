@@ -2,8 +2,6 @@
 // donner ce qu’affiche le bouton « Correction ». Partagée par le fichier généré et par le compilateur
 // (contrôle de cohérence).
 window.PyWimsCorrection = (() => {
-  const choiceTypes = new Set(["input_radio", "input_checkbox", "input_select"]);
-
   // Écriture comparée d’un champ texte : seules des différences purement typographiques sont
   // effacées, celles qu’un élève ne voit pas ou ne choisit pas :
   //   - les espaces, y compris insécables (« 1 000 » saisi au clavier français), car « x^2+1 » et
@@ -278,29 +276,8 @@ window.PyWimsCorrection = (() => {
     return input === solution;
   }
 
-  // Verdict d’un champ, ou d’une case de matrice, d’après le type de sa balise, la solution du
-  // tirage (§ 2.3) et les attributs de la balise (match, tolerance, form) ; une solution null est
-  // une valeur libre (ANY) : toute réponse non vide convient.
-  function isCorrect(type, input, solution, attributes = {}) {
-    if (choiceTypes.has(type)) {
-      return sameChoice(input, solution);
-    }
-    if (type === "input_math") {
-      // Une formule ne se compare pas à l’écriture de sa solution (§ 2.6) : SymPy en choisit la
-      // forme, et l’enseignant attend une expression égale. Le compilateur exige donc « question_check ».
-      throw new Error("Un champ input_math n’a pas de correction par défaut : il exige un « question_check ».");
-    }
-    if (solution === null) {
-      return typeof input === "string" && input.trim() !== "";
-    }
-    if (type === "input_value") {
-      return valueVerdict(input, solution, attributes) === "correct";
-    }
-    return sameText(input, solution, attributes.match);
-  }
-
   return Object.freeze({
-    normalizedText, matchedText, sameText, sameChoice, isCorrect,
+    normalizedText, matchedText, sameText, sameChoice,
     parseNumber, exactValue, valueVerdict, valueSolutionText, formHint
   });
 })();
