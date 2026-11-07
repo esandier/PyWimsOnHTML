@@ -58,7 +58,6 @@ window.PyWimsPython = (() => {
       set: async (name, value) => { values[name] = value; },
       setMatrix: async (name, value) => { values[name] = value; },
       setChoice: async (name, value) => { values[name] = value; log.push("choix " + name + " " + JSON.stringify(value)); },
-      getChoiceTexts: async variable => question.mismatch ? ["autre"] : question.choices[seed][variable],
       // Verdicts par défaut pré-remplis, textes et valeurs des champs input_value : le journal les garde.
       prepareCheck: async (data = {}) => {
         ok = { ...data.verdicts };
@@ -107,9 +106,29 @@ window.PyWimsPython = (() => {
 })();`;
 
     // Rendu de Jinja simulé, comme à la compilation (compiler/draws.js) : les tirages écrits à la main
-    // n’ont que leur « context » ; chaque {{ nom }} du modèle y prend sa valeur, et chaque champ devient
-    // sa marque. Ces tests portent sur la page, pas sur Jinja (tests/python-tests.html).
-    const fakeRender = (template, context) => PyWimsTemplate.jinjaSource(template)
+    // n’ont que leur « context » ; chaque {{ nom }} du modèle y prend sa valeur, et chaque champ
+    // {{ input_…('nom', …) }} devient sa marque et entre dans la liste des champs du tirage, avec ses
+    // attributs écrits en clair (nombre, booléen, texte ou mot). Ces tests portent sur la page, pas sur
+    // Jinja ni sur les widgets (tests/python-tests.html).
+    const fieldCall = /\{\{\s*(input_[a-z_]+)\('([^']+)'((?:[^()'"]|'[^']*'|"[^"]*")*)\)\s*\}\}/gu;
+    const fakeAttributes = text => {
+      const attributes = {};
+      for (const [, key, value] of text.matchAll(/,\s*(\w+)=('[^']*'|"[^"]*"|[^,\s]+)/g)) {
+        if (["solution", "choices"].includes(key)) continue;
+        attributes[key] = /^['"]/.test(value) ? value.slice(1, -1)
+          : value === "true" || value === "false" ? value === "true"
+            : /^\d+$/.test(value) ? Number(value) : value;
+      }
+      if ("size" in attributes) {
+        attributes.rows = attributes.cols = attributes.size;
+        delete attributes.size;
+      }
+      return attributes;
+    };
+    const fakeFields = template => [...template.matchAll(fieldCall)]
+      .map(([, type, name, rest]) => ({ name, type, attributes: fakeAttributes(rest) }));
+    const fakeRender = (template, context) => template
+      .replace(fieldCall, (_match, _type, name) => `\u0001${name}\u0001`)
       .replace(/\{\{\s*([^\s{}|]+)\s*\}\}/gu, (_match, name) => context[name] ?? name);
     const renderedDraws = ({ fields, draws }) => ({
       fields,
@@ -117,6 +136,7 @@ window.PyWimsPython = (() => {
         statement: fakeRender(fields.question_statement, draw.context ?? {}),
         ...(fields.question_solution_explanation === undefined ? {}
           : { explanation: fakeRender(fields.question_solution_explanation, draw.context ?? {}) }),
+        fields: fakeFields(fields.question_statement),
         ...draw
       }))
     });
@@ -191,8 +211,8 @@ window.PyWimsPython = (() => {
       question_solution_explanation: "Car {{ a }} plus {{ a }}, c’est <b>le double</b> de {{ a }}."
     };
     const textDraws = [
-      { seed: 0, context: { a: "2" }, dimensions: {}, solutions: { r: "4" } },
-      { seed: 1, context: { a: "3" }, dimensions: {}, solutions: { r: "6" } }
+      { seed: 0, context: { a: "2" }, solutions: { r: "4" } },
+      { seed: 1, context: { a: "3" }, solutions: { r: "6" } }
     ];
     const textOptions = {
       contexts: { 0: { a: "2" }, 1: { a: "3" } },
@@ -346,7 +366,7 @@ window.PyWimsPython = (() => {
           question_statement: "{{ input_matrix('m', size=2, solution=M) }}",
           question_check: "pass"
         };
-        const draws = [{ seed: 0, context: {}, dimensions: {}, solutions: { m: [[null, "1"], ["0", null]] } }];
+        const draws = [{ seed: 0, context: {}, solutions: { m: [[null, "1"], ["0", null]] } }];
         const { $, role, frame } = await openQuestion(fields, draws, { contexts: { 0: {} }, answers: { 0: { m: [[null, "1"], ["0", null]] } } });
         const cell = (i, j) => $(`[id='q1-form_txt_m[${i}][${j}]']`);
         // Vérification d’abord : les cases libres et [0][1] sont justes, [1][0] est fausse.
@@ -376,7 +396,7 @@ window.PyWimsPython = (() => {
         question_check: "ok_answer['r'] = r == bonnes"
       };
       const choiceDraws = [{
-        seed: 0, context: {}, dimensions: {}, solutions: { r: [0, 2] },
+        seed: 0, context: {}, solutions: { r: [0, 2] },
         choices: { r: ["$2$", "$4$", "$5$", "$9$"] }, orders: { r: [2, 0, 3, 1] }
       }];
       const choiceOptions = {
@@ -663,8 +683,9 @@ window.PyWimsPython = (() => {
       });
 
       await test("des choix que Python ne reproduit pas sont signalés", async () => {
-        const { role, frame } = await openQuestion(choiceQuestion, choiceDraws,
-          { ...choiceOptions, choices: { 0: { choix: ["$2$", "$4$", "$5$", "$8$"] } } });
+        // Les choix lus par l’énoncé (choices=choix) sont dans le context, contrôlé au premier contact.
+        const { role, frame } = await openQuestion(choiceQuestion, [{ ...choiceDraws[0], context: { choix: "[2, 4, 5, 9]" } }],
+          { ...choiceOptions, contexts: { 0: { choix: "[2, 4, 5, 8]" } } });
         touch(role("prompt"));
         await waitFor(() => role("status").classList.contains("is-error"), "message d’erreur");
         if (!role("status").textContent.includes("« choix » diffère")) {
@@ -685,7 +706,7 @@ window.PyWimsPython = (() => {
 
       await test("style compact : le retour passe dans la zone commune sur grand écran, et en revient", async () => {
         const otherQuestion = { ...textQuestion, question_title: "Double", question_statement: "Le double de {{ a }} ? {{ input_text('r', solution=s) }}" };
-        const otherDraws = [{ seed: 5, context: { a: "7" }, dimensions: {}, solutions: { r: "14" } }];
+        const otherDraws = [{ seed: 5, context: { a: "7" }, solutions: { r: "14" } }];
         const options = {
           compact: true,
           width: 1200,
@@ -741,7 +762,7 @@ window.PyWimsPython = (() => {
 
       await test("une feuille de deux questions les garde indépendantes, même avec des champs de même nom", async () => {
         const otherQuestion = { ...textQuestion, question_title: "Double", question_statement: "Le double de {{ a }} ? {{ input_text('r', solution=s) }}" };
-        const otherDraws = [{ seed: 5, context: { a: "7" }, dimensions: {}, solutions: { r: "14" } }];
+        const otherDraws = [{ seed: 5, context: { a: "7" }, solutions: { r: "14" } }];
         const options = {
           questions: {
             q1: textOptions,
@@ -854,7 +875,7 @@ window.PyWimsPython = (() => {
           question_title: "Moitié", question_layout: "STD", question_setup: "s = 1.5",
           question_statement: "La moitié de 3 ? {{ input_value('r', solution=s, form=decimal) }}"
         };
-        const draws = [{ seed: 0, context: {}, dimensions: {}, solutions: { r: { text: "1,5", value: "3/2" } } }];
+        const draws = [{ seed: 0, context: {}, solutions: { r: { text: "1,5", value: "3/2" } } }];
         const { $, role, frame } = await openQuestion(question, draws, {});
         await waitFor(() => $("#q1-form_txt_r"), "affichage du champ");
         type($("#q1-form_txt_r"), "3/2");
@@ -884,7 +905,7 @@ window.PyWimsPython = (() => {
           question_statement: "La moitié de 3 ? {{ input_value('r', solution=s, form=decimal) }}",
           question_check: "pass"
         };
-        const draws = [{ seed: 0, context: {}, dimensions: {}, solutions: { r: { text: "1,5", value: "3/2" } } }];
+        const draws = [{ seed: 0, context: {}, solutions: { r: { text: "1,5", value: "3/2" } } }];
         const silent = { silent: true, answers: { 0: {} }, contexts: { 0: {} } };
         let { $, role, frame, window: frameWindow } = await openQuestion(question, draws, silent);
         await waitFor(() => $("#q1-form_txt_r"), "affichage du champ");
@@ -925,7 +946,7 @@ window.PyWimsPython = (() => {
           question_title: "Sens de variation", question_layout: "STD", question_setup: "senses = ['croissante', 'décroissante']\ncorrect = 1",
           question_statement: "La fonction est {{ input_select('sense', choices=senses, solution=correct) }} sur cet intervalle."
         };
-        const draws = [{ seed: 0, context: {}, dimensions: {}, solutions: { sense: 1 },
+        const draws = [{ seed: 0, context: {}, solutions: { sense: 1 },
           choices: { sense: ["croissante", "décroissante"] }, orders: { sense: [0, 1] } }];
         const { $, role, frame } = await openQuestion(question, draws, {});
         await waitFor(() => $("#q1-form_select_sense"), "affichage de la liste");
@@ -973,7 +994,7 @@ window.PyWimsPython = (() => {
           question_title: "Écritures", question_layout: "STD", question_setup: "s = 0",
           question_statement: "{{ input_text('t', solution=s) }} {{ input_vmatrix('m', max_rows=3, max_cols=3, solution=M) }}"
         };
-        const draws = [{ seed: 0, context: {}, dimensions: {}, solutions: { t: "x^2 + 1", m: [["1", "-2"]] } }];
+        const draws = [{ seed: 0, context: {}, solutions: { t: "x^2 + 1", m: [["1", "-2"]] } }];
         const { $, role, frame, window: frameWindow } = await openQuestion(fields, draws, {});
         // Ni formule ni « question_check » : la feuille n’intègre pas MathJax, et tout marche sans lui.
         if (frameWindow.MathJax !== undefined) throw new Error("MathJax est chargé par une feuille sans formule.");
@@ -1199,7 +1220,7 @@ window.PyWimsPython = (() => {
           question_title: "Formules", question_layout: "STD", question_setup: "s = 0",
           question_statement: "Calculer $x^2$ pour $$y = 3$$ {{ input_text('r', solution=s) }}"
         };
-        const draws = [{ seed: 0, context: {}, dimensions: {}, solutions: { r: "9" } }];
+        const draws = [{ seed: 0, context: {}, solutions: { r: "9" } }];
         const { role, frame } = await openQuestion(fields, draws, {});
         await waitFor(() => role("prompt").querySelectorAll("mjx-container").length === 2, "composition des deux formules", 20000);
         if (role("prompt").querySelector("mjx-container[display='true']") === null) {
@@ -1214,7 +1235,7 @@ window.PyWimsPython = (() => {
           question_title: "Air", question_layout: "STD", question_setup: "s = 0",
           question_statement: "Soit $a$ et $b$, puis ($c$) et <i>$d$</i> : fin {{ input_text('r', solution=s) }}"
         };
-        const draws = [{ seed: 0, context: {}, dimensions: {}, solutions: { r: "0" } }];
+        const draws = [{ seed: 0, context: {}, solutions: { r: "0" } }];
         const { role, frame } = await openQuestion(fields, draws, {});
         await waitFor(() => role("prompt").querySelectorAll("mjx-container").length === 4, "composition des formules", 20000);
         const sides = [...role("prompt").querySelectorAll("mjx-container")].map(formula =>
@@ -1234,8 +1255,8 @@ window.PyWimsPython = (() => {
           question_statement: "<p>{{ t }}</p> {{ input_text('r', solution=s) }}"
         };
         const draws = [
-          { seed: 0, context: { t: "mot ".repeat(150) }, dimensions: {}, solutions: { r: "1" } },
-          { seed: 1, context: { t: "court" }, dimensions: {}, solutions: { r: "1" } }
+          { seed: 0, context: { t: "mot ".repeat(150) }, solutions: { r: "1" } },
+          { seed: 1, context: { t: "court" }, solutions: { r: "1" } }
         ];
         const { role, frame } = await openQuestion(fields, draws, {});
         const prompt = role("prompt");
@@ -1262,7 +1283,7 @@ window.PyWimsPython = (() => {
           question_statement: "Écrire $x^2+1$ : {{ input_math('d', solution=s) }}",
           question_check: "ok_answer['d'] = d == 'x^2+1'"
         };
-        const draws = [{ seed: 0, context: {}, dimensions: {}, solutions: { d: "x^2+1" } }];
+        const draws = [{ seed: 0, context: {}, solutions: { d: "x^2+1" } }];
         const { page, role, frame, window } = await openQuestion(mathQuestion, draws,
           { contexts: { 0: {} }, answers: { 0: { d: "x^2+1" } } });
         await waitFor(() => window.customElements.get("math-field"), "chargement de MathLive", 30000);

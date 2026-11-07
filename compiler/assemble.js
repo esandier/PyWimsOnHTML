@@ -78,7 +78,7 @@
   // Indique quels fichiers du projet utilisent une question ou l’ensemble des questions d’une feuille.
   function neededResources(fieldsOrList) {
     const list = Array.isArray(fieldsOrList) ? fieldsOrList : [fieldsOrList];
-    const tagTypes = new Set(list.flatMap(fields => [...PyWimsTemplate.tagTypes(fields.question_statement)]));
+    const tagTypes = new Set(list.flatMap(fields => PyWimsCompiler.statementWidgets(fields.question_statement)));
     // Le module pywims et le script du Worker ne servent qu’aux questions qui ont un « question_check » : elles
     // seules chargent Python.
     const usesPython = list.some(fields => fields.question_check !== undefined);
@@ -99,17 +99,14 @@
     if (fields.question_layout !== "STD") {
       throw new Error(`La mise en page « ${fields.question_layout} » n’est pas prise en charge par ce prototype.`);
     }
-    const tagErrors = PyWimsTemplate.validateTemplate(fields.question_statement);
-    if (tagErrors.length) {
-      throw new Error(tagErrors.join(" ; "));
-    }
     // Seule une question qui a un « question_check » a besoin de Python ; les autres se corrigent par
     // comparaison avec leur solution (SPECIFICATION.md, § 2.6) et ne chargent pas Pyodide.
     const python = fields.question_check === undefined ? "false" : "true";
     // Sans Python, « question_setup » ne servirait à rien : il ne sert qu’à rejouer un tirage. Les tirages
     // suffisent, et la page s’allège d’autant (un quart d’une activité de QCM à variantes).
-    // Le modèle de l’explication ne sert jamais à la page : chaque tirage porte son explication rendue.
-    const { question_setup, question_solution_explanation, ...kept } = fields;
+    // Les modèles de l’énoncé et de l’explication ne servent jamais à la page : chaque tirage porte son
+    // énoncé et son explication rendus, et la liste de ses champs (§ 2.11).
+    const { question_setup, question_statement, question_solution_explanation, ...kept } = fields;
     return `<section class="pw-question" id="q${index + 1}" data-python="${python}">
 <div class="pw-question-data" hidden>
 ${renderQuestionData(fields.question_check === undefined ? kept : { question_setup, ...kept })}

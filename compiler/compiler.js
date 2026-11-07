@@ -921,8 +921,11 @@
   // barème, au survol : écrite dans le message, elle occupait tout le panneau et le cadre de l’aperçu
   // n’avait plus de hauteur.
   function partialScoringWarning(questions) {
-    const hasScoring = ({ fields }) => PyWimsTemplate.parseTags(fields.question_statement)
-      .some(tag => Object.hasOwn(tag.attributes, "scoring"));
+    // Les tirages notent les attributs de chaque champ ; une question pas encore compilée est lue
+    // comme le fait la liste, par le repérage de « scoring= ».
+    const hasScoring = ({ fields, draws }) => draws?.[0]
+      ? draws[0].fields.some(tag => Object.hasOwn(tag.attributes, "scoring"))
+      : /\bscoring\s*=/.test(fields.question_statement);
     const unscored = questions.filter(question => !hasScoring(question));
     if (!unscored.length || unscored.length === questions.length) {
       return { text: "", unscored: "" };

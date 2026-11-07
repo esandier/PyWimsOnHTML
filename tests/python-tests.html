@@ -75,10 +75,10 @@
       await test("chaque outil exporté par pywims est un nom de champ réservé", async () => {
         const session = PyWimsPython.createSession("exports");
         await session.initialize("import pywims");
-        const exported = JSON.parse(await session.run("__import__('json').dumps(__import__('pywims').__all__)"));
-        const missing = exported.filter(name => !PyWimsTemplate.reservedNames.has(name));
-        if (!exported.length || missing.length) {
-          throw new Error(`Noms à ajouter à reservedNames dans runtime/template.js : ${missing.join(", ")}`);
+        const missing = JSON.parse(await session.run(
+          "__import__('json').dumps(sorted(set(__import__('pywims').__all__) - __import__('pywims')._RESERVED_FIELD_NAMES))"));
+        if (missing.length) {
+          throw new Error(`Noms à ajouter à _RESERVED_FIELD_NAMES dans runtime/pywims.py : ${missing.join(", ")}`);
         }
         await session.dispose();
       });
@@ -224,13 +224,11 @@
         const statement = `{{ résultat }} et {{ ${decomposed} }} : {{ input_value('réponse', solution=réponse_attendue) }}`;
         // Jinja ramène lui aussi les noms à leur forme NFKC, comme Python.
         const draw = await session.collectDraw({
-          statement: PyWimsTemplate.jinjaSource(statement), explanation: null, dimensions: [],
-          fields: [{ name: "réponse", type: "input_value", solution: "réponse_attendue" }]
+          statement, explanation: null, has_check: true, widgets: await PyWimsCompiler.loadWidgets()
         });
-        const html = PyWimsTemplate.renderStatement(draw.statement ?? "", PyWimsTemplate.parseTags(statement),
-          tag => `[${tag.name}:${tag.attributes.solution}]`);
-        if (html !== "12 et 12 : [réponse:réponse_attendue]" || draw.errors.length ||
-            JSON.stringify(Object.keys(draw.context)) !== JSON.stringify(["résultat"])) {
+        const html = PyWimsTemplate.renderStatement(draw.statement ?? "", draw.fields, tag => `[${tag.name}:${tag.type}]`);
+        if (html !== "12 et 12 : [réponse:input_value]" || draw.errors.length || draw.solutions.réponse?.value !== "5/1" ||
+            JSON.stringify(Object.keys(draw.context)) !== JSON.stringify(["réponse_attendue", "résultat"])) {
           throw new Error(`Rendu inattendu : ${html} ${JSON.stringify(draw)}`);
         }
         await session.setChoice("choix_é", 1);
@@ -287,10 +285,6 @@ json.dumps({
         await expectPython(session,
           "unique == 1 and aucun is None and type(multiple) is list and multiple == [0, 1] and vide == []",
           "Saisie mal transmise");
-        const texts = await session.getChoiceTexts("choix");
-        if (JSON.stringify(texts) !== JSON.stringify(["$2$", "\\(\\frac{1}{2}\\)"])) {
-          throw new Error(`Textes des choix inattendus : ${JSON.stringify(texts)}`);
-        }
         for (const value of [-1, 1.5, "1", [0, "1"]]) {
           let rejected = false;
           try {
@@ -310,86 +304,21 @@ json.dumps({
           const session = PyWimsPython.createSession(file.replace(/\W/g, "_"));
           await session.initialize(`${fields.question_setup}\n${fields.question_check ?? ""}`);
           await session.run(fields.question_setup);
-          // L’énoncé se rend avec les variables de « question_setup », et chaque valeur lue a un texte.
+          // L’énoncé se rend avec les variables de « question_setup », et chaque valeur lue a un texte ;
+          // chaque champ a une solution. Saisir la solution et la faire juger par « question_check » est
+          // le contrôle de cohérence du compilateur, que fait le balayage des tirages, plus bas.
           const draw = await session.collectDraw({
-            statement: PyWimsTemplate.jinjaSource(fields.question_statement),
-            explanation: fields.question_solution_explanation === undefined
-              ? null : PyWimsTemplate.jinjaSource(fields.question_solution_explanation),
-            dimensions: [], fields: []
+            statement: fields.question_statement,
+            explanation: fields.question_solution_explanation ?? null,
+            has_check: fields.question_check !== undefined,
+            widgets: await PyWimsCompiler.loadWidgets()
           });
           if (draw.errors.length || !draw.statement?.trim() ||
-              Object.values(draw.context).some(value => typeof value !== "string")) {
+              Object.values(draw.context).some(value => typeof value !== "string") ||
+              draw.fields.some(tag => draw.solutions[tag.name] === undefined)) {
             throw new Error(`Rendu inattendu : ${JSON.stringify(draw)}`);
           }
-          // Solution d’un champ convertie par le module, en expression Python (texte JSON) ; pour un
-          // champ à choix, indice ou liste d’indices, contrôlés avec le nombre de choix.
-          const solutionJson = tag => {
-            const variable = tag.attributes.solution;
-            const converter = tag.type === "input_math" ? "_solution_latex"
-              : tag.type === "input_text" ? "_solution_text"
-                : tag.type === "input_value" ? "_value_solution" : "_solution_cells";
-            const call = PyWimsTemplate.choiceTypes.has(tag.type)
-              ? `_choice_solution(${variable}, ${tag.type === "input_checkbox" ? "True" : "False"}, ` +
-                `len(__import__("pywims")._choice_texts(${tag.attributes.choices})))`
-              : `${converter}(${variable})`;
-            return `__import__("json").dumps(__import__("pywims").${call})`;
-          };
-          // Chaque champ désigne une variable de « question_setup » que le module sait convertir. Un bloc
-          // des choix n’en désigne pas : ses choix et sa solution viennent du bloc rendu, que le balayage
-          // des tirages vérifie.
-          for (const tag of PyWimsTemplate.parseTags(fields.question_statement).filter(tag => !tag.block)) {
-            const variable = tag.attributes.solution;
-            const converted = await session.run(solutionJson(tag));
-            if (!converted || converted === "null") {
-              throw new Error(`Solution « ${variable} » du champ « ${tag.name} » inutilisable : ${converted}`);
-            }
-          }
-
-          // Sans « question_check », la correction par défaut est en JavaScript : la question compilée, testée
-          // plus bas, la vérifie dans la page générée. Ici, « question_setup » et les solutions suffisent.
-          if (fields.question_check === undefined) return;
-
-          // Saisit la solution comme un élève (texte ASCII, « 1 » pour une case libre), puis corrige. Le
-          // verdict par défaut de la solution, pré-rempli, est juste (sauf input_math, qui n’en a pas).
-          const verdicts = {};
-          const texts = {};
-          const exactValues = {};
-          for (const tag of PyWimsTemplate.parseTags(fields.question_statement)) {
-            const variable = tag.attributes.solution;
-            if (PyWimsTemplate.choiceTypes.has(tag.type)) {
-              await session.setChoice(tag.name, JSON.parse(await session.run(solutionJson(tag))));
-              verdicts[tag.name] = true;
-            } else if (tag.type === "input_value") {
-              // Le texte qu’affiche « Correction », calculé comme à la compilation.
-              const raw = JSON.parse(await session.run(solutionJson(tag)));
-              texts[tag.name] = PyWimsCorrection.valueSolutionText(raw, tag.attributes);
-              exactValues[tag.name] = PyWimsCorrection.exactValue(texts[tag.name]);
-              verdicts[tag.name] = true;
-            } else if (tag.type === "input_text" || tag.type === "input_math") {
-              await session.set(tag.name, await session.run(`__import__("pywims")._solution_text(${variable})`));
-              if (tag.type === "input_text") verdicts[tag.name] = true;
-            } else {
-              const cells = JSON.parse(await session.run(
-                `__import__("json").dumps(__import__("pywims")._solution_cells(${variable}))`
-              ));
-              await session.setMatrix(tag.name, cells.map(row => row.map(cell => cell ?? "1")));
-              cells.forEach((row, i) => row.forEach((_, j) => { verdicts[`${tag.name}[${i}][${j}]`] = true; }));
-            }
-          }
-          await session.prepareCheck({ verdicts, texts, values: exactValues });
-          await session.run(fields.question_check);
-          const verdict = JSON.parse(await session.run(
-            `__import__("json").dumps({"ok": {k: bool(v) for k, v in ok_answer.items()}, ` +
-            `"feedback": str(globals()["feedback"]) if "feedback" in globals() else None})`
-          ));
-          if (!Object.keys(verdict.ok).length || !Object.values(verdict.ok).every(Boolean)) {
-            throw new Error(`La solution n’est pas jugée juste : ${JSON.stringify(verdict)}`);
-          }
-          // « feedback » est facultatif (SPECIFICATION.md, § 2.2) : sans lui, le retour générique
-          // « Bravo, c’est exact ! » s’affiche. Défini, il doit féliciter une solution juste.
-          if (verdict.feedback !== null && !verdict.feedback.startsWith("Bravo")) {
-            throw new Error(`Retour inattendu pour la solution : ${verdict.feedback}`);
-          }
+          await session.dispose();
         });
       }
 
@@ -404,8 +333,7 @@ json.dumps({
       await test("le compilateur calcule des tirages complets et distincts pour chaque question", async () => {
         for (const [file, fields] of Object.entries(questionFields)) {
           const draws = await PyWimsCompiler.computeDraws(fields, { count: 10 });
-          const tags = PyWimsTemplate.parseTags(fields.question_statement);
-          const names = tags.map(tag => tag.name).sort().join(",");
+          const names = draws[0].fields.map(tag => tag.name).sort().join(",");
           // Mêmes éléments que la fusion du compilateur : deux tirages d’un QCM peuvent avoir le même
           // énoncé et la même solution, et ne différer que par leurs choix ou leur ordre.
           const keys = new Set(draws.map(draw =>
@@ -413,7 +341,7 @@ json.dumps({
           if (!draws.length || keys.size !== draws.length ||
               draws.some(draw => typeof draw.statement !== "string" ||
                 (fields.question_solution_explanation !== undefined) !== (typeof draw.explanation === "string") ||
-                tags.some(tag => PyWimsTemplate.markCount(draw.statement, tag.name) !== 1) ||
+                draw.fields.some(tag => draw.statement.split(`\u0001${tag.name}\u0001`).length !== 2) ||
                 Object.keys(draw.solutions).sort().join(",") !== names)) {
             throw new Error(`${file} : tirages incomplets ou en double (${draws.length})`);
           }
@@ -516,17 +444,21 @@ json.dumps({
           throw new Error(`Valeurs de contrôle inattendues : ${JSON.stringify(checked)}`);
         }
         for (const [changes, fragment] of [
-          [{ question_statement: "{% if kind == 'z' %}{{ input_value('r', solution=p) }}{% endif %}" },
-            "Le champ « r » apparaît 0 fois"],
+          [{ question_statement: "{% if kind == 'a' %}{{ input_value('r', solution=p) }}{% endif %}" },
+            "Le champ « r » n’apparaît pas de la même façon dans tous les tirages : un champ ne peut pas être placé dans un {% if %}."],
+          [{ question_statement: "{% for t in terms %}{{ input_value('r', solution=p) }}{% endfor %}" },
+            "le champ « r » (input_value) apparaît deux fois dans l’énoncé"],
+          [{ question_solution_explanation: "{{ input_value('r', solution=p) }}" },
+            "« question_solution_explanation », ligne 1 : un champ de réponse (input_value) n’a sa place que dans l’énoncé."],
           [{ question_statement: "Soit\n{{ q }} {{ input_value('r', solution=p) }}" },
             "« question_statement », ligne 2 : la variable « q » n’est pas définie par « question_setup »"],
           [{ question_solution_explanation: "x\n{% if %}" }, "« question_solution_explanation », ligne 2 :"],
           [{ question_solution_explanation: "{{ kind|dec }}" }, "dec ne s’applique qu’à un nombre"],
-          [{ question_statement: "{% input_value 'r' solution=p %}" }, "écrivez {{ input_value('r', solution=p) }}"]
+          [{ question_statement: "$\\frac{{{p}}}{2}$" }, "trois accolades de suite"]
         ]) {
           let message = "";
           try {
-            await PyWimsCompiler.computeDraws({ ...fields, ...changes }, { count: 2 });
+            await PyWimsCompiler.computeDraws({ ...fields, ...changes }, { count: 6 });
           } catch (error) {
             message = error.message;
           }
@@ -549,7 +481,7 @@ json.dumps({
         }
         for (const [fields, fragment] of [
           [{ question_setup: "from sympy import symbols\nx = symbols('x')\nd = 2*x",
-             question_statement: "{{ input_math('m', solution=d) }}" }, "Le champ « m » (input_math) exige un « question_check »"],
+             question_statement: "{{ input_math('m', solution=d) }}" }, "le champ « m » (input_math) : ce champ exige un « question_check »"],
           [{ question_setup: "s = '  '", question_statement: "{{ input_text('r', solution=s) }}" },
             "Graine 0 : la solution du champ « r » est vide"],
           [{ question_setup: "M = [['1', ''], ['0', '2']]", question_statement: "{{ input_matrix('m', size=2, solution=M) }}" },
@@ -669,15 +601,15 @@ json.dumps({
           [{ question_setup: "a = 1\nb = 1 / 0", question_statement: "{{ input_text('r', solution=a) }}" },
             ["graine 0", "ligne 2", "ZeroDivisionError"]],
           [{ question_setup: "a = 1", question_statement: "{{ input_text('r', solution=absente) }}" },
-            ["La solution « absente » du champ « r » n’est pas définie par « question_setup »."]],
+            ["« question_statement », ligne 1 : la variable « absente » n’est pas définie par « question_setup »."]],
           [{ question_setup: "r = 1", question_statement: "{{ input_text('r', solution=r) }}" },
-            ["Le champ « r » porte le nom d’une variable de « question_setup »"]],
+            ["le champ « r » (input_text) porte le nom d’une variable de « question_setup »"]],
           [{ question_setup: "from sympy import eye\nM = eye(3)", question_statement: "{{ input_matrix('m', size=2, solution=M) }}" },
             ["est une matrice 3 × 3, alors que le champ est 2 × 2"]],
           [{ question_setup: "from sympy import eye\nM = eye(2)", question_statement: "{{ input_text('r', solution=M) }}" },
             ["doit être une valeur simple, pas une matrice"]],
           [{ question_setup: "n = 1.5\nM = [[1]]", question_statement: "{{ input_matrix('m', size=n, solution=M) }}" },
-            ["La dimension « n » doit être un entier"]],
+            ["l’attribut « size » doit être un entier, et non 1.5"]],
           // Pour Jinja, none est un littéral : {{ none }} afficherait « None » sans lire la variable.
           [{ question_setup: "a = 1\nnone = 'aucun'", question_statement: "{{ none }} {{ input_text('r', solution=a) }}" },
             ["La variable « none » de « question_setup » est un mot réservé de Jinja (la valeur None)"]],
@@ -687,11 +619,11 @@ json.dumps({
              question_solution_explanation: "Car {{ absente }}." },
             ["« question_solution_explanation », ligne 1 : la variable « absente » n’est pas définie par « question_setup »"]],
           [{ question_setup: "s = 0", question_statement: "{{ input_radio('r', choices=absents, solution=s) }}" },
-            ["Les choix « absents » du champ « r » ne sont pas définis par « question_setup »."]],
+            ["la variable « absents » n’est pas définie par « question_setup »."]],
           [{ question_setup: "c = 'ab'\ns = 0", question_statement: "{{ input_radio('r', choices=c, solution=s) }}" },
-            ["Les choix « c » du champ « r » : ce doit être une liste d’au moins deux choix."]],
+            ["le champ « r » (input_radio) : les choix : ce doit être une liste d’au moins deux choix."]],
           [{ question_setup: "c = ['a', 'b']\ns = 2", question_statement: "{{ input_radio('r', choices=c, solution=s) }}" },
-            ["La solution « s » du champ « r » : 2 n’est pas un indice de choix (de 0 à 1)."]],
+            ["le champ « r » (input_radio) : la solution : 2 n’est pas un indice de choix (de 0 à 1)."]],
           [{ question_setup: "c = ['a', 'b']\ns = [0]", question_statement: "{{ input_radio('r', choices=c, solution=s) }}" },
             ["ce doit être l’indice du bon choix, pas une liste"]],
           [{ question_setup: "c = ['a', 'b']\ns = 0", question_statement: "{{ input_checkbox('r', choices=c, solution=s) }}" },
@@ -701,18 +633,55 @@ json.dumps({
           [{ question_setup: "c = ['a', 'b']\ns = [True]", question_statement: "{{ input_checkbox('r', choices=c, solution=s) }}" },
             ["True n’est pas un indice de choix"]],
           [{ question_setup: "c = ['a', 'b']\ns = []", question_statement: "{{ input_checkbox('r', choices=c, solution=s, fixed_last=2) }}" },
-            ["fixed_last=2 doit être inférieur au nombre de choix (2) du champ « r »"]],
+            ["le champ « r » (input_checkbox) : fixed_last=2 doit être inférieur au nombre de choix (2)."]],
           [{ question_setup: "from sympy import sqrt\ns = sqrt(2)", question_statement: "{{ input_value('r', solution=s) }}" },
-            ["Graine 0", "La solution « s » du champ « r » : c’est un nombre irrationnel : donnez une tolérance"]],
+            ["Graine 0", "La solution du champ « r » : c’est un nombre irrationnel : donnez une tolérance"]],
           [{ question_setup: "s = 'douze'", question_statement: "{{ input_value('r', solution=s) }}" },
-            ["La solution « s » du champ « r » : ce doit être un nombre réel, et non 'douze'."]],
+            ["le champ « r » (input_value) : la solution : ce doit être un nombre réel, et non 'douze'."]],
           [{ question_setup: "s = 7 / 2", question_statement: "{{ input_value('r', solution=s, form=integer) }}" },
-            ["La solution « s » du champ « r » : 7/2 n’est pas un entier"]],
+            ["La solution du champ « r » : 7/2 n’est pas un entier"]],
           [{ question_setup: "from pywims import mcq\nchoices, s = mcq(correct=1, wrong=[1, 2], count=3)",
              question_statement: "{{ input_radio('r', choices=choices, solution=s) }}" },
             ["graine 0", "mcq : il faut 2 mauvaises réponses distinctes (et différentes des bonnes), mais wrong n’en donne que 1"]],
           [{ question_setup: "c = ['$x$', 'y']\ns = 0", question_statement: "{{ input_select('r', choices=c, solution=s) }}" },
             ["une liste déroulante n’affiche pas de formule : « $x$ » doit être du texte simple."]],
+          // Écriture d’un champ : nom, attributs et leur type, d’après la déclaration du widget.
+          [{ question_setup: "a = 1", question_statement: "{{ input_text(r, solution=a) }}" },
+            ["la variable « r » n’est pas définie par « question_setup »"]],
+          [{ question_setup: "a = 1", question_statement: "{{ input_text('ok_answer', solution=a) }}" },
+            ["« ok_answer » ne peut pas être le nom d’un champ"]],
+          [{ question_setup: "a = 1", question_statement: "{{ input_text('r', solution=a) }} {{ input_value('r', solution=a) }}" },
+            ["le champ « r » (input_value) apparaît deux fois dans l’énoncé"]],
+          [{ question_setup: "a = 1", question_statement: "{{ input_text('r') }}" },
+            ["le champ « r » (input_text) : il faut indiquer solution, par exemple solution=variable."]],
+          [{ question_setup: "a = 1", question_statement: "{{ input_text('r', solution=a, tolerance=0.1) }}" },
+            ["le champ « r » (input_text) : attribut « tolerance » inconnu."]],
+          [{ question_setup: "a = 1", question_statement: "{{ input_value('r', solution=a, form=entier) }}" },
+            ["la variable « entier » n’est pas définie"]],
+          [{ question_setup: "a = 1", question_statement: "{{ input_value('r', solution=a, form='entier') }}" },
+            ["l’attribut « form » doit être l’une des valeurs any, integer, decimal"]],
+          [{ question_setup: "a = 1", question_statement: "{{ input_value('r', solution=a, tolerance=-0.5) }}" },
+            ["l’attribut « tolerance » doit être un nombre positif"]],
+          [{ question_setup: "a = 1", question_statement: "{{ input_text('r', solution=a, inline=1) }}" },
+            ["l’attribut « inline » doit être true ou false, et non 1"]],
+          [{ question_setup: "M = [[1]]", question_statement: "{{ input_matrix('m', size=1, rows=1, solution=M) }}" },
+            ["input_matrix demande soit size, soit rows et cols."]],
+          [{ question_setup: "c = ['a', 'b']\ns = 0", question_statement: "{{ input_radio('r', choices=c, solution=s, columns=7) }}" },
+            ["columns doit être compris entre 1 et 6."]],
+          [{ question_setup: "c = ['a', 'b']\ns = 0", question_statement: "{{ input_radio('r', choices=c, solution=s, shuffle=false, fixed_last=1) }}" },
+            ["fixed_last est sans effet avec shuffle=false"]],
+          [{ question_setup: "c = ['a', 'b']\ns = 0", question_statement: "{{ input_radio('r', choices=c, solution=s, count=2) }}" },
+            ["l’attribut « count » n’existe que dans un bloc"]],
+          [{ question_setup: "c = ['a', 'b']", question_statement: "{% call input_radio('r', choices=c) %}[x] 1\n[ ] 2{% endcall %}" },
+            ["l’attribut « choices » est inutile dans un bloc"]],
+          [{ question_setup: "a = 1", question_statement: "{% call input_text('r', solution=a) %}1{% endcall %}" },
+            ["le champ « r » (input_text) ne s’écrit pas en bloc"]],
+          [{ question_setup: "a = 1", question_statement: "{% call input_checkbox('r', count=1) %}[x] 1\n[ ] 2{% endcall %}" },
+            ["le champ « r » (input_checkbox), écrit en bloc : count doit être au moins 2."]],
+          [{ question_setup: "c = ['a', 'b']\ns = 0", question_statement: "{{ input_radio('r', choices=c, solution=s, scoring='b=1,x=2') }}" },
+            ["Directive de barème inconnue « x », dans le champ « r »."]],
+          [{ question_setup: "c = ['a', 'b']\ns = 0", question_statement: "{{ input_radio('r', choices=c, solution=s, scoring='b=1') }} {{ input_text('t', solution=s) }}" },
+            ["Le barème du champ « r » n’est admis que si c’est le seul champ de la question."]],
           // Deux choix de même texte, aux espaces près : l’élève ne pourrait pas les distinguer.
           [{ question_setup: "c = ['x+1', '2', 'x + 1']\ns = 0", question_statement: "{{ input_radio('r', choices=c, solution=s) }}" },
             ["Graine 0", "Les choix 0 et 2 du champ « r » ont le même texte (« x + 1 »)"]],
@@ -812,7 +781,7 @@ json.dumps({
         };
         const inputs = () => [...section.querySelectorAll("[data-name], [data-matrix-name]")];
         await waitFor(() => inputs().length, "affichage de l’énoncé", 5000);
-        if (PyWimsTemplate.tagTypes(fields.question_statement).has("input_math")) {
+        if (shown.fields.some(tag => tag.type === "input_math")) {
           await frameWindow.customElements.whenDefined("math-field");
         }
         for (const viewport of section.querySelectorAll(".pw-vmatrix-viewport")) {

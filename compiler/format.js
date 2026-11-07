@@ -183,8 +183,6 @@
     if (fields.question_solution_explanation !== undefined) {
       if (!fields.question_solution_explanation.trim()) {
         delete fields.question_solution_explanation;
-      } else if (PyWimsTemplate.parseTags(fields.question_solution_explanation).length) {
-        throw new Error(`${path} : le champ « question_solution_explanation » ne peut pas contenir de champ de réponse {{ input_…(…) }}.`);
       }
     }
     return fields;
@@ -292,9 +290,17 @@
     input_select: "liste déroulante"
   };
 
+  // Widgets qu’un énoncé appelle, dans l’ordre et sans répétition, repérés par leur nom suivi d’une
+  // parenthèse. Ce repérage ne sert qu’à l’affichage de la liste et au choix des fichiers à intégrer :
+  // les vrais champs sont ceux que Jinja note en rendant chaque tirage (SPECIFICATION.md, § 2.11).
+  // Un nom cité dans un commentaire ajoute au plus un fichier inutile.
+  function statementWidgets(question_statement) {
+    return [...new Set([...String(question_statement).matchAll(/\b(input_[A-Za-z_]+)\s*\(/g)].map(match => match[1]))];
+  }
+
   // Types de champs de réponse d’un énoncé, dans l’ordre et sans répétition : « choix unique ».
   function fieldKindsLabel(question_statement) {
-    const kinds = [...new Set(PyWimsTemplate.parseTags(question_statement).map(tag => fieldKindNames[tag.type] ?? tag.type))];
+    const kinds = [...new Set(statementWidgets(question_statement).map(type => fieldKindNames[type] ?? type))];
     return kinds.length ? kinds.join(" · ") : "aucun champ de réponse";
   }
 
@@ -347,7 +353,7 @@
 
   // Avertissements sur l’écriture de l’énoncé, qui n’empêchent pas la compilation (SPECIFICATION.md,
   // § 2.4). Les trois accolades de suite (\frac{{{n}}}) en faisaient partie ; avec Jinja, c’est une
-  // erreur (PyWimsTemplate.syntaxErrors).
+  // erreur, signalée au rendu (runtime/pywims.py, _render).
   function templateWarnings(fields) {
     const warnings = [];
     // Une image intégrée (data:) pèse les trois quarts de son écriture en base64.
@@ -380,6 +386,7 @@
     fieldHeader,
     archiveQuestionSource,
     fieldKindsLabel,
+    statementWidgets,
     templateWarnings,
     questionLevels,
     mathCourses,

@@ -297,11 +297,6 @@ window.PyWimsEditor = (() => {
       state.formatError = null;
       try {
         fields = parseQuestionSource(text, state.question.path);
-        const tagErrors = PyWimsTemplate.validateTemplate(fields.question_statement);
-        if (tagErrors.length) {
-          state.formatError = tagErrors.join(" ; ");
-          fields = null;
-        }
       } catch (error) {
         state.formatError = error.message;
       }

@@ -1,0 +1,9 @@
+{
+  "kind": "field",
+  "attributes": {
+    "solution": {"type": "value", "required": true}
+  },
+  "choices": false,
+  "block": false,
+  "needs_check": true
+}

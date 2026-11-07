@@ -369,18 +369,31 @@ def _template_line(error):
     return line
 
 
-def _render(namespace, source, field, blocks=None, shared=None):
+# Code de Jinja ({{ … }}, {% … %}) d’un modèle : ramené à la forme NFKC, comme Python le fait pour ses noms.
+# Sans cela, un « é » tapé en deux caractères (e + accent) ne désignerait pas la variable « é » de
+# « question_setup » (Jinja ne normalise pas). Le texte hors des délimiteurs reste tel quel.
+_JINJA_CODE = _re.compile(r"\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\}")
+
+
+def _render(namespace, source, field, functions=None, shared=None):
     """Rend un modèle avec l’espace de noms du tirage ; renvoie (texte, noms lus, définitions), ou lève
     ValueError.
 
     Les noms lus sont les variables que le modèle ne définit pas lui-même (meta de Jinja) : ce sont
     celles de « question_setup » que la page contrôle quand elle rejoue le tirage (§ 5.1).
-    blocks : dictionnaire où ranger le contenu rendu de chaque bloc des choix (§ 10.1).
+    functions : les widgets, que le modèle appelle (§ 2.11) ; ils ne comptent pas parmi les noms lus.
     shared : définitions {% set %} de l’énoncé, visibles dans l’explication (§ 2.10) ; les définitions
     renvoyées sont celles de premier niveau de ce modèle.
     """
     import jinja2
     import jinja2.meta
+    import unicodedata
+    # Trois accolades de suite : Jinja y lit « {{ » suivi de « {n} », et son message est incompréhensible
+    # (SPECIFICATION.md, § 2.4).
+    if "{{{" in source:
+        raise ValueError(r"« " + field + r" » : trois accolades de suite (par exemple \frac{{{n}}}{2}) : Jinja y lit "
+                         r"« {{ » suivi de « {n} » ; écrivez \frac{ {{n}} }{2}, avec des espaces.")
+    source = _JINJA_CODE.sub(lambda code: unicodedata.normalize("NFKC", code.group()), source)
     environment = _jinja()
     try:
         names = jinja2.meta.find_undeclared_variables(environment.parse(source))
@@ -389,15 +402,8 @@ def _render(namespace, source, field, blocks=None, shared=None):
         raise ValueError("« {} », ligne {} : {}.".format(field, error.lineno, error.message)) from None
     values = dict(namespace)
     values.update(shared or {})
-
-    def choices_block(name, caller):
-        # Le bloc est remplacé par la marque du champ ; son contenu rendu sera découpé en choix.
-        blocks[name] = caller()
-        return "\u0001{}\u0001".format(name)
-
-    blocks = {} if blocks is None else blocks
-    values["_pywims_choices"] = choices_block
-    names = names - {"_pywims_choices"}
+    values.update(functions or {})
+    names = names - set(functions or {})
     try:
         # make_module rend le modèle et garde ses définitions de premier niveau ({% set %}). Contrairement
         # à render, il ne ramène pas la pile d’appels aux lignes du modèle : handle_exception le fait,
@@ -411,6 +417,8 @@ def _render(namespace, source, field, blocks=None, shared=None):
     except Exception as error:
         line = _template_line(error)
         where = "« {} »{}".format(field, ", ligne {}".format(line) if line else "")
+        if isinstance(error, _FieldError):
+            raise ValueError("{} : {}".format(where, error)) from None
         undefined = _re.fullmatch(r"'([^']+)' is undefined", str(error))
         if undefined:
             raise ValueError("{} : la variable « {} » n’est pas définie par « question_setup ».".format(
@@ -475,10 +483,9 @@ def _is_plain_value(value):
 def _collect_draw(namespace, spec):
     """Données d’un tirage pour le compilateur, avec la liste des erreurs de l’auteur.
 
-    spec (JSON) : {"statement": modèle, "explanation": modèle ou null, "dimensions": [...],
-                   "fields": [{"name", "type", "solution", "choices" (champs à choix),
-                               "block", "count" (bloc des choix, § 10.1)}]}
-    Les modèles sont ceux que donne PyWimsTemplate.jinjaSource : chaque champ y est une marque.
+    spec (JSON) : {"statement": modèle, "explanation": modèle ou null, "has_check": booléen,
+                   "widgets": {nom: {"declaration": widget.json lu, "python": texte de widget.py ou null}}}
+    Les champs sont notés par les widgets que Jinja appelle en rendant l’énoncé (§ 2.11).
     """
     import json
     spec = json.loads(spec)
@@ -497,104 +504,233 @@ def _collect_draw(namespace, spec):
     warnings = ["La variable « {} » de « question_setup » masque la fonction « {} » de Jinja dans "
                 "l’énoncé : renommez-la.".format(name, name)
                 for name in sorted(_jinja().globals) if name in namespace]
+    widgets = {name: (widget["declaration"], _widget_module(name, widget.get("python")))
+               for name, widget in spec["widgets"].items()}
+    draw = {"fields": [], "solutions": {}, "choices": {}, "ranks": {}, "inputs": {}}
     rendered = {}
     read = set()
-    # Contenu rendu des blocs des choix (§ 10.1), et définitions {% set %} de l’énoncé, visibles dans
-    # l’explication (§ 2.10).
-    blocks = {}
+    # Définitions {% set %} de l’énoncé, visibles dans l’explication (§ 2.10).
     shared = {}
     for key, field in (("statement", "question_statement"), ("explanation", "question_solution_explanation")):
         if spec.get(key) is None:
             continue
+        functions = {name: _field_function(name, declaration, module, draw, namespace, spec["has_check"],
+                                           in_statement=key == "statement")
+                     for name, (declaration, module) in widgets.items()}
         try:
             rendered[key], names, definitions = _render(
-                namespace, spec[key], field,
-                blocks=blocks if key == "statement" else None, shared=shared if key == "explanation" else None)
+                namespace, spec[key], field, functions=functions, shared=shared if key == "explanation" else None)
             read |= names
             if key == "statement":
                 shared = definitions
         except ValueError as error:
             errors.append(str(error))
-    read |= set(spec["dimensions"])
     context = {name: _template_value(namespace[name]) for name in sorted(read)
                if name in namespace and _is_plain_value(namespace[name])}
-    dimensions = {}
-    for name in spec["dimensions"]:
-        value = namespace.get(name)
-        try:
-            if value is None or int(value) != value:
-                raise ValueError
-            dimensions[name] = int(value)
-        except (TypeError, ValueError):
-            errors.append("La dimension « {} » doit être un entier défini par « question_setup ».".format(name))
-    solutions = {}
-    choices = {}
-    ranks = {}
-    for field in spec["fields"]:
-        name, kind, variable = field["name"], field["type"], field.get("solution")
-        if name in namespace:
-            errors.append("Le champ « {} » porte le nom d’une variable de « question_setup » : renommez l’un des deux.".format(name))
-        # Bloc des choix (§ 10.1) : choix et solution viennent du bloc rendu. S’il n’a pas été rendu
-        # (dans un {% if %}), le contrôle des marques le signale.
-        if field.get("block"):
-            if name not in blocks:
-                continue
-            try:
-                texts, good = _block_choices(blocks[name])
-                if kind != "input_checkbox" and len(good) != 1:
-                    raise TypeError("il faut exactement un bon choix [x], et il y en a {}.".format(len(good)))
-                shown = _block_ranks(texts, good, field.get("count"))
-                if len(shown) < 2:
-                    raise TypeError("il faut au moins deux choix.")
-                choices[name] = _choice_texts([texts[rank] for rank in shown], plain=kind == "input_select")
-                positions = [shown.index(rank) for rank in good]
-                solutions[name] = positions if kind == "input_checkbox" else positions[0]
-                # Rang dans le bloc de chaque choix affiché, pour « question_check » (§ 10.3).
-                if field.get("count") is not None:
-                    ranks[name] = shown
-            except TypeError as error:
-                errors.append("Le bloc des choix du champ « {} » : {}".format(name, error))
-            continue
-        if variable not in namespace:
-            errors.append("La solution « {} » du champ « {} » n’est pas définie par « question_setup ».".format(variable, name))
-            continue
-        value = namespace[variable]
-        if kind in ("input_radio", "input_checkbox", "input_select"):
-            source = field["choices"]
-            if source not in namespace:
-                errors.append("Les choix « {} » du champ « {} » ne sont pas définis par « question_setup ».".format(source, name))
-                continue
-            try:
-                choices[name] = _choice_texts(namespace[source], plain=kind == "input_select")
-            except TypeError as error:
-                errors.append("Les choix « {} » du champ « {} » : {}".format(source, name, error))
-                continue
-            try:
-                solutions[name] = _choice_solution(value, kind == "input_checkbox", len(choices[name]))
-            except TypeError as error:
-                errors.append("La solution « {} » du champ « {} » : {}".format(variable, name, error))
-        elif kind == "input_value":
-            try:
-                solutions[name] = _value_solution(value)
-            except TypeError as error:
-                errors.append("La solution « {} » du champ « {} » : {}".format(variable, name, error))
-        elif kind in ("input_text", "input_math"):
-            if _is_matrix(value):
-                errors.append("La solution « {} » du champ « {} » doit être une valeur simple, pas une matrice.".format(variable, name))
-            elif kind == "input_text":
-                solutions[name] = _solution_text(value)
-            else:
-                solutions[name] = _solution_latex(value)
-        else:
-            try:
-                solutions[name] = _solution_cells(value)
-            except TypeError as error:
-                errors.append("La solution « {} » du champ « {} » : {}".format(variable, name, error))
     return json.dumps({
         "statement": rendered.get("statement"), "explanation": rendered.get("explanation"),
-        "context": context, "dimensions": dimensions, "solutions": solutions,
-        "choices": choices, "ranks": ranks, "errors": errors, "warnings": warnings,
+        "context": context, **draw, "errors": errors, "warnings": warnings,
     }, ensure_ascii=False)
+
+
+# Widgets (SPECIFICATION.md, § 2.11). Chaque dossier de widgets/ déclare ses attributs (widget.json) et
+# prépare sa solution (widget.py) ; le compilateur donne les deux à chaque tirage. Jinja appelle le widget
+# comme une fonction, écrit {{ input_value('n', solution=s) }} ou en bloc, {% call input_radio('n') %} … ;
+# le moteur vérifie les attributs d’après la déclaration, le widget prépare la solution, et le champ est
+# noté dans le tirage. La page reçoit la liste des champs avec chaque tirage : elle n’a jamais à relire
+# l’énoncé, et un attribut peut être calculé (solution=2*s).
+# Solution écartée : lire l’appel sans l’exécuter, par une grammaire écrite en JavaScript (l’ancien
+# runtime/template.js), pour que la page connaisse ses champs sans Python. C’était un second lecteur de
+# la même écriture, qui refusait toute expression et devait déclarer chaque attribut des deux côtés.
+class _FieldError(Exception):
+    """Erreur de l’auteur dans l’appel d’un champ : le message est affiché tel quel, avec sa ligne."""
+
+
+_widget_modules = {}
+
+
+def _widget_module(name, source):
+    """Module d’un widget.py, exécuté une fois par texte ; None pour un widget sans Python."""
+    import types
+    if source is None:
+        return None
+    key = (name, source)
+    if key not in _widget_modules:
+        module = types.ModuleType("pywims_widget_" + name)
+        exec(compile(source, "widgets/{}/widget.py".format(name), "exec"), module.__dict__)
+        _widget_modules[key] = module
+    return _widget_modules[key]
+
+
+# Noms qu’un champ ne peut pas porter : la saisie arrive dans la variable de ce nom, qui écraserait une
+# variable du contrat de question ou un outil de pywims (les mots-clés de Python sont refusés à part).
+_RESERVED_FIELD_NAMES = {"ok_answer", "feedback", "math_expression", "mcq", "tex", "ANY", "pywims"}
+
+_TYPE_DESCRIPTIONS = {
+    "integer": "un entier",
+    "number": "un nombre positif, par exemple 0.01",
+    "text": "un texte entre guillemets",
+    "boolean": "true ou false",
+}
+
+
+def _number_text(value):
+    """Écriture décimale d’un nombre positif (une tolérance), gardée en texte pour rester exacte ; ou None."""
+    sympy = _sys.modules.get("sympy")
+    if isinstance(value, float) or (sympy is not None and isinstance(value, sympy.Float)):
+        text = _float_text(value)
+    else:
+        ratio = _ratio(value)
+        exact = None if ratio is None else _finite_decimal(ratio)
+        if exact is None:
+            return None
+        text = _plain_decimal(exact)
+    return None if text.startswith("-") or text in ("nan", "inf") else text
+
+
+def _attribute(value, expected):
+    """Valeur d’un attribut d’après son type déclaré, ou None si elle ne convient pas."""
+    if isinstance(expected, list):
+        return value if isinstance(value, str) and value in expected else None
+    if expected == "value":
+        return value
+    if expected == "boolean":
+        return value if isinstance(value, bool) else None
+    if expected == "text":
+        return value if isinstance(value, str) else None
+    if isinstance(value, (bool, str)):
+        return None
+    if expected == "integer":
+        try:
+            return int(value) if int(value) == value else None
+        except (TypeError, ValueError):
+            return None
+    return _number_text(value)
+
+
+def _field_function(widget, declaration, module, draw, namespace, has_check, in_statement):
+    """Fonction que Jinja appelle pour un champ du widget : elle note le champ dans draw et renvoie sa
+    marque (« \u0001nom\u0001 »), que la page remplace par le champ. Lève _FieldError."""
+    import keyword
+    import unicodedata
+    schema = declaration["attributes"]
+
+    def field(*args, caller=None, **attributes):
+        import jinja2
+        # Un mot d’une liste s’écrit avec ou sans guillemets (form=decimal ou form='decimal', § 2.3) :
+        # sans guillemets, Jinja y voit une variable inconnue, dont on reprend le nom.
+        for key, value in attributes.items():
+            words = schema.get(key, {}).get("type")
+            if (isinstance(value, jinja2.Undefined) and isinstance(words, list)
+                    and value._undefined_name in words):
+                attributes[key] = value._undefined_name
+        # Une autre variable inconnue arrive comme un objet Undefined, qui n’échoue qu’à son usage : on le
+        # fait échouer ici, pour le message habituel (« la variable « s » n’est pas définie… »).
+        for value in (*args, *attributes.values()):
+            if isinstance(value, jinja2.Undefined):
+                value._fail_with_undefined_error()
+        if not in_statement:
+            raise _FieldError("un champ de réponse ({}) n’a sa place que dans l’énoncé.".format(widget))
+        if len(args) != 1 or not isinstance(args[0], str):
+            raise _FieldError("{0}(…) : le premier argument est le nom du champ, entre guillemets, par exemple "
+                              "{0}('answer', …), et les autres s’écrivent nom=valeur.".format(widget))
+        name = unicodedata.normalize("NFKC", args[0])
+        if not name.isidentifier() or keyword.iskeyword(name) or name in _RESERVED_FIELD_NAMES:
+            raise _FieldError("« {} » ne peut pas être le nom d’un champ : choisissez un nom de variable Python, "
+                              "ni réservé ni mot-clé.".format(name))
+        where = "le champ « {} » ({})".format(name, widget)
+        if any(known["name"] == name for known in draw["fields"]):
+            raise _FieldError("{} apparaît deux fois dans l’énoncé : deux champs ne portent jamais le même nom, "
+                              "et un champ ne peut pas être placé dans un {{% for %}}.".format(where))
+        if name in namespace:
+            raise _FieldError("{} porte le nom d’une variable de « question_setup » : renommez l’un des "
+                              "deux.".format(where))
+        block = caller is not None
+        if block and not declaration["block"]:
+            raise _FieldError("{} ne s’écrit pas en bloc : écrivez {{{{ {}('{}', …) }}}}.".format(where, widget, name))
+        values = {}
+        for key, value in attributes.items():
+            if key not in schema:
+                raise _FieldError("{} : attribut « {} » inconnu.".format(where, key))
+            expected = schema[key]
+            if block and expected.get("block_supplies"):
+                raise _FieldError("{} : l’attribut « {} » est inutile dans un bloc, qui écrit ses choix, marqués "
+                                  "[x] (bon) ou [ ] (mauvais).".format(where, key))
+            if not block and expected.get("block_only"):
+                raise _FieldError("{} : l’attribut « {} » n’existe que dans un bloc ({{% call {}(…) %}} … "
+                                  "{{% endcall %}}) ; avec une liste, tirez les choix avec mcq.".format(where, key, widget))
+            converted = _attribute(value, expected["type"])
+            if converted is None:
+                wanted = expected["type"]
+                description = ("l’une des valeurs " + ", ".join(wanted) if isinstance(wanted, list)
+                               else _TYPE_DESCRIPTIONS[wanted])
+                raise _FieldError("{} : l’attribut « {} » doit être {}, et non {!r}.".format(where, key, description, value))
+            values[key] = converted
+        try:
+            if block:
+                values.update(module.read_block(caller(), values))
+            for key, expected in schema.items():
+                if expected.get("required") and key not in values:
+                    raise TypeError("il faut indiquer {0}, par exemple {0}=variable.".format(key))
+            if declaration["needs_check"] and not has_check:
+                raise TypeError("ce champ exige un « question_check » : une formule se corrige par comparaison "
+                                "symbolique, par exemple simplify(math_expression(saisie) - solution) == 0.")
+            prepared = module.prepare(values)
+        except TypeError as error:
+            raise _FieldError("{}{} : {}".format(where, ", écrit en bloc" if block else "", error)) from None
+        # Attributs utiles à la page : ceux qui ne portent pas une valeur de l’auteur (solution, choix).
+        draw["fields"].append({"name": name, "type": widget, "attributes": {
+            key: value for key, value in values.items() if key in schema and schema[key]["type"] != "value"}})
+        draw["solutions"][name] = prepared["solution"]
+        # choices : textes affichés ; ranks : rangs dans un bloc (count) ; input : saisie de l’élève qui
+        # donne la solution, pour le contrôle de cohérence, quand elle diffère de la solution affichée.
+        for key, target in (("choices", "choices"), ("ranks", "ranks"), ("input", "inputs")):
+            if prepared.get(key) is not None:
+                draw[target][name] = prepared[key]
+        return "\u0001{}\u0001".format(name)
+
+    return field
+
+
+def _read_choice_block(text, attributes, multiple):
+    """Choix d’un bloc rendu (§ 10.1) : textes affichés, solution et, avec count, rang de chaque choix
+    affiché dans le bloc, remis à « question_check » (§ 10.3)."""
+    texts, good = _block_choices(text)
+    if not multiple and len(good) != 1:
+        raise TypeError("il faut exactement un bon choix [x], et il y en a {}.".format(len(good)))
+    count = attributes.get("count")
+    if count is not None and count < 2:
+        raise TypeError("count doit être au moins 2.")
+    shown = _block_ranks(texts, good, count)
+    if len(shown) < 2:
+        raise TypeError("il faut au moins deux choix.")
+    positions = [shown.index(rank) for rank in good]
+    result = {"choices": [texts[rank] for rank in shown], "solution": positions if multiple else positions[0]}
+    if count is not None:
+        result["ranks"] = shown
+    return result
+
+
+def _prepare_choices(attributes, multiple, plain):
+    """Choix et solution d’un champ à choix ; plain : liste déroulante, en texte simple (§ 2.9)."""
+    try:
+        texts = _choice_texts(attributes["choices"], plain=plain)
+    except TypeError as error:
+        raise TypeError("les choix : {}".format(error)) from None
+    try:
+        solution = _choice_solution(attributes["solution"], multiple, len(texts))
+    except TypeError as error:
+        raise TypeError("la solution : {}".format(error)) from None
+    if not 1 <= attributes.get("columns", 1) <= 6:
+        raise TypeError("columns doit être compris entre 1 et 6.")
+    # Sans mélange, tous les choix restent à leur place : fixed_last ne dirait rien, et sa présence
+    # trahit presque toujours une confusion de l’auteur.
+    if attributes.get("shuffle") is False and "fixed_last" in attributes:
+        raise TypeError("fixed_last est sans effet avec shuffle=false, qui garde déjà tous les choix à leur place.")
+    if attributes.get("fixed_last", 0) >= len(texts):
+        raise TypeError("fixed_last={} doit être inférieur au nombre de choix ({}).".format(
+            attributes["fixed_last"], len(texts)))
+    return {"solution": solution, "choices": texts, "ranks": attributes.get("ranks")}
 
 
 def _prepare_check(namespace, data):

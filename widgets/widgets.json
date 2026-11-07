@@ -1,0 +1,10 @@
+[
+  "input_text",
+  "input_value",
+  "input_math",
+  "input_matrix",
+  "input_vmatrix",
+  "input_radio",
+  "input_checkbox",
+  "input_select"
+]

@@ -1,0 +1,13 @@
+{
+  "kind": "field",
+  "attributes": {
+    "solution": {"type": "value", "required": true},
+    "style": {"type": "text"},
+    "tolerance": {"type": "number"},
+    "inline": {"type": "boolean"},
+    "form": {"type": ["any", "integer", "decimal", "fraction", "irreducible", "scientific", "percent"]}
+  },
+  "choices": false,
+  "block": false,
+  "needs_check": false
+}

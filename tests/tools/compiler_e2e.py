@@ -9,7 +9,9 @@
 # Code de sortie : 0 si tout est bon, 1 sinon.
 import base64
 import difflib
+import gzip
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -217,8 +219,9 @@ def archive_question(page):
         with page.expect_download(timeout=180_000) as waiting:
             page.click("#compile-question")
         html = open(waiting.value.path(), encoding="utf-8").read()
-        # L’énoncé est intégré en texte échappé (src=&quot;data:…) : on cherche l’image elle-même.
-        if f"data:image/png;base64,{base64.b64encode(PIXEL).decode()}" not in html:
+        # L’image est dans l’énoncé rendu de chaque tirage, compressé (gzip, en base64) : on le décompresse.
+        draws = gzip.decompress(base64.b64decode(re.search(r'<pre data-draws="gzip">([^<]*)</pre>', html)[1])).decode()
+        if f"data:image/png;base64,{base64.b64encode(PIXEL).decode()}" not in draws:
             raise AssertionError("Le fichier compilé ne contient pas l’image de l’archive.")
         page.click(".question-selection >> nth=0")
         print("archive .pwqa : listée, image affichée et intégrée ; .zip sans .pwq ignoré")
@@ -285,16 +288,19 @@ def editor_and_paste(browser, url, pgcd):
         raise AssertionError("Ctrl+Entrée a modifié le texte de l’éditeur.")
     print("atelier : « Éditeur » montre la question courante, la modification est enregistrée seule, l’aperçu suit à la demande")
 
-    # Une balise fautive : l’erreur s’affiche sous l’éditeur, avec un lien vers sa ligne ; l’annuler l’efface.
+    # Un champ fautif : Jinja le signale au rendu de l’aperçu (SPECIFICATION.md, § 2.11), et l’erreur
+    # s’affiche sous l’éditeur, avec un lien vers sa ligne ; l’annuler l’efface.
     statement_line = page.evaluate(f"{editor}.getValue().split('\\n').indexOf('% question_statement') + 2")
-    page.evaluate(f"{editor}.replaceRange('{{% input_value %}} ', {{ line: {statement_line}, ch: 0 }})")
-    page.wait_for_selector(".editor-problem .editor-line-link", timeout=30_000)
+    page.evaluate(f"{editor}.replaceRange(\"{{{{ input_value('faux') }}}} \", {{ line: {statement_line}, ch: 0 }})")
+    page.keyboard.press("Control+Enter")
+    page.wait_for_selector(".editor-problem .editor-line-link", timeout=180_000)
     link = page.text_content(".editor-line-link")
     if link != f"ligne {statement_line + 1}":
         raise AssertionError(f"lien inattendu : {link}, ligne attendue {statement_line + 1}")
     page.evaluate(f"{editor}.undo()")
-    page.wait_for_function("!document.querySelector('.editor-problem')", timeout=30_000)
-    print("atelier : erreur avec lien vers la ligne, effacée par Ctrl+Z")
+    page.keyboard.press("Control+Enter")
+    page.wait_for_function("!document.querySelector('.editor-problem')", timeout=180_000)
+    print("atelier : erreur de l’aperçu avec lien vers la ligne, effacée par Ctrl+Z et Ctrl+Entrée")
 
     # L’aperçu se corrige avec le Python de l’atelier, déjà chargé (pont, SPECIFICATION.md § 3) : le
     # retour de « question_check » arrive sans charger un second Pyodide (6 à 8 s mesurées).

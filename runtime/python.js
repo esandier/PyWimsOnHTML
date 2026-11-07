@@ -207,13 +207,6 @@ window.PyWimsPython = (() => {
     return call("prepareCheck", [sessionId, { verdicts, values }]);
   }
 
-  function getChoiceTexts(name, sessionId = "default", plain = false) {
-    if (!isName(name)) {
-      throw new Error(`Liste de choix non prise en charge : ${name}`);
-    }
-    return call("getChoiceTexts", [sessionId, name, Boolean(plain)]);
-  }
-
   function getTemplateValue(name, sessionId = "default") {
     if (!isName(name)) {
       throw new Error(`Variable de modèle non prise en charge : ${name}`);
@@ -244,7 +237,6 @@ window.PyWimsPython = (() => {
       set: (name, value) => set(name, value, sessionId),
       setMatrix: (name, values) => setMatrix(name, values, sessionId),
       setChoice: (name, value) => setChoice(name, value, sessionId),
-      getChoiceTexts: (name, plain = false) => getChoiceTexts(name, sessionId, plain),
       prepareCheck: data => prepareCheck(data, sessionId),
       getTemplateValue: name => getTemplateValue(name, sessionId),
       getBoolean: expression => getBoolean(expression, sessionId)
@@ -267,7 +259,6 @@ window.PyWimsPython = (() => {
     set,
     setMatrix,
     setChoice,
-    getChoiceTexts,
     prepareCheck,
     getTemplateValue,
     getBoolean,

@@ -163,14 +163,9 @@ window.PyWimsQuestion = (() => {
       // Une section sans marque vient d’un fichier compilé avant cette règle : elle garde Python.
       this.usesPython = section.dataset.python !== "false";
       this.python = this.usesPython ? PyWimsPython.createSession(section.id) : null;
-      const tags = PyWimsTemplate.parseTags(this.definition.question_statement);
-      this.tags = tags;
-      this.tagTypes = new Set(tags.map(tag => tag.type));
-      // Type et attributs de la balise de chaque champ, d’après son nom : la correction par défaut en
-      // dépend (match, tolerance, form).
-      this.typeOf = new Map(tags.map(tag => [tag.name, tag.type]));
-      this.attributesOf = new Map(tags.map(tag => [tag.name, tag.attributes]));
-      this.choiceTags = tags.filter(tag => PyWimsTemplate.choiceTypes.has(tag.type));
+      // Les champs viennent des tirages (SPECIFICATION.md, § 2.11) : les mêmes pour tous, mais leurs
+      // attributs peuvent changer d’un tirage à l’autre (renderDraw).
+      this.useFields(draws[0]?.fields ?? []);
       this.pythonCode = `${this.definition.question_setup}\n${this.definition.question_check ?? ""}`;
 
       section.append(questionTemplate.content.cloneNode(true));
@@ -290,20 +285,20 @@ window.PyWimsQuestion = (() => {
       this.preparePython(this.draw);
     }
 
-    // Construit le widget d’une balise ; dimensions nommées, choix et ordre viennent du tirage.
+    // Champs du tirage affiché : leur type et leurs attributs, d’après leur nom ; la correction par
+    // défaut en dépend (match, tolerance, form).
+    useFields(fields) {
+      this.tags = fields;
+      this.tagTypes = new Set(fields.map(tag => tag.type));
+      this.typeOf = new Map(fields.map(tag => [tag.name, tag.type]));
+      this.attributesOf = new Map(fields.map(tag => [tag.name, tag.attributes]));
+      this.choiceTags = fields.filter(tag => PyWimsTemplate.choiceTypes.has(tag.type));
+    }
+
+    // Construit le widget d’un champ ; choix et ordre viennent du tirage.
     renderWidget(tag, draw) {
       const { attributes } = tag;
-      const { dimensions } = draw;
       const idPrefix = this.idPrefix;
-      const dimension = value => {
-        if (typeof value === "number") {
-          return value;
-        }
-        if (!Object.hasOwn(dimensions, value)) {
-          throw new Error(`Variable de dimension matricielle inconnue : ${value}`);
-        }
-        return dimensions[value];
-      };
 
       switch (tag.type) {
         // Une valeur numérique se saisit dans un champ texte : virgule, fraction ou « ×10^ » y
@@ -314,12 +309,8 @@ window.PyWimsQuestion = (() => {
         case "input_math":
           return PyWimsWidgets.inputMath(tag.name, { idPrefix });
         case "input_matrix":
-          return PyWimsWidgets.inputMatrix(
-            tag.name,
-            dimension(attributes.size ?? attributes.rows),
-            dimension(attributes.size ?? attributes.cols),
-            { inputStyle: attributes.input_style || "", idPrefix }
-          );
+          return PyWimsWidgets.inputMatrix(tag.name, attributes.rows, attributes.cols,
+            { inputStyle: attributes.input_style || "", idPrefix });
         case "input_vmatrix":
           return PyWimsWidgets.inputVMatrix(
             tag.name,
@@ -530,18 +521,11 @@ window.PyWimsQuestion = (() => {
         await python.dispose();
         await python.initialize(this.pythonCode);
         await python.runSeeded(definition.question_setup, selected.seed);
+        // Le context contient chaque variable que lit l’énoncé, y compris celles que reçoivent les
+        // champs (solution=, choices=) : les choix affichés sont donc contrôlés avec lui.
         for (const [name, expected] of Object.entries(selected.context)) {
           if (await python.getTemplateValue(name) !== expected) {
             throw new Error(`Le tirage n’a pas pu être reproduit (« ${name} » diffère) : la vérification est indisponible.`);
-          }
-        }
-        // Les textes des choix sont affichés : ils sont contrôlés comme les valeurs de l’énoncé. Ceux
-        // d’un bloc des choix sont écrits par l’énoncé, rendu à la compilation : les valeurs qu’il lit
-        // sont déjà contrôlées avec le context.
-        for (const tag of this.choiceTags.filter(tag => !tag.block)) {
-          const texts = await python.getChoiceTexts(tag.attributes.choices, tag.type === "input_select");
-          if (JSON.stringify(texts) !== JSON.stringify(selected.choices?.[tag.name])) {
-            throw new Error(`Le tirage n’a pas pu être reproduit (« ${tag.attributes.choices} » diffère) : la vérification est indisponible.`);
           }
         }
       });
@@ -605,6 +589,7 @@ window.PyWimsQuestion = (() => {
     async renderDraw(selected) {
       const { promptElement } = this;
       this.draw = selected;
+      this.useFields(selected.fields);
       window.MathJax?.typesetClear?.([promptElement]);
       promptElement.innerHTML = PyWimsTemplate.renderStatement(
         selected.statement,

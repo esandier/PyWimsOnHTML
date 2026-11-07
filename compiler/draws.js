@@ -16,33 +16,57 @@
     return lineNumbers.length ? `ligne ${lineNumbers.at(-1)} : ${lines.at(-1)}` : lines.at(-1);
   }
 
-  // Vérifie que chaque solution matricielle a les dimensions du champ qu’elle remplit.
-  function matrixShapeErrors(tags, draw) {
+  // Widgets du moteur (SPECIFICATION.md, § 2.11) : la liste de widgets/widgets.json, puis la déclaration
+  // (widget.json) et le Python (widget.py, facultatif) de chacun, lus une fois et remis à chaque tirage.
+  // Le moteur ne connaît aucun widget par son nom : ajouter un widget, c’est ajouter son dossier et son
+  // nom dans widgets.json (un serveur web ne donne pas la liste d’un dossier).
+  const widgetsBase = new URL("../widgets/", document.currentScript.src);
+  let widgetsLoading = null;
+  function loadWidgets() {
+    if (!widgetsLoading) {
+      const read = async (path, optional = false) => {
+        const response = await fetch(new URL(path, widgetsBase), { cache: "no-cache" });
+        if (optional && response.status === 404) return null;
+        if (!response.ok) {
+          throw new Error(`Fichier du moteur introuvable : « widgets/${path} » (${response.status}).`);
+        }
+        return response.text();
+      };
+      widgetsLoading = (async () => {
+        const names = JSON.parse(await read("widgets.json"));
+        return Object.fromEntries(await Promise.all(names.map(async name => [name, {
+          declaration: JSON.parse(await read(`${name}/widget.json`)),
+          python: await read(`${name}/widget.py`, true)
+        }])));
+      })();
+      widgetsLoading.catch(() => { widgetsLoading = null; });
+    }
+    return widgetsLoading;
+  }
+
+  // Champs d’un tirage, comparés à ceux du premier : un champ dans un {% if %} manque à certains
+  // tirages, et correction, contrôles et « question_check » supposent les mêmes champs partout (§ 2.3).
+  function fieldListErrors(reference, fields) {
+    const describe = list => list.map(({ name, type }) => `${name}:${type}`).join(",");
+    if (describe(reference) === describe(fields)) return [];
+    const names = new Set(fields.map(field => field.name));
+    const missing = reference.find(field => !names.has(field.name)) ??
+      fields.find(field => !reference.some(known => known.name === field.name)) ?? fields[0];
+    return [`Le champ « ${missing.name} » n’apparaît pas de la même façon dans tous les tirages : un champ ne peut pas être placé dans un {% if %}.`];
+  }
+
+  // Barème d’AMC (SPECIFICATION.md, § 10.5) : sa syntaxe, et la règle d’un champ à choix seul dans sa
+  // question, la note portant sur toute la question.
+  function scoringErrors(fields) {
     const errors = [];
-    for (const tag of tags) {
-      const cells = draw.solutions[tag.name];
-      if (!Array.isArray(cells) || !["input_matrix", "input_vmatrix"].includes(tag.type)) {
-        continue;
+    for (const { name, attributes } of fields.filter(field => Object.hasOwn(field.attributes, "scoring"))) {
+      try {
+        PyWimsTemplate.parseScoring(attributes.scoring);
+      } catch (error) {
+        errors.push(`${error.message}, dans le champ « ${name} ».`);
       }
-      const rows = cells.length;
-      const columns = rows ? cells[0].length : 0;
-      const ragged = cells.some(row => row.length !== columns);
-      const { attributes } = tag;
-      if (tag.type === "input_matrix") {
-        const dimension = value => (typeof value === "number" ? value : draw.dimensions[value]);
-        const expectedRows = dimension(attributes.size ?? attributes.rows);
-        const expectedColumns = dimension(attributes.size ?? attributes.cols);
-        if (![expectedRows, expectedColumns].every(value => Number.isInteger(value) && value >= 1 && value <= 10)) {
-          errors.push(`Les dimensions du champ « ${tag.name} » (${expectedRows} × ${expectedColumns}) doivent être comprises entre 1 et 10.`);
-        } else if (ragged || rows !== expectedRows || columns !== expectedColumns) {
-          errors.push(`La solution du champ « ${tag.name} » est une matrice ${rows} × ${columns}, alors que le champ est ${expectedRows} × ${expectedColumns}.`);
-        }
-      } else {
-        const maxRows = attributes.max_rows ?? 10;
-        const maxColumns = attributes.max_cols ?? 10;
-        if (ragged || rows < 1 || columns < 1 || rows > maxRows || columns > maxColumns) {
-          errors.push(`La solution du champ « ${tag.name} » est une matrice ${rows} × ${columns}, hors des limites ${maxRows} × ${maxColumns} du champ.`);
-        }
+      if (fields.length > 1) {
+        errors.push(`Le barème du champ « ${name} » n’est admis que si c’est le seul champ de la question.`);
       }
     }
     return errors;
@@ -53,7 +77,8 @@
   // « Correction » pourrait montrer une réponse que la correction refuse (fraction non simplifiée,
   // indices dans un autre ordre…), ou « question_check » planter pour un tirage rare. La session est celle
   // du tirage, où « question_setup » vient d’être exécuté ; elle est jetée ensuite. Renvoie les messages.
-  async function coherenceErrors(session, tags, draw, question_check, timeoutMs = drawTimeoutMs) {
+  async function coherenceErrors(session, draw, question_check, timeoutMs = drawTimeoutMs) {
+    const tags = draw.fields;
     if (question_check === undefined) {
       return defaultCoherenceErrors(tags, draw);
     }
@@ -81,7 +106,7 @@
       } else if (type === "input_math") {
         // MathLive transmet une expression en texte (« x^2 + 1 »), et non le LaTeX affiché par la
         // solution : on saisit donc la forme texte, la plus proche de ce que reçoit « question_check ».
-        await session.set(name, typed(await session.run(`__import__("pywims")._solution_text(${attributes.solution})`)));
+        await session.set(name, typed(draw.inputs[name]));
       } else {
         await session.setMatrix(name, solution.map(row => row.map(typed)));
         solution.forEach((row, i) => row.forEach((cell, j) => {
@@ -169,27 +194,22 @@
       try {
         draw.solutions[name] = { text: PyWimsCorrection.valueSolutionText(raw, attributes), value: raw.value };
       } catch (error) {
-        errors.push(`La solution « ${attributes.solution} » du champ « ${name} » : ${error.message}`);
+        errors.push(`La solution du champ « ${name} » : ${error.message}`);
         delete draw.solutions[name];
       }
     }
     return errors;
   }
 
-  // Vérifie que les derniers choix fixés laissent au moins un choix à mélanger, et que deux choix
-  // n’ont pas le même texte (SPECIFICATION.md, § 10.6). Des choix calculés coïncident facilement
-  // pour un tirage rare (deux erreurs types qui donnent la même valeur) : l’élève verrait deux
-  // choix identiques, dont un seul juste. Les textes sont comparés après la normalisation de la
-  // correction par défaut : « x^2+1 » et « x^2 + 1 » s’affichent pareil.
-  function choiceErrors(tags, draw) {
+  // Vérifie que deux choix n’ont pas le même texte (SPECIFICATION.md, § 10.6). Des choix calculés
+  // coïncident facilement pour un tirage rare (deux erreurs types qui donnent la même valeur) : l’élève
+  // verrait deux choix identiques, dont un seul juste. Les textes sont comparés après la normalisation
+  // de la correction par défaut : « x^2+1 » et « x^2 + 1 » s’affichent pareil.
+  function choiceErrors(draw) {
     const errors = [];
-    for (const tag of tags) {
+    for (const tag of draw.fields) {
       const texts = draw.choices?.[tag.name];
       if (!Array.isArray(texts)) continue;
-      const fixedLast = tag.attributes.fixed_last ?? 0;
-      if (fixedLast >= texts.length) {
-        errors.push(`fixed_last=${fixedLast} doit être inférieur au nombre de choix (${texts.length}) du champ « ${tag.name} ».`);
-      }
       const seen = new Map();
       for (const [index, text] of texts.entries()) {
         const key = PyWimsCorrection.normalizedText(text);
@@ -243,37 +263,18 @@
   // count : nombre de tirages imposé (aperçu, tests) ; sinon le champ « question_draws », ou 20.
   async function computeDraws(fields, { count: requested, onProgress, timeoutMs = drawTimeoutMs } = {}) {
     const count = requested ?? (fields.question_draws === undefined ? drawCount : Number(fields.question_draws));
-    const tags = PyWimsTemplate.parseTags(fields.question_statement);
-    const choiceTags = tags.filter(tag => PyWimsTemplate.choiceTypes.has(tag.type));
-    const templateErrors = [
-      ...PyWimsTemplate.validateTemplate(fields.question_statement),
-      ...PyWimsTemplate.syntaxErrors(fields.question_solution_explanation ?? "")
-    ];
-    if (templateErrors.length) {
-      throw new Error(templateErrors.join(" ; "));
-    }
-    // Les modèles sont rendus par Python, tirage par tirage (SPECIFICATION.md, § 2.10), chaque champ
-    // remplacé par sa marque.
+    // Les modèles sont rendus par Python, tirage par tirage (SPECIFICATION.md, § 2.10) ; Jinja y appelle
+    // les widgets, qui notent les champs du tirage (§ 2.11).
+    const widgets = await loadWidgets();
     const spec = {
-      statement: PyWimsTemplate.jinjaSource(fields.question_statement),
-      explanation: fields.question_solution_explanation === undefined
-        ? null : PyWimsTemplate.jinjaSource(fields.question_solution_explanation),
-      dimensions: [...new Set(tags
-        .filter(tag => tag.type === "input_matrix")
-        .flatMap(tag => ["size", "rows", "cols"].map(key => tag.attributes[key]))
-        .filter(value => typeof value === "string"))],
-      fields: tags.map(tag => ({
-        name: tag.name, type: tag.type, solution: tag.attributes.solution, choices: tag.attributes.choices,
-        ...(tag.block ? { block: true, count: tag.attributes.count ?? null } : {})
-      }))
+      statement: fields.question_statement,
+      explanation: fields.question_solution_explanation ?? null,
+      has_check: fields.question_check !== undefined,
+      widgets
     };
+    const isChoice = tag => widgets[tag.type]?.declaration.choices === true;
     // Une formule TeX dans une chaîne ordinaire passe sans erreur Python mais s’affiche abîmée :
     // on la refuse avant tout tirage, pour les deux champs Python.
-    // Une formule se corrige par une comparaison symbolique, donc par « question_check » (SPECIFICATION.md, § 2.6).
-    const mathTag = fields.question_check === undefined && tags.find(tag => tag.type === "input_math");
-    if (mathTag) {
-      throw new Error(`Le champ « ${mathTag.name} » (input_math) exige un « question_check » : une formule se corrige par comparaison symbolique, par exemple simplify(math_expression(saisie) - solution) == 0.`);
-    }
     const stringErrors = [
       ...await PyWimsPython.sourceErrors(fields.question_setup, "question_setup"),
       ...(fields.question_check === undefined ? [] : await PyWimsPython.sourceErrors(fields.question_check, "question_check"))
@@ -299,7 +300,7 @@
           throw new Error(`Erreur dans « question_setup » pour la graine ${seed}, ${pythonErrorSummary(error.message)}`);
         }
         const draw = await session.collectDraw(spec);
-        draw.errors.push(...valueSolutionErrors(tags, draw));
+        draw.errors.push(...valueSolutionErrors(draw.fields, draw));
         return { session, draw };
       } catch (error) {
         await session.dispose();
@@ -312,7 +313,7 @@
       statement: "l’énoncé",
       explanation: "l’explication",
       context: "les valeurs de l’énoncé",
-      dimensions: "les dimensions des matrices",
+      fields: "les champs",
       solutions: "les solutions",
       choices: "les choix",
       ranks: "les choix gardés d’un bloc"
@@ -321,18 +322,17 @@
     const draws = [];
     const seen = new Set();
     const warnings = new Set();
+    // Champs du premier tirage : tous les autres doivent avoir les mêmes.
+    let reference = null;
     for (let seed = 0; seed < count; seed += 1) {
       const { session, draw } = await runDraw(seed);
       try {
-        const errors = [...draw.errors, ...matrixShapeErrors(tags, draw), ...choiceErrors(tags, draw)];
-        draw.warnings.forEach(warning => warnings.add(warning));
-        // Un champ dans un {% if %} ou un {% for %} manque ou se répète dans l’énoncé rendu (§ 2.3).
-        for (const { name } of draw.statement === null ? [] : tags) {
-          const count = PyWimsTemplate.markCount(draw.statement, name);
-          if (count !== 1) {
-            errors.push(`Le champ « ${name} » apparaît ${count} fois dans l’énoncé de ce tirage, au lieu d’une : un champ ne peut pas être placé dans un {% if %} ni dans un {% for %}.`);
-          }
+        const errors = [...draw.errors];
+        if (!errors.length) {
+          reference ??= draw.fields;
+          errors.push(...choiceErrors(draw), ...scoringErrors(draw.fields), ...fieldListErrors(reference, draw.fields));
         }
+        draw.warnings.forEach(warning => warnings.add(warning));
         if (errors.length) {
           throw new Error(`Graine ${seed} : ${errors.join(" ")}`);
         }
@@ -346,11 +346,11 @@
           throw new Error(`Graine ${seed} : deux exécutions de « question_setup » avec la même graine donnent des tirages différents (${differing.map(part => drawParts[part]).join(", ")}). Tirez le hasard uniquement avec le module random (ou numpy.random.seed) : le navigateur ne pourrait pas rejouer ce tirage.`);
         }
         // Les solutions ont la forme attendue : on peut les saisir et vérifier la correction.
-        const incoherences = await coherenceErrors(session, tags, draw, fields.question_check, timeoutMs);
+        const incoherences = await coherenceErrors(session, draw, fields.question_check, timeoutMs);
         if (incoherences.length) {
           throw new Error(`Graine ${seed} : ${incoherences.join(" ")}`);
         }
-        const orders = Object.fromEntries(choiceTags.map(tag => [
+        const orders = Object.fromEntries(draw.fields.filter(isChoice).map(tag => [
           tag.name,
           choiceOrder(draw.choices[tag.name].length, tag.attributes.fixed_last ?? 0, seed, tag.name, tag.attributes.shuffle ?? true)
         ]));
@@ -359,7 +359,7 @@
         const context = fields.question_check === undefined ? undefined : draw.context;
         // L’ordre fait partie du tirage : deux tirages qui ne diffèrent que par lui restent distincts.
         const ranks = Object.keys(draw.ranks ?? {}).length ? draw.ranks : undefined;
-        const key = JSON.stringify([draw.statement, draw.explanation, context, draw.solutions, draw.choices, orders, ranks]);
+        const key = JSON.stringify([draw.statement, draw.explanation, context, draw.fields, draw.solutions, draw.choices, orders, ranks]);
         if (!seen.has(key)) {
           seen.add(key);
           draws.push({
@@ -367,7 +367,9 @@
             statement: draw.statement,
             ...(draw.explanation === null ? {} : { explanation: draw.explanation }),
             ...(context === undefined ? {} : { context }),
-            dimensions: draw.dimensions,
+            // Les champs du tirage et leurs attributs (SPECIFICATION.md, § 2.11) : la page les dessine
+            // sans relire l’énoncé.
+            fields: draw.fields,
             solutions: draw.solutions,
             choices: draw.choices,
             orders,
@@ -388,6 +390,7 @@
   window.PyWimsCompiler = Object.freeze({
     ...window.PyWimsCompiler,
     choiceOrder,
-    computeDraws
+    computeDraws,
+    loadWidgets
   });
 })();

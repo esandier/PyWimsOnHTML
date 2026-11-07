@@ -1,0 +1,12 @@
+{
+  "kind": "field",
+  "attributes": {
+    "solution": {"type": "value", "required": true},
+    "style": {"type": "text"},
+    "match": {"type": ["exact", "normal", "loose"]},
+    "inline": {"type": "boolean"}
+  },
+  "choices": false,
+  "block": false,
+  "needs_check": false
+}

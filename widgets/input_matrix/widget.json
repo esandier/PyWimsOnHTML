@@ -1,0 +1,13 @@
+{
+  "kind": "field",
+  "attributes": {
+    "solution": {"type": "value", "required": true},
+    "size": {"type": "integer"},
+    "rows": {"type": "integer"},
+    "cols": {"type": "integer"},
+    "input_style": {"type": "text"}
+  },
+  "choices": false,
+  "block": false,
+  "needs_check": false
+}

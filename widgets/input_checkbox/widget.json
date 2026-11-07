@@ -1,0 +1,15 @@
+{
+  "kind": "field",
+  "attributes": {
+    "choices": {"type": "value", "required": true, "block_supplies": true},
+    "solution": {"type": "value", "required": true, "block_supplies": true},
+    "shuffle": {"type": "boolean"},
+    "fixed_last": {"type": "integer"},
+    "count": {"type": "integer", "block_only": true},
+    "columns": {"type": "integer"},
+    "scoring": {"type": "text"}
+  },
+  "choices": true,
+  "block": true,
+  "needs_check": false
+}
