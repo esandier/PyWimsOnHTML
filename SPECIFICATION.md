@@ -1847,8 +1847,9 @@ Le texte collé est découpé en questions aux lignes `=== nom.pwq ===` que
 `PROMPT.md` demande avant chaque question ; à défaut, avant chaque
 `% question_title`. Les lignes de bloc de code (```) et le texte qui précède le
 premier `%` sont retirés : les IA en ajoutent malgré la consigne. Une fenêtre
-demande alors le nom de chaque question : niveau, discipline, cours (listes de
-suggestions : niveaux, cours de mathématiques, et ceux du dossier) et résumé,
+demande alors le nom de chaque question : niveau, discipline, cours (listes
+déroulantes : niveaux, cours de mathématiques, et ceux du dossier ; « Autre… »
+ouvre une case pour une valeur nouvelle) et résumé (« Descriptif » à l’écran),
 avec le nom de fichier qui en résulte. Elle est pré-remplie par la ligne `===`
 si elle suit la convention (§ 11.3), sinon par le niveau, la discipline et le
 cours de la question courante (ou de la première question du dossier qui en a)

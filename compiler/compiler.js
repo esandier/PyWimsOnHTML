@@ -1213,7 +1213,7 @@
     };
     const known = questions.map(question => questionNameParts(question.path)).filter(Boolean);
     // Libellés des quatre parties du nom, dans l’ordre du nom ; repris par les messages d’erreur.
-    const partLabels = { level: "Niveau", discipline: "Discipline", course: "Cours", summary: "Résumé" };
+    const partLabels = { level: "Niveau", discipline: "Discipline", course: "Cours", summary: "Descriptif" };
     const lists = {
       level: [...questionLevels, ...known.map(parts => parts.level)],
       discipline: ["Mathématiques", ...known.map(parts => parts.discipline)],
@@ -1221,7 +1221,7 @@
     };
     const form = document.createElement("form");
     form.method = "dialog";
-    const heading = Object.assign(document.createElement("h2"), { id: "name-dialog-title", textContent: pieces.length > 1 ? "Nom des questions collées" : "Nom de fichier pour la question collée" });
+    const heading = Object.assign(document.createElement("h2"), { id: "name-dialog-title", textContent: pieces.length > 1 ? "Noms de fichiers pour les questions collées" : "Nom de fichier pour la question collée" });
     // Le format en police de code : un élément <code>, car textContent afficherait les balises telles quelles.
     const help = document.createElement("p");
     help.append("Le format suggéré est ", Object.assign(document.createElement("code"), { textContent: "niveau - discipline - cours - descriptif.pwq" }),
