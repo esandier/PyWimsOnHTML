@@ -10,7 +10,7 @@ nom de fichier et cours »), sans bloc Markdown ni commentaire.
   entre parenthèses quand elle aide : « Loi normale : pourcentage au-delà d’un
   seuil (tailles) », « Dérivée : produit ou quotient ».
 - Fais précéder chaque question, même seule, d’une ligne qui donne son nom de
-  fichier : `=== niveau - discipline - cours - résumé.pwq ===`, par exemple
+  fichier : `=== niveau - discipline - cours - descriptif.pwq ===`, par exemple
   `=== L2 - Mathématiques - Probabilités - Écart-type d'une somme (flacons).pwq ===`
   (apostrophe droite dans le nom de fichier).
   - **niveau** : `L1`, `L2`, `L3`, `M1` ou `M2`, celui qu’on t’indique, sinon
@@ -25,7 +25,7 @@ nom de fichier et cours »), sans bloc Markdown ni commentaire.
     Topologie et espaces de Hilbert, Analyse complexe, Analyse numérique,
     Optimisation, Probabilités, Statistiques, Outils mathématiques (cours de
     mathématiques d’une autre licence), Histoire des mathématiques ;
-  - **résumé** : quelques mots tirés du titre.
+  - **descriptif** : quelques mots tirés du titre.
 
   Aucune partie ne contient de virgule ni l’un des caractères `: ? < > " * / \ |`,
   et les parties sont séparées par ` - ` (espace, tiret, espace).

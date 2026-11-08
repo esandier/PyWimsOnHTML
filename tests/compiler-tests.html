@@ -1004,7 +1004,7 @@
         throw new Error("Traduction du rang inattendue.");
       }
     });
-    test("le nom d’une question donne niveau, discipline, cours et résumé, ou rien s’il ne suit pas la convention", () => {
+    test("le nom d’une question donne niveau, discipline, cours et descriptif, ou rien s’il ne suit pas la convention", () => {
       const parts = PyWimsCompiler.questionNameParts("sous-dossier/L2 - Mathématiques - Probabilités - Loi normale - table.pwq");
       const expected = { level: "L2", discipline: "Mathématiques", course: "Probabilités", summary: "Loi normale - table" };
       if (JSON.stringify(parts) !== JSON.stringify(expected)) throw new Error(`Parties inattendues : ${JSON.stringify(parts)}`);
@@ -1017,11 +1017,11 @@
         throw new Error("Nom de fichier mal reconstruit.");
       }
       const summary = PyWimsCompiler.summaryFromTitle("Notations : conditionnelle ou intersection ? (d’après « A, B »)");
-      if (summary !== "Notations conditionnelle ou intersection (d'après « A B »)") throw new Error(`Résumé inattendu : ${summary}`);
+      if (summary !== "Notations conditionnelle ou intersection (d'après « A B »)") throw new Error(`Descriptif inattendu : ${summary}`);
       const problems = [
         PyWimsCompiler.namePartProblem("Cours", "Probas - Stats", false),
-        PyWimsCompiler.namePartProblem("Résumé", "a, b", true),
-        PyWimsCompiler.namePartProblem("Résumé", " ", true),
+        PyWimsCompiler.namePartProblem("Descriptif", "a, b", true),
+        PyWimsCompiler.namePartProblem("Descriptif", " ", true),
         PyWimsCompiler.namePartProblem("Cours", "", false)
       ];
       if (!problems[0] || !problems[1] || !problems[2] || problems[3] !== null) {

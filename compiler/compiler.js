@@ -1182,7 +1182,7 @@
   }
 
   // Fenêtre de confirmation des noms des questions collées (§ 11.10) : niveau, discipline, cours et
-  // résumé, pré-remplis par la ligne « === » si elle suit la convention, sinon par une question voisine
+  // descriptif, pré-remplis par la ligne « === » si elle suit la convention, sinon par une question voisine
   // et le titre. Renvoie les noms de fichiers, ou null si l’on annule. L’atelier propose, l’auteur
   // décide : une IA se trompe parfois de niveau ou de cours.
   function confirmNames(pieces) {

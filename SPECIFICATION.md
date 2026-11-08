@@ -1614,7 +1614,7 @@ d’emploi pour créer une question, avec ou sans IA.
   répétition : « texte », « nombre », « formule », « matrice », « matrice
   redimensionnable », « choix unique », « choix multiple ». Un titre trop long
   est coupé par « … » ; le survol donne le titre, les types et le chemin.
-- **Nom de fichier** : `niveau - discipline - cours - résumé.pwq`, par exemple
+- **Nom de fichier** : `niveau - discipline - cours - descriptif.pwq`, par exemple
   `L2 - Mathématiques - Probabilités - Écart-type d'une somme (flacons).pwq`.
   C’est la seule source de ces informations (pas de champ dans le fichier, qui
   finirait par contredire le nom ; pas de fichier de configuration par dossier,
@@ -1849,11 +1849,11 @@ Le texte collé est découpé en questions aux lignes `=== nom.pwq ===` que
 premier `%` sont retirés : les IA en ajoutent malgré la consigne. Une fenêtre
 demande alors le nom de chaque question : niveau, discipline, cours (listes
 déroulantes : niveaux, cours de mathématiques, et ceux du dossier ; « Autre… »
-ouvre une case pour une valeur nouvelle) et résumé (« Descriptif » à l’écran),
+ouvre une case pour une valeur nouvelle) et descriptif,
 avec le nom de fichier qui en résulte. Elle est pré-remplie par la ligne `===`
 si elle suit la convention (§ 11.3), sinon par le niveau, la discipline et le
 cours de la question courante (ou de la première question du dossier qui en a)
-et un résumé tiré du titre. L’auteur confirme ou corrige : une IA se trompe
+et un descriptif tiré du titre. L’auteur confirme ou corrige : une IA se trompe
 parfois de niveau ou de cours. « Annuler » n’écrit rien. Chaque question est
 alors écrite à la racine du dossier, sous ce nom, rendu unique s’il est déjà
 pris, et marquée « nouvelle » dans la liste pendant la visite. Une seule question : elle
