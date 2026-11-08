@@ -1188,21 +1188,45 @@
   function confirmNames(pieces) {
     const dialog = document.getElementById("name-dialog");
     if (dialog.open) return Promise.resolve(null);
-    const datalist = (id, values) => {
-      const element = document.createElement("datalist");
-      element.id = id;
-      element.append(...[...new Set(values)].map(value => Object.assign(document.createElement("option"), { value })));
-      return element;
+    // Niveau, discipline et cours : une liste déroulante, où l’on voit tout ce qui existe, et « Autre… »
+    // pour écrire une valeur nouvelle. Écartée : la case à suggestions (datalist) ; pré-remplie, Edge et
+    // Chrome n’y montraient que les suggestions contenant déjà son texte, souvent une seule. Le champ rendu
+    // a, comme une case de texte, une valeur (value) et focus().
+    const otherChoice = "\u0000autre";
+    const choiceField = (values, current) => {
+      const select = document.createElement("select");
+      const choices = [...new Set([...values, current].filter(Boolean))];
+      // Sans proposition, rien n’est choisi d’office : la vérification demande alors de choisir.
+      if (!current) select.append(new Option("Choisir…", "", true, true));
+      select.append(...choices.map(value => new Option(value, value, value === current, value === current)),
+        new Option("Autre…", otherChoice));
+      const other = Object.assign(document.createElement("input"), { type: "text", spellcheck: false, hidden: true });
+      select.addEventListener("change", () => {
+        other.hidden = select.value !== otherChoice;
+        if (!other.hidden) other.focus();
+      });
+      return {
+        elements: [select, other],
+        get value() { return select.value === otherChoice ? other.value : select.value; },
+        focus: () => (other.hidden ? select : other).focus()
+      };
     };
     const known = questions.map(question => questionNameParts(question.path)).filter(Boolean);
+    // Libellés des quatre parties du nom, dans l’ordre du nom ; repris par les messages d’erreur.
+    const partLabels = { level: "Niveau", discipline: "Discipline", course: "Cours", summary: "Résumé" };
+    const lists = {
+      level: [...questionLevels, ...known.map(parts => parts.level)],
+      discipline: ["Mathématiques", ...known.map(parts => parts.discipline)],
+      course: [...mathCourses, ...known.map(parts => parts.course)]
+    };
     const form = document.createElement("form");
     form.method = "dialog";
-    const heading = Object.assign(document.createElement("h2"), { id: "name-dialog-title", textContent: pieces.length > 1 ? "Nom des questions collées" : "Nom de la question collée" });
-    const help = Object.assign(document.createElement("p"), { textContent: "Le nom du fichier donne le niveau, la discipline et le cours, qui regroupent la liste ; le résumé reprend le titre en quelques mots." });
-    form.append(heading, help,
-      datalist("name-levels", [...questionLevels, ...known.map(parts => parts.level)]),
-      datalist("name-disciplines", ["Mathématiques", ...known.map(parts => parts.discipline)]),
-      datalist("name-courses", [...mathCourses, ...known.map(parts => parts.course)]));
+    const heading = Object.assign(document.createElement("h2"), { id: "name-dialog-title", textContent: pieces.length > 1 ? "Nom des questions collées" : "Nom de fichier pour la question collée" });
+    // Le format en police de code : un élément <code>, car textContent afficherait les balises telles quelles.
+    const help = document.createElement("p");
+    help.append("Le format suggéré est ", Object.assign(document.createElement("code"), { textContent: "niveau - discipline - cours - descriptif.pwq" }),
+      ". Il permet d'organiser la liste des questions. Si ce format ne vous convient pas, renommez le fichier directement dans le dossier.");
+    form.append(heading, help);
     const neighbour = neighbourNameParts();
     const rows = pieces.map(({ name, title }) => {
       const given = name && questionNameParts(name);
@@ -1212,13 +1236,15 @@
       fieldset.append(Object.assign(document.createElement("legend"), { textContent: title || name || "Question sans titre" }));
       const grid = Object.assign(document.createElement("div"), { className: "name-parts" });
       const inputs = {};
-      for (const [key, label, listId] of [["level", "Niveau", "name-levels"], ["discipline", "Discipline", "name-disciplines"], ["course", "Cours", "name-courses"], ["summary", "Résumé", null]]) {
+      for (const [key, label] of Object.entries(partLabels)) {
         const wrapper = Object.assign(document.createElement("label"), { className: key === "summary" ? "name-summary" : "" });
-        const input = Object.assign(document.createElement("input"), { type: "text", value: values[key] ?? "", spellcheck: false });
-        if (listId) input.setAttribute("list", listId);
-        input.dataset.part = key;
-        inputs[key] = input;
-        wrapper.append(label, input);
+        if (key === "summary") {
+          inputs[key] = Object.assign(document.createElement("input"), { type: "text", value: values[key] ?? "", spellcheck: false });
+          wrapper.append(label, inputs[key]);
+        } else {
+          inputs[key] = choiceField(lists[key], values[key] ?? "");
+          wrapper.append(label, ...inputs[key].elements);
+        }
         grid.append(wrapper);
       }
       const preview = Object.assign(document.createElement("div"), { className: "name-preview" });
@@ -1246,10 +1272,9 @@
       dialog.addEventListener("cancel", event => { event.preventDefault(); finish(null); }, { once: true });
       form.addEventListener("submit", event => {
         event.preventDefault();
-        const labels = { level: "Niveau", discipline: "Discipline", course: "Cours", summary: "Résumé" };
         for (const row of rows) {
           for (const [key, input] of Object.entries(row.inputs)) {
-            const message = namePartProblem(labels[key], input.value, key === "summary");
+            const message = namePartProblem(partLabels[key], input.value, key === "summary");
             if (message) {
               problem.textContent = message;
               problem.hidden = false;

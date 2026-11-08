@@ -338,6 +338,17 @@ def editor_and_paste(browser, url, pgcd):
     prefix = "L1 - Mathématiques - Algèbre et arithmétique - "
     if proposed != [f"{prefix}Collée.pwq", f"{prefix}Arithmétique PGCD de deux entiers.pwq"]:
         raise AssertionError(f"noms proposés inattendus : {proposed}")
+    # Listes déroulantes complètes, quel que soit le choix proposé : la case à suggestions (datalist),
+    # pré-remplie, n’en montrait qu’une. « Autre… » ouvre une case libre, qui fait le nom.
+    levels = page.eval_on_selector("#name-dialog fieldset select", "select => [...select.options].map(option => option.text)")
+    if levels[:5] != ["L1", "L2", "L3", "M1", "M2"] or levels[-1] != "Autre…":
+        raise AssertionError(f"niveaux proposés inattendus : {levels}")
+    first_level = page.locator("#name-dialog fieldset select").first
+    first_level.select_option(label="Autre…")
+    page.keyboard.type("BUT1")
+    if not page.locator("#name-dialog .name-preview").first.text_content().startswith("BUT1 - "):
+        raise AssertionError("« Autre… » n’a pas donné le niveau écrit.")
+    first_level.select_option(label="L1")
     page.click("#name-dialog button[type=submit]")
     page.wait_for_function("document.getElementById('back-to-list').hidden", timeout=30_000)
     if page.evaluate(READ_OPFS, f"questions-edition/{prefix}Arithmétique PGCD de deux entiers.pwq") != pgcd:
